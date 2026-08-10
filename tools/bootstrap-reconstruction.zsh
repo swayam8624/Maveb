@@ -33,7 +33,11 @@ UV_PROJECT_ENVIRONMENT=${deps}/proxy-venv uv sync \
 ln -sfn ${deps}/proxy-venv/bin/aether-proxy ${bin}/aether-proxy
 
 colmap_commit=0b31f98133b470eae62811b557dc2bcff1e4f9a5
-if command -v colmap >/dev/null 2>&1; then
+local_colmap=${deps}/colmap-install/bin/colmap
+
+if [[ -x ${local_colmap} ]]; then
+  ln -sfn ${local_colmap} ${bin}/colmap
+elif command -v colmap >/dev/null 2>&1; then
   colmap_version=$(colmap 2>&1 | grep -E "COLMAP [0-9]+\.[0-9]+" | head -n 1 || true)
   if [[ ${colmap_version} != *3.13.0* ]]; then
     print -u2 "AETHER requires COLMAP 3.13.0; found: ${colmap_version}"
@@ -50,9 +54,15 @@ else
   git -C ${colmap_source} fetch --depth 1 origin ${colmap_commit}
   git -C ${colmap_source} checkout --detach ${colmap_commit}
   [[ $(git -C ${colmap_source} rev-parse HEAD) == ${colmap_commit} ]]
-  print -u2 "Pinned COLMAP source is ready at ${colmap_source}."
-  print -u2 "COLMAP native dependencies are not installed automatically. Follow docs/RECONSTRUCTION.md, then rerun."
-  exit 4
+
+  if [[ ${AETHER_BUILD_COLMAP:-0} == 1 ]]; then
+    ${root}/tools/build-colmap-macos.zsh
+  else
+    print -u2 "Pinned COLMAP source is ready at ${colmap_source}."
+    print -u2 "Run tools/build-colmap-macos.zsh after installing the documented native dependencies,"
+    print -u2 "or rerun with AETHER_BUILD_COLMAP=1 to configure/build/install automatically."
+    exit 4
+  fi
 fi
 
 ${bin}/brush --version

@@ -19,3 +19,9 @@ __pycache__/
 .cache/
 /.aether-deps/
 /Testing/
+
+# MavebBench keeps only manifests/scripts/tests in Git.
+/benchmarks/results/
+/benchmarks/logs/
+/benchmarks/latest-report.md
+/benchmarks/data/

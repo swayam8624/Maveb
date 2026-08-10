@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "eth3d-meadow",
+  "title": "ETH3D Meadow",
+  "kind": "images",
+  "root": "$MAVEB_DATA/ETH3D/meadow/meadow/images/dslr_images_undistorted",
+  "imagesRel": "",
+  "note": "Outdoor vegetation and wide-baseline DSLR stress case."
+}
