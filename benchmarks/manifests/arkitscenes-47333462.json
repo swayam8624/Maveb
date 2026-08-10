@@ -8,9 +8,8 @@
     "trajectory": "lowres_wide.traj",
     "depth": "lowres_depth/*.png",
     "confidence": "confidence/*.png",
-    "intrinsics": "lowres_wide_intrinsics/*",
-    "rgb": "lowres_wide/*.png",
-    "video": "*.mov"
+    "intrinsics": "lowres_wide_intrinsics/*.pincam",
+    "rgb": "lowres_wide/*.png"
   },
-  "note": "Raw Apple RGB-D/LiDAR capture. It remains adapter-required until mapped into MavebCapture schema-v2."
+  "note": "Raw Apple RGB-D/LiDAR sequence converted by MavebBench into the exact MavebCapture schema-v2 contract and validated through aether-fuse."
 }

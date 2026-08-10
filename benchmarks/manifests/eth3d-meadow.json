@@ -3,7 +3,9 @@
   "id": "eth3d-meadow",
   "title": "ETH3D Meadow",
   "kind": "images",
-  "root": "$MAVEB_DATA/ETH3D/meadow/meadow/images/dslr_images_undistorted",
-  "imagesRel": "",
-  "note": "Outdoor vegetation and wide-baseline DSLR stress case."
+  "root": "$MAVEB_DATA/ETH3D/meadow/meadow",
+  "imagesRel": "images/dslr_images_undistorted",
+  "referenceGeometryRel": "dslr_scan_eval/scan1.ply",
+  "referenceCamerasRel": "dslr_calibration_undistorted/images.txt",
+  "note": "Outdoor vegetation/wide-baseline stress case with ETH3D evaluation scan and calibrated cameras."
 }

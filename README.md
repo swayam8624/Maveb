@@ -35,6 +35,10 @@ verified, shippable milestones. The current foundation contains:
   generated mipmaps and tangents, glTF samplers, material texture maps, normal mapping, and alpha
   mask/blend states.
 - A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
+- [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
+  Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
+  dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs
+  without vendoring dataset bytes.
 
 The project does **not** yet claim production Gaussian rendering or relighting. See
 [the roadmap](docs/ROADMAP.md) for implemented and pending exit gates.
@@ -84,6 +88,19 @@ ctest --test-dir build/sanitizer --output-on-failure
 
 Release configuration intentionally fails if the Metal Toolchain is missing.
 
+## Reconstruction dependencies
+
+The local RGB reconstruction adapter uses pinned COLMAP, Brush and `aether-proxy` versions under
+`.aether-deps/`. On Apple Silicon, after the documented native COLMAP libraries are installed, the
+full private tool setup can be bootstrapped with:
+
+```bash
+AETHER_BUILD_COLMAP=1 ./tools/bootstrap-reconstruction.zsh
+```
+
+The bootstrap never writes dependency binaries into the repository and does not silently accept a
+mismatched COLMAP version.
+
 ## Package and benchmark
 
 ```bash
@@ -96,6 +113,17 @@ build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
   --output proxy.ply --voxel 0.01 --truncation 0.04 --json
+```
+
+For the real-data regression layer:
+
+```bash
+export MAVEB_DATA="$HOME/Datasets/MavebBench"
+./tools/run-mavebbench.zsh doctor
+./tools/run-mavebbench.zsh run eth3d-pipes --steps 2000 --checkpoint-every 1000
+./tools/run-mavebbench.zsh run uco3d-object --video-fps 2 --steps 2000
+./tools/run-mavebbench.zsh run arkitscenes-47333462 --arkit-max-frames 30
+./tools/run-mavebbench.zsh report --output benchmarks/latest-report.md
 ```
 
 The benchmark performs warmup frames, waits for each real Metal command buffer, and reports GPU
