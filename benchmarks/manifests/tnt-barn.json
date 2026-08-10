@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "tnt-barn",
+  "title": "Tanks & Temples Barn",
+  "kind": "images",
+  "root": "$MAVEB_DATA/TanksAndTemples-HF/extracted/InstantSplat/Tanks/Barn/images",
+  "imagesRel": "",
+  "note": "Mirror-provided 150-frame Barn image set. Underlying dataset terms remain Tanks & Temples terms."
+}

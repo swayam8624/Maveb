@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "dtu-sampleset",
+  "title": "DTU MVS SampleSet",
+  "kind": "dtu",
+  "root": "$MAVEB_DATA/DTU/SampleSet",
+  "requiredAssets": {
+    "calibration": "MVS Data/Calibration/**/*",
+    "images": "MVS Data/**/*.png",
+    "evaluation": "Matlab evaluation code/**/*"
+  },
+  "note": "Controlled MVS evaluation source. Camera/reference conversion is intentionally an explicit adapter gate."
+}

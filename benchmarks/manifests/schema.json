@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MavebBench dataset manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "kind",
+    "root"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "images",
+        "video",
+        "arkit-scenes",
+        "dtu",
+        "reference-only"
+      ]
+    },
+    "root": {
+      "type": "string"
+    },
+    "imagesRel": {
+      "type": "string"
+    },
+    "videoGlob": {
+      "type": "string"
+    },
+    "requiredAssets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

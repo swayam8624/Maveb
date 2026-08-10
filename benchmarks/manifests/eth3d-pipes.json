@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "eth3d-pipes",
+  "title": "ETH3D Pipes",
+  "kind": "images",
+  "root": "$MAVEB_DATA/ETH3D/pipes/pipes/images/dslr_images_undistorted",
+  "imagesRel": "",
+  "note": "High-resolution DSLR multi-view baseline with scanner reference data outside the image folder."
+}

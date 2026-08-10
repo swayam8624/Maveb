@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "arkitscenes-47333462",
+  "title": "ARKitScenes 47333462",
+  "kind": "arkit-scenes",
+  "root": "$MAVEB_DATA/ARKitScenes/raw/Training/47333462",
+  "requiredAssets": {
+    "trajectory": "lowres_wide.traj",
+    "depth": "lowres_depth/*.png",
+    "confidence": "confidence/*.png",
+    "intrinsics": "lowres_wide_intrinsics/*",
+    "rgb": "lowres_wide/*.png",
+    "video": "*.mov"
+  },
+  "note": "Raw Apple RGB-D/LiDAR capture. It remains adapter-required until mapped into MavebCapture schema-v2."
+}
