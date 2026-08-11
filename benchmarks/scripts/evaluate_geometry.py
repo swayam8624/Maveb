@@ -71,11 +71,24 @@ def evaluate(a:argparse.Namespace)->dict[str,object]:
     candidate,ci=geometry_to_cloud(a.candidate,a.max_points,a.seed); reference,ri=geometry_to_cloud(a.reference,a.max_points,a.seed); transform=np.eye(4); alignment={"method":"none"}
     if a.candidate_cameras and a.reference_cameras: transform,alignment=camera_similarity(a.candidate_cameras,a.reference_cameras); candidate.transform(transform)
     elif a.align!="none": raise ValueError("camera alignment requires both camera files")
+    evaluation_region={"method":"full-reference"}
+    if a.crop_reference_to_candidate:
+        candidate_bounds=candidate.get_axis_aligned_bounding_box(); minimum=np.asarray(candidate_bounds.min_bound)-a.crop_padding; maximum=np.asarray(candidate_bounds.max_bound)+a.crop_padding
+        original_count=len(reference.points); reference=reference.crop(o3d.geometry.AxisAlignedBoundingBox(minimum,maximum))
+        if not reference.has_points(): raise ValueError("candidate bounds do not overlap the reference geometry")
+        evaluation_region={"method":"candidate-axis-aligned-bounds","paddingMetres":a.crop_padding,"referenceSamplesBeforeCrop":original_count,"referenceSamplesAfterCrop":len(reference.points),"minimum":minimum.tolist(),"maximum":maximum.tolist()}
     ad=list(candidate.compute_point_cloud_distance(reference)); rd=list(reference.compute_point_cloud_distance(candidate))
     if not ad or not rd: raise ValueError("no distance samples")
     accuracy=float(np.mean(ad)); completeness=float(np.mean(rd)); thresholds=[float(v) for v in a.thresholds.split(",") if v.strip()]
-    metrics={"accuracyMean":accuracy,"accuracyMedian":float(np.median(ad)),"accuracyP95":percentile(ad,.95),"completenessMean":completeness,"completenessMedian":float(np.median(rd)),"completenessP95":percentile(rd,.95),"chamferMean":.5*(accuracy+completeness),"fScores":[f_score(ad,rd,t) for t in thresholds],"candidateSamples":len(ad),"referenceSamples":len(rd)}
-    payload={"ok":True,"candidate":str(a.candidate.resolve()),"reference":str(a.reference.resolve()),"candidateGeometry":ci,"referenceGeometry":ri,"alignment":{**alignment,"matrixRowMajor":transform.tolist()},"units":"reference-coordinate units (metres for ETH3D/metric scanner references)","metrics":metrics}
+    if not candidate.has_normals(): candidate.estimate_normals()
+    if not reference.has_normals(): reference.estimate_normals()
+    tree=o3d.geometry.KDTreeFlann(reference); reference_normals=np.asarray(reference.normals); normal_errors=[]
+    for point,normal in zip(np.asarray(candidate.points),np.asarray(candidate.normals)):
+        count,indices,_=tree.search_knn_vector_3d(point,1)
+        if count:
+            dot=float(np.clip(abs(np.dot(normal,reference_normals[indices[0]])),-1.,1.)); normal_errors.append(math.degrees(math.acos(dot)))
+    metrics={"accuracyMean":accuracy,"accuracyMedian":float(np.median(ad)),"accuracyP95":percentile(ad,.95),"completenessMean":completeness,"completenessMedian":float(np.median(rd)),"completenessP95":percentile(rd,.95),"chamferMean":.5*(accuracy+completeness),"normalUnorientedMeanDegrees":float(np.mean(normal_errors)),"normalUnorientedMedianDegrees":float(np.median(normal_errors)),"normalUnorientedP95Degrees":percentile(normal_errors,.95),"fScores":[f_score(ad,rd,t) for t in thresholds],"candidateSamples":len(ad),"referenceSamples":len(rd)}
+    payload={"ok":True,"candidate":str(a.candidate.resolve()),"reference":str(a.reference.resolve()),"candidateGeometry":ci,"referenceGeometry":ri,"alignment":{**alignment,"matrixRowMajor":transform.tolist()},"evaluationRegion":evaluation_region,"units":"reference-coordinate units (metres for ETH3D/metric scanner references)","metrics":metrics}
     if a.aligned_output:
         a.aligned_output.parent.mkdir(parents=True,exist_ok=True)
         if not o3d.io.write_point_cloud(str(a.aligned_output),candidate,write_ascii=False,compressed=False): raise ValueError("failed to write aligned point cloud")
@@ -83,7 +96,8 @@ def evaluate(a:argparse.Namespace)->dict[str,object]:
     return payload
 
 def main(argv:list[str]|None=None)->int:
-    p=argparse.ArgumentParser(); p.add_argument("candidate",type=Path); p.add_argument("reference",type=Path); p.add_argument("--candidate-cameras",type=Path); p.add_argument("--reference-cameras",type=Path); p.add_argument("--align",choices=("none","camera"),default="camera"); p.add_argument("--thresholds",default="0.01,0.02,0.05"); p.add_argument("--max-points",type=int,default=500000); p.add_argument("--seed",type=int,default=42); p.add_argument("--aligned-output",type=Path); a=p.parse_args(argv)
+    p=argparse.ArgumentParser(); p.add_argument("candidate",type=Path); p.add_argument("reference",type=Path); p.add_argument("--candidate-cameras",type=Path); p.add_argument("--reference-cameras",type=Path); p.add_argument("--align",choices=("none","camera"),default="camera"); p.add_argument("--thresholds",default="0.01,0.02,0.05"); p.add_argument("--max-points",type=int,default=500000); p.add_argument("--seed",type=int,default=42); p.add_argument("--aligned-output",type=Path); p.add_argument("--crop-reference-to-candidate",action="store_true"); p.add_argument("--crop-padding",type=float,default=0.05); a=p.parse_args(argv)
+    if not math.isfinite(a.crop_padding) or a.crop_padding<0: p.error("--crop-padding must be finite and non-negative")
     try: payload=evaluate(a)
     except (OSError,RuntimeError,ValueError) as exc: print(json.dumps({"ok":False,"error":str(exc)}),file=sys.stderr); return 2
     print(json.dumps(payload)); return 0

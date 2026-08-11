@@ -19,6 +19,10 @@ renumber or replace the product phases.
   cube-edge isosurface vertices, deterministic geometry metrics, and atomic validated PLY output.
 - [ ] [E0] **R1 exit evidence:** classic Marching Cubes case-table parity, sphere fixture, reference
   RGB-D capture, median/p95 surface error, normal error, F-score, and committed raw report.
+- [x] [E3] **R1 public RGB-D slice:** ARKitScenes trajectory/depth axes are mapped through the exact
+  schema-v2 convention, automatic bounded-volume selection drives real CPU TSDF fusion, and the
+  30-frame slice reports metric accuracy/completeness/F-score/normal error against its reference
+  mesh. The full R1 gate remains open for the sphere/parity and committed E4 artifacts above.
 - [ ] [E2] **R2 production capture:** the iPad LiDAR companion now has permission UX, a zero-copy
   RealityKit preview, normal-tracking/depth admission, a three-frame bounded writer queue, native
   YUV/depth strides, atomic recording, hashes, counters, and file export. Device/format controls,
@@ -29,6 +33,9 @@ renumber or replace the product phases.
   schema-v2 desktop replay verifies hashes, converts coordinates and confidence, and fixture-tests
   TSDF-compatible packets. Real-device E3 evidence, the licensed RGB-depth bakeoff, uncertainty,
   temporal filtering, and RGB scale alignment remain open.
+- [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
+  provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
+  validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

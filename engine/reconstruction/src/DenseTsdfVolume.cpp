@@ -15,6 +15,7 @@ namespace aether::reconstruction {
 namespace {
 
 constexpr std::size_t maximumVoxelCount = 64ULL * 1024ULL * 1024ULL;
+constexpr std::size_t maximumBoundsSamples = 4ULL * 1024ULL * 1024ULL;
 
 using Vec3 = std::array<double, 3>;
 
@@ -172,6 +173,107 @@ constexpr std::array<Face, 6> faces{{
 }};
 
 } // namespace
+
+DenseTsdfBoundsEstimator::DenseTsdfBoundsEstimator(DenseTsdfBoundsConfig config)
+    : config_(std::move(config)) {}
+
+Result<DenseTsdfBoundsEstimator> DenseTsdfBoundsEstimator::create(DenseTsdfBoundsConfig config) {
+    if (config.pixelStride == 0 || config.maximumAxisVoxels < 2 ||
+        !std::isfinite(config.minimumVoxelSizeMetres) || config.minimumVoxelSizeMetres <= 0.0 ||
+        !std::isfinite(config.paddingMetres) || config.paddingMetres < 0.0 ||
+        !std::isfinite(config.lowerQuantile) || !std::isfinite(config.upperQuantile) ||
+        config.lowerQuantile < 0.0 || config.upperQuantile > 1.0 ||
+        config.lowerQuantile >= config.upperQuantile)
+        return fail(ErrorCode::invalidArgument, "TSDF automatic-bounds configuration is invalid");
+    return DenseTsdfBoundsEstimator(std::move(config));
+}
+
+Result<void> DenseTsdfBoundsEstimator::observe(const capture::CapturePacket& packet,
+                                               const PoseEstimate& pose,
+                                               const DepthObservation& depth) {
+    if (!finitePose(pose.cameraToWorld) || !pose.metricScale || !depth.depthMetres.valid() ||
+        depth.depthMetres.format != capture::PixelFormat::depthFloat32Metres ||
+        depth.depthMetres.width != packet.calibration.width ||
+        depth.depthMetres.height != packet.calibration.height || packet.calibration.fx <= 0.0 ||
+        packet.calibration.fy <= 0.0 || !std::isfinite(depth.scaleMetresPerUnit) ||
+        depth.scaleMetresPerUnit <= 0.0)
+        return fail(ErrorCode::invalidArgument,
+                    "Automatic bounds require calibrated metric depth and pose");
+    if (depth.confidence && (!depth.confidence->valid() ||
+                             depth.confidence->format != capture::PixelFormat::confidenceUInt8 ||
+                             depth.confidence->width != depth.depthMetres.width ||
+                             depth.confidence->height != depth.depthMetres.height))
+        return fail(ErrorCode::invalidArgument,
+                    "Automatic-bounds depth confidence plane is invalid");
+
+    const auto stride = config_.pixelStride;
+    for (std::uint32_t y = stride / 2; y < depth.depthMetres.height; y += stride) {
+        for (std::uint32_t x = stride / 2; x < depth.depthMetres.width; x += stride) {
+            if (coordinates_[0].size() >= maximumBoundsSamples)
+                return fail(ErrorCode::resourceExhausted,
+                            "Automatic-bounds sample budget exceeded");
+            const auto confidence = confidenceWeight(depth.confidence, x, y);
+            if (confidence < depth.confidenceFloor)
+                continue;
+            const auto metres =
+                static_cast<double>(readDepth(depth.depthMetres, x, y)) * depth.scaleMetresPerUnit;
+            if (!std::isfinite(metres) || metres < 0.05 || metres > 20.0)
+                continue;
+            const Vec3 camera{
+                (static_cast<double>(x) - packet.calibration.cx) * metres / packet.calibration.fx,
+                (static_cast<double>(y) - packet.calibration.cy) * metres / packet.calibration.fy,
+                metres,
+            };
+            const auto world =
+                add(pose.cameraToWorld.translation, rotate(pose.cameraToWorld.orientation, camera));
+            for (std::size_t axis = 0; axis < 3; ++axis)
+                coordinates_[axis].push_back(world[axis]);
+        }
+    }
+    return {};
+}
+
+Result<DenseTsdfBoundsResult> DenseTsdfBoundsEstimator::estimate() const {
+    if (coordinates_[0].size() < 8)
+        return fail(ErrorCode::invalidArgument,
+                    "Too few valid metric depth samples to estimate TSDF bounds");
+
+    DenseTsdfBoundsResult result;
+    result.sampledPoints = coordinates_[0].size();
+    std::array<double, 3> paddedMaximum{};
+    for (std::size_t axis = 0; axis < 3; ++axis) {
+        auto values = coordinates_[axis];
+        std::sort(values.begin(), values.end());
+        const auto quantileIndex = [&](double quantile) {
+            return std::min(
+                values.size() - 1,
+                static_cast<std::size_t>(quantile * static_cast<double>(values.size() - 1)));
+        };
+        result.observedMinimumMetres[axis] = values[quantileIndex(config_.lowerQuantile)];
+        result.observedMaximumMetres[axis] = values[quantileIndex(config_.upperQuantile)];
+        result.volume.originMetres[axis] =
+            result.observedMinimumMetres[axis] - config_.paddingMetres;
+        paddedMaximum[axis] = result.observedMaximumMetres[axis] + config_.paddingMetres;
+    }
+
+    double voxelSize = config_.minimumVoxelSizeMetres;
+    for (std::size_t axis = 0; axis < 3; ++axis) {
+        const auto span = paddedMaximum[axis] - result.volume.originMetres[axis];
+        if (!std::isfinite(span) || span <= 0.0)
+            return fail(ErrorCode::invalidArgument,
+                        "Observed TSDF bounds are degenerate or non-finite");
+        voxelSize = std::max(voxelSize, span / static_cast<double>(config_.maximumAxisVoxels - 1));
+    }
+    result.volume.voxelSizeMetres = voxelSize;
+    result.volume.truncationDistanceMetres = std::max(4.0 * voxelSize, 0.04);
+    for (std::size_t axis = 0; axis < 3; ++axis) {
+        const auto span = paddedMaximum[axis] - result.volume.originMetres[axis];
+        result.volume.dimensions[axis] =
+            static_cast<std::uint32_t>(std::clamp(std::ceil(span / voxelSize) + 1.0, 2.0,
+                                                  static_cast<double>(config_.maximumAxisVoxels)));
+    }
+    return result;
+}
 
 DenseTsdfVolume::DenseTsdfVolume(DenseTsdfConfig config) : config_(std::move(config)) {
     const auto count = static_cast<std::size_t>(config_.dimensions[0]) *

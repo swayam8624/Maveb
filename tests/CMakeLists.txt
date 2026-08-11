@@ -144,3 +144,11 @@ if(TARGET aether-fuse)
             $<TARGET_FILE:aether-fuse>
             "${CMAKE_CURRENT_BINARY_DIR}/oracle-fusion")
 endif()
+
+if(TARGET maveb-photogrammetry)
+    add_test(NAME MavebPhotogrammetryContract
+        COMMAND $<TARGET_FILE:maveb-photogrammetry>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
+            --output "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz"
+            --detail preview --dry-run --json)
+endif()

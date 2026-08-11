@@ -194,6 +194,23 @@ void testOracleTsdfReconstruction() {
            "Known recorded pose and metric depth providers accept oracle data");
     if (!pose || !observation)
         return;
+    auto boundsEstimator = aether::reconstruction::DenseTsdfBoundsEstimator::create({
+        .pixelStride = 4,
+        .maximumAxisVoxels = 64,
+        .minimumVoxelSizeMetres = 0.01,
+        .paddingMetres = 0.08,
+    });
+    expect(boundsEstimator.has_value() &&
+               boundsEstimator->observe(packet, *pose, *observation).has_value(),
+           "Calibrated metric depth contributes to automatic TSDF bounds");
+    auto estimatedBounds = boundsEstimator ? boundsEstimator->estimate()
+                                           : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
+                                                 std::unexpected(boundsEstimator.error()));
+    expect(estimatedBounds.has_value() && estimatedBounds->sampledPoints == 256 &&
+               estimatedBounds->volume.dimensions[2] >= 2 &&
+               estimatedBounds->volume.dimensions[0] <= 64 &&
+               estimatedBounds->volume.originMetres[2] < planeDepth,
+           "Automatic TSDF bounds enclose observed surfaces within their voxel budget");
     expect(volume->integrate(packet, *pose, *observation).has_value(),
            "Known-pose metric depth updates the TSDF");
     auto mesh = volume->extractMesh();

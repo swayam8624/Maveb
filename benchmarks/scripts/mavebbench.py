@@ -44,8 +44,9 @@ def resolve_tools() -> dict[str, str | None]:
         "aether-capture": [ROOT / "build/debug/tools/aether-capture/aether-capture", ROOT / "build/ci/tools/aether-capture/aether-capture"],
         "aether-reconstruct": [ROOT / "build/debug/tools/aether-reconstruct/aether-reconstruct", ROOT / "build/ci/tools/aether-reconstruct/aether-reconstruct"],
         "aether-fuse": [ROOT / "build/debug/tools/aether-fuse/aether-fuse", ROOT / "build/ci/tools/aether-fuse/aether-fuse"],
+        "maveb-photogrammetry": [ROOT / "build/debug/tools/maveb-photogrammetry/maveb-photogrammetry", ROOT / "build/ci/tools/maveb-photogrammetry/maveb-photogrammetry"],
         "colmap": [deps / "colmap"], "brush": [deps / "brush"], "aether-proxy": [deps / "aether-proxy"],
-        "proxy-python": [ROOT / ".aether-deps/proxy-venv/bin/python"], "ffmpeg": [], "ffprobe": [],
+        "proxy-python": [ROOT / ".aether-deps/proxy-venv/bin/python"], "ffmpeg": [], "ffprobe": [], "blender": [Path("/Applications/Blender.app/Contents/MacOS/Blender")],
     }
     out: dict[str, str | None] = {}
     for name, paths in candidates.items():
@@ -91,6 +92,9 @@ def resolve_input(m: dict[str, Any]) -> dict[str, Any]:
     else:
         assets = {k: resolve_glob(root, p) if root.exists() else [] for k,p in m.get("requiredAssets",{}).items()}
         r.update(assets={k:[str(v) for v in values] for k,values in assets.items()}, ready=root.is_dir() and all(assets.values()))
+        if m.get("referenceGeometryRel"):
+            reference = root / m["referenceGeometryRel"]
+            r.update(referenceGeometry=str(reference), referenceReady=reference.is_file())
     return r
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -136,6 +140,22 @@ def video_metadata(video: Path,t:dict[str,str|None])->dict[str,Any]:
     except json.JSONDecodeError: p=None
     return {"status":"pass" if p else "fail","command":r.to_json(),"payload":p}
 
+def photogrammetry(images:Path,output:Path,t:dict[str,str|None],a:argparse.Namespace,*,sequential:bool)->tuple[str,dict[str,Any]]:
+    tool=t.get("maveb-photogrammetry")
+    if not tool: return "blocked", {"reason":"maveb-photogrammetry-not-found"}
+    argv=[tool,str(images),"--output",str(output),"--detail",a.photogrammetry_detail,
+          "--ordering","sequential" if sequential else "unordered","--checkpoint",str(output.parent/"checkpoint"),"--json"]
+    if a.dry_run: argv.append("--dry-run")
+    return command_step(argv)
+
+def convert_glb(source:Path,output:Path,t:dict[str,str|None])->tuple[str,dict[str,Any]]:
+    blender=t.get("blender")
+    if not blender: return "blocked", {"reason":"blender-not-found"}
+    script=ROOT/"tools/convert-usdz-to-glb.py"
+    result=run_command([blender,"--background","--python",str(script),"--",str(source),str(output)],ROOT)
+    payload=parse_json_output(result); good=result.returncode==0 and payload and payload.get("ok") and output.is_file()
+    return ("pass" if good else "fail"), {"command":result.to_json(),"payload":payload}
+
 def adapt_arkit(source:Path, output:Path,t:dict[str,str|None],a:argparse.Namespace)->tuple[str,dict[str,Any]]:
     if not t["ffmpeg"]: return "blocked", {"reason":"ffmpeg-not-found"}
     if not ARKIT_ADAPTER.is_file(): return "blocked", {"reason":"arkitscenes-adapter-not-found"}
@@ -143,9 +163,18 @@ def adapt_arkit(source:Path, output:Path,t:dict[str,str|None],a:argparse.Namespa
     if a.arkit_max_frames is not None: argv += ["--max-frames",str(a.arkit_max_frames)]
     return command_step(argv)
 
-def validate_fuse(capture:Path,output:Path,t:dict[str,str|None])->tuple[str,dict[str,Any]]:
+def fuse_arkit(capture:Path,output:Path,t:dict[str,str|None],a:argparse.Namespace)->tuple[str,dict[str,Any]]:
     if not t["aether-fuse"]: return "blocked", {"reason":"aether-fuse-not-found"}
-    return command_step([t["aether-fuse"],str(capture),"--output",str(output),"--dry-run","--json"])
+    argv=[t["aether-fuse"],str(capture),"--output",str(output),"--auto-bounds","--max-axis",str(a.arkit_max_axis),
+          "--sample-stride",str(a.arkit_bounds_stride),"--voxel",str(a.arkit_voxel),"--padding",str(a.arkit_padding),"--json"]
+    if a.dry_run: argv.append("--dry-run")
+    return command_step(argv)
+
+def evaluate_metric_geometry(candidate:Path,reference:Path,output:Path,t:dict[str,str|None],max_points:int)->tuple[str,dict[str,Any]]:
+    py=t.get("proxy-python")
+    if not py: return "blocked", {"reason":"proxy-python-not-found"}
+    return command_step([py,str(GEOMETRY_EVALUATOR),str(candidate),str(reference),"--align","none","--thresholds","0.01,0.02,0.05",
+                         "--max-points",str(max_points),"--crop-reference-to-candidate","--crop-padding","0.05","--aligned-output",str(output)])
 
 def evaluate_geometry(job:Path,resolved:dict[str,Any],t:dict[str,str|None],max_points:int)->tuple[str,dict[str,Any]]:
     py=t.get("proxy-python")
@@ -167,20 +196,32 @@ def run_dataset(a:argparse.Namespace,m:dict[str,Any],t:dict[str,str|None])->dict
     kind=m["kind"]
     if kind=="images":
         status,d=validate_images(Path(resolved["images"]),t); record["steps"].append({"name":"capture-validation","status":status,**d})
-        if status=="pass" and not a.validate_only:
+        if status=="pass" and not a.validate_only and not a.skip_reconstruction:
             job=run_dir/"reconstruction"; status,d=reconstruct(Path(resolved["images"]),job,t,a); record["steps"].append({"name":"reconstruction","status":status,**d})
             if status=="pass" and not a.dry_run and resolved.get("referenceReady"):
                 status,d=evaluate_geometry(job,resolved,t,a.geometry_max_points); record["steps"].append({"name":"geometry-evaluation","status":status,**d})
+        if status=="pass" and a.photogrammetry and not a.validate_only:
+            model=run_dir/"photogrammetry/model.usdz"; status,d=photogrammetry(Path(resolved["images"]),model,t,a,sequential=False); record["steps"].append({"name":"apple-photogrammetry","status":status,**d})
+            if status=="pass" and a.convert_glb and not a.dry_run:
+                status,d=convert_glb(model,run_dir/"photogrammetry/model.glb",t); record["steps"].append({"name":"glb-conversion","status":status,**d})
         record["status"]=status
     elif kind=="video":
         video=Path(resolved["video"]); record["steps"].append({"name":"video-metadata",**video_metadata(video,t)})
         frames=run_dir/"frames"; status,d=extract_video(video,frames,t,a.video_fps); record["steps"].append({"name":"video-frame-extraction","status":status,**d})
         if status=="pass": status,d=validate_images(frames,t); record["steps"].append({"name":"capture-validation","status":status,**d})
-        if status=="pass" and not a.validate_only: status,d=reconstruct(frames,run_dir/"reconstruction",t,a); record["steps"].append({"name":"reconstruction","status":status,**d})
+        if status=="pass" and not a.validate_only and not a.skip_reconstruction: status,d=reconstruct(frames,run_dir/"reconstruction",t,a); record["steps"].append({"name":"reconstruction","status":status,**d})
+        if status=="pass" and a.photogrammetry and not a.validate_only:
+            model=run_dir/"photogrammetry/model.usdz"; status,d=photogrammetry(frames,model,t,a,sequential=True); record["steps"].append({"name":"apple-photogrammetry","status":status,**d})
+            if status=="pass" and a.convert_glb and not a.dry_run:
+                status,d=convert_glb(model,run_dir/"photogrammetry/model.glb",t); record["steps"].append({"name":"glb-conversion","status":status,**d})
         record["status"]=status
     elif kind=="arkit-scenes":
         converted=run_dir/"maveb-capture"; status,d=adapt_arkit(Path(resolved["root"]),converted,t,a); record["steps"].append({"name":"arkitscenes-conversion","status":status,**d})
-        if status=="pass": status,d=validate_fuse(converted,run_dir/"arkit-fuse-validation.ply",t); record["steps"].append({"name":"aether-fuse-contract","status":status,**d})
+        mesh=run_dir/"geometry/arkit-proxy.ply"
+        if status=="pass": status,d=fuse_arkit(converted,mesh,t,a); record["steps"].append({"name":"aether-fuse-oracle","status":status,**d})
+        if status=="pass" and not a.dry_run and resolved.get("referenceReady"):
+            status,d=evaluate_metric_geometry(mesh,Path(resolved["referenceGeometry"]),run_dir/"geometry/evaluated-candidate.ply",t,a.geometry_max_points)
+            record["steps"].append({"name":"geometry-evaluation","status":status,**d})
         record["status"]=status
     elif kind=="dtu":
         record["status"]="adapter-required"; record["steps"].append({"name":"adapter-status","status":"adapter-required","reason":"DTU camera/reference normalization is not yet mapped to AETHER's evaluation contract"})
@@ -209,6 +250,9 @@ def report_markdown(records:list[dict[str,Any]])->str:
                 evidence.append(f"Chamfer {metrics['chamferMean']:.4f}"); fs=metrics.get("fScores") or []
                 if fs: evidence.append(f"F@{fs[0]['threshold']:.2f} {fs[0]['fScore']:.3f}")
             if s["name"]=="arkitscenes-conversion" and p.get("frames") is not None: evidence.append(f"{p['frames']} RGB-D frames")
+            if s["name"]=="aether-fuse-oracle" and p.get("vertices") is not None: evidence.append(f"{p['vertices']} mesh vertices")
+            if s["name"]=="apple-photogrammetry" and p.get("images") is not None: evidence.append(f"USDZ from {p['images']} images")
+            if s["name"]=="glb-conversion" and p.get("bytes") is not None: evidence.append(f"GLB {p['bytes']/1_000_000:.1f} MB")
         lines.append(f"| {r.get('title',r['dataset'])} | {r.get('kind','')} | **{r.get('status','unknown')}** | {', '.join(evidence) or '—'} |")
     return "\n".join(lines+["","Statuses are evidence-based; unresolved adapter gates are never reported as PASS.",""])
 
@@ -242,7 +286,11 @@ def parser()->argparse.ArgumentParser:
     def opts(x):
         x.add_argument("--steps",type=int,default=2000); x.add_argument("--checkpoint-every",type=int,default=1000); x.add_argument("--video-fps",type=float,default=2.0)
         x.add_argument("--arkit-stride",type=int,default=6); x.add_argument("--arkit-max-frames",type=int,default=300); x.add_argument("--geometry-max-points",type=int,default=500_000)
-        x.add_argument("--dry-run",action="store_true"); x.add_argument("--validate-only",action="store_true"); x.add_argument("--run-id"); x.add_argument("--force",action="store_true")
+        x.add_argument("--arkit-max-axis",type=int,default=128); x.add_argument("--arkit-bounds-stride",type=int,default=8)
+        x.add_argument("--arkit-voxel",type=float,default=0.01); x.add_argument("--arkit-padding",type=float,default=0.08)
+        x.add_argument("--photogrammetry",action="store_true"); x.add_argument("--photogrammetry-detail",choices=("preview","reduced","medium","full","raw"),default="medium")
+        x.add_argument("--convert-glb",action="store_true")
+        x.add_argument("--dry-run",action="store_true"); x.add_argument("--validate-only",action="store_true"); x.add_argument("--skip-reconstruction",action="store_true"); x.add_argument("--run-id"); x.add_argument("--force",action="store_true")
     r=sub.add_parser("run"); r.add_argument("dataset"); opts(r)
     s=sub.add_parser("suite"); s.add_argument("suite",choices=("smoke","rgb","all")); opts(s)
     q=sub.add_parser("report"); q.add_argument("--output",type=Path); return p

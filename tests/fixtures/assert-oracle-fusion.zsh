@@ -42,3 +42,8 @@ JSON
   --origin -0.2 -0.2 0.8 --dimensions 9 9 9 --voxel 0.05 --truncation 0.1 --json
 test -s "$root/proxy.ply"
 head -c 3 "$root/proxy.ply" | grep -q ply
+
+"$fuser" "$root" --output "$root/nested/proxy-auto.ply" \
+  --auto-bounds --max-axis 32 --sample-stride 2 --voxel 0.02 --padding 0.1 --json
+test -s "$root/nested/proxy-auto.ply"
+head -c 3 "$root/nested/proxy-auto.ply" | grep -q ply
