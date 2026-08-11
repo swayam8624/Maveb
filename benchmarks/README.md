@@ -31,8 +31,13 @@ The bootstrap keeps Brush, COLMAP, `aether-proxy`, Open3D and their pinned ident
 # Video path: ffprobe -> deterministic extraction -> validation -> same reconstruction pipeline.
 ./tools/run-mavebbench.zsh run uco3d-object --video-fps 2 --steps 2000
 
-# Apple RGB-D/LiDAR: raw ARKitScenes -> MavebCapture schema-v2 -> aether-fuse contract validation.
-./tools/run-mavebbench.zsh run arkitscenes-47333462 --arkit-max-frames 30
+# Apple RGB-D/LiDAR: conversion -> automatic bounds -> real TSDF -> PLY -> metric report.
+./tools/run-mavebbench.zsh run arkitscenes-47333462 \
+  --arkit-max-frames 30 --arkit-max-axis 96 --arkit-voxel 0.02
+
+# RGB video: deterministic frames -> local Apple textured USDZ -> Blender-ready GLB.
+./tools/run-mavebbench.zsh run uco3d-object --skip-reconstruction \
+  --photogrammetry --photogrammetry-detail medium --convert-glb
 
 # Fast suite planning without launching COLMAP/Brush.
 ./tools/run-mavebbench.zsh suite smoke --dry-run
@@ -61,12 +66,24 @@ metrics, not a claim that the current sparse-SfM Poisson proxy is final producti
 sequence without mutating the dataset. It synchronizes RGB/depth/intrinsics/poses by timestamp,
 converts uint16 millimetre depth to float32 metres, converts RGB PNGs to NV12 luma/chroma planes,
 preserves ARKit confidence levels, hashes every plane, writes the exact schema-v2 coordinate
-contract consumed by `RecordedSequenceSource`, and validates the result through `aether-fuse
---dry-run`.
+contract consumed by `RecordedSequenceSource`, derives robust bounded volume settings from metric
+depth, and executes the deterministic CPU TSDF oracle. Partial-sequence evaluation crops the
+reference to the reported candidate bounds plus a fixed margin; it never presents that local
+completeness score as whole-room coverage.
 
 The dense CPU TSDF remains a bounded correctness oracle. MavebBench therefore does not pretend a
 full room-scale ARKitScenes fusion is a production real-time path; sparse Metal fusion remains a
 separate roadmap gate.
+
+## Textured photogrammetry
+
+`maveb-photogrammetry` is a native Swift 6 command-line adapter around Apple's local
+`PhotogrammetrySession`. It validates the input set, supports preview/reduced/medium/full/raw
+quality, unordered stills or sequential video frames, checkpoint recovery, object masking,
+structured JSON errors, atomic model replacement, and a provenance manifest with every input
+SHA-256. The native artifact is a textured USDZ. `--convert-glb` invokes the installed Blender in
+background mode through `tools/convert-usdz-to-glb.py`, verifies that a mesh was imported, and
+produces a textured binary glTF without modifying the USDZ source.
 
 ## Status semantics
 

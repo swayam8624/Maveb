@@ -17,6 +17,10 @@ The same bootstrap creates an isolated Python 3.12 environment for `aether-proxy
 committed `tools/aether-proxy/uv.lock`. Open3D 0.19.0 and every transitive wheel are version- and
 hash-locked; nothing is installed into the user's system Python.
 
+`tools/run-mavebbench.zsh` selects that pinned Python first and honors an explicit
+`MAVEB_PYTHON` override. Benchmark geometry never accidentally depends on a global NumPy/Open3D
+installation.
+
 `aether-reconstruct` runs seven external resumable stages: feature extraction, exhaustive matching,
 seeded sparse mapping, text-model export, proxy generation, undistortion, and Brush training. After
 export, an AETHER-owned gate parses the COLMAP text model and requires enough registered
@@ -60,3 +64,30 @@ manifest preserves the seed, full argument vectors, pinned identities, sorted in
 hashes, expected outputs, sparse-coverage evidence, stage logs, and resume markers. It verifies all
 external-tool versions before starting. `--dry-run --json` validates inputs and emits every external
 command without launching a tool.
+
+## Recorded metric RGB-D oracle
+
+`aether-fuse --auto-bounds` performs a deterministic prepass over calibrated metric depth. It
+samples depth in world space, applies confidence rejection, trims declared extreme quantiles,
+adds a fixed metric margin, and increases voxel size only when required by the configured maximum
+dense-grid axis. The selected origin, dimensions, voxel size, truncation distance, and sample count
+are emitted in JSON. A second replay performs weighted TSDF integration and atomically writes the
+colored PLY; parent output directories are created by the CLI.
+
+The dense volume remains a correctness oracle. Its automatic voxel growth makes larger captures
+safe and bounded, but does not replace the future sparse Metal volume needed to preserve fine
+resolution across a room.
+
+## Local textured photogrammetry
+
+`maveb-photogrammetry` uses Apple's `PhotogrammetrySession` as the production RGB mesh baseline.
+It accepts a directory of stills or extracted video frames and produces a textured USDZ entirely
+locally. Preview, reduced, medium, full, and raw details are explicit; sequential ordering is used
+for video and unordered ordering for still photographs. Input hashes, configuration, rejected
+samples, skipped samples, OS identity, and output path are written to an atomic provenance JSON.
+Apple checkpoint directories remain outside Git and allow expensive stages to resume.
+
+`tools/convert-usdz-to-glb.py` runs only inside Blender. It imports the preserved USDZ, requires at
+least one mesh, exports a binary glTF with materials/textures, and returns machine-readable artifact
+evidence. This establishes a serious textured-mesh baseline before AETHER attempts custom dense
+RGB depth or cross-device LiDAR/Sony texture fusion.

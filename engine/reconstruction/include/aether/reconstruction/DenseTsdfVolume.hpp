@@ -26,6 +26,41 @@ struct TsdfVoxel final {
     std::uint32_t observations{};
 };
 
+struct DenseTsdfBoundsConfig final {
+    std::uint32_t pixelStride{8};
+    std::uint32_t maximumAxisVoxels{128};
+    double minimumVoxelSizeMetres{0.01};
+    double paddingMetres{0.08};
+    double lowerQuantile{0.005};
+    double upperQuantile{0.995};
+};
+
+struct DenseTsdfBoundsResult final {
+    DenseTsdfConfig volume;
+    std::array<double, 3> observedMinimumMetres{};
+    std::array<double, 3> observedMaximumMetres{};
+    std::size_t sampledPoints{};
+};
+
+/// Accumulates a bounded sample of calibrated metric depth in world space.
+/// Input: image-aligned +Z-forward depth and a metric camera-to-world pose.
+/// Output: a dense reference volume enclosing robust observed-surface quantiles.
+/// Task: choose deterministic oracle bounds without trusting noisy depth extrema.
+class DenseTsdfBoundsEstimator final {
+public:
+    static Result<DenseTsdfBoundsEstimator> create(DenseTsdfBoundsConfig config = {});
+
+    Result<void> observe(const capture::CapturePacket& packet, const PoseEstimate& pose,
+                         const DepthObservation& depth);
+    Result<DenseTsdfBoundsResult> estimate() const;
+
+private:
+    explicit DenseTsdfBoundsEstimator(DenseTsdfBoundsConfig config);
+
+    DenseTsdfBoundsConfig config_;
+    std::array<std::vector<double>, 3> coordinates_;
+};
+
 /// Deterministic CPU correctness implementation. Camera coordinates use +Z forward.
 class DenseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
 public:

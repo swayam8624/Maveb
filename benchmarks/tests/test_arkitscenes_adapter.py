@@ -2,7 +2,7 @@ import importlib.util, math, struct, sys, unittest
 from pathlib import Path
 MODULE_PATH=Path(__file__).resolve().parents[1]/"scripts/adapters/arkitscenes_to_aether.py"; SPEC=importlib.util.spec_from_file_location("arkitscenes_to_aether",MODULE_PATH); adapter=importlib.util.module_from_spec(SPEC); assert SPEC.loader; sys.modules[SPEC.name]=adapter; SPEC.loader.exec_module(adapter)
 class ARKitScenesAdapterTests(unittest.TestCase):
-    def test_identity(self): self.assertEqual(adapter.trajectory_to_camera_to_world([1.,0.,0.,0.,0.,0.,0.]),[1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,-0.,-0.,-0.,1.])
+    def test_identity_is_encoded_in_native_arkit_axes(self): self.assertEqual(adapter.trajectory_to_camera_to_world([1.,0.,0.,0.,0.,0.,0.]),[1.,0.,0.,0.,-0.,-1.,-0.,0.,-0.,-0.,-1.,0.,-0.,-0.,-0.,1.])
     def test_translation_inversion(self): self.assertEqual(adapter.trajectory_to_camera_to_world([1.,0.,0.,0.,1.,2.,3.])[12:15],[-1.,-2.,-3.])
     def test_rodrigues(self):
         r=adapter.rodrigues((0.,0.,math.pi/2)); self.assertAlmostEqual(r[0][0],0.,places=6); self.assertAlmostEqual(r[0][1],-1.,places=6); self.assertAlmostEqual(r[1][0],1.,places=6)

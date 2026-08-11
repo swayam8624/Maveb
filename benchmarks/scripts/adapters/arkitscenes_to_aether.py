@@ -22,7 +22,11 @@ def trajectory_to_camera_to_world(tokens:list[float])->list[float]:
     if len(tokens)!=7: raise ValueError("trajectory lines require seven values")
     r=rodrigues((tokens[1],tokens[2],tokens[3])); rt=[[r[j][i] for j in range(3)] for i in range(3)]; t=tokens[4:7]
     p=[-sum(rt[i][j]*t[j] for j in range(3)) for i in range(3)]
-    return [rt[0][0],rt[1][0],rt[2][0],0.,rt[0][1],rt[1][1],rt[2][1],0.,rt[0][2],rt[1][2],rt[2][2],0.,p[0],p[1],p[2],1.]
+    # ARKitScenes' official trajectory utility returns an image-aligned camera-to-world
+    # matrix with +Y down and +Z forward. Schema v2 stores native ARKit camera axes;
+    # pre-multiply the camera columns by diag(1,-1,-1) so the desktop loader's
+    # documented ARKit-to-image conversion recovers the official matrix exactly.
+    return [rt[0][0],rt[1][0],rt[2][0],0.,-rt[0][1],-rt[1][1],-rt[2][1],0.,-rt[0][2],-rt[1][2],-rt[2][2],0.,p[0],p[1],p[2],1.]
 
 def load_trajectory(path:Path)->tuple[list[float],dict[float,list[float]]]:
     poses={}
@@ -97,7 +101,7 @@ def convert(source:Path,output:Path,*,stride:int,maximum_frames:int|None,ffmpeg:
         if conf is not None: frame["confidence"]=write_plane(output,d/"confidence.u8",conf,w,h,w,"arkit-confidence-u8")
         frames.append(frame)
     if not frames: raise ValueError("No synchronized ARKitScenes frames could be converted")
-    manifest={"schemaVersion":2,"sourceID":f"arkitscenes-{source.name}","coordinateSystem":{"camera":"ARKit right-handed: +X right, +Y up, -Z forward","pose":"column-major camera-to-world 4x4 matrix","depthUnit":"metres","intrinsics":"3x3 column-major pixels"},"frames":frames,"adapter":{"name":"MavebBench ARKitScenes raw adapter","source":str(source),"stride":stride,"candidateFrames":len(candidates),"convertedFrames":len(frames),"skipped":skipped,"notes":["depth uint16 millimetres -> float32 metres","RGB PNG -> NV12 planes","trajectory world-to-camera axis-angle -> ARKit camera-to-world"]}}
+    manifest={"schemaVersion":2,"sourceID":f"arkitscenes-{source.name}","coordinateSystem":{"camera":"ARKit right-handed: +X right, +Y up, -Z forward","pose":"column-major camera-to-world 4x4 matrix","depthUnit":"metres","intrinsics":"3x3 column-major pixels"},"frames":frames,"adapter":{"name":"MavebBench ARKitScenes raw adapter","source":str(source),"stride":stride,"candidateFrames":len(candidates),"convertedFrames":len(frames),"skipped":skipped,"notes":["depth uint16 millimetres -> float32 metres","RGB PNG -> NV12 planes","official image-aligned trajectory encoded as native ARKit axes for schema-v2 replay"]}}
     (output/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n"); return manifest
 
 def main(argv:list[str]|None=None)->int:

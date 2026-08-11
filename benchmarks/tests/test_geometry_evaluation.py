@@ -11,7 +11,15 @@ assert SPEC.loader
 sys.modules[SPEC.name] = geometry
 SPEC.loader.exec_module(geometry)
 
-NUMPY_AVAILABLE = importlib.util.find_spec("numpy") is not None
+def usable_numpy() -> bool:
+    try:
+        import numpy as np
+        return callable(getattr(np, "asarray", None))
+    except (ImportError, AttributeError):
+        return False
+
+
+NUMPY_AVAILABLE = usable_numpy()
 
 
 class GeometryEvaluationTests(unittest.TestCase):

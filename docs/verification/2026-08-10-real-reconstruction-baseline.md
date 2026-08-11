@@ -40,7 +40,7 @@ MavebBench makes those results reproducible instead of leaving them as terminal 
 - uCO3D/ordinary video gets deterministic ffmpeg frame ingestion before entering the maintained
   still-image reconstruction path; the report records the extraction command and frame count.
 - ARKitScenes raw RGB-D is converted to the exact MavebCapture schema-v2 plane/pose/calibration
-  contract and passed through `aether-fuse --dry-run` to validate the real native reader contract.
+  contract. The follow-up 2026-08-11 evidence record supersedes this dry-run-only limitation.
 - Dataset bytes and generated results remain outside Git.
 
 ## Remaining gates
@@ -51,11 +51,9 @@ The benchmark does not erase the project's remaining research work:
   keyframe selector.
 - The current RGB editable proxy still comes from sparse COLMAP points followed by Poisson; dense
   production RGB geometry remains a major gap.
-- The ARKitScenes adapter is contract-tested in code, but a local run on the downloaded sequence is
-  still required before publishing ARKitScenes fusion/accuracy evidence. The current dense CPU TSDF
-  is an oracle, not the room-scale real-time implementation.
+- The current dense CPU TSDF remains an oracle, not the room-scale real-time implementation.
 - DTU retains a benchmark-specific camera/reference adapter gate.
-- Blender-ready GLB export, surface-bound residual appearance, `.aether` v2 rate-distortion/LOD,
+- Surface-bound residual appearance, `.aether` v2 rate-distortion/LOD,
   sparse Metal fusion and the later Vulkan backend remain roadmap milestones.
 
 MavebBench preserves these boundaries in machine-readable run records so future work can turn a

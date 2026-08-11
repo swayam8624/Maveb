@@ -11,5 +11,6 @@
     "intrinsics": "lowres_wide_intrinsics/*.pincam",
     "rgb": "lowres_wide/*.png"
   },
-  "note": "Raw Apple RGB-D/LiDAR sequence converted by MavebBench into the exact MavebCapture schema-v2 contract and validated through aether-fuse."
+  "referenceGeometryRel": "47333462_3dod_mesh.ply",
+  "note": "Raw Apple RGB-D/LiDAR sequence converted into MavebCapture schema-v2, fused by the bounded CPU oracle, and evaluated in the shared metric ARKit coordinate frame."
 }

@@ -75,6 +75,25 @@ class MavebBenchTests(unittest.TestCase):
             }
             self.assertFalse(bench.resolve_input(manifest)["ready"])
 
+    def test_metric_reference_is_resolved_for_rgbd_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "depth.bin").write_bytes(b"depth")
+            (root / "reference.ply").write_text("ply\n")
+            manifest = {
+                "schemaVersion": 1,
+                "id": "rgbd",
+                "title": "RGB-D fixture",
+                "kind": "arkit-scenes",
+                "root": directory,
+                "requiredAssets": {"depth": "depth.bin"},
+                "referenceGeometryRel": "reference.ply",
+            }
+            resolved = bench.resolve_input(manifest)
+            self.assertTrue(resolved["ready"])
+            self.assertTrue(resolved["referenceReady"])
+            self.assertEqual(Path(resolved["referenceGeometry"]), (root / "reference.ply").resolve())
+
 
 if __name__ == "__main__":
     unittest.main()
