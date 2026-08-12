@@ -595,8 +595,9 @@ int run(int argc, char** argv) {
         return fail(png.error().describe(), options->json, 4);
     aether::mesh::MeshAsset asset;
     asset.name = "Maveb textured metric reconstruction";
-    baked->primitive.materialIndex = 0;
+    baked->primitive.materialIndex = 1;
     asset.primitives.push_back(std::move(baked->primitive));
+    asset.materials.emplace_back(); // Slot 0 is the implicit default material.
     aether::mesh::PbrMaterial material;
     material.name = "Baked appearance";
     material.metallic = 0;
