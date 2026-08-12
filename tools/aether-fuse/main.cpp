@@ -1,4 +1,5 @@
 #include <aether/capture/RecordedSequenceSource.hpp>
+#include <aether/mesh/GltfExporter.hpp>
 #include <aether/mesh/PlyExporter.hpp>
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
@@ -27,7 +28,7 @@ struct Options final {
 };
 
 void printHelp() {
-    std::cout << "Usage: aether-fuse <capture-directory> --output <proxy.ply> "
+    std::cout << "Usage: aether-fuse <capture-directory> --output <proxy.ply|proxy.glb> "
                  "[options]\n"
                  "\n"
                  "Deterministically fuses schema-v1 RGB-D or schema-v2 MavebCapture "
@@ -108,6 +109,9 @@ std::optional<Options> parseOptions(int argc, char** argv) {
     }
     if (options.output.empty() && !options.dryRun)
         return std::nullopt;
+    if (!options.output.empty() && options.output.extension() != ".ply" &&
+        options.output.extension() != ".glb")
+        return std::nullopt;
     options.bounds.minimumVoxelSizeMetres = options.volume.voxelSizeMetres;
     return options;
 }
@@ -124,7 +128,7 @@ int fail(const aether::Error& error, bool json) {
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
     if (argc == 2 && std::string_view(argv[1]) == "--help") {
         printHelp();
         return 0;
@@ -146,7 +150,7 @@ int main(int argc, char** argv) {
         aether::reconstruction::RecordedPoseProvider poses;
         aether::reconstruction::RecordedRgbdDepthProvider depths;
         std::optional<aether::Error> boundsError;
-        (*source)->setPacketCallback([&](aether::capture::CapturePacket packet) {
+        (*source)->setPacketCallback([&](const aether::capture::CapturePacket& packet) {
             if (boundsError)
                 return;
             auto pose = poses.estimate(packet);
@@ -169,13 +173,15 @@ int main(int argc, char** argv) {
         while (true) {
             auto stepped = (*source)->step();
             if (!stepped) {
-                (void)(*source)->stop();
+                [[maybe_unused]] const auto stopped = (*source)->stop();
                 return fail(stepped.error(), options->json);
             }
             if (!*stepped || boundsError)
                 break;
         }
-        (void)(*source)->stop();
+        auto stopped = (*source)->stop();
+        if (!stopped)
+            return fail(stopped.error(), options->json);
         if (boundsError)
             return fail(*boundsError, options->json);
         auto estimatedBounds = estimator->estimate();
@@ -212,7 +218,7 @@ int main(int argc, char** argv) {
     aether::reconstruction::RecordedPoseProvider poses;
     aether::reconstruction::RecordedRgbdDepthProvider depths;
     std::optional<aether::Error> pipelineError;
-    (*source)->setPacketCallback([&](aether::capture::CapturePacket packet) {
+    (*source)->setPacketCallback([&](const aether::capture::CapturePacket& packet) {
         if (pipelineError)
             return;
         auto pose = poses.estimate(packet);
@@ -235,13 +241,15 @@ int main(int argc, char** argv) {
     while (true) {
         auto stepped = (*source)->step();
         if (!stepped) {
-            (void)(*source)->stop();
+            [[maybe_unused]] const auto stopped = (*source)->stop();
             return fail(stepped.error(), options->json);
         }
         if (!*stepped || pipelineError)
             break;
     }
-    (void)(*source)->stop();
+    auto stopped = (*source)->stop();
+    if (!stopped)
+        return fail(stopped.error(), options->json);
     if (pipelineError)
         return fail(*pipelineError, options->json);
     auto mesh = volume->extractMesh();
@@ -252,10 +260,12 @@ int main(int argc, char** argv) {
     if (!parent.empty())
         std::filesystem::create_directories(parent, directoryError);
     if (directoryError)
-        return fail(aether::Error{aether::ErrorCode::io, "Unable to create PLY output directory",
+        return fail(aether::Error{aether::ErrorCode::io, "Unable to create mesh output directory",
                                   parent.string()},
                     options->json);
-    auto exported = aether::mesh::exportToPly(*mesh, options->output);
+    const bool glbOutput = options->output.extension() == ".glb";
+    auto exported = glbOutput ? aether::mesh::GltfExporter::writeStatic(*mesh, options->output)
+                              : aether::mesh::exportToPly(*mesh, options->output);
     if (!exported)
         return fail(exported.error(), options->json);
 
@@ -264,6 +274,7 @@ int main(int argc, char** argv) {
     if (options->json) {
         std::cout << "{\"ok\":true,\"frames\":" << volume->integratedFrames()
                   << ",\"vertices\":" << vertices << ",\"triangles\":" << triangles
+                  << ",\"format\":\"" << (glbOutput ? "glb" : "ply") << "\""
                   << ",\"output\":\"" << options->output.string() << "\""
                   << ",\"origin\":[" << options->volume.originMetres[0] << ','
                   << options->volume.originMetres[1] << ',' << options->volume.originMetres[2]

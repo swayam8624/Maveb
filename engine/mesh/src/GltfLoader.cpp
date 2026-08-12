@@ -456,6 +456,44 @@ Result<MeshAsset> loadData(fastgltf::GltfDataGetter& source, const std::filesyst
                     });
                 hasTextureCoordinates = true;
             }
+            if (const auto* colorAttribute = sourcePrimitive.findAttribute("COLOR_0");
+                colorAttribute != sourcePrimitive.attributes.end()) {
+                const auto& accessor = sourceAsset.accessors[colorAttribute->accessorIndex];
+                const bool supportedComponent =
+                    accessor.componentType == fastgltf::ComponentType::Float ||
+                    ((accessor.componentType == fastgltf::ComponentType::UnsignedByte ||
+                      accessor.componentType == fastgltf::ComponentType::UnsignedShort) &&
+                     accessor.normalized);
+                if (accessor.count != primitive.vertices.size() || !supportedComponent ||
+                    (accessor.type != fastgltf::AccessorType::Vec3 &&
+                     accessor.type != fastgltf::AccessorType::Vec4))
+                    return fail(ErrorCode::corruptData, "glTF vertex-color accessor is invalid");
+                primitive.vertexColors.resize(primitive.vertices.size());
+                bool unsupportedAlpha = false;
+                if (accessor.type == fastgltf::AccessorType::Vec3) {
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
+                        sourceAsset, accessor, [&](const auto& value, std::size_t index) {
+                            primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
+                        });
+                } else {
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
+                        sourceAsset, accessor, [&](const auto& value, std::size_t index) {
+                            primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
+                            unsupportedAlpha =
+                                unsupportedAlpha || std::abs(value.w() - 1.0F) > 1.0e-6F;
+                        });
+                }
+                if (unsupportedAlpha)
+                    return fail(ErrorCode::unsupported,
+                                "AETHER mesh colors do not yet represent COLOR_0 alpha");
+                if (std::ranges::any_of(primitive.vertexColors, [](simd_float3 color) {
+                        return !std::isfinite(color.x) || !std::isfinite(color.y) ||
+                               !std::isfinite(color.z) || color.x < 0.0F || color.x > 1.0F ||
+                               color.y < 0.0F || color.y > 1.0F || color.z < 0.0F || color.z > 1.0F;
+                    }))
+                    return fail(ErrorCode::corruptData,
+                                "glTF vertex color is outside linear zero-to-one range");
+            }
             if (const auto* tangentAttribute = sourcePrimitive.findAttribute("TANGENT");
                 tangentAttribute != sourcePrimitive.attributes.end()) {
                 const auto& accessor = sourceAsset.accessors[tangentAttribute->accessorIndex];

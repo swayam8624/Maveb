@@ -117,8 +117,10 @@ alignment remain later gates and are not claimed by this adapter.
 samples depth in world space, applies confidence rejection, trims declared extreme quantiles,
 adds a fixed metric margin, and increases voxel size only when required by the configured maximum
 dense-grid axis. The selected origin, dimensions, voxel size, truncation distance, and sample count
-are emitted in JSON. A second replay performs weighted TSDF integration and atomically writes the
-colored PLY; parent output directories are created by the CLI.
+are emitted in JSON. A second replay performs weighted TSDF integration and atomically writes either
+colored PLY or deterministic static GLB; parent output directories are created by the CLI. The
+[native GLB profile](formats/NATIVE_GLB_EXPORT.md) preserves vertex colors and can be reloaded by the
+engine without an external converter.
 
 The dense volume remains a correctness oracle. Its automatic voxel growth makes larger captures
 safe and bounded, but does not replace the future sparse Metal volume needed to preserve fine

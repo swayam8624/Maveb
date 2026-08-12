@@ -29,6 +29,8 @@ verified, shippable milestones. The current foundation contains:
 - A [Canonical Asset v1](docs/formats/CANONICAL_ASSET.md) profile that packages a self-contained
   metric textured GLB, calibrated cameras, per-vertex confidence, coordinate-frame semantics, and
   hashed geometry/appearance provenance without requiring Gaussian content.
+- A bounded, deterministic [native static GLB writer](docs/formats/NATIVE_GLB_EXPORT.md) for
+  Maveb-owned indexed meshes, vertex colors, embedded textures, PBR materials, and static instances.
 - A bounded [standard 3DGS PLY importer](docs/formats/GAUSSIAN_PLY.md) and deterministic
   anisotropic CPU reference rasterizer.
 - A Metal 3 Gaussian correctness path with projection, covariance, stable tile/depth ordering,
@@ -123,7 +125,8 @@ build/debug/tools/aether-keyframes/aether-keyframes extracted-frames \
 build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
-  --output proxy.ply --voxel 0.01 --truncation 0.04 --json
+build/debug/tools/aether-fuse/aether-fuse recorded-capture \
+  --output proxy.glb --voxel 0.01 --truncation 0.04 --json
 build/debug/tools/maveb-align-sensors/maveb-align-sensors colmap/sparse/0 ipad.mavebcapture \
   --matches camera-matches.json --output metric-camera-rig.json --json
 ```

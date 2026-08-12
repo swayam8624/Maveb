@@ -11,6 +11,7 @@
 #include <aether/hybrid/ProxyMeshCodec.hpp>
 #include <aether/hybrid/ProxyPlyLoader.hpp>
 #include <aether/mesh/Animation.hpp>
+#include <aether/mesh/GltfExporter.hpp>
 #include <aether/mesh/GltfLoader.hpp>
 #include <aether/mesh/PlyExporter.hpp>
 #include <aether/mesh/TransparentSort.hpp>
@@ -689,7 +690,125 @@ void testGltfLoader() {
         const simd_float4 tangent = textured->primitives[0].vertices[0].tangent;
         expect(simd_length(simd_float3{tangent.x, tangent.y, tangent.z}) > 0.99F,
                "Missing glTF tangents are generated from UV gradients");
+
+        textured->primitives[0].vertexColors = {simd_float3{1.0F, 0.0F, 0.0F},
+                                                simd_float3{0.0F, 1.0F, 0.0F},
+                                                simd_float3{0.0F, 0.0F, 1.0F}};
+        auto firstGlb = aether::mesh::GltfExporter::encodeStatic(*textured);
+        auto secondGlb = aether::mesh::GltfExporter::encodeStatic(*textured);
+        expect(firstGlb.has_value() && secondGlb.has_value() && *firstGlb == *secondGlb,
+               "Native static GLB encoding is byte-for-byte deterministic");
+        if (firstGlb) {
+            auto semantic = aether::canonical::CanonicalAssetLoader::validateMeshPayload(*firstGlb);
+            expect(semantic.has_value() && semantic->vertexCount == 3 &&
+                       semantic->triangleCount == 1 && semantic->imageCount == 1,
+                   "Native GLB passes canonical self-contained textured-mesh validation");
+            auto roundTrip = aether::mesh::GltfLoader::load(*firstGlb, "native-round-trip");
+            expect(roundTrip.has_value() && roundTrip->vertexCount() == 3 &&
+                       roundTrip->indexCount() == 3 && roundTrip->images.size() == 1 &&
+                       roundTrip->textures.size() == 1 && roundTrip->materials.size() == 2,
+                   "Native GLB reload preserves geometry, images, textures, and materials");
+            if (roundTrip) {
+                const auto& material = roundTrip->materials[1];
+                const auto& transform = material.uvTransforms[0];
+                const auto& sampler = roundTrip->textures[0];
+                const bool colorsMatch =
+                    roundTrip->primitives[0].vertexColors.size() ==
+                        textured->primitives[0].vertexColors.size() &&
+                    std::ranges::equal(roundTrip->primitives[0].vertexColors,
+                                       textured->primitives[0].vertexColors,
+                                       [](simd_float3 left, simd_float3 right) {
+                                           return simd_length(left - right) < 1.0e-6F;
+                                       });
+                expect(material.baseColorTexture == 0 &&
+                           std::abs(transform.scale.x - 2.0F) < 1.0e-6F &&
+                           std::abs(transform.offset.x - 0.25F) < 1.0e-6F && colorsMatch &&
+                           sampler.mipFilter == aether::mesh::SamplerMipFilter::linear &&
+                           sampler.addressU == aether::mesh::SamplerAddressMode::clampToEdge &&
+                           sampler.addressV == aether::mesh::SamplerAddressMode::mirroredRepeat,
+                       "Native GLB round-trip preserves PBR binding, UV transform, colors, and "
+                       "sampler state");
+            }
+        }
+
+        const auto output = std::filesystem::temp_directory_path() / "aether-native-static.glb";
+        std::filesystem::remove(output);
+        expect(aether::mesh::GltfExporter::writeStatic(*textured, output).has_value(),
+               "Native GLB publishes atomically to a .glb destination");
+        std::ifstream originalStream(output, std::ios::binary);
+        const std::vector<char> originalBytes((std::istreambuf_iterator<char>(originalStream)),
+                                              std::istreambuf_iterator<char>());
+        auto invalid = *textured;
+        invalid.primitives[0].indices[0] = 99;
+        expect(!aether::mesh::GltfExporter::writeStatic(invalid, output).has_value(),
+               "Native GLB rejects an out-of-range triangle before replacing output");
+        std::ifstream preservedStream(output, std::ios::binary);
+        const std::vector<char> preservedBytes((std::istreambuf_iterator<char>(preservedStream)),
+                                               std::istreambuf_iterator<char>());
+        expect(originalBytes == preservedBytes,
+               "Failed native GLB export preserves the previously published artifact");
+        std::filesystem::remove(output);
+
+        aether::mesh::GltfExportLimits tinyExport;
+        tinyExport.maximumOutputBytes = 64;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces the configured total byte budget");
+        tinyExport = {};
+        tinyExport.maximumMaterials = 1;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces material-count limits before authoring");
+        tinyExport = {};
+        tinyExport.maximumTotalNameBytes = 1;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces aggregate source-name limits before authoring");
+        invalid = *textured;
+        invalid.images[0].bytes = {std::byte{'n'}, std::byte{'o'}, std::byte{'t'}};
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects unsupported or mislabeled image payloads");
+        invalid = *textured;
+        invalid.materials[0].roughness = 0.5F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects authored data in the implicit default material slot");
     }
+
+    if (instanced) {
+        auto glb = aether::mesh::GltfExporter::encodeStatic(*instanced);
+        expect(glb.has_value(), "Native GLB encodes shared-primitive scene instances");
+        if (glb) {
+            auto roundTrip = aether::mesh::GltfLoader::load(*glb, "instanced-round-trip");
+            bool transformsMatch = roundTrip.has_value() && roundTrip->instances.size() == 3;
+            if (transformsMatch) {
+                for (std::size_t instance = 0; instance < 3; ++instance)
+                    for (std::size_t column = 0; column < 4; ++column)
+                        transformsMatch =
+                            transformsMatch &&
+                            simd_length(
+                                roundTrip->instances[instance].worldTransform.columns[column] -
+                                instanced->instances[instance].worldTransform.columns[column]) <
+                                1.0e-6F;
+            }
+            expect(transformsMatch,
+                   "Native GLB preserves shared-primitive instances and world transforms");
+        }
+
+        auto invalid = *instanced;
+        invalid.instances[0].worldTransform.columns[0].w = 1.0F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects non-affine instance transforms");
+        invalid = *instanced;
+        invalid.instances[0].worldTransform.columns[1].x = 0.25F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects instance shear that cannot be represented as TRS");
+    }
+    if (animated)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*animated).has_value(),
+               "Static GLB explicitly rejects animation instead of dropping it");
+    if (skinned)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*skinned).has_value(),
+               "Static GLB explicitly rejects skinning instead of dropping it");
+    if (morphed)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*morphed).has_value(),
+               "Static GLB explicitly rejects morph targets instead of dropping them");
 }
 
 void testMeshAnimation() {
