@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -35,11 +36,36 @@ struct SparseCoverageReport final {
     }
 };
 
+struct SparseModelCandidate final {
+    std::string id;
+    std::filesystem::path binaryDirectory;
+    std::filesystem::path textDirectory;
+    SparseCoverageReport coverage;
+};
+
+struct SparseModelSelection final {
+    std::size_t candidateIndex{};
+    std::string reason;
+};
+
 /// Input: COLMAP text-model directory and original input-image count.
 /// Output: bounded registration, track-overlap, baseline, and view-angle evidence.
 /// Task: reject sparse models that exited successfully but are unusable for Brush training.
 [[nodiscard]] Result<SparseCoverageReport>
 validateSparseTextModel(const std::filesystem::path& modelDirectory, std::size_t inputImageCount,
                         const SparseCoverageThresholds& thresholds = {});
+
+/// Input: COLMAP text-model directory and the exact selected paths relative to the image root.
+/// Output: the same coverage evidence plus rejection of foreign or duplicated image identities.
+[[nodiscard]] Result<SparseCoverageReport>
+validateSparseTextModel(const std::filesystem::path& modelDirectory,
+                        std::span<const std::filesystem::path> selectedImages,
+                        const SparseCoverageThresholds& thresholds = {});
+
+/// Input: all exported COLMAP models and their independently measured coverage reports.
+/// Output: the strongest passing model and a stable, human-readable selection reason.
+/// Task: prevent downstream geometry and training from blindly consuming sparse model zero.
+[[nodiscard]] Result<SparseModelSelection>
+selectBestSparseModel(const std::vector<SparseModelCandidate>& candidates);
 
 } // namespace aether::reconstruction

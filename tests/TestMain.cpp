@@ -15,10 +15,11 @@
 #include <aether/mesh/TransparentSort.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
-#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
 #include <aether/reconstruction/GeometryEvaluation.hpp>
+#include <aether/reconstruction/ReconstructionInput.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
+#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/rendergraph/RenderGraph.hpp>
 #include <aether/scene/Camera.hpp>
 #include <aether/scene/CameraController.hpp>
@@ -113,6 +114,29 @@ void testSparseCoverageValidation() {
                "Sparse coverage report retains registration and graph evidence");
         expect(valid->maximumViewAngleDegrees > 10.0,
                "Sparse coverage report measures camera angular diversity");
+        const std::array<std::filesystem::path, 3> selectedNames{"a.jpg", "b.jpg", "c.jpg"};
+        auto exact =
+            aether::reconstruction::validateSparseTextModel(root, selectedNames, thresholds);
+        expect(exact.has_value() && exact->passed(),
+               "Sparse coverage accepts registered names from the exact selected input list");
+        const std::array<std::filesystem::path, 3> foreignNames{"a.jpg", "b.jpg", "other.jpg"};
+        auto foreign =
+            aether::reconstruction::validateSparseTextModel(root, foreignNames, thresholds);
+        expect(foreign.has_value() && !foreign->passed(),
+               "Sparse coverage rejects a foreign registered image even when counts match");
+        auto stronger = *valid;
+        stronger.trackedPoints += 100;
+        std::vector<aether::reconstruction::SparseModelCandidate> candidates{
+            {"0", root / "0", root / "0-text", *valid},
+            {"1", root / "1", root / "1-text", stronger}};
+        auto selected = aether::reconstruction::selectBestSparseModel(candidates);
+        expect(selected.has_value() && selected->candidateIndex == 1 &&
+                   selected->reason.find("model 1") != std::string::npos,
+               "Sparse model selection ranks every passing model instead of assuming model zero");
+        candidates[0].coverage.issues.emplace_back("fixture failure");
+        candidates[1].coverage.issues.emplace_back("fixture failure");
+        expect(!aether::reconstruction::selectBestSparseModel(candidates).has_value(),
+               "Sparse model selection rejects a set with no passing candidate");
     }
     thresholds.minimumTrackedPoints = 2;
     auto weak = aether::reconstruction::validateSparseTextModel(root, 3, thresholds);
@@ -133,6 +157,48 @@ void testSparseCoverageValidation() {
     std::filesystem::remove_all(root);
 }
 
+void testReconstructionInputContract() {
+    const auto root = std::filesystem::temp_directory_path() / "aether-input-contract-test";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root);
+    const auto manifestPath = root / "camera-groups.json";
+    {
+        std::ofstream manifest(manifestPath);
+        manifest << R"({
+  "schemaVersion": 1,
+  "groups": [
+    {"id":"sony","relativeDirectory":"sony","device":"Sony Alpha 7 V","lens":"FE 28-70mm F3.5-5.6 OSS","focalLengthMillimetres":35,"calibrationId":"sony-35-v1"},
+    {"id":"ipad","relativeDirectory":"ipad","device":"iPad Pro 11-inch 3rd generation","lens":"wide","calibrationId":"ipad-wide-v1"}
+  ]
+})";
+    }
+    auto manifest = aether::reconstruction::loadCameraGroupManifest(manifestPath);
+    expect(manifest.has_value() && manifest->groups.size() == 2,
+           "Versioned camera-group metadata preserves device, lens, and calibration identity");
+    if (manifest) {
+        const std::vector<std::filesystem::path> covered{
+            "sony/frame-0001.jpg", "sony/frame-0002.jpg", "ipad/frame-0001.jpg"};
+        expect(aether::reconstruction::validateCameraGroups(*manifest, covered).has_value(),
+               "Every selected image maps to exactly one declared camera folder");
+        const std::vector<std::filesystem::path> uncovered{"sony/frame-0001.jpg",
+                                                           "unknown/frame-0001.jpg"};
+        expect(!aether::reconstruction::validateCameraGroups(*manifest, uncovered).has_value(),
+               "Undeclared multi-camera images are rejected instead of merged silently");
+    }
+    {
+        std::ofstream nested(manifestPath, std::ios::trunc);
+        nested
+            << R"({"schemaVersion":1,"groups":[{"id":"nested","relativeDirectory":"sony/zoom","device":"Sony","lens":"zoom"}]})";
+    }
+    expect(!aether::reconstruction::loadCameraGroupManifest(manifestPath).has_value(),
+           "Camera groups reject nested directories that COLMAP could ambiguously merge");
+    expect(aether::reconstruction::defaultMatcher(
+               aether::reconstruction::ReconstructionInputKind::video) ==
+               aether::reconstruction::MatcherStrategy::sequential,
+           "Video reconstruction defaults to sequence-aware matching");
+    std::filesystem::remove_all(root);
+}
+
 void testOracleTsdfReconstruction() {
     aether::reconstruction::DenseTsdfConfig config;
     config.dimensions = {21, 21, 17};
@@ -145,13 +211,11 @@ void testOracleTsdfReconstruction() {
     expect(volume.has_value(), "Valid bounded dense TSDF volume is created");
     if (!volume)
         return;
-    expect(!volume->extractMesh().has_value(),
-           "An unobserved TSDF volume cannot produce geometry");
+    expect(!volume->extractMesh().has_value(), "An unobserved TSDF volume cannot produce geometry");
 
     constexpr std::uint32_t width = 64;
     constexpr std::uint32_t height = 64;
-    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3,
-                                 std::byte{128});
+    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3, std::byte{128});
     std::vector<std::byte> depth(static_cast<std::size_t>(width) * height * sizeof(float));
     constexpr float planeDepth = 1.0F;
     for (std::size_t index = 0; index < static_cast<std::size_t>(width) * height; ++index)
@@ -203,9 +267,10 @@ void testOracleTsdfReconstruction() {
     expect(boundsEstimator.has_value() &&
                boundsEstimator->observe(packet, *pose, *observation).has_value(),
            "Calibrated metric depth contributes to automatic TSDF bounds");
-    auto estimatedBounds = boundsEstimator ? boundsEstimator->estimate()
-                                           : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
-                                                 std::unexpected(boundsEstimator.error()));
+    auto estimatedBounds = boundsEstimator
+                               ? boundsEstimator->estimate()
+                               : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
+                                     std::unexpected(boundsEstimator.error()));
     expect(estimatedBounds.has_value() && estimatedBounds->sampledPoints == 256 &&
                estimatedBounds->volume.dimensions[2] >= 2 &&
                estimatedBounds->volume.dimensions[0] <= 64 &&
@@ -214,8 +279,7 @@ void testOracleTsdfReconstruction() {
     expect(volume->integrate(packet, *pose, *observation).has_value(),
            "Known-pose metric depth updates the TSDF");
     auto mesh = volume->extractMesh();
-    expect(mesh.has_value() && !mesh->primitives.empty() &&
-               !mesh->primitives[0].indices.empty(),
+    expect(mesh.has_value() && !mesh->primitives.empty() && !mesh->primitives[0].indices.empty(),
            "Observed TSDF extracts a connected zero-crossing surface");
     if (!mesh)
         return;
@@ -223,19 +287,16 @@ void testOracleTsdfReconstruction() {
     std::vector<std::array<double, 3>> reference;
     for (int y = -10; y <= 10; ++y)
         for (int x = -10; x <= 10; ++x)
-            reference.push_back({static_cast<double>(x) * 0.04,
-                                 static_cast<double>(y) * 0.04, 1.0});
+            reference.push_back(
+                {static_cast<double>(x) * 0.04, static_cast<double>(y) * 0.04, 1.0});
     auto metrics = aether::reconstruction::evaluateGeometry(*mesh, reference, 0.05);
     expect(metrics.has_value() && metrics->accuracyMeanMetres <= 0.02,
            "Oracle plane reconstruction stays within half a voxel accuracy");
-    expect(metrics.has_value() && metrics->invalidIndices == 0 &&
-               metrics->degenerateTriangles == 0,
+    expect(metrics.has_value() && metrics->invalidIndices == 0 && metrics->degenerateTriangles == 0,
            "Extracted oracle mesh contains valid non-degenerate triangles");
 
-    const auto firstPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
-    const auto secondPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
+    const auto firstPath = std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
+    const auto secondPath = std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
     expect(aether::mesh::exportToPly(*mesh, firstPath).has_value() &&
                aether::mesh::exportToPly(*mesh, secondPath).has_value(),
            "Hardened PLY exporter atomically writes oracle geometry");
@@ -1067,6 +1128,7 @@ int main() {
     testResourceLocator();
     testDiagnostics();
     testSparseCoverageValidation();
+    testReconstructionInputContract();
     testOracleTsdfReconstruction();
     testProxyMeshContract();
     testProfiler();

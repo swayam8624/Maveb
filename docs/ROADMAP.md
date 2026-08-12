@@ -27,6 +27,12 @@ renumber or replace the product phases.
   RealityKit preview, normal-tracking/depth admission, a three-frame bounded writer queue, native
   YUV/depth strides, atomic recording, hashes, counters, and file export. Device/format controls,
   interrupted-session recovery, richer diagnostics, and the 30-minute soak remain open.
+- [x] [E2] **Offline video input contract:** deterministic ImageIO keyframe admission rejects blur,
+  exposure failures, low contrast, near duplicates, and appearance discontinuities; video uses
+  sequential/local-window COLMAP matching; explicit camera-group manifests preserve device/lens/
+  focal/calibration identity; and every sparse model is exported, validated, ranked, and recorded.
+  Real Sony/iPad footage, geometric parallax selection, targeted cross-group matching, and E3
+  reconstruction evidence remain open.
 - [ ] [E0] **R3 visual odometry:** calibrated initialization, PnP/local mapping, confidence, tracking
   loss, relocalization, submaps, and recorded trajectory metrics.
 - [ ] [E2] **R4 depth providers:** MavebCapture records Apple scene depth/confidence/intrinsics/poses;

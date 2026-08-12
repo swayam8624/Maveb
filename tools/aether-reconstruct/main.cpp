@@ -1,6 +1,7 @@
 #include <aether/core/Error.hpp>
 #include <aether/gaussian/PlyLoader.hpp>
 #include <aether/package/Sha256.hpp>
+#include <aether/reconstruction/ReconstructionInput.hpp>
 #include <aether/reconstruction/SparseModelValidator.hpp>
 
 #include <fcntl.h>
@@ -23,6 +24,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <set>
 #include <span>
 #include <sstream>
 #include <string>
@@ -47,6 +49,19 @@ struct Options final {
     std::string brush{"brush"};
     std::string proxy{"aether-proxy"};
     std::filesystem::path proxyConfig;
+    std::filesystem::path imageList;
+    std::filesystem::path preprocessingManifest;
+    std::filesystem::path cameraGroups;
+    aether::reconstruction::ReconstructionInputKind inputKind{
+        aether::reconstruction::ReconstructionInputKind::unorderedPhotos};
+    aether::reconstruction::MatcherStrategy matcher{
+        aether::reconstruction::MatcherStrategy::exhaustive};
+    aether::reconstruction::CameraGroupingMode cameraGrouping{
+        aether::reconstruction::CameraGroupingMode::singleCamera};
+    std::optional<aether::reconstruction::CameraGroupManifest> cameraGroupManifest;
+    std::uint32_t sequentialOverlap{10};
+    bool matcherExplicit{};
+    bool cameraGroupingExplicit{};
     std::uint32_t seed{42};
     std::uint32_t steps{30'000};
     std::uint32_t checkpointEvery{5'000};
@@ -74,6 +89,12 @@ struct CheckpointRecovery final {
     std::size_t rejectedNewerCheckpoints{};
 };
 
+struct SparseSelectionEvidence final {
+    std::vector<aether::reconstruction::SparseModelCandidate> candidates;
+    std::optional<std::size_t> selectedIndex;
+    std::string reason;
+};
+
 aether::Result<InputImage> hashInputImage(const std::filesystem::path& path,
                                           const std::filesystem::path& root);
 
@@ -87,7 +108,11 @@ void hashText(aether::package::Sha256& hash, std::string_view text) {
 aether::Result<std::string> jobFingerprint(const Options& options,
                                            const std::vector<InputImage>& inputs) {
     aether::package::Sha256 hash;
-    hashText(hash, "aether-reconstruction-resume-v1");
+    hashText(hash, "aether-reconstruction-resume-v2");
+    hashText(hash, aether::reconstruction::toString(options.inputKind));
+    hashText(hash, aether::reconstruction::toString(options.matcher));
+    hashText(hash, aether::reconstruction::toString(options.cameraGrouping));
+    hashText(hash, std::to_string(options.sequentialOverlap));
     hashText(hash, std::to_string(options.seed));
     hashText(hash, std::to_string(options.steps));
     hashText(hash, std::to_string(options.checkpointEvery));
@@ -104,6 +129,28 @@ aether::Result<std::string> jobFingerprint(const Options& options,
     } else {
         hashText(hash, "default-proxy-config-v1");
     }
+    const auto hashConfigurationFile = [&](const std::filesystem::path& path,
+                                           std::string_view defaultValue) -> aether::Result<void> {
+        if (path.empty()) {
+            hashText(hash, defaultValue);
+            return {};
+        }
+        auto input = hashInputImage(path, path.parent_path());
+        if (!input)
+            return std::unexpected(input.error());
+        hashText(hash, input->path.generic_string());
+        hashText(hash, input->sha256);
+        return {};
+    };
+    if (auto result = hashConfigurationFile(options.imageList, "all-discovered-images-v1"); !result)
+        return std::unexpected(result.error());
+    if (auto result =
+            hashConfigurationFile(options.preprocessingManifest, "no-preprocessing-manifest-v1");
+        !result)
+        return std::unexpected(result.error());
+    if (auto result = hashConfigurationFile(options.cameraGroups, "single-camera-group-v1");
+        !result)
+        return std::unexpected(result.error());
     return aether::package::Sha256::hex(hash.finalize());
 }
 
@@ -142,10 +189,15 @@ std::string commandDisplay(const std::vector<std::string>& arguments) {
 }
 
 int usage() {
-    std::cout << "Usage: aether-reconstruct <dataset> --output <job-directory> "
-                 "[--trainer brush] [--colmap PATH] [--brush PATH] [--proxy PATH] "
-                 "[--proxy-config FILE] [--seed 42] "
-                 "[--steps 30000] [--checkpoint-every 5000] [--test-profile NAME] [--dry-run] [--json]\n";
+    std::cout
+        << "Usage: aether-reconstruct <dataset> --output <job-directory> "
+           "[--trainer brush] [--colmap PATH] [--brush PATH] [--proxy PATH] "
+           "[--proxy-config FILE] [--input-kind photos|video|multi-camera] "
+           "[--matcher auto|exhaustive|sequential] "
+           "[--camera-mode auto|single|per-folder|per-image] "
+           "[--camera-groups FILE] [--image-list FILE] "
+           "[--preprocessing-manifest FILE] [--sequential-overlap 10] [--seed 42] "
+           "[--steps 30000] [--checkpoint-every 5000] [--test-profile NAME] [--dry-run] [--json]\n";
     return 0;
 }
 
@@ -197,7 +249,10 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
         if (argument == "--output" || argument == "--colmap" || argument == "--brush" ||
             argument == "--proxy" || argument == "--proxy-config" || argument == "--trainer" ||
             argument == "--seed" || argument == "--steps" || argument == "--checkpoint-every" ||
-            argument == "--test-profile") {
+            argument == "--test-profile" || argument == "--input-kind" || argument == "--matcher" ||
+            argument == "--camera-mode" || argument == "--camera-groups" ||
+            argument == "--image-list" || argument == "--preprocessing-manifest" ||
+            argument == "--sequential-overlap") {
             auto supplied = value();
             if (!supplied)
                 return std::nullopt;
@@ -211,13 +266,58 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
                 options.proxy = *supplied;
             else if (argument == "--proxy-config")
                 options.proxyConfig = *supplied;
+            else if (argument == "--camera-groups")
+                options.cameraGroups = *supplied;
+            else if (argument == "--image-list")
+                options.imageList = *supplied;
+            else if (argument == "--preprocessing-manifest")
+                options.preprocessingManifest = *supplied;
             else if (argument == "--test-profile")
                 options.testProfile = *supplied;
-            else if (argument == "--trainer" && *supplied != "brush") {
+            else if (argument == "--input-kind") {
+                if (*supplied == "photos")
+                    options.inputKind =
+                        aether::reconstruction::ReconstructionInputKind::unorderedPhotos;
+                else if (*supplied == "video")
+                    options.inputKind = aether::reconstruction::ReconstructionInputKind::video;
+                else if (*supplied == "multi-camera")
+                    options.inputKind =
+                        aether::reconstruction::ReconstructionInputKind::multiCamera;
+                else {
+                    exitCode =
+                        fail("Input kind must be photos, video, or multi-camera", options.json);
+                    return std::nullopt;
+                }
+            } else if (argument == "--matcher") {
+                options.matcherExplicit = *supplied != "auto";
+                if (*supplied == "exhaustive")
+                    options.matcher = aether::reconstruction::MatcherStrategy::exhaustive;
+                else if (*supplied == "sequential")
+                    options.matcher = aether::reconstruction::MatcherStrategy::sequential;
+                else if (*supplied != "auto") {
+                    exitCode =
+                        fail("Matcher must be auto, exhaustive, or sequential", options.json);
+                    return std::nullopt;
+                }
+            } else if (argument == "--camera-mode") {
+                options.cameraGroupingExplicit = *supplied != "auto";
+                if (*supplied == "single")
+                    options.cameraGrouping =
+                        aether::reconstruction::CameraGroupingMode::singleCamera;
+                else if (*supplied == "per-folder")
+                    options.cameraGrouping = aether::reconstruction::CameraGroupingMode::perFolder;
+                else if (*supplied == "per-image")
+                    options.cameraGrouping = aether::reconstruction::CameraGroupingMode::perImage;
+                else if (*supplied != "auto") {
+                    exitCode = fail("Camera mode must be auto, single, per-folder, or per-image",
+                                    options.json);
+                    return std::nullopt;
+                }
+            } else if (argument == "--trainer" && *supplied != "brush") {
                 exitCode = fail("Only the pinned Brush adapter is supported", options.json);
                 return std::nullopt;
             } else if (argument == "--seed" || argument == "--steps" ||
-                       argument == "--checkpoint-every") {
+                       argument == "--checkpoint-every" || argument == "--sequential-overlap") {
                 auto number = parsePositive(*supplied);
                 if (!number) {
                     exitCode = fail("Seed/step value is invalid", options.json);
@@ -227,6 +327,8 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
                     options.seed = *number;
                 else if (argument == "--steps")
                     options.steps = *number;
+                else if (argument == "--sequential-overlap")
+                    options.sequentialOverlap = *number;
                 else
                     options.checkpointEvery = *number;
             }
@@ -242,6 +344,26 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
     }
     if (options.dataset.empty() || options.output.empty()) {
         exitCode = fail("Dataset and --output are required", options.json);
+        return std::nullopt;
+    }
+    if (!options.matcherExplicit)
+        options.matcher = aether::reconstruction::defaultMatcher(options.inputKind);
+    if (!options.cameraGroupingExplicit)
+        options.cameraGrouping = aether::reconstruction::defaultCameraGrouping(options.inputKind);
+    if (options.sequentialOverlap > 1'000) {
+        exitCode = fail("Sequential overlap must be between 1 and 1000", options.json);
+        return std::nullopt;
+    }
+    if (options.cameraGrouping == aether::reconstruction::CameraGroupingMode::perFolder &&
+        options.cameraGroups.empty()) {
+        exitCode = fail("Per-folder camera grouping requires --camera-groups; camera identity "
+                        "cannot be guessed",
+                        options.json);
+        return std::nullopt;
+    }
+    if (!options.cameraGroups.empty() &&
+        options.cameraGrouping != aether::reconstruction::CameraGroupingMode::perFolder) {
+        exitCode = fail("Camera-group manifests require --camera-mode per-folder", options.json);
         return std::nullopt;
     }
     return options;
@@ -303,7 +425,7 @@ aether::Result<void> atomicCopy(const std::filesystem::path& source,
     const auto temporary = destination.string() + ".tmp";
     std::ifstream input(source, std::ios::binary);
     std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
-    std::array<char, 1U * 1024U * 1024U> buffer{};
+    std::array<char, 1ULL * 1024ULL * 1024ULL> buffer{};
     while (input) {
         input.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         if (input.gcount() > 0)
@@ -394,7 +516,7 @@ aether::Result<InputImage> hashInputImage(const std::filesystem::path& path,
         return aether::fail(aether::ErrorCode::io, "Unable to size reconstruction input",
                             path.string());
     std::ifstream stream(path, std::ios::binary);
-    std::array<std::byte, 1U * 1024U * 1024U> buffer{};
+    std::array<std::byte, 1ULL * 1024ULL * 1024ULL> buffer{};
     aether::package::Sha256 hash;
     while (stream) {
         stream.read(reinterpret_cast<char*>(buffer.data()),
@@ -410,6 +532,91 @@ aether::Result<InputImage> hashInputImage(const std::filesystem::path& path,
     if (error)
         relative = path.filename();
     return InputImage{relative, bytes, aether::package::Sha256::hex(hash.finalize())};
+}
+
+bool supportedImage(const std::filesystem::path& path) {
+    std::string extension = path.extension().string();
+    std::ranges::transform(extension, extension.begin(), [](unsigned char value) {
+        return static_cast<char>(std::tolower(value));
+    });
+    return extension == ".jpg" || extension == ".jpeg" || extension == ".png" ||
+           extension == ".heic" || extension == ".tif" || extension == ".tiff";
+}
+
+aether::Result<std::filesystem::path> safeRelativeImage(std::string_view text) {
+    std::filesystem::path path(text);
+    if (path.empty() || path.is_absolute())
+        return aether::fail(aether::ErrorCode::corruptData,
+                            "Image-list entries must be relative paths", std::string(text));
+    for (const auto& component : path)
+        if (component == "..")
+            return aether::fail(aether::ErrorCode::corruptData,
+                                "Image-list path traversal is forbidden", std::string(text));
+    path = path.lexically_normal();
+    if (path == "." || !supportedImage(path))
+        return aether::fail(aether::ErrorCode::corruptData,
+                            "Image-list entry has an unsupported extension", std::string(text));
+    return path;
+}
+
+aether::Result<std::vector<std::filesystem::path>>
+discoverImagePaths(const std::filesystem::path& images, const std::filesystem::path& imageList) {
+    constexpr std::size_t maximumImages = 1'000'000;
+    std::vector<std::filesystem::path> paths;
+    std::set<std::filesystem::path> unique;
+    std::error_code filesystemError;
+    if (!imageList.empty()) {
+        std::ifstream stream(imageList);
+        if (!stream)
+            return aether::fail(aether::ErrorCode::notFound, "Unable to open image list",
+                                imageList);
+        std::string line;
+        while (std::getline(stream, line)) {
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+            if (line.empty() || line.front() == '#')
+                continue;
+            auto relative = safeRelativeImage(line);
+            if (!relative)
+                return std::unexpected(relative.error());
+            if (!unique.insert(*relative).second)
+                return aether::fail(aether::ErrorCode::corruptData,
+                                    "Image-list entry is duplicated", *relative);
+            const auto absolute = images / *relative;
+            if (!std::filesystem::is_regular_file(absolute, filesystemError) || filesystemError)
+                return aether::fail(aether::ErrorCode::notFound,
+                                    "Image-list entry does not exist below the image root",
+                                    *relative);
+            paths.push_back(absolute);
+            if (paths.size() > maximumImages)
+                return aether::fail(aether::ErrorCode::resourceExhausted,
+                                    "Image list exceeds the supported limit");
+        }
+        if (!stream.eof())
+            return aether::fail(aether::ErrorCode::io, "Unable to read image list", imageList);
+    } else {
+        std::filesystem::recursive_directory_iterator iterator(
+            images, std::filesystem::directory_options::skip_permission_denied, filesystemError);
+        const std::filesystem::recursive_directory_iterator end;
+        while (!filesystemError && iterator != end) {
+            std::error_code entryError;
+            if (iterator->is_regular_file(entryError) && !entryError &&
+                supportedImage(iterator->path()))
+                paths.push_back(iterator->path());
+            iterator.increment(filesystemError);
+            if (paths.size() > maximumImages)
+                return aether::fail(aether::ErrorCode::resourceExhausted,
+                                    "Image directory exceeds the supported limit");
+        }
+        if (filesystemError)
+            return aether::fail(aether::ErrorCode::io, "Unable to enumerate reconstruction images",
+                                filesystemError.message());
+        std::ranges::sort(paths);
+    }
+    if (paths.size() < 3)
+        return aether::fail(aether::ErrorCode::invalidArgument,
+                            "Dataset must contain at least three selected images");
+    return paths;
 }
 
 void writeCoverageJson(std::ostream& stream,
@@ -456,20 +663,121 @@ writeCoverageReport(const std::filesystem::path& path,
     return {};
 }
 
+aether::Result<void> writeSparseSelectionReport(const std::filesystem::path& path,
+                                                const SparseSelectionEvidence& selection) {
+    const auto temporary = path.string() + ".tmp";
+    std::ofstream stream(temporary, std::ios::trunc);
+    stream << "{\n  \"schemaVersion\":1,\n  \"selectedModel\":";
+    if (selection.selectedIndex)
+        stream << '"' << escapeJson(selection.candidates[*selection.selectedIndex].id) << '"';
+    else
+        stream << "null";
+    stream << ",\n  \"reason\":\"" << escapeJson(selection.reason) << "\",\n  \"candidates\":[\n";
+    for (std::size_t index = 0; index < selection.candidates.size(); ++index) {
+        const auto& candidate = selection.candidates[index];
+        stream << "    {\"id\":\"" << escapeJson(candidate.id) << "\",\"binaryDirectory\":\""
+               << escapeJson(candidate.binaryDirectory.string()) << "\",\"textDirectory\":\""
+               << escapeJson(candidate.textDirectory.string()) << "\",\"coverage\":";
+        writeCoverageJson(stream, candidate.coverage);
+        stream << '}' << (index + 1 == selection.candidates.size() ? "\n" : ",\n");
+    }
+    stream << "  ]\n}\n";
+    stream.close();
+    if (!stream) {
+        std::filesystem::remove(temporary);
+        return aether::fail(aether::ErrorCode::io, "Unable to write sparse selection report", path);
+    }
+    std::error_code error;
+    std::filesystem::rename(temporary, path, error);
+    if (error) {
+        std::filesystem::remove(temporary);
+        return aether::fail(aether::ErrorCode::io, "Unable to finalize sparse selection report",
+                            error.message());
+    }
+    return {};
+}
+
+aether::Result<void> publishSelectedTextModel(const std::filesystem::path& source,
+                                              const std::filesystem::path& destination) {
+    const auto temporary = std::filesystem::path(destination.string() + ".tmp");
+    std::error_code error;
+    std::filesystem::remove_all(temporary, error);
+    error.clear();
+    std::filesystem::create_directories(temporary, error);
+    if (error)
+        return aether::fail(aether::ErrorCode::io,
+                            "Unable to create selected sparse model directory", error.message());
+    constexpr std::array<std::string_view, 3> files{"cameras.txt", "images.txt", "points3D.txt"};
+    for (const auto file : files) {
+        const auto sourceFile = source / file;
+        if (!std::filesystem::is_regular_file(sourceFile)) {
+            std::filesystem::remove_all(temporary);
+            return aether::fail(aether::ErrorCode::notFound,
+                                "Selected sparse text model is incomplete", sourceFile);
+        }
+        std::filesystem::copy_file(sourceFile, temporary / file,
+                                   std::filesystem::copy_options::overwrite_existing, error);
+        if (error) {
+            std::filesystem::remove_all(temporary);
+            return aether::fail(aether::ErrorCode::io, "Unable to copy selected sparse model",
+                                error.message());
+        }
+    }
+    std::filesystem::remove_all(destination, error);
+    if (error) {
+        std::filesystem::remove_all(temporary);
+        return aether::fail(aether::ErrorCode::io, "Unable to replace selected sparse model",
+                            error.message());
+    }
+    std::filesystem::rename(temporary, destination, error);
+    if (error) {
+        std::filesystem::remove_all(temporary);
+        return aether::fail(aether::ErrorCode::io, "Unable to publish selected sparse model",
+                            error.message());
+    }
+    return {};
+}
+
 aether::Result<void> writeManifest(const Options& options, const std::filesystem::path& images,
                                    const std::vector<InputImage>& inputImages,
                                    const std::vector<Stage>& stages, std::string_view status,
                                    const aether::reconstruction::SparseCoverageReport* coverage,
-                                   const CheckpointRecovery* recovery, std::string_view resumeKey) {
+                                   const CheckpointRecovery* recovery, std::string_view resumeKey,
+                                   const SparseSelectionEvidence* sparseSelection = nullptr,
+                                   std::string_view failedStage = {}) {
     const auto path = options.output / "job.json";
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::trunc);
-    stream << "{\n  \"schemaVersion\":3,\n  \"status\":\"" << status << "\",\n  \"dataset\":\""
+    stream << "{\n  \"schemaVersion\":4,\n  \"status\":\"" << status << "\",\n  \"dataset\":\""
            << escapeJson(options.dataset.string()) << "\",\n  \"images\":\""
            << escapeJson(images.string()) << "\",\n  \"imageCount\":" << inputImages.size()
            << ",\n  \"seed\":" << options.seed << ",\n  \"steps\":" << options.steps
            << ",\n  \"checkpointEvery\":" << std::min(options.checkpointEvery, options.steps)
-           << ",\n  \"resumeKey\":\"" << resumeKey << '"'
+           << ",\n  \"resumeKey\":\"" << resumeKey << '"' << ",\n  \"inputKind\":\""
+           << aether::reconstruction::toString(options.inputKind) << "\""
+           << ",\n  \"matcher\":{\"strategy\":\""
+           << aether::reconstruction::toString(options.matcher)
+           << "\",\"sequentialOverlap\":" << options.sequentialOverlap << '}'
+           << ",\n  \"cameraGrouping\":{\"mode\":\""
+           << aether::reconstruction::toString(options.cameraGrouping) << "\",\"manifest\":\""
+           << escapeJson(options.cameraGroups.string()) << "\",\"groups\":[";
+    if (options.cameraGroupManifest)
+        for (std::size_t index = 0; index < options.cameraGroupManifest->groups.size(); ++index) {
+            const auto& group = options.cameraGroupManifest->groups[index];
+            if (index > 0)
+                stream << ',';
+            stream << "{\"id\":\"" << escapeJson(group.id) << "\",\"relativeDirectory\":\""
+                   << escapeJson(group.relativeDirectory.generic_string()) << "\",\"device\":\""
+                   << escapeJson(group.device) << "\",\"lens\":\"" << escapeJson(group.lens)
+                   << "\",\"calibrationId\":\"" << escapeJson(group.calibrationId) << '"';
+            if (group.focalLengthMillimetres)
+                stream << ",\"focalLengthMillimetres\":" << *group.focalLengthMillimetres;
+            stream << '}';
+        }
+    stream << "]}"
+           << ",\n  \"preprocessingManifest\":\""
+           << escapeJson(options.preprocessingManifest.string()) << '"' << ",\n  \"imageList\":\""
+           << escapeJson(options.imageList.string()) << '"'
            << ",\n  \"dependencies\":{\n    \"colmap\":{\"version\":\"3.13.0\","
               "\"commit\":\"0b31f98133b470eae62811b557dc2bcff1e4f9a5\"},\n"
               "    \"brush\":{\"version\":\"0.3.0\","
@@ -497,6 +805,18 @@ aether::Result<void> writeManifest(const Options& options, const std::filesystem
         stream << ",\n  \"sparseCoverage\":";
         writeCoverageJson(stream, *coverage);
     }
+    if (sparseSelection) {
+        stream << ",\n  \"sparseSelection\":{\"selectedModel\":";
+        if (sparseSelection->selectedIndex)
+            stream << '"'
+                   << escapeJson(sparseSelection->candidates[*sparseSelection->selectedIndex].id)
+                   << '"';
+        else
+            stream << "null";
+        stream << ",\"reason\":\"" << escapeJson(sparseSelection->reason) << "\"}";
+    }
+    if (!failedStage.empty())
+        stream << ",\n  \"failedStage\":\"" << escapeJson(failedStage) << '"';
     if (recovery)
         stream << ",\n  \"checkpointRecovery\":{\"iteration\":" << recovery->iteration
                << ",\"source\":\"" << escapeJson(recovery->path.string())
@@ -556,6 +876,58 @@ aether::Result<void> runStage(const Stage& stage, const std::filesystem::path& l
     return {};
 }
 
+bool stageComplete(const Stage& stage, const std::filesystem::path& outputDirectory) {
+    const auto marker = outputDirectory / (stage.name + ".complete");
+    return std::filesystem::is_regular_file(marker) &&
+           std::filesystem::exists(stage.expectedOutput) &&
+           (stage.requiredCompanion.empty() || std::filesystem::exists(stage.requiredCompanion));
+}
+
+aether::Result<void> executeStage(const Stage& stage,
+                                  const std::filesystem::path& outputDirectory) {
+    const bool complete = stageComplete(stage, outputDirectory);
+    if (!complete) {
+        if (auto result = runStage(stage, outputDirectory / "logs" / (stage.name + ".log"));
+            !result)
+            return std::unexpected(result.error());
+    }
+    if (!std::filesystem::exists(stage.expectedOutput))
+        return aether::fail(aether::ErrorCode::notFound,
+                            "Stage exited successfully but expected output is missing",
+                            stage.expectedOutput);
+    if (!stage.requiredCompanion.empty() && !std::filesystem::exists(stage.requiredCompanion))
+        return aether::fail(aether::ErrorCode::notFound,
+                            "Stage exited successfully but required companion output is missing",
+                            stage.requiredCompanion);
+    if (!complete)
+        if (auto marker = writeMarker(outputDirectory / (stage.name + ".complete")); !marker)
+            return std::unexpected(marker.error());
+    return {};
+}
+
+aether::Result<std::vector<std::pair<std::uint32_t, std::filesystem::path>>>
+enumerateSparseModels(const std::filesystem::path& sparseDirectory) {
+    std::vector<std::pair<std::uint32_t, std::filesystem::path>> models;
+    std::error_code error;
+    for (const auto& entry : std::filesystem::directory_iterator(sparseDirectory, error)) {
+        if (!entry.is_directory())
+            continue;
+        const std::string name = entry.path().filename().string();
+        std::uint32_t identifier{};
+        const auto parsed = std::from_chars(name.data(), name.data() + name.size(), identifier);
+        if (!name.empty() && parsed.ec == std::errc{} && parsed.ptr == name.data() + name.size())
+            models.emplace_back(identifier, entry.path());
+    }
+    if (error)
+        return aether::fail(aether::ErrorCode::io, "Unable to enumerate sparse COLMAP models",
+                            error.message());
+    std::ranges::sort(models, {}, &decltype(models)::value_type::first);
+    if (models.empty())
+        return aether::fail(aether::ErrorCode::notFound, "COLMAP mapper produced no sparse model",
+                            sparseDirectory);
+    return models;
+}
+
 aether::Result<void> verifyTool(const std::string& executable, std::string_view expectedVersion,
                                 const std::filesystem::path& logPath) {
     std::vector<std::string> args = {executable};
@@ -587,21 +959,10 @@ int main(int argc, char** argv) {
     std::filesystem::path images = options->dataset / "images";
     if (!std::filesystem::is_directory(images, filesystemError))
         images = options->dataset;
-    std::vector<std::filesystem::path> imagePaths;
-    for (const auto& entry : std::filesystem::directory_iterator(images, filesystemError)) {
-        if (!entry.is_regular_file())
-            continue;
-        std::string extension = entry.path().extension().string();
-        std::ranges::transform(extension, extension.begin(), [](unsigned char value) {
-            return static_cast<char>(std::tolower(value));
-        });
-        if (extension == ".jpg" || extension == ".jpeg" || extension == ".png" ||
-            extension == ".heic" || extension == ".tif" || extension == ".tiff")
-            imagePaths.push_back(entry.path());
-    }
-    std::ranges::sort(imagePaths);
-    if (filesystemError || imagePaths.size() < 3)
-        return fail("Dataset must contain at least three supported images", options->json);
+    auto discovered = discoverImagePaths(images, options->imageList);
+    if (!discovered)
+        return fail(discovered.error().describe(), options->json);
+    const auto& imagePaths = *discovered;
     std::vector<InputImage> inputImages;
     inputImages.reserve(imagePaths.size());
     for (const auto& path : imagePaths) {
@@ -610,7 +971,24 @@ int main(int argc, char** argv) {
             return fail(input.error().describe(), options->json);
         inputImages.push_back(std::move(*input));
     }
+    if (!options->cameraGroups.empty()) {
+        auto loaded = aether::reconstruction::loadCameraGroupManifest(options->cameraGroups);
+        if (!loaded)
+            return fail(loaded.error().describe(), options->json);
+        std::vector<std::filesystem::path> relativeImages;
+        relativeImages.reserve(inputImages.size());
+        for (const auto& input : inputImages)
+            relativeImages.push_back(input.path);
+        if (auto validated = aether::reconstruction::validateCameraGroups(*loaded, relativeImages);
+            !validated)
+            return fail(validated.error().describe(), options->json);
+        options->cameraGroupManifest = std::move(*loaded);
+    }
     const std::size_t imageCount = inputImages.size();
+    std::vector<std::filesystem::path> selectedImageNames;
+    selectedImageNames.reserve(inputImages.size());
+    for (const auto& input : inputImages)
+        selectedImageNames.push_back(input.path);
     auto fingerprintResult = jobFingerprint(*options, inputImages);
     if (!fingerprintResult)
         return fail(fingerprintResult.error().describe(), options->json, 3);
@@ -618,7 +996,8 @@ int main(int argc, char** argv) {
 
     const auto database = options->output / "database.db";
     const auto sparse = options->output / "sparse";
-    const auto sparseText = sparse / "0-text";
+    const auto sparseModels = sparse / "models";
+    const auto selectedText = sparse / "selected-text";
     const auto dense = options->output / "dense";
     const auto exports = options->output / "exports";
     const auto proxyDirectory = options->output / "proxy";
@@ -631,38 +1010,41 @@ int main(int argc, char** argv) {
     if (!checkpointResult)
         return fail(checkpointResult.error().describe(), options->json, 3);
     std::optional<CheckpointRecovery> checkpointRecovery = std::move(*checkpointResult);
-    std::vector<std::string> proxyArguments{
-        options->proxy, (sparseText / "points3D.txt").string(),   "--output", proxyMesh.string(),
-        "--report",     (proxyDirectory / "proxy.json").string(), "--json"};
-    if (!options->proxyConfig.empty()) {
-        proxyArguments.emplace_back("--config");
-        proxyArguments.push_back(options->proxyConfig.string());
+    std::vector<std::string> featureExtractionArgs{options->colmap,
+                                                   "feature_extractor",
+                                                   "--database_path",
+                                                   database.string(),
+                                                   "--image_path",
+                                                   images.string(),
+                                                   "--FeatureExtraction.use_gpu",
+                                                   "0"};
+    switch (options->cameraGrouping) {
+    case aether::reconstruction::CameraGroupingMode::singleCamera:
+        featureExtractionArgs.insert(featureExtractionArgs.end(),
+                                     {"--ImageReader.single_camera", "1"});
+        break;
+    case aether::reconstruction::CameraGroupingMode::perFolder:
+        featureExtractionArgs.insert(featureExtractionArgs.end(),
+                                     {"--ImageReader.single_camera_per_folder", "1"});
+        break;
+    case aether::reconstruction::CameraGroupingMode::perImage:
+        featureExtractionArgs.insert(featureExtractionArgs.end(),
+                                     {"--ImageReader.single_camera_per_image", "1"});
+        break;
     }
-    std::vector<std::string> brushArguments{options->brush,
-                                            dense.string(),
-                                            "--seed",
-                                            seed,
-                                            "--total-steps",
-                                            steps,
-                                            "--export-every",
-                                            std::to_string(checkpointInterval),
-                                            "--export-path",
-                                            exports.string(),
-                                            "--export-name",
-                                            "checkpoint_{iter}.ply"};
-    if (checkpointRecovery) {
-        brushArguments.emplace_back("--start-iter");
-        brushArguments.push_back(std::to_string(checkpointRecovery->iteration));
-    }
-    std::vector<std::string> featureExtractionArgs{
-        options->colmap, "feature_extractor", "--database_path", database.string(),
-        "--image_path", images.string(), "--ImageReader.single_camera", "1",
-        "--FeatureExtraction.use_gpu", "0"};
-    
-    std::vector<std::string> mapperArgs{
-        options->colmap, "mapper", "--database_path", database.string(),
-        "--image_path", images.string(), "--output_path", sparse.string(),
-        "--Mapper.random_seed", seed, "--Mapper.ba_use_gpu", "0"};
+    if (!options->imageList.empty())
+        featureExtractionArgs.insert(featureExtractionArgs.end(),
+                                     {"--image_list_path", options->imageList.string()});
+
+    std::vector<std::string> mapperArgs{options->colmap,        "mapper",
+                                        "--database_path",      database.string(),
+                                        "--image_path",         images.string(),
+                                        "--output_path",        sparse.string(),
+                                        "--Mapper.random_seed", seed,
+                                        "--Mapper.ba_use_gpu",  "0"};
+    if (!options->imageList.empty())
+        mapperArgs.insert(mapperArgs.end(),
+                          {"--Mapper.image_list_path", options->imageList.string()});
 
     if (options->testProfile == "synthetic-512") {
         featureExtractionArgs.push_back("--ImageReader.camera_model");
@@ -682,29 +1064,37 @@ int main(int argc, char** argv) {
         mapperArgs.push_back("0.5");
     }
 
+    std::vector<std::string> matcherArguments{
+        options->colmap,
+        options->matcher == aether::reconstruction::MatcherStrategy::sequential
+            ? "sequential_matcher"
+            : "exhaustive_matcher",
+        "--database_path",
+        database.string(),
+        "--FeatureMatching.use_gpu",
+        "0",
+        "--TwoViewGeometry.random_seed",
+        seed};
+    if (options->matcher == aether::reconstruction::MatcherStrategy::sequential)
+        matcherArguments.insert(matcherArguments.end(),
+                                {"--SequentialMatching.overlap",
+                                 std::to_string(options->sequentialOverlap),
+                                 "--SequentialMatching.loop_detection", "0"});
+
     std::vector<Stage> stages{
         {"feature-extraction", std::move(featureExtractionArgs), database},
-        {"feature-matching",
-         {options->colmap, "exhaustive_matcher", "--database_path", database.string(),
-          "--FeatureMatching.use_gpu", "0", "--TwoViewGeometry.random_seed", seed},
-         database},
-        {"sparse-mapping", std::move(mapperArgs), sparse / "0"},
-        {"sparse-model-export",
-         {options->colmap, "model_converter", "--input_path", (sparse / "0").string(),
-          "--output_path", sparseText.string(), "--output_type", "TXT"},
-         sparseText / "images.txt"},
-        {"proxy-generation", std::move(proxyArguments), proxyMesh, proxyDirectory / "proxy.json"},
-        {"undistortion",
-         {options->colmap, "image_undistorter", "--image_path", images.string(), "--input_path",
-          (sparse / "0").string(), "--output_path", dense.string(), "--output_type", "COLMAP"},
-         dense / "sparse"},
-        {"brush-training", std::move(brushArguments), finalCheckpoint},
+        {"feature-matching", std::move(matcherArguments), database},
+        {"sparse-mapping", std::move(mapperArgs), sparse},
     };
 
     if (options->dryRun) {
         if (options->json)
             std::cout << "{\"ok\":true,\"dryRun\":true,\"imageCount\":" << imageCount
-                      << ",\"stages\":[";
+                      << ",\"inputKind\":\"" << aether::reconstruction::toString(options->inputKind)
+                      << "\",\"matcher\":\"" << aether::reconstruction::toString(options->matcher)
+                      << "\",\"cameraGrouping\":\""
+                      << aether::reconstruction::toString(options->cameraGrouping)
+                      << "\",\"stages\":[";
         for (std::size_t index = 0; index < stages.size(); ++index) {
             if (options->json) {
                 if (index > 0)
@@ -716,6 +1106,15 @@ int main(int argc, char** argv) {
                           << '\n';
             }
         }
+        if (options->json) {
+            if (!stages.empty())
+                std::cout << ',';
+            std::cout << "{\"name\":\"sparse-model-selection\",\"command\":\"internal: "
+                         "enumerate, export, validate, and rank every COLMAP model\"}";
+        } else {
+            std::cout << "sparse-model-selection: internal: enumerate, export, validate, and rank "
+                         "every COLMAP model\n";
+        }
         if (options->json)
             std::cout << "]}\n";
         return 0;
@@ -723,7 +1122,7 @@ int main(int argc, char** argv) {
 
     std::filesystem::create_directories(options->output / "logs", filesystemError);
     std::filesystem::create_directories(sparse, filesystemError);
-    std::filesystem::create_directories(sparseText, filesystemError);
+    std::filesystem::create_directories(sparseModels, filesystemError);
     std::filesystem::create_directories(dense, filesystemError);
     std::filesystem::create_directories(exports, filesystemError);
     std::filesystem::create_directories(proxyDirectory, filesystemError);
@@ -736,83 +1135,167 @@ int main(int argc, char** argv) {
                           checkpointRecovery ? &*checkpointRecovery : nullptr, resumeKey);
         !manifest)
         return fail(manifest.error().describe(), options->json, 3);
+    const auto failJob = [&](std::string message, int code, std::string_view stage,
+                             const aether::reconstruction::SparseCoverageReport* coverage = nullptr,
+                             const SparseSelectionEvidence* selection = nullptr,
+                             std::string_view status = "failed") {
+        if (auto recorded = writeManifest(*options, images, inputImages, stages, status, coverage,
+                                          checkpointRecovery ? &*checkpointRecovery : nullptr,
+                                          resumeKey, selection, stage);
+            !recorded)
+            message +=
+                " · additionally failed to persist job status: " + recorded.error().describe();
+        return fail(message, options->json, code);
+    };
     if (auto verified =
             verifyTool(options->colmap, "3.13.0", options->output / "logs" / "colmap-version.log");
-        !verified)
-        return fail(verified.error().describe(), options->json, 3);
+        !verified) {
+        return failJob(verified.error().describe(), 3, "colmap-version-check");
+    }
     if (auto verified =
             verifyTool(options->brush, "0.3.0", options->output / "logs" / "brush-version.log");
-        !verified)
-        return fail(verified.error().describe(), options->json, 3);
+        !verified) {
+        return failJob(verified.error().describe(), 3, "brush-version-check");
+    }
     if (auto verified = verifyTool(options->proxy, "aether-proxy 0.1.0",
                                    options->output / "logs" / "proxy-version.log");
-        !verified)
-        return fail(verified.error().describe(), options->json, 3);
+        !verified) {
+        return failJob(verified.error().describe(), 3, "proxy-version-check");
+    }
     std::signal(SIGINT, interruptChild);
     std::signal(SIGTERM, interruptChild);
-    std::optional<aether::reconstruction::SparseCoverageReport> sparseCoverage;
-    for (const Stage& stage : stages) {
-        const auto marker = options->output / (stage.name + ".complete");
-        const bool complete =
-            std::filesystem::is_regular_file(marker) &&
-            std::filesystem::exists(stage.expectedOutput) &&
-            (stage.requiredCompanion.empty() || std::filesystem::exists(stage.requiredCompanion));
-        if (!complete) {
-            if (stage.name == "brush-training" && checkpointRecovery) {
-                if (auto restored = atomicCopy(checkpointRecovery->path, dense / "init.ply");
-                    !restored)
-                    return fail(restored.error().describe(), options->json, 4);
-            }
-            if (auto result = runStage(stage, options->output / "logs" / (stage.name + ".log"));
-                !result)
-                return fail(result.error().describe(), options->json, 4);
+    for (const auto& stage : stages) {
+        if (auto result = executeStage(stage, options->output); !result) {
+            return failJob(result.error().describe(), 4, stage.name);
         }
-        if (!std::filesystem::exists(stage.expectedOutput))
-            return fail("Stage exited successfully but expected output is missing: " +
-                            stage.expectedOutput.string(),
-                        options->json, 4);
-        if (!stage.requiredCompanion.empty() && !std::filesystem::exists(stage.requiredCompanion))
-            return fail("Stage exited successfully but required companion output is missing: " +
-                            stage.requiredCompanion.string(),
-                        options->json, 4);
-        if (stage.name == "sparse-model-export") {
-            auto validated =
-                aether::reconstruction::validateSparseTextModel(sparseText, imageCount);
-            if (!validated)
-                return fail(validated.error().describe(), options->json, 4);
-            sparseCoverage = std::move(*validated);
-            const auto coveragePath = options->output / "pose-coverage.json";
-            if (auto report = writeCoverageReport(coveragePath, *sparseCoverage); !report)
-                return fail(report.error().describe(), options->json, 4);
-            const auto coverageMarker = options->output / "pose-coverage-validation.complete";
-            if (!sparseCoverage->passed()) {
-                std::string message = "Sparse pose/overlap coverage failed";
-                for (const auto& issue : sparseCoverage->issues)
-                    message += " · " + issue;
-                (void)writeManifest(*options, images, inputImages, stages, "coverage-failed",
-                                    &*sparseCoverage,
-                                    checkpointRecovery ? &*checkpointRecovery : nullptr, resumeKey);
-                std::filesystem::remove(marker);
-                std::filesystem::remove(coverageMarker);
-                return fail(message, options->json, 5);
-            }
-            if (auto markerResult = writeMarker(coverageMarker); !markerResult)
-                return fail(markerResult.error().describe(), options->json, 4);
+    }
+
+    auto models = enumerateSparseModels(sparse);
+    if (!models) {
+        std::filesystem::remove(options->output / "sparse-mapping.complete");
+        return failJob(models.error().describe(), 4, "sparse-model-enumeration");
+    }
+    SparseSelectionEvidence sparseSelection;
+    for (const auto& [identifier, binaryDirectory] : *models) {
+        const std::string id = std::to_string(identifier);
+        const auto textDirectory = sparseModels / (id + "-text");
+        std::filesystem::create_directories(textDirectory, filesystemError);
+        if (filesystemError)
+            return failJob("Unable to create sparse model export directory", 4,
+                           "sparse-model-export-" + id, nullptr, &sparseSelection);
+        Stage exportStage{"sparse-model-export-" + id,
+                          {options->colmap, "model_converter", "--input_path",
+                           binaryDirectory.string(), "--output_path", textDirectory.string(),
+                           "--output_type", "TXT"},
+                          textDirectory / "images.txt",
+                          textDirectory / "points3D.txt"};
+        stages.push_back(exportStage);
+        if (auto result = executeStage(exportStage, options->output); !result) {
+            aether::reconstruction::SparseCoverageReport coverage;
+            coverage.inputImages = imageCount;
+            coverage.issues.push_back("Model export failed: " + result.error().describe());
+            sparseSelection.candidates.push_back(
+                {id, binaryDirectory, textDirectory, std::move(coverage)});
+            continue;
         }
-        if (!complete)
-            if (auto markerResult = writeMarker(marker); !markerResult)
-                return fail(markerResult.error().describe(), options->json, 4);
+        auto coverage =
+            aether::reconstruction::validateSparseTextModel(textDirectory, selectedImageNames);
+        if (!coverage) {
+            aether::reconstruction::SparseCoverageReport invalidCoverage;
+            invalidCoverage.inputImages = imageCount;
+            invalidCoverage.issues.push_back("Model validation failed: " +
+                                             coverage.error().describe());
+            sparseSelection.candidates.push_back(
+                {id, binaryDirectory, textDirectory, std::move(invalidCoverage)});
+            continue;
+        }
+        sparseSelection.candidates.push_back(
+            {id, binaryDirectory, textDirectory, std::move(*coverage)});
+    }
+    auto selected = aether::reconstruction::selectBestSparseModel(sparseSelection.candidates);
+    if (!selected) {
+        sparseSelection.reason = selected.error().describe();
+        std::string message = selected.error().describe();
+        if (auto report = writeSparseSelectionReport(options->output / "sparse-selection.json",
+                                                     sparseSelection);
+            !report)
+            message +=
+                " · additionally failed to persist sparse selection: " + report.error().describe();
+        return failJob(std::move(message), 5, "sparse-model-selection", nullptr, &sparseSelection,
+                       "coverage-failed");
+    }
+    sparseSelection.selectedIndex = selected->candidateIndex;
+    sparseSelection.reason = selected->reason;
+    const auto& selectedCandidate = sparseSelection.candidates[*sparseSelection.selectedIndex];
+    const auto& sparseCoverage = selectedCandidate.coverage;
+    if (auto report =
+            writeSparseSelectionReport(options->output / "sparse-selection.json", sparseSelection);
+        !report)
+        return failJob(report.error().describe(), 4, "sparse-selection-report", &sparseCoverage,
+                       &sparseSelection);
+    if (auto published = publishSelectedTextModel(selectedCandidate.textDirectory, selectedText);
+        !published)
+        return failJob(published.error().describe(), 4, "selected-model-publication",
+                       &sparseCoverage, &sparseSelection);
+    if (auto report = writeCoverageReport(options->output / "pose-coverage.json", sparseCoverage);
+        !report)
+        return failJob(report.error().describe(), 4, "pose-coverage-report", &sparseCoverage,
+                       &sparseSelection);
+    if (auto marker = writeMarker(options->output / "pose-coverage-validation.complete"); !marker)
+        return failJob(marker.error().describe(), 4, "pose-coverage-marker", &sparseCoverage,
+                       &sparseSelection);
+
+    std::vector<std::string> proxyArguments{
+        options->proxy, (selectedText / "points3D.txt").string(), "--output", proxyMesh.string(),
+        "--report",     (proxyDirectory / "proxy.json").string(), "--json"};
+    if (!options->proxyConfig.empty())
+        proxyArguments.insert(proxyArguments.end(), {"--config", options->proxyConfig.string()});
+    std::vector<std::string> brushArguments{options->brush,   dense.string(),
+                                            "--seed",         seed,
+                                            "--total-steps",  steps,
+                                            "--export-every", std::to_string(checkpointInterval),
+                                            "--export-path",  exports.string(),
+                                            "--export-name",  "checkpoint_{iter}.ply"};
+    if (checkpointRecovery)
+        brushArguments.insert(brushArguments.end(),
+                              {"--start-iter", std::to_string(checkpointRecovery->iteration)});
+    std::vector<Stage> postStages{
+        {"proxy-generation", std::move(proxyArguments), proxyMesh, proxyDirectory / "proxy.json"},
+        {"undistortion",
+         {options->colmap, "image_undistorter", "--image_path", images.string(), "--input_path",
+          selectedCandidate.binaryDirectory.string(), "--output_path", dense.string(),
+          "--output_type", "COLMAP"},
+         dense / "sparse"},
+        {"brush-training", std::move(brushArguments), finalCheckpoint},
+    };
+    stages.insert(stages.end(), postStages.begin(), postStages.end());
+    if (auto manifest = writeManifest(
+            *options, images, inputImages, stages, "running", &sparseCoverage,
+            checkpointRecovery ? &*checkpointRecovery : nullptr, resumeKey, &sparseSelection);
+        !manifest)
+        return fail(manifest.error().describe(), options->json, 4);
+    for (const auto& stage : postStages) {
+        if (stage.name == "brush-training" && checkpointRecovery &&
+            !stageComplete(stage, options->output)) {
+            if (auto restored = atomicCopy(checkpointRecovery->path, dense / "init.ply"); !restored)
+                return failJob(restored.error().describe(), 4, "checkpoint-recovery",
+                               &sparseCoverage, &sparseSelection);
+        }
+        if (auto result = executeStage(stage, options->output); !result) {
+            return failJob(result.error().describe(), 4, stage.name, &sparseCoverage,
+                           &sparseSelection);
+        }
     }
     if (auto validated = aether::gaussian::PlyLoader::load(finalCheckpoint); !validated)
-        return fail("Brush final checkpoint failed strict 3DGS validation: " +
-                        validated.error().describe(),
-                    options->json, 4);
+        return failJob("Brush final checkpoint failed strict 3DGS validation: " +
+                           validated.error().describe(),
+                       4, "final-checkpoint-validation", &sparseCoverage, &sparseSelection);
     if (auto copied = atomicCopy(finalCheckpoint, exports / "base-gaussians.ply"); !copied)
-        return fail(copied.error().describe(), options->json, 4);
-    if (auto manifest =
-            writeManifest(*options, images, inputImages, stages, "complete",
-                          sparseCoverage ? &*sparseCoverage : nullptr,
-                          checkpointRecovery ? &*checkpointRecovery : nullptr, resumeKey);
+        return failJob(copied.error().describe(), 4, "base-gaussian-publication", &sparseCoverage,
+                       &sparseSelection);
+    if (auto manifest = writeManifest(
+            *options, images, inputImages, stages, "complete", &sparseCoverage,
+            checkpointRecovery ? &*checkpointRecovery : nullptr, resumeKey, &sparseSelection);
         !manifest)
         return fail(manifest.error().describe(), options->json, 4);
     if (options->json)
@@ -820,8 +1303,12 @@ int main(int argc, char** argv) {
                   << escapeJson((exports / "base-gaussians.ply").string())
                   << "\",\"images\":" << imageCount << ",\"proxy\":\""
                   << escapeJson(proxyMesh.string()) << "\""
-                  << ",\"registeredImages\":" << sparseCoverage->registeredImages
-                  << ",\"trackedPoints\":" << sparseCoverage->trackedPoints
+                  << ",\"selectedModel\":\"" << escapeJson(selectedCandidate.id) << "\""
+                  << ",\"matcher\":\"" << aether::reconstruction::toString(options->matcher) << "\""
+                  << ",\"cameraGrouping\":\""
+                  << aether::reconstruction::toString(options->cameraGrouping) << "\""
+                  << ",\"registeredImages\":" << sparseCoverage.registeredImages
+                  << ",\"trackedPoints\":" << sparseCoverage.trackedPoints
                   << ",\"seed\":" << options->seed << "}\n";
     else
         std::cout << "Reconstruction complete: " << exports / "base-gaussians.ply" << '\n';

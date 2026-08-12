@@ -1,4 +1,5 @@
 #include <aether/capture/CaptureValidator.hpp>
+#include <aether/capture/KeyframeSelector.hpp>
 #include <aether/capture/RecordedSequenceSource.hpp>
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -7,10 +8,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <cstring>
 #include <vector>
 
 namespace {
@@ -23,15 +24,17 @@ bool writePng(const std::filesystem::path& path, std::uint8_t base, bool checker
             pixels[y * width + x] = checkerboard && ((x / 4 + y / 4) % 2) ? 255 : base;
     auto space = CGColorSpaceCreateDeviceGray();
     auto provider = CGDataProviderCreateWithData(nullptr, pixels.data(), pixels.size(), nullptr);
-    auto image = CGImageCreate(width, height, 8, 8, width, space, kCGImageAlphaNone,
-                               provider, nullptr, false, kCGRenderingIntentDefault);
+    auto image = CGImageCreate(width, height, 8, 8, width, space, kCGImageAlphaNone, provider,
+                               nullptr, false, kCGRenderingIntentDefault);
     auto url = CFURLCreateFromFileSystemRepresentation(
         nullptr, reinterpret_cast<const UInt8*>(path.c_str()),
         static_cast<CFIndex>(path.string().size()), false);
     auto destination = CGImageDestinationCreateWithURL(url, CFSTR("public.png"), 1, nullptr);
-    if (destination) CGImageDestinationAddImage(destination, image, nullptr);
+    if (destination)
+        CGImageDestinationAddImage(destination, image, nullptr);
     const bool written = destination && CGImageDestinationFinalize(destination);
-    if (destination) CFRelease(destination);
+    if (destination)
+        CFRelease(destination);
     CFRelease(url);
     CGImageRelease(image);
     CGDataProviderRelease(provider);
@@ -40,7 +43,8 @@ bool writePng(const std::filesystem::path& path, std::uint8_t base, bool checker
 }
 
 bool require(bool condition, const char* message) {
-    if (!condition) std::cerr << "FAIL: " << message << '\n';
+    if (!condition)
+        std::cerr << "FAIL: " << message << '\n';
     return condition;
 }
 } // namespace
@@ -50,7 +54,8 @@ int main() {
     std::filesystem::remove_all(root);
     std::filesystem::create_directories(root);
     if (!writePng(root / "01.png", 32, true) || !writePng(root / "02.png", 64, true) ||
-        !writePng(root / "03.png", 120, false)) return 1;
+        !writePng(root / "03.png", 120, false))
+        return 1;
 
     const auto report = aether::capture::validateCapture(root);
     bool okay = true;
@@ -59,19 +64,59 @@ int main() {
     okay &= require(report.sourceBytes > 0, "source bytes should be measured");
     okay &= require(report.medianSharpness > 0, "checkerboard sharpness should be non-zero");
     okay &= require(report.exposureSpreadStops > 0, "luminance spread should be measured");
+    okay &= require(std::ranges::any_of(report.images.front().appearanceFingerprint,
+                                        [](std::uint8_t value) { return value != 0; }),
+                    "capture validation emits a bounded appearance fingerprint");
+
+    aether::capture::CaptureReport keyframeCapture;
+    keyframeCapture.medianSharpness = 100.0;
+    constexpr std::array<std::size_t, 5> variants{0, 0, 1, 1, 2};
+    for (std::size_t index = 0; index < variants.size(); ++index) {
+        aether::capture::ImageMeasurement image;
+        image.path = root / ("frame-" + std::to_string(index) + ".png");
+        image.meanLuminance = 0.5;
+        image.luminanceDeviation = 0.2;
+        image.sharpness = index == 3 ? 1.0 : 100.0;
+        for (std::size_t y = 0; y < aether::capture::ImageMeasurement::fingerprintHeight; ++y)
+            for (std::size_t x = 0; x < aether::capture::ImageMeasurement::fingerprintWidth; ++x) {
+                const std::size_t fingerprintIndex =
+                    y * aether::capture::ImageMeasurement::fingerprintWidth + x;
+                if (variants[index] == 0)
+                    image.appearanceFingerprint[fingerprintIndex] =
+                        static_cast<std::uint8_t>(x * 16);
+                else if (variants[index] == 1)
+                    image.appearanceFingerprint[fingerprintIndex] =
+                        static_cast<std::uint8_t>(((x + 4) % 16) * 16);
+                else
+                    image.appearanceFingerprint[fingerprintIndex] =
+                        static_cast<std::uint8_t>(y * 16);
+            }
+        keyframeCapture.images.push_back(std::move(image));
+    }
+    aether::capture::KeyframeSelectionOptions keyframeOptions;
+    keyframeOptions.minimumFrameGap = 1;
+    keyframeOptions.maximumAppearanceDistance = 1.0;
+    const auto keyframes = aether::capture::selectKeyframes(keyframeCapture, keyframeOptions);
+    okay &= require(keyframes.valid() && keyframes.selectedImages.size() == 3,
+                    "keyframe selection retains useful appearance changes");
+    okay &= require(keyframes.decisions[1].reason == "near-duplicate" &&
+                        keyframes.decisions[3].reason == "relative-blur",
+                    "keyframe selection reports duplicate and blur rejection reasons");
 
     std::ofstream(root / "broken.jpg") << "not an image";
     const auto broken = aether::capture::validateCapture(root);
-    okay &= require(!broken.valid(), "a supported-extension decode failure must invalidate capture");
-    okay &= require(std::ranges::any_of(broken.issues, [](const auto& issue) {
-        return issue.code == "image-decode-failed";
-    }), "decode failure should have a structured issue code");
+    okay &=
+        require(!broken.valid(), "a supported-extension decode failure must invalidate capture");
+    okay &= require(
+        std::ranges::any_of(broken.issues,
+                            [](const auto& issue) { return issue.code == "image-decode-failed"; }),
+        "decode failure should have a structured issue code");
 
     const auto sequence = root / "sequence";
     std::filesystem::create_directories(sequence);
     {
-        constexpr std::array<std::uint8_t, 12> color{
-            255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255};
+        constexpr std::array<std::uint8_t, 12> color{255, 0, 0,   0,   255, 0,
+                                                     0,   0, 255, 255, 255, 255};
         std::ofstream colorFile(sequence / "color.raw", std::ios::binary);
         colorFile.write(reinterpret_cast<const char*>(color.data()),
                         static_cast<std::streamsize>(color.size()));
@@ -96,7 +141,7 @@ int main() {
     }
     auto recorded = aether::capture::RecordedSequenceSource::open(sequence);
     okay &= require(recorded.has_value() && (*recorded)->frameCount() == 1,
-                     "Versioned recorded RGB-D sequence opens deterministically");
+                    "Versioned recorded RGB-D sequence opens deterministically");
     if (recorded) {
         std::size_t delivered = 0;
         (*recorded)->setPacketCallback([&](aether::capture::CapturePacket packet) {
@@ -108,10 +153,10 @@ int main() {
         okay &= require((*recorded)->start().has_value(), "Recorded source starts explicitly");
         auto stepped = (*recorded)->step();
         okay &= require(stepped.has_value() && *stepped && delivered == 1,
-                         "Recorded source emits exactly one packet per step");
+                        "Recorded source emits exactly one packet per step");
         stepped = (*recorded)->step();
         okay &= require(stepped.has_value() && !*stepped,
-                         "Recorded source reports deterministic end of sequence");
+                        "Recorded source reports deterministic end of sequence");
         okay &= require((*recorded)->stop().has_value(), "Recorded source stops cleanly");
     }
 
@@ -122,7 +167,7 @@ int main() {
         (*injected)->setErrorCallback([&](const aether::Error&) { reported = true; });
         (void)(*injected)->start();
         okay &= require(!(*injected)->step().has_value() && reported,
-                         "Recorded source fault injection propagates a structured failure");
+                        "Recorded source fault injection propagates a structured failure");
     }
 
     const auto lidarSequence = root / "lidar-sequence";
@@ -195,14 +240,13 @@ int main() {
     }
     auto lidar = aether::capture::RecordedSequenceSource::open(lidarSequence);
     okay &= require(lidar.has_value() && (*lidar)->frameCount() == 1,
-                     "MavebCapture schema v2 opens as a recorded LiDAR source");
+                    "MavebCapture schema v2 opens as a recorded LiDAR source");
     if (lidar) {
         (*lidar)->setPacketCallback([&](aether::capture::CapturePacket packet) {
             okay &= require(packet.sourceKind == aether::capture::CaptureSourceKind::lidar &&
                                 packet.colorPlanes.size() == 2 && packet.hasMetricDepth(),
                             "LiDAR source preserves YUV color and metric depth planes");
-            okay &= require(packet.calibration.width == 2 &&
-                                packet.calibration.fx == 2.0 &&
+            okay &= require(packet.calibration.width == 2 && packet.calibration.fx == 2.0 &&
                                 packet.cameraToWorld.has_value() &&
                                 packet.cameraToWorld->translation ==
                                     std::array<double, 3>{1.0, 2.0, 3.0},
@@ -211,16 +255,15 @@ int main() {
                             "ARKit camera axes convert to the engine camera convention");
             okay &= require(packet.depthConfidence.has_value(),
                             "LiDAR source preserves its confidence plane");
-            const auto* confidenceBytes = packet.depthConfidence
-                                              ? packet.depthConfidence->buffer.data : nullptr;
+            const auto* confidenceBytes =
+                packet.depthConfidence ? packet.depthConfidence->buffer.data : nullptr;
             okay &= require(confidenceBytes != nullptr &&
                                 std::to_integer<std::uint8_t>(confidenceBytes[0]) == 0 &&
                                 std::to_integer<std::uint8_t>(confidenceBytes[1]) == 128 &&
                                 std::to_integer<std::uint8_t>(confidenceBytes[2]) == 255,
                             "ARKit confidence levels normalize to fusion weights");
         });
-        okay &= require((*lidar)->start().has_value() &&
-                            (*lidar)->step().value_or(false) &&
+        okay &= require((*lidar)->start().has_value() && (*lidar)->step().value_or(false) &&
                             (*lidar)->stop().has_value(),
                         "LiDAR capture replays after checksum verification");
     }
@@ -254,7 +297,7 @@ int main() {
 })";
     }
     okay &= require(!aether::capture::RecordedSequenceSource::open(sequence).has_value(),
-                     "Recorded capture rejects manifest path traversal");
+                    "Recorded capture rejects manifest path traversal");
     std::filesystem::remove_all(root);
     return okay ? 0 : 1;
 }

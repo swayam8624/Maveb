@@ -3,7 +3,9 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "mavebbench.py"
 SPEC = importlib.util.spec_from_file_location("mavebbench", MODULE_PATH)
@@ -93,6 +95,40 @@ class MavebBenchTests(unittest.TestCase):
             self.assertTrue(resolved["ready"])
             self.assertTrue(resolved["referenceReady"])
             self.assertEqual(Path(resolved["referenceGeometry"]), (root / "reference.ply").resolve())
+
+    def test_video_reconstruction_passes_selected_input_contract(self):
+        tools = {
+            "aether-reconstruct": "/tools/aether-reconstruct",
+            "colmap": "/tools/colmap",
+            "brush": "/tools/brush",
+            "aether-proxy": "/tools/aether-proxy",
+        }
+        arguments = types.SimpleNamespace(
+            steps=100,
+            checkpoint_every=50,
+            dry_run=True,
+        )
+        with mock.patch.object(bench, "command_step", return_value=("pass", {})) as command:
+            status, _ = bench.reconstruct(
+                Path("/capture/frames"),
+                Path("/capture/job"),
+                tools,
+                arguments,
+                input_kind="video",
+                image_list=Path("/capture/keyframes/selected-images.txt"),
+                preprocessing_manifest=Path("/capture/keyframes/keyframes.json"),
+            )
+        self.assertEqual(status, "pass")
+        argv = command.call_args.args[0]
+        self.assertEqual(argv[argv.index("--input-kind") + 1], "video")
+        self.assertEqual(
+            argv[argv.index("--image-list") + 1],
+            "/capture/keyframes/selected-images.txt",
+        )
+        self.assertEqual(
+            argv[argv.index("--preprocessing-manifest") + 1],
+            "/capture/keyframes/keyframes.json",
+        )
 
 
 if __name__ == "__main__":

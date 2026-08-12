@@ -28,8 +28,8 @@ The bootstrap keeps Brush, COLMAP, `aether-proxy`, Open3D and their pinned ident
 # RGB baseline: validation -> COLMAP -> coverage gate -> proxy -> Brush -> ETH3D GT metrics.
 ./tools/run-mavebbench.zsh run eth3d-pipes --steps 2000 --checkpoint-every 1000
 
-# Video path: ffprobe -> deterministic extraction -> validation -> same reconstruction pipeline.
-./tools/run-mavebbench.zsh run uco3d-object --video-fps 2 --steps 2000
+# Video path: candidate decode -> validation -> keyframe admission -> sequential COLMAP.
+./tools/run-mavebbench.zsh run uco3d-object --video-fps 12 --steps 2000
 
 # Apple RGB-D/LiDAR: conversion -> automatic bounds -> real TSDF -> PLY -> metric report.
 ./tools/run-mavebbench.zsh run arkitscenes-47333462 \
@@ -47,6 +47,11 @@ The bootstrap keeps Brush, COLMAP, `aether-proxy`, Open3D and their pinned ident
 
 Generated frames, converted captures, jobs, aligned point clouds, logs and reports live under
 `benchmarks/results/` and are ignored by Git.
+
+`--video-fps` controls deterministic candidate decoding, not the final reconstruction frame rate.
+`aether-keyframes` records quality and appearance-overlap decisions in `keyframes.json`; only the
+ordered `selected-images.txt` set reaches feature extraction and mapping. Video reconstruction uses
+the sequential matcher rather than exhaustive all-pairs matching.
 
 ## Geometry evaluation
 

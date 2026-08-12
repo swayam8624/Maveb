@@ -21,12 +21,19 @@ hash-locked; nothing is installed into the user's system Python.
 `MAVEB_PYTHON` override. Benchmark geometry never accidentally depends on a global NumPy/Open3D
 installation.
 
-`aether-reconstruct` runs seven external resumable stages: feature extraction, exhaustive matching,
-seeded sparse mapping, text-model export, proxy generation, undistortion, and Brush training. After
-export, an AETHER-owned gate parses the COLMAP text model and requires enough registered
-images, multi-view tracks, overlap-graph connectivity, camera baseline, and angular diversity.
-It writes `pose-coverage.json` atomically; a failed gate records `coverage-failed` in `job.json` and
-does not launch proxy generation or Brush. A passing model feeds the pinned `aether-proxy` process;
+`aether-reconstruct` runs resumable feature extraction, configured matching, seeded sparse mapping,
+per-model text export, model selection, proxy generation, undistortion, and Brush training. It never
+assumes that COLMAP model `0` is usable. Every numeric sparse model is exported and parsed
+independently. The AETHER-owned gate requires enough registered images, multi-view tracks,
+overlap-graph connectivity, camera baseline, and angular diversity; structurally broken models
+remain visible as rejected candidates instead of hiding a valid sibling model. Registered image
+names must also belong to the exact selected input list, preventing a stale model with plausible
+counts from being resumed against different frames.
+
+`sparse-selection.json` records every candidate and the deterministic ranking reason. The winning
+model is copied to `sparse/selected-text` and its metrics are written to `pose-coverage.json`. If no
+model passes, `job.json` records `coverage-failed` and proxy generation and Brush never launch. The
+selected model feeds the pinned `aether-proxy` process;
 its mesh and report land under `<job>/proxy`. Every subprocess receives an argument vector directly—never a shell
 command—while stdout/stderr go to separate stage logs. Completion markers are written atomically
 only after the process exits successfully and its expected output exists. SIGINT and SIGTERM are
@@ -47,10 +54,12 @@ Completed milestones remain in `exports/`. On resume, AETHER scans newest-first,
 candidate through its bounded 3DGS PLY importer, skips torn/corrupt newer files, atomically restores
 the latest valid snapshot as `dense/init.ply`, and passes Brush the matching `--start-iter`. The final
 validated milestone is atomically copied to the stable `base-gaussians.ply` interface. Brush 0.3.0
-does not serialize optimizer moments, so the schema-v3 manifest explicitly records
+does not serialize optimizer moments, so the schema-v4 manifest explicitly records
 `optimizerStateRestored: false`; this is geometry-state recovery, not bit-exact optimizer recovery.
 Before trusting any marker or checkpoint, AETHER compares `resume-key.txt` against a fingerprint of
-the sorted input paths/sizes/hashes, seed, training/checkpoint budgets, and proxy configuration.
+the ordered selected input paths/sizes/hashes, input kind, matcher and overlap, camera grouping,
+image-list contents, preprocessing manifest, seed, training/checkpoint budgets, and proxy
+configuration.
 Changed inputs or settings require a new job directory; legacy jobs without a fingerprint are not
 silently adopted.
 
@@ -59,11 +68,48 @@ orders them numerically. The Reconstruction workspace can render any two milesto
 independent Metal viewports driven by one shared camera, so geometry/appearance progress is compared
 from the same view rather than from unrelated screenshots.
 
-COLMAP 3.13.0 is selected because it provides a deterministic `random_seed` option. AETHER's job
-manifest preserves the seed, full argument vectors, pinned identities, sorted input sizes/SHA-256
-hashes, expected outputs, sparse-coverage evidence, stage logs, and resume markers. It verifies all
+COLMAP 3.13.0 is selected because it provides a deterministic `random_seed` option. AETHER's
+schema-v4 job manifest preserves the seed, input/matcher/camera contracts, full argument vectors,
+pinned identities, ordered input sizes/SHA-256 hashes, expected outputs, sparse-selection and
+coverage evidence, stage logs, and resume markers. It verifies all
 external-tool versions before starting. `--dry-run --json` validates inputs and emits every external
 command without launching a tool.
+
+## Video keyframes and camera identity
+
+Video is decoded to deterministic candidate frames first. `aether-keyframes` then uses bounded
+ImageIO thumbnails to reject relative blur, extreme exposure, low contrast, near duplicates, and
+appearance discontinuities. Its 16×16 normalized-correlation fingerprint is an appearance-overlap
+proxy; it is not presented as metric parallax or optical flow. The tool atomically publishes:
+
+```text
+keyframes/
+  selected-images.txt
+  keyframes.json
+```
+
+The JSON report retains every frame decision and measurement. The list contains ordered paths
+relative to the image root and is passed directly to COLMAP. A typical local run is:
+
+```bash
+aether-keyframes frames --output keyframes --json
+aether-reconstruct frames --output reconstruction \
+  --input-kind video \
+  --image-list keyframes/selected-images.txt \
+  --preprocessing-manifest keyframes/keyframes.json \
+  --json
+```
+
+`--input-kind video` selects COLMAP's sequential matcher with a local overlap of ten by default.
+Unordered photographs continue to use exhaustive matching. Both can be overridden explicitly, and
+the resolved choice is part of the resume identity.
+
+Single-camera video and still sets share one COLMAP camera by default. Multi-camera datasets must
+place each camera group in its own direct child directory and provide a versioned camera-group
+manifest; Maveb then uses `single_camera_per_folder`. Device, lens, focal length, and calibration
+identity are recorded in `job.json`. See [the camera-group contract](formats/CAMERA_GROUPS.md).
+This prevents silent intrinsic merging; targeted Sony+iPad cross-group matching and metric Sim(3)
+alignment remain later gates and are not claimed by this adapter.
 
 ## Recorded metric RGB-D oracle
 
