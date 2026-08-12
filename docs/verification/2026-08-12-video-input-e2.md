@@ -61,10 +61,30 @@ Result: passed. Exact CI formatting remains LLVM 18 on GitHub; the local install
 LLVM 22.1.8.
 
 Changed production C++ sources also passed local LLVM 22 clang-tidy with the active Xcode SDK and
-warnings as errors. The local compatibility invocation excluded LLVM-22-only exception-escape and
-easily-swappable-parameter diagnostics, plus analyzer reports originating inside simdjson. The
-repository's exact LLVM 18 changed-file static-analysis gate therefore remains hosted-CI evidence
-after publication, not a claimed local result.
+warnings as errors. The final repair invocation analyzed all eight changed `.cpp` files without
+diagnostic exclusions; 2,825 dependency/system warnings were suppressed by clang-tidy's normal
+non-user-code boundary. The repository's exact LLVM 18 changed-file static-analysis result remains
+pending until the reviewed repair is published.
+
+## Hosted-CI recovery
+
+The first published commit did not pass hosted CI. GitHub Actions run `31560909879` failed both CPU
+and sanitizer builds because the macOS-15 runner's Xcode 16.4 libc++ deletes floating-point
+`std::from_chars`. The same run's changed-files analysis also rejected exception escape and
+swappable-parameter/test findings. Format and MavebBench jobs passed independently.
+
+The review repair replaces floating parsing with locale-classic, no-skip-whitespace stream parsing
+and rejects non-finite or partially consumed values. The CLI fixture now verifies `nan`, `inf`, and
+numeric text with a trailing suffix all return structured JSON errors. CLI and test entry points
+catch unexpected exceptions; the terminal `noexcept main` handlers use allocation-free C stdio so
+failure reporting cannot itself throw. The remaining static findings were fixed directly rather
+than disabled globally.
+
+After that repair, normal and sanitizer CTest each pass 15/15, MavebBench passes 17/17, all changed
+Python files compile, all changed zsh fixtures parse, formatting and `git diff --check` pass, and
+strict local clang-tidy passes all changed C++ translation units. Hosted Xcode 16.4 and LLVM 18
+confirmation is not claimed until this uncommitted repair clears the repository's human review and
+is pushed.
 
 ## Inspected artifacts
 

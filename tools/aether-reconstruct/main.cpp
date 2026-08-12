@@ -18,6 +18,8 @@
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -369,10 +371,10 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
     return options;
 }
 
-std::string checkpointName(std::uint32_t iteration, std::uint32_t totalSteps) {
+std::string finalCheckpointName(std::uint32_t totalSteps) {
     const auto digits = std::to_string(totalSteps).size();
     std::ostringstream name;
-    name << "checkpoint_" << std::setw(static_cast<int>(digits)) << std::setfill('0') << iteration
+    name << "checkpoint_" << std::setw(static_cast<int>(digits)) << std::setfill('0') << totalSteps
          << ".ply";
     return name.str();
 }
@@ -560,16 +562,16 @@ aether::Result<std::filesystem::path> safeRelativeImage(std::string_view text) {
 }
 
 aether::Result<std::vector<std::filesystem::path>>
-discoverImagePaths(const std::filesystem::path& images, const std::filesystem::path& imageList) {
+discoverImagePaths(const Options& options, const std::filesystem::path& images) {
     constexpr std::size_t maximumImages = 1'000'000;
     std::vector<std::filesystem::path> paths;
     std::set<std::filesystem::path> unique;
     std::error_code filesystemError;
-    if (!imageList.empty()) {
-        std::ifstream stream(imageList);
+    if (!options.imageList.empty()) {
+        std::ifstream stream(options.imageList);
         if (!stream)
             return aether::fail(aether::ErrorCode::notFound, "Unable to open image list",
-                                imageList);
+                                options.imageList);
         std::string line;
         while (std::getline(stream, line)) {
             if (!line.empty() && line.back() == '\r')
@@ -593,7 +595,8 @@ discoverImagePaths(const std::filesystem::path& images, const std::filesystem::p
                                     "Image list exceeds the supported limit");
         }
         if (!stream.eof())
-            return aether::fail(aether::ErrorCode::io, "Unable to read image list", imageList);
+            return aether::fail(aether::ErrorCode::io, "Unable to read image list",
+                                options.imageList);
     } else {
         std::filesystem::recursive_directory_iterator iterator(
             images, std::filesystem::directory_options::skip_permission_denied, filesystemError);
@@ -697,9 +700,13 @@ aether::Result<void> writeSparseSelectionReport(const std::filesystem::path& pat
     return {};
 }
 
-aether::Result<void> publishSelectedTextModel(const std::filesystem::path& source,
-                                              const std::filesystem::path& destination) {
-    const auto temporary = std::filesystem::path(destination.string() + ".tmp");
+struct TextModelPublication final {
+    std::filesystem::path source;
+    std::filesystem::path destination;
+};
+
+aether::Result<void> publishSelectedTextModel(const TextModelPublication& publication) {
+    const auto temporary = std::filesystem::path(publication.destination.string() + ".tmp");
     std::error_code error;
     std::filesystem::remove_all(temporary, error);
     error.clear();
@@ -709,7 +716,7 @@ aether::Result<void> publishSelectedTextModel(const std::filesystem::path& sourc
                             "Unable to create selected sparse model directory", error.message());
     constexpr std::array<std::string_view, 3> files{"cameras.txt", "images.txt", "points3D.txt"};
     for (const auto file : files) {
-        const auto sourceFile = source / file;
+        const auto sourceFile = publication.source / file;
         if (!std::filesystem::is_regular_file(sourceFile)) {
             std::filesystem::remove_all(temporary);
             return aether::fail(aether::ErrorCode::notFound,
@@ -723,13 +730,13 @@ aether::Result<void> publishSelectedTextModel(const std::filesystem::path& sourc
                                 error.message());
         }
     }
-    std::filesystem::remove_all(destination, error);
+    std::filesystem::remove_all(publication.destination, error);
     if (error) {
         std::filesystem::remove_all(temporary);
         return aether::fail(aether::ErrorCode::io, "Unable to replace selected sparse model",
                             error.message());
     }
-    std::filesystem::rename(temporary, destination, error);
+    std::filesystem::rename(temporary, publication.destination, error);
     if (error) {
         std::filesystem::remove_all(temporary);
         return aether::fail(aether::ErrorCode::io, "Unable to publish selected sparse model",
@@ -948,7 +955,7 @@ aether::Result<void> verifyTool(const std::string& executable, std::string_view 
 }
 } // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     int parseExitCode = 0;
     auto options = parseOptions(argc, argv, parseExitCode);
     if (!options)
@@ -959,7 +966,7 @@ int main(int argc, char** argv) {
     std::filesystem::path images = options->dataset / "images";
     if (!std::filesystem::is_directory(images, filesystemError))
         images = options->dataset;
-    auto discovered = discoverImagePaths(images, options->imageList);
+    auto discovered = discoverImagePaths(*options, images);
     if (!discovered)
         return fail(discovered.error().describe(), options->json);
     const auto& imagePaths = *discovered;
@@ -1005,7 +1012,7 @@ int main(int argc, char** argv) {
     const std::string seed = std::to_string(options->seed);
     const std::string steps = std::to_string(options->steps);
     const std::uint32_t checkpointInterval = std::min(options->checkpointEvery, options->steps);
-    const auto finalCheckpoint = exports / checkpointName(options->steps, options->steps);
+    const auto finalCheckpoint = exports / finalCheckpointName(options->steps);
     auto checkpointResult = findLatestCheckpoint(exports, options->steps);
     if (!checkpointResult)
         return fail(checkpointResult.error().describe(), options->json, 3);
@@ -1233,7 +1240,8 @@ int main(int argc, char** argv) {
         !report)
         return failJob(report.error().describe(), 4, "sparse-selection-report", &sparseCoverage,
                        &sparseSelection);
-    if (auto published = publishSelectedTextModel(selectedCandidate.textDirectory, selectedText);
+    if (auto published = publishSelectedTextModel(
+            TextModelPublication{selectedCandidate.textDirectory, selectedText});
         !published)
         return failJob(published.error().describe(), 4, "selected-model-publication",
                        &sparseCoverage, &sparseSelection);
@@ -1313,4 +1321,15 @@ int main(int argc, char** argv) {
     else
         std::cout << "Reconstruction complete: " << exports / "base-gaussians.ply" << '\n';
     return 0;
+}
+
+int main(int argc, char** argv) noexcept {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "Unhandled reconstruction failure: %s\n", error.what());
+    } catch (...) {
+        std::fputs("Unhandled reconstruction failure\n", stderr);
+    }
+    return 5;
 }

@@ -33,6 +33,7 @@
 #include <bit>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -742,6 +743,7 @@ void testMeshAnimation() {
 
     asset.nodes[0].parentIndex = 1;
     std::vector<aether::scene::Transform> cyclicLocals;
+    cyclicLocals.reserve(asset.nodes.size());
     for (const auto& node : asset.nodes)
         cyclicLocals.push_back(node.localTransform);
     expect(!aether::mesh::resolveWorldTransforms(asset, cyclicLocals).has_value(),
@@ -1123,7 +1125,7 @@ void testGaussianPly() {
 
 } // namespace
 
-int main() {
+int runTests() {
     testErrors();
     testResourceLocator();
     testDiagnostics();
@@ -1151,4 +1153,15 @@ int main() {
         std::cout << "All AETHER foundation tests passed\n";
     }
     return failures == 0 ? 0 : 1;
+}
+
+int main() noexcept {
+    try {
+        return runTests();
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: unhandled foundation-test exception: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "FAIL: unhandled foundation-test exception\n";
+    }
+    return 1;
 }

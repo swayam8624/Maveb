@@ -2,12 +2,16 @@
 #include <aether/capture/KeyframeSelector.hpp>
 
 #include <charconv>
+#include <cmath>
 #include <cstdio>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 
@@ -63,8 +67,10 @@ std::optional<std::size_t> parseSize(std::string_view value) {
 
 std::optional<double> parseDouble(std::string_view value) {
     double parsed{};
-    const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
-    if (result.ec != std::errc{} || result.ptr != value.data() + value.size())
+    std::istringstream stream{std::string(value)};
+    stream.imbue(std::locale::classic());
+    stream >> std::noskipws >> parsed;
+    if (!stream.eof() || stream.fail() || !std::isfinite(parsed))
         return std::nullopt;
     return parsed;
 }
@@ -227,7 +233,7 @@ bool writeOutputs(const Options& options, const aether::capture::CaptureReport& 
 }
 } // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     int parseExitCode = 0;
     const auto options = parseOptions(argc, argv, parseExitCode);
     if (!options)
@@ -256,4 +262,15 @@ int main(int argc, char** argv) {
         std::cout << "Selected " << selection.selectedImages.size() << " of "
                   << capture.images.size() << " frames\n";
     return 0;
+}
+
+int main(int argc, char** argv) noexcept {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "Unhandled keyframe-selection failure: %s\n", error.what());
+    } catch (...) {
+        std::fputs("Unhandled keyframe-selection failure\n", stderr);
+    }
+    return 5;
 }

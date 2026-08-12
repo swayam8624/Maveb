@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -49,7 +50,7 @@ bool require(bool condition, const char* message) {
 }
 } // namespace
 
-int main() {
+int runTests() {
     const auto root = std::filesystem::temp_directory_path() / "aether-capture-tests";
     std::filesystem::remove_all(root);
     std::filesystem::create_directories(root);
@@ -144,7 +145,7 @@ int main() {
                     "Versioned recorded RGB-D sequence opens deterministically");
     if (recorded) {
         std::size_t delivered = 0;
-        (*recorded)->setPacketCallback([&](aether::capture::CapturePacket packet) {
+        (*recorded)->setPacketCallback([&](const aether::capture::CapturePacket& packet) {
             ++delivered;
             okay &= require(packet.frameId == 1 && packet.hasMetricDepth() &&
                                 packet.cameraToWorld.has_value(),
@@ -165,7 +166,8 @@ int main() {
     if (injected) {
         bool reported = false;
         (*injected)->setErrorCallback([&](const aether::Error&) { reported = true; });
-        (void)(*injected)->start();
+        okay &= require((*injected)->start().has_value(),
+                        "Fault-injected recorded source starts before deterministic failure");
         okay &= require(!(*injected)->step().has_value() && reported,
                         "Recorded source fault injection propagates a structured failure");
     }
@@ -274,7 +276,8 @@ int main() {
         auto damaged = aether::capture::RecordedSequenceSource::open(lidarSequence);
         okay &= require(damaged.has_value(), "LiDAR manifest remains structurally readable");
         if (damaged) {
-            (void)(*damaged)->start();
+            okay &= require((*damaged)->start().has_value(),
+                            "Damaged LiDAR source starts before checksum validation");
             okay &= require(!(*damaged)->step().has_value(),
                             "LiDAR replay rejects a plane whose checksum changed");
         }
@@ -300,4 +303,15 @@ int main() {
                     "Recorded capture rejects manifest path traversal");
     std::filesystem::remove_all(root);
     return okay ? 0 : 1;
+}
+
+int main() noexcept {
+    try {
+        return runTests();
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: unhandled capture-test exception: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "FAIL: unhandled capture-test exception\n";
+    }
+    return 1;
 }

@@ -74,6 +74,26 @@ def main() -> int:
     assert replaced.returncode == 0
     assert not (output / "stale.txt").exists()
     assert json.loads((output / "keyframes.json").read_text())["selectedCount"] == len(selected)
+
+    for invalid in ("nan", "inf", "0.25junk"):
+        rejected = subprocess.run(
+            [
+                str(executable),
+                str(frames),
+                "--output",
+                str(output),
+                "--relative-sharpness",
+                invalid,
+                "--json",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert rejected.returncode != 0
+        error = json.loads(rejected.stderr)
+        assert error["ok"] is False
+        assert error["error"]["message"] == "Selection threshold is invalid"
     return 0
 
 
