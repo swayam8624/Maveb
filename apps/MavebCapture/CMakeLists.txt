@@ -14,6 +14,8 @@ set(CMAKE_Swift_LANGUAGE_VERSION 6)
 
 add_executable(MavebCapture MACOSX_BUNDLE
     Sources/CaptureManifest.swift
+    Sources/CaptureJournal.swift
+    Sources/CaptureAdmission.swift
     Sources/CaptureRecorder.swift
     Sources/CaptureController.swift
     Sources/CaptureView.swift

@@ -153,3 +153,28 @@ if(TARGET maveb-photogrammetry AND Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
             "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz")
 endif()
+
+if(CMAKE_Swift_COMPILER)
+    add_executable(MavebCaptureJournalTests
+        CaptureJournalTests.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureManifest.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureJournal.swift
+    )
+    set_target_properties(MavebCaptureJournalTests PROPERTIES Swift_LANGUAGE_VERSION 6)
+    target_compile_options(MavebCaptureJournalTests PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:-parse-as-library>")
+    target_link_libraries(MavebCaptureJournalTests PRIVATE
+        "-framework CryptoKit"
+        "-framework Foundation")
+    add_test(NAME MavebCaptureJournalTests COMMAND MavebCaptureJournalTests)
+
+    add_executable(MavebCaptureAdmissionTests
+        CaptureAdmissionTests.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureAdmission.swift
+    )
+    set_target_properties(MavebCaptureAdmissionTests PROPERTIES Swift_LANGUAGE_VERSION 6)
+    target_compile_options(MavebCaptureAdmissionTests PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:-parse-as-library>")
+    target_link_libraries(MavebCaptureAdmissionTests PRIVATE "-framework Foundation")
+    add_test(NAME MavebCaptureAdmissionTests COMMAND MavebCaptureAdmissionTests)
+endif()

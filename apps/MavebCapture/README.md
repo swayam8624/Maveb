@@ -7,8 +7,20 @@ instead of exporting only ARKit's preview mesh:
 - metric scene depth and confidence;
 - image- and depth-resolution intrinsics;
 - camera-to-world transforms and tracking state;
-- AR and monotonic host timestamps;
-- exposure metadata, hashes, and atomic manifests.
+- AR timestamps plus monotonic host timestamps frozen at the ARSession callback;
+- exposure metadata, hashes, an append-only frame journal, and atomic manifests.
+
+During recording, completed plane sets are committed to `frames.ndjson` and a constant-size
+`checkpoint.json`; the growing canonical manifest is not rewritten for every frame. A clean stop
+compacts the journal into `manifest.json`. After an interruption or process termination, reopening
+MavebCapture verifies each journaled plane path, byte count, and SHA-256, ignores only a torn final
+record, finalizes the recovered manifest, and exposes the package for export.
+
+Frame admission is motion- and quality-aware rather than a fixed timer. It accepts a maximum of
+15 useful frames per second while moving, refreshes a stationary view at 2 Hz, and filters redundant
+poses, nearly fully clipped images, unusably soft images, low-confidence depth, and frames admitted
+while the bounded writer is already under pressure. The UI reports accepted, filtered, and
+queue-dropped counts separately.
 
 Configure a signing-free compile check:
 
