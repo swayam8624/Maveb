@@ -7,6 +7,11 @@ target_compile_definitions(AetherTests PRIVATE
 aether_configure_target(AetherTests)
 add_test(NAME AetherTests COMMAND AetherTests)
 
+add_executable(MavebTextureBakerTests TextureBakerTests.cpp)
+target_link_libraries(MavebTextureBakerTests PRIVATE Aether::Reconstruction)
+aether_configure_target(MavebTextureBakerTests)
+add_test(NAME MavebTextureBakerTests COMMAND MavebTextureBakerTests)
+
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME AetherProxyPythonTests
@@ -152,4 +157,21 @@ if(TARGET maveb-photogrammetry AND Python3_Interpreter_FOUND)
             $<TARGET_FILE:maveb-photogrammetry>
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
             "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz")
+endif()
+
+if(TARGET aether-export-glb AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherNativeGlbExport
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-native-glb.py"
+            $<TARGET_FILE:aether-export-glb>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+            "${CMAKE_CURRENT_BINARY_DIR}/native-glb")
+endif()
+
+if(TARGET maveb-texture-bake AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebTextureBakeCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-texture-bake.py"
+            $<TARGET_FILE:maveb-texture-bake>
+            "${CMAKE_CURRENT_BINARY_DIR}/texture-bake")
 endif()

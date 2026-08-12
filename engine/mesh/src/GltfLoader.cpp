@@ -194,8 +194,7 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         fastgltf::Options::GenerateMeshIndices | fastgltf::Options::DecomposeNodeMatrices;
     auto parsed = parser.loadGltf(source.get(), path.parent_path(), options,
                                   fastgltf::Category::OnlyRenderable |
-                                      fastgltf::Category::Animations |
-                                      fastgltf::Category::Skins);
+                                      fastgltf::Category::Animations | fastgltf::Category::Skins);
     if (parsed.error() != fastgltf::Error::None) {
         return fail(ErrorCode::corruptData, "glTF validation failed",
                     std::string(fastgltf::getErrorMessage(parsed.error())));
@@ -209,7 +208,7 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         const auto& sourceNode = sourceAsset.nodes[nodeIndex];
         auto& node = result.nodes[nodeIndex];
         node.name = sourceNode.name.empty() ? "Node " + std::to_string(nodeIndex)
-                                           : std::string(sourceNode.name);
+                                            : std::string(sourceNode.name);
         const auto* trs = std::get_if<fastgltf::TRS>(&sourceNode.transform);
         if (!trs)
             return fail(ErrorCode::corruptData, "glTF node matrix was not decomposed to TRS");
@@ -255,12 +254,14 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         skin.inverseBindMatrices.assign(skin.jointNodeIndices.size(), matrix_identity_float4x4);
         if (sourceSkin.inverseBindMatrices) {
             if (*sourceSkin.inverseBindMatrices >= sourceAsset.accessors.size())
-                return fail(ErrorCode::corruptData, "glTF inverse-bind accessor is invalid", skin.name);
+                return fail(ErrorCode::corruptData, "glTF inverse-bind accessor is invalid",
+                            skin.name);
             const auto& accessor = sourceAsset.accessors[*sourceSkin.inverseBindMatrices];
             if (accessor.type != fastgltf::AccessorType::Mat4 ||
                 accessor.componentType != fastgltf::ComponentType::Float ||
                 accessor.count != skin.jointNodeIndices.size())
-                return fail(ErrorCode::corruptData, "glTF inverse-bind matrices are invalid", skin.name);
+                return fail(ErrorCode::corruptData, "glTF inverse-bind matrices are invalid",
+                            skin.name);
             fastgltf::iterateAccessorWithIndex<fastgltf::math::fmat4x4>(
                 sourceAsset, accessor, [&](const auto& matrix, std::size_t index) {
                     skin.inverseBindMatrices[index] = toSimd(matrix);
@@ -268,7 +269,8 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
             if (std::ranges::any_of(skin.inverseBindMatrices, [](const simd_float4x4& matrix) {
                     return !std::isfinite(simd_determinant(matrix));
                 }))
-                return fail(ErrorCode::corruptData, "glTF inverse-bind matrix is not finite", skin.name);
+                return fail(ErrorCode::corruptData, "glTF inverse-bind matrix is not finite",
+                            skin.name);
         }
         result.skins.push_back(std::move(skin));
     }
@@ -344,12 +346,14 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
             if (binding->textureIndex >= result.textures.size())
                 return fail(ErrorCode::corruptData, "glTF material texture index is invalid",
                             purpose);
-            const std::size_t textureCoordinates = binding->transform && binding->transform->texCoordIndex
-                                                       ? *binding->transform->texCoordIndex
-                                                       : binding->texCoordIndex;
+            const std::size_t textureCoordinates =
+                binding->transform && binding->transform->texCoordIndex
+                    ? *binding->transform->texCoordIndex
+                    : binding->texCoordIndex;
             if (textureCoordinates != 0)
                 return fail(ErrorCode::unsupported,
-                            "AETHER currently requires texture bindings to use TEXCOORD_0", purpose);
+                            "AETHER currently requires texture bindings to use TEXCOORD_0",
+                            purpose);
             if (binding->transform) {
                 auto& transform = material.uvTransforms[slot];
                 transform.scale = {static_cast<float>(binding->transform->uvScale[0]),
@@ -367,8 +371,8 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         };
         auto baseColorTexture =
             resolveTexture(sourceMaterial.pbrData.baseColorTexture, 0, "base color");
-        auto metallicRoughnessTexture =
-            resolveTexture(sourceMaterial.pbrData.metallicRoughnessTexture, 1, "metallic roughness");
+        auto metallicRoughnessTexture = resolveTexture(
+            sourceMaterial.pbrData.metallicRoughnessTexture, 1, "metallic roughness");
         auto normalTexture = resolveTexture(sourceMaterial.normalTexture, 2, "normal");
         auto occlusionTexture = resolveTexture(sourceMaterial.occlusionTexture, 3, "occlusion");
         auto emissiveTexture = resolveTexture(sourceMaterial.emissiveTexture, 4, "emissive");
@@ -435,6 +439,7 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
 
             bool hasNormals = false;
             bool hasTextureCoordinates = false;
+            bool hasVertexColors = false;
             bool hasTangents = false;
             bool hasJoints = false;
             bool hasWeights = false;
@@ -466,6 +471,36 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                     });
                 hasTextureCoordinates = true;
             }
+            if (const auto* colorAttribute = sourcePrimitive.findAttribute("COLOR_0");
+                colorAttribute != sourcePrimitive.attributes.end()) {
+                const auto& accessor = sourceAsset.accessors[colorAttribute->accessorIndex];
+                if (accessor.count != primitive.vertices.size() ||
+                    accessor.componentType != fastgltf::ComponentType::Float ||
+                    (accessor.type != fastgltf::AccessorType::Vec3 &&
+                     accessor.type != fastgltf::AccessorType::Vec4))
+                    return fail(ErrorCode::unsupported,
+                                "AETHER requires COLOR_0 float VEC3 or opaque VEC4 data");
+                primitive.vertexColors.resize(primitive.vertices.size());
+                if (accessor.type == fastgltf::AccessorType::Vec3) {
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
+                        sourceAsset, accessor,
+                        [&](const fastgltf::math::fvec3& value, std::size_t index) {
+                            primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
+                        });
+                } else {
+                    bool transparentVertex = false;
+                    fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
+                        sourceAsset, accessor,
+                        [&](const fastgltf::math::fvec4& value, std::size_t index) {
+                            primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
+                            transparentVertex |= std::abs(value.w() - 1.0F) > 1.0e-6F;
+                        });
+                    if (transparentVertex)
+                        return fail(ErrorCode::unsupported,
+                                    "MeshAsset does not represent COLOR_0 vertex alpha");
+                }
+                hasVertexColors = true;
+            }
             if (const auto* tangentAttribute = sourcePrimitive.findAttribute("TANGENT");
                 tangentAttribute != sourcePrimitive.attributes.end()) {
                 const auto& accessor = sourceAsset.accessors[tangentAttribute->accessorIndex];
@@ -484,14 +519,14 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 jointAttribute != sourcePrimitive.attributes.end()) {
                 const auto& accessor = sourceAsset.accessors[jointAttribute->accessorIndex];
                 if (accessor.count != primitive.vertices.size())
-                    return fail(ErrorCode::corruptData, "glTF joint count does not match positions");
+                    return fail(ErrorCode::corruptData,
+                                "glTF joint count does not match positions");
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::uvec4>(
                     sourceAsset, accessor, [&](const auto& value, std::size_t index) {
-                        primitive.vertices[index].joints = {
-                            static_cast<std::uint32_t>(value.x()),
-                            static_cast<std::uint32_t>(value.y()),
-                            static_cast<std::uint32_t>(value.z()),
-                            static_cast<std::uint32_t>(value.w())};
+                        primitive.vertices[index].joints = {static_cast<std::uint32_t>(value.x()),
+                                                            static_cast<std::uint32_t>(value.y()),
+                                                            static_cast<std::uint32_t>(value.z()),
+                                                            static_cast<std::uint32_t>(value.w())};
                     });
                 hasJoints = true;
             }
@@ -499,15 +534,18 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 weightAttribute != sourcePrimitive.attributes.end()) {
                 const auto& accessor = sourceAsset.accessors[weightAttribute->accessorIndex];
                 if (accessor.count != primitive.vertices.size())
-                    return fail(ErrorCode::corruptData, "glTF weight count does not match positions");
+                    return fail(ErrorCode::corruptData,
+                                "glTF weight count does not match positions");
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
                     sourceAsset, accessor, [&](const auto& value, std::size_t index) {
-                        primitive.vertices[index].weights = {value.x(), value.y(), value.z(), value.w()};
+                        primitive.vertices[index].weights = {value.x(), value.y(), value.z(),
+                                                             value.w()};
                     });
                 hasWeights = true;
             }
             if (hasJoints != hasWeights)
-                return fail(ErrorCode::corruptData, "glTF skin attributes must provide JOINTS_0 and WEIGHTS_0 together");
+                return fail(ErrorCode::corruptData,
+                            "glTF skin attributes must provide JOINTS_0 and WEIGHTS_0 together");
             if (hasWeights) {
                 for (auto& vertex : primitive.vertices) {
                     for (std::size_t component = 0; component < 4; ++component)
@@ -542,6 +580,12 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
             }
             if (!hasTangents)
                 generateTangents(primitive);
+            if (hasVertexColors &&
+                std::ranges::any_of(primitive.vertexColors, [](simd_float3 color) {
+                    return !std::isfinite(color.x) || !std::isfinite(color.y) ||
+                           !std::isfinite(color.z);
+                }))
+                return fail(ErrorCode::corruptData, "glTF vertex color is not finite");
             if (sourcePrimitive.targets.size() > limits.maximumMorphTargetsPerPrimitive)
                 return fail(ErrorCode::resourceExhausted,
                             "glTF primitive exceeds morph-target limit");
@@ -551,8 +595,8 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 if (sourcePrimitive.targets[targetIndex].empty())
                     return fail(ErrorCode::corruptData, "glTF morph target has no attributes");
                 if (primitive.vertices.size() > limits.maximumMorphDeltaValues / 3 ||
-                    primitive.vertices.size() * 3 > limits.maximumMorphDeltaValues -
-                                                        totalMorphDeltaValues)
+                    primitive.vertices.size() * 3 >
+                        limits.maximumMorphDeltaValues - totalMorphDeltaValues)
                     return fail(ErrorCode::resourceExhausted,
                                 "glTF exceeds morph-delta allocation limit");
                 totalMorphDeltaValues += primitive.vertices.size() * 3;
@@ -562,8 +606,10 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 target.tangentDeltas.assign(primitive.vertices.size(), simd_float3{});
                 auto loadDeltas = [&](std::string_view semantic,
                                       std::vector<simd_float3>& destination) -> Result<void> {
-                    const auto* attribute = sourcePrimitive.findTargetAttribute(targetIndex, semantic);
-                    if (attribute == sourcePrimitive.targets[targetIndex].end()) return {};
+                    const auto* attribute =
+                        sourcePrimitive.findTargetAttribute(targetIndex, semantic);
+                    if (attribute == sourcePrimitive.targets[targetIndex].end())
+                        return {};
                     const auto& accessor = sourceAsset.accessors[attribute->accessorIndex];
                     if (accessor.count != primitive.vertices.size() ||
                         accessor.type != fastgltf::AccessorType::Vec3 ||
@@ -581,7 +627,8 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                         return fail(ErrorCode::corruptData, "glTF morph deltas must be finite");
                     return {};
                 };
-                if (auto loadedDeltas = loadDeltas("POSITION", target.positionDeltas); !loadedDeltas)
+                if (auto loadedDeltas = loadDeltas("POSITION", target.positionDeltas);
+                    !loadedDeltas)
                     return std::unexpected(loadedDeltas.error());
                 if (auto loadedDeltas = loadDeltas("NORMAL", target.normalDeltas); !loadedDeltas)
                     return std::unexpected(loadedDeltas.error());
@@ -634,9 +681,11 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
     bool instanceOverflow = false;
     bool singularTransform = false;
     bool invalidInstance = false;
-    fastgltf::iterateSceneNodes(sourceAsset, sceneIndex, fastgltf::math::fmat4x4{},
+    fastgltf::iterateSceneNodes(
+        sourceAsset, sceneIndex, fastgltf::math::fmat4x4{},
         [&](const fastgltf::Node& node, const fastgltf::math::fmat4x4& worldTransform) {
-            if (!node.meshIndex || *node.meshIndex >= sourceAsset.meshes.size()) return;
+            if (!node.meshIndex || *node.meshIndex >= sourceAsset.meshes.size())
+                return;
             const auto meshIndex = *node.meshIndex;
             const auto count = sourceAsset.meshes[meshIndex].primitives.size();
             if (node.skinIndex && *node.skinIndex >= result.skins.size()) {
@@ -715,8 +764,8 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         clip.name = sourceAnimation.name.empty()
                         ? "Animation " + std::to_string(result.animations.size())
                         : std::string(sourceAnimation.name);
-        if (sourceAnimation.channels.size() > limits.maximumAnimationChannels -
-                                                  totalAnimationChannels)
+        if (sourceAnimation.channels.size() >
+            limits.maximumAnimationChannels - totalAnimationChannels)
             return fail(ErrorCode::resourceExhausted, "glTF exceeds animation-channel limit");
         totalAnimationChannels += sourceAnimation.channels.size();
         clip.channels.reserve(sourceAnimation.channels.size());
@@ -730,40 +779,58 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 return fail(ErrorCode::corruptData, "glTF animation accessor reference is invalid");
             const auto& input = sourceAsset.accessors[sampler.inputAccessor];
             const auto& output = sourceAsset.accessors[sampler.outputAccessor];
-            if (input.type != fastgltf::AccessorType::Scalar || input.componentType != fastgltf::ComponentType::Float)
+            if (input.type != fastgltf::AccessorType::Scalar ||
+                input.componentType != fastgltf::ComponentType::Float)
                 return fail(ErrorCode::corruptData, "glTF animation times must be scalar floats");
-            if (input.count == 0 || input.count > limits.maximumAnimationKeyframes -
-                                                    totalAnimationKeyframes)
+            if (input.count == 0 ||
+                input.count > limits.maximumAnimationKeyframes - totalAnimationKeyframes)
                 return fail(ErrorCode::resourceExhausted, "glTF exceeds animation-keyframe limit");
             totalAnimationKeyframes += input.count;
             AnimationChannel channel;
             channel.nodeIndex = *sourceChannel.nodeIndex;
             switch (sourceChannel.path) {
-            case fastgltf::AnimationPath::Translation: channel.path = AnimationPath::translation; break;
-            case fastgltf::AnimationPath::Rotation: channel.path = AnimationPath::rotation; break;
-            case fastgltf::AnimationPath::Scale: channel.path = AnimationPath::scale; break;
-            default: return fail(ErrorCode::unsupported, "glTF morph-weight animation is not implemented");
+            case fastgltf::AnimationPath::Translation:
+                channel.path = AnimationPath::translation;
+                break;
+            case fastgltf::AnimationPath::Rotation:
+                channel.path = AnimationPath::rotation;
+                break;
+            case fastgltf::AnimationPath::Scale:
+                channel.path = AnimationPath::scale;
+                break;
+            default:
+                return fail(ErrorCode::unsupported,
+                            "glTF morph-weight animation is not implemented");
             }
             switch (sampler.interpolation) {
-            case fastgltf::AnimationInterpolation::Step: channel.interpolation = AnimationInterpolation::step; break;
-            case fastgltf::AnimationInterpolation::Linear: channel.interpolation = AnimationInterpolation::linear; break;
+            case fastgltf::AnimationInterpolation::Step:
+                channel.interpolation = AnimationInterpolation::step;
+                break;
+            case fastgltf::AnimationInterpolation::Linear:
+                channel.interpolation = AnimationInterpolation::linear;
+                break;
             case fastgltf::AnimationInterpolation::CubicSpline:
-                channel.interpolation = AnimationInterpolation::cubicSpline; break;
+                channel.interpolation = AnimationInterpolation::cubicSpline;
+                break;
             }
             channel.keyTimes.resize(input.count);
             fastgltf::copyFromAccessor<float>(sourceAsset, input, channel.keyTimes.data());
             if (!std::is_sorted(channel.keyTimes.begin(), channel.keyTimes.end()) ||
                 std::adjacent_find(channel.keyTimes.begin(), channel.keyTimes.end()) !=
                     channel.keyTimes.end() ||
-                std::ranges::any_of(channel.keyTimes, [](float time) { return !std::isfinite(time); }))
-                return fail(ErrorCode::corruptData, "glTF animation times must be finite and increasing");
-            const std::size_t multiplier = channel.interpolation == AnimationInterpolation::cubicSpline ? 3 : 1;
+                std::ranges::any_of(channel.keyTimes,
+                                    [](float time) { return !std::isfinite(time); }))
+                return fail(ErrorCode::corruptData,
+                            "glTF animation times must be finite and increasing");
+            const std::size_t multiplier =
+                channel.interpolation == AnimationInterpolation::cubicSpline ? 3 : 1;
             if (output.count != input.count * multiplier)
                 return fail(ErrorCode::corruptData, "glTF animation output count is invalid");
             channel.values.resize(output.count);
             if (channel.path == AnimationPath::rotation) {
                 if (output.type != fastgltf::AccessorType::Vec4)
-                    return fail(ErrorCode::corruptData, "glTF rotation animation must use VEC4 values");
+                    return fail(ErrorCode::corruptData,
+                                "glTF rotation animation must use VEC4 values");
                 fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
                     sourceAsset, output, [&](const auto& value, std::size_t index) {
                         channel.values[index] = {value.x(), value.y(), value.z(), value.w()};
@@ -785,7 +852,7 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
                 for (std::size_t key = 0; key < channel.keyTimes.size(); ++key) {
                     const std::size_t valueIndex =
                         channel.interpolation == AnimationInterpolation::cubicSpline ? key * 3 + 1
-                                                                                    : key;
+                                                                                     : key;
                     if (simd_length_squared(channel.values[valueIndex]) < 1.0e-12F)
                         return fail(ErrorCode::corruptData,
                                     "glTF rotation animation contains a zero quaternion");

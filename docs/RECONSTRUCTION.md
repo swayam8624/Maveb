@@ -91,3 +91,43 @@ Apple checkpoint directories remain outside Git and allow expensive stages to re
 least one mesh, exports a binary glTF with materials/textures, and returns machine-readable artifact
 evidence. This establishes a serious textured-mesh baseline before AETHER attempts custom dense
 RGB depth or cross-device LiDAR/Sony texture fusion.
+
+For geometry already represented by AETHER's validated `MeshAsset`, `aether-export-glb` is the
+native publication path. It writes a deterministic, atomic, self-contained GLB with indexed static
+triangles, flat world instances, normals, tangents, UVs, optional vertex colors, PBR factors,
+samplers, alpha state, `KHR_texture_transform`, and embedded PNG/JPEG bytes. The tool strictly
+re-imports its own output before reporting success; `--dry-run` performs the complete export and
+round-trip without replacing the requested destination. Animation, skins, morph targets,
+non-triangle topology, malformed transforms, and unsupported image encodings fail explicitly rather
+than being silently baked or discarded.
+
+This does not yet remove Blender from Apple's photogrammetry route: `PhotogrammetrySession` produces
+USDZ and AETHER does not currently ingest USDZ into `MeshAsset`. The native exporter removes Blender
+from all later GLB serialization and gives the planned native USDZ ingestion adapter a stable target;
+until that adapter lands, Blender remains the isolated USDZ-to-GLB conversion boundary and an
+independent validation tool.
+
+## Metric multi-view texture baking
+
+`maveb-texture-bake` is the native Sony/iPad appearance path. It consumes an actual metric triangle
+PLY, COLMAP `cameras.txt`, an accepted schema-v1 `maveb-align-sensors` camera rig, and the exact
+registered images. Pinhole, simple/radial, and OpenCV Brown-Conrady calibration are evaluated during
+projection; unsupported models fail instead of silently dropping distortion.
+
+The deterministic CPU reference allocates guarded per-triangle UV islands, rasterizes a
+perspective-correct depth oracle for every camera, rejects occluded/out-of-frame samples, ranks and
+blends the strongest views, compensates global exposure, and dilates observed colors into texture
+gutters. The tool embeds the resulting PNG as a PBR base-color texture in a self-contained native
+GLB and re-imports that GLB before success. A sibling `.provenance.json` hashes the mesh,
+calibration, accepted metric rig, every decoded image, configuration, and final GLB.
+
+ImageIO deterministically downsizes very large source frames to the configured maximum dimension
+and scales COLMAP intrinsics by the exact decode ratio. The engine also enforces bounded camera and
+total decoded-pixel budgets, so a full-resolution Sony sequence cannot silently consume unbounded
+RAM. This is a reference offline baker, not a streaming production implementation.
+
+The current E2 evidence is synthetic and deliberately does not claim real Sony/iPad quality. The
+physical paired capture must still prove calibration accuracy, seam quality, exposure robustness,
+coverage, memory, and runtime before this path reaches E3. The guarded per-triangle atlas is a
+correct deterministic reference; a charting/packing optimizer may replace its rate efficiency
+without changing visibility or provenance contracts.

@@ -33,7 +33,8 @@ verified, shippable milestones. The current foundation contains:
   confidence-aware Gaussian occlusion, verified by a real Metal golden and proxy-ID readback.
 - A core glTF metallic-roughness path with bounded embedded/external image ingestion, ImageIO decode,
   generated mipmaps and tangents, glTF samplers, material texture maps, normal mapping, and alpha
-  mask/blend states.
+  mask/blend states, plus deterministic native export of validated static mesh assets to
+  self-contained GLB without Blender.
 - A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
 - [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
   Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
@@ -113,6 +114,11 @@ build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
   --output proxy.ply --voxel 0.01 --truncation 0.04 --json
+build/debug/tools/aether-export-glb/aether-export-glb textured-mesh.gltf \
+  --output textured-mesh.glb --json
+build/debug/tools/maveb-texture-bake/maveb-texture-bake metric-mesh.ply \
+  --colmap reconstruction/sparse/0-text --metric-rig metric-camera-rig.json \
+  --images reconstruction/images --output textured-metric-model.glb --json
 ```
 
 For the real-data regression layer:

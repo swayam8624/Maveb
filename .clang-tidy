@@ -1,6 +1,8 @@
+# fastgltf uses scoped enums as bitmask flags, which the disabled optional checker misclassifies.
 Checks: >
   bugprone-*,
   clang-analyzer-*,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   performance-*,
   portability-*,
   modernize-use-nullptr,

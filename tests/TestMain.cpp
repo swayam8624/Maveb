@@ -10,15 +10,16 @@
 #include <aether/hybrid/ProxyMeshCodec.hpp>
 #include <aether/hybrid/ProxyPlyLoader.hpp>
 #include <aether/mesh/Animation.hpp>
+#include <aether/mesh/GltfExporter.hpp>
 #include <aether/mesh/GltfLoader.hpp>
 #include <aether/mesh/PlyExporter.hpp>
 #include <aether/mesh/TransparentSort.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
-#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
 #include <aether/reconstruction/GeometryEvaluation.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
+#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/rendergraph/RenderGraph.hpp>
 #include <aether/scene/Camera.hpp>
 #include <aether/scene/CameraController.hpp>
@@ -32,6 +33,7 @@
 #include <bit>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -145,13 +147,11 @@ void testOracleTsdfReconstruction() {
     expect(volume.has_value(), "Valid bounded dense TSDF volume is created");
     if (!volume)
         return;
-    expect(!volume->extractMesh().has_value(),
-           "An unobserved TSDF volume cannot produce geometry");
+    expect(!volume->extractMesh().has_value(), "An unobserved TSDF volume cannot produce geometry");
 
     constexpr std::uint32_t width = 64;
     constexpr std::uint32_t height = 64;
-    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3,
-                                 std::byte{128});
+    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3, std::byte{128});
     std::vector<std::byte> depth(static_cast<std::size_t>(width) * height * sizeof(float));
     constexpr float planeDepth = 1.0F;
     for (std::size_t index = 0; index < static_cast<std::size_t>(width) * height; ++index)
@@ -203,9 +203,10 @@ void testOracleTsdfReconstruction() {
     expect(boundsEstimator.has_value() &&
                boundsEstimator->observe(packet, *pose, *observation).has_value(),
            "Calibrated metric depth contributes to automatic TSDF bounds");
-    auto estimatedBounds = boundsEstimator ? boundsEstimator->estimate()
-                                           : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
-                                                 std::unexpected(boundsEstimator.error()));
+    auto estimatedBounds = boundsEstimator
+                               ? boundsEstimator->estimate()
+                               : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
+                                     std::unexpected(boundsEstimator.error()));
     expect(estimatedBounds.has_value() && estimatedBounds->sampledPoints == 256 &&
                estimatedBounds->volume.dimensions[2] >= 2 &&
                estimatedBounds->volume.dimensions[0] <= 64 &&
@@ -214,8 +215,7 @@ void testOracleTsdfReconstruction() {
     expect(volume->integrate(packet, *pose, *observation).has_value(),
            "Known-pose metric depth updates the TSDF");
     auto mesh = volume->extractMesh();
-    expect(mesh.has_value() && !mesh->primitives.empty() &&
-               !mesh->primitives[0].indices.empty(),
+    expect(mesh.has_value() && !mesh->primitives.empty() && !mesh->primitives[0].indices.empty(),
            "Observed TSDF extracts a connected zero-crossing surface");
     if (!mesh)
         return;
@@ -223,19 +223,16 @@ void testOracleTsdfReconstruction() {
     std::vector<std::array<double, 3>> reference;
     for (int y = -10; y <= 10; ++y)
         for (int x = -10; x <= 10; ++x)
-            reference.push_back({static_cast<double>(x) * 0.04,
-                                 static_cast<double>(y) * 0.04, 1.0});
+            reference.push_back(
+                {static_cast<double>(x) * 0.04, static_cast<double>(y) * 0.04, 1.0});
     auto metrics = aether::reconstruction::evaluateGeometry(*mesh, reference, 0.05);
     expect(metrics.has_value() && metrics->accuracyMeanMetres <= 0.02,
            "Oracle plane reconstruction stays within half a voxel accuracy");
-    expect(metrics.has_value() && metrics->invalidIndices == 0 &&
-               metrics->degenerateTriangles == 0,
+    expect(metrics.has_value() && metrics->invalidIndices == 0 && metrics->degenerateTriangles == 0,
            "Extracted oracle mesh contains valid non-degenerate triangles");
 
-    const auto firstPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
-    const auto secondPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
+    const auto firstPath = std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
+    const auto secondPath = std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
     expect(aether::mesh::exportToPly(*mesh, firstPath).has_value() &&
                aether::mesh::exportToPly(*mesh, secondPath).has_value(),
            "Hardened PLY exporter atomically writes oracle geometry");
@@ -629,6 +626,76 @@ void testGltfLoader() {
     }
 }
 
+void testNativeGltfExporter() {
+    const auto fixture = std::filesystem::path(AETHER_TEST_FIXTURES) / "textured-triangle.gltf";
+    auto asset = aether::mesh::GltfLoader::load(fixture);
+    expect(asset.has_value(), "Native GLB export fixture loads");
+    if (!asset)
+        return;
+    asset->primitives[0].vertexColors = {simd_make_float3(1.0F, 0.0F, 0.0F),
+                                         simd_make_float3(0.0F, 1.0F, 0.0F),
+                                         simd_make_float3(0.0F, 0.0F, 1.0F)};
+    aether::mesh::MeshInstance second = asset->instances.front();
+    second.name = "Translated instance";
+    second.worldTransform.columns[3].x = 2.0F;
+    asset->instances.push_back(second);
+
+    const auto firstPath =
+        std::filesystem::temp_directory_path() / "aether-native-export-first.glb";
+    const auto secondPath =
+        std::filesystem::temp_directory_path() / "aether-native-export-second.glb";
+    auto first = aether::mesh::GltfExporter::writeGlb(*asset, firstPath);
+    auto secondExport = aether::mesh::GltfExporter::writeGlb(*asset, secondPath);
+    expect(first.has_value() && secondExport.has_value(),
+           "Native GLB exporter writes a textured static asset");
+    if (first && secondExport) {
+        expect(first->vertices == 3 && first->triangles == 1 && first->instances == 2 &&
+                   first->images == 1,
+               "Native GLB report describes exported geometry, instances, and images");
+        std::ifstream firstStream(firstPath, std::ios::binary);
+        std::ifstream secondStream(secondPath, std::ios::binary);
+        const std::vector<char> firstBytes((std::istreambuf_iterator<char>(firstStream)), {});
+        const std::vector<char> secondBytes((std::istreambuf_iterator<char>(secondStream)), {});
+        expect(firstBytes == secondBytes, "Native GLB output is byte-for-byte deterministic");
+        auto roundTrip = aether::mesh::GltfLoader::load(firstPath);
+        expect(roundTrip.has_value(), "Native GLB re-imports through the strict loader");
+        if (roundTrip) {
+            expect(roundTrip->primitives.size() == 1 && roundTrip->instances.size() == 2 &&
+                       roundTrip->images.size() == 1 && roundTrip->textures.size() == 1,
+                   "Native GLB preserves primitives, instances, and embedded texture resources");
+            const bool colorsMatch =
+                roundTrip->primitives[0].vertexColors.size() ==
+                    asset->primitives[0].vertexColors.size() &&
+                std::ranges::equal(
+                    roundTrip->primitives[0].vertexColors, asset->primitives[0].vertexColors,
+                    [](simd_float3 left, simd_float3 right) { return simd_all(left == right); });
+            expect(colorsMatch, "Native GLB preserves linear RGB vertex colors");
+            expect(std::abs(roundTrip->instances[1].worldTransform.columns[3].x - 2.0F) < 1.0e-6F,
+                   "Native GLB preserves flat instance transforms");
+            const auto& material = roundTrip->materials[roundTrip->primitives[0].materialIndex];
+            expect(material.baseColorTexture.has_value() &&
+                       std::abs(material.uvTransforms[0].rotation - 0.5F) < 1.0e-6F,
+                   "Native GLB preserves PBR texture bindings and UV transforms");
+        }
+    }
+
+    auto animated = aether::mesh::GltfLoader::load(std::filesystem::path(AETHER_TEST_FIXTURES) /
+                                                   "animated-triangle.gltf");
+    expect(animated.has_value() &&
+               !aether::mesh::GltfExporter::writeGlb(*animated, firstPath).has_value(),
+           "Native reconstruction export explicitly rejects animation");
+    auto degenerate = *asset;
+    degenerate.primitives[0].indices = {0, 0, 1};
+    expect(!aether::mesh::GltfExporter::writeGlb(degenerate, firstPath).has_value(),
+           "Native GLB export rejects degenerate triangle indices");
+    auto invalidImage = *asset;
+    invalidImage.images[0].bytes.assign(8, std::byte{0});
+    expect(!aether::mesh::GltfExporter::writeGlb(invalidImage, firstPath).has_value(),
+           "Native GLB export rejects unsupported encoded image data");
+    std::filesystem::remove(firstPath);
+    std::filesystem::remove(secondPath);
+}
+
 void testMeshAnimation() {
     aether::mesh::MeshAsset asset;
     asset.nodes.resize(2);
@@ -681,6 +748,7 @@ void testMeshAnimation() {
 
     asset.nodes[0].parentIndex = 1;
     std::vector<aether::scene::Transform> cyclicLocals;
+    cyclicLocals.reserve(asset.nodes.size());
     for (const auto& node : asset.nodes)
         cyclicLocals.push_back(node.localTransform);
     expect(!aether::mesh::resolveWorldTransforms(asset, cyclicLocals).has_value(),
@@ -1062,7 +1130,7 @@ void testGaussianPly() {
 
 } // namespace
 
-int main() {
+int runTests() {
     testErrors();
     testResourceLocator();
     testDiagnostics();
@@ -1077,6 +1145,7 @@ int main() {
     testCameraController();
     testCameraPath();
     testGltfLoader();
+    testNativeGltfExporter();
     testMeshAnimation();
     testClusteredLighting();
     testImageBasedLighting();
@@ -1089,4 +1158,15 @@ int main() {
         std::cout << "All AETHER foundation tests passed\n";
     }
     return failures == 0 ? 0 : 1;
+}
+
+int main() noexcept {
+    try {
+        return runTests();
+    } catch (const std::exception& error) {
+        std::cerr << "Unhandled AETHER test failure: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "Unhandled AETHER test failure\n";
+    }
+    return 1;
 }

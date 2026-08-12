@@ -3,6 +3,7 @@ add_library(AetherReconstruction STATIC
     src/DenseTsdfVolume.cpp
     src/GeometryEvaluation.cpp
     src/RecordedProviders.cpp
+    src/TextureBaker.cpp
 )
 add_library(Aether::Reconstruction ALIAS AetherReconstruction)
 target_include_directories(AetherReconstruction PUBLIC include)

@@ -36,6 +36,14 @@ renumber or replace the product phases.
 - [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
   provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
   validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
+- [x] [E2] **Native static GLB publication:** validated `MeshAsset` geometry, flat instances, vertex
+  colors, PBR materials, samplers, UV transforms, and embedded PNG/JPEG resources serialize
+  deterministically and atomically, then pass strict native round-trip and hostile rejection tests.
+  Native USDZ ingestion remains required before Blender can leave the Apple photogrammetry route.
+- [x] [E2] **Metric texture-bake reference:** accepted metric cameras plus COLMAP pinhole/radial/OpenCV
+  calibration drive perspective-correct visibility, occlusion rejection, multi-view blending,
+  exposure compensation, guarded UV islands, PNG/PBR GLB output, strict round-trip validation, and
+  hashed provenance. Real paired Sony/iPad capture, seam metrics, and performance remain E3 gates.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and
