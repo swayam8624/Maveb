@@ -21,6 +21,9 @@ verified, shippable milestones. The current foundation contains:
 - A SwiftUI macOS application whose Objective-C++ bridge keeps Metal objects out of Swift.
 - A Swift 6 [MavebCapture iPad companion](apps/MavebCapture/README.md) that records checked,
   calibrated RGB + LiDAR packages for deterministic desktop fusion.
+- A deterministic robust COLMAP-to-iPad Sim(3) alignment path that rejects camera-pose outliers,
+  measures metric position/orientation residuals, and emits every Sony/COLMAP camera in the iPad
+  world frame.
 - A versioned, hashed, bounded, per-chunk compressed [`.aether` container](docs/formats/AETHER_PACKAGE.md)
   with `aether-pack` and `aether-inspect` command-line tools.
 - A bounded [standard 3DGS PLY importer](docs/formats/GAUSSIAN_PLY.md) and deterministic
@@ -115,6 +118,8 @@ build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
   --output proxy.ply --voxel 0.01 --truncation 0.04 --json
+build/debug/tools/maveb-align-sensors/maveb-align-sensors colmap/sparse/0 ipad.mavebcapture \
+  --matches camera-matches.json --output metric-camera-rig.json --json
 ```
 
 For the real-data regression layer:

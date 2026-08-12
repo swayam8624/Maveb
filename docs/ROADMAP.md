@@ -44,6 +44,10 @@ renumber or replace the product phases.
 - [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
   provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
   validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
+- [x] [E2] **Sony+iPad metric alignment foundation:** robust deterministic camera-pose Sim(3),
+  outlier rejection, degeneracy checks, metric position/orientation quality gates, verified capture
+  replay, and complete metric COLMAP camera-rig export pass synthetic artifact tests. A paired
+  physical capture and measured E3 report remain open.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

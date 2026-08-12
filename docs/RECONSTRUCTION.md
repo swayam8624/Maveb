@@ -137,3 +137,24 @@ Apple checkpoint directories remain outside Git and allow expensive stages to re
 least one mesh, exports a binary glTF with materials/textures, and returns machine-readable artifact
 evidence. This establishes a serious textured-mesh baseline before AETHER attempts custom dense
 RGB depth or cross-device LiDAR/Sony texture fusion.
+
+## Sony and iPad metric alignment
+
+`maveb-align-sensors` consumes a registered COLMAP text model, a fully verified exported
+`.mavebcapture`, and explicit one-to-one visual camera matches. It robustly estimates the Sim(3)
+that maps COLMAP's arbitrary-scale world into the iPad's metric world. Seeded RANSAC uses position
+and orientation agreement, Huber refinement limits the influence of remaining position noise, and
+the report records median/p95/maximum metric position and orientation errors plus every rejected
+match. Degenerate or near-collinear camera motion cannot produce a successful transform.
+
+The accepted output contains every registered COLMAP camera transformed into the metric capture
+frame, not only the iPad cameras used for fitting. This is the contract that makes Sony cameras
+metric before LiDAR fusion and multi-view texture projection. The camera axes must already share
+Maveb's `+X right, +Y down, +Z forward` convention; COLMAP text poses and desktop-replayed
+MavebCapture poses satisfy that contract.
+
+Camera identity is currently explicit rather than guessed. The versioned match file maps the iPad
+images admitted to the joint COLMAP reconstruction to their original capture frame IDs. Automatic
+cross-device visual matching and joint bundle adjustment with ARKit priors are later refinements;
+they are not silently claimed by this deterministic alignment gate. See
+[the sensor-alignment format](formats/SENSOR_ALIGNMENT.md).
