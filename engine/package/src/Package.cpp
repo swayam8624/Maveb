@@ -82,7 +82,7 @@ Result<Sha256Digest> hashFileTail(std::ifstream& stream, std::uint64_t offset,
     if (!stream)
         return fail(ErrorCode::io, "Unable to seek while hashing package");
     Sha256 hash;
-    std::array<std::byte, 1024 * 1024> buffer{};
+    std::array<std::byte, std::size_t{1024} * 1024> buffer{};
     std::uint64_t remaining = fileBytes - offset;
     while (remaining > 0) {
         const std::size_t amount = static_cast<std::size_t>(
@@ -171,8 +171,12 @@ Result<void> PackageWriter::write(const std::filesystem::path& destination) cons
     std::vector<std::byte> header;
     header.reserve(headerBytes);
     header.insert(header.end(), magic.begin(), magic.end());
+    const bool hasCanonicalAsset = std::ranges::any_of(entries, [](const ChunkInfo& entry) {
+        return entry.type == ChunkType::canonicalAsset || entry.type == ChunkType::canonicalMesh ||
+               entry.type == ChunkType::canonicalConfidence;
+    });
     append16(header, 1);
-    append16(header, 0);
+    append16(header, hasCanonicalAsset ? 1 : 0);
     append32(header, 0);
     append64(header, tableOffset);
     append32(header, static_cast<std::uint32_t>(entries.size()));
@@ -349,12 +353,18 @@ const char* chunkTypeName(ChunkType type) noexcept {
         return "thumbnail";
     case ChunkType::benchmarkPath:
         return "benchmark-path";
+    case ChunkType::canonicalAsset:
+        return "canonical-asset";
+    case ChunkType::canonicalMesh:
+        return "canonical-mesh";
+    case ChunkType::canonicalConfidence:
+        return "canonical-confidence";
     }
     return "unknown";
 }
 
 bool isKnownChunkType(ChunkType type) noexcept {
-    return type >= ChunkType::metadata && type <= ChunkType::benchmarkPath;
+    return type >= ChunkType::metadata && type <= ChunkType::canonicalConfidence;
 }
 
 } // namespace aether::package

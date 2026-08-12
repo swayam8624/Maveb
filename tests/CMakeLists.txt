@@ -1,7 +1,7 @@
 add_executable(AetherTests
     TestMain.cpp
 )
-target_link_libraries(AetherTests PRIVATE Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction)
+target_link_libraries(AetherTests PRIVATE Aether::Canonical Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction)
 target_compile_definitions(AetherTests PRIVATE
     AETHER_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 aether_configure_target(AetherTests)
@@ -113,6 +113,15 @@ if(TARGET aether-benchmark AND TARGET aether-pack)
             --max-p95-ms 0.000001 --json)
     set_tests_properties(AetherBenchmarkBudgetFailure PROPERTIES
         FIXTURES_REQUIRED AetherBenchmarkScene WILL_FAIL TRUE)
+endif()
+
+if(TARGET aether-pack AND TARGET aether-inspect AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherCanonicalAssetCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-canonical-asset.py"
+            $<TARGET_FILE:aether-pack>
+            $<TARGET_FILE:aether-inspect>
+            "${CMAKE_CURRENT_BINARY_DIR}/canonical-asset-cli")
 endif()
 
 if(TARGET aether-reconstruct)

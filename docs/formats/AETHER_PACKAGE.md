@@ -37,13 +37,22 @@ chunks whose expansion ratio exceeds 256:1.
 
 ## Unpacked development schema
 
-`aether-pack` accepts a directory containing `metadata.json` and either a validated
-`base-gaussians.ply` or canonical `base-gaussians.bin`. PLY input is converted into the canonical
-little-endian chunk during packing; an existing binary chunk is decoded and validated before it is
-accepted. The remaining
+`aether-pack` accepts a directory containing `metadata.json` and at least one primary scene
+representation. A Gaussian scene supplies validated `base-gaussians.ply` or canonical
+`base-gaussians.bin`. A Canonical Asset v1 scene supplies `canonical-asset.json`, a self-contained
+metric GLB, calibrated camera JSON, and explicit uniform or per-vertex confidence. Gaussian and
+canonical representations may coexist. PLY input is converted into the canonical little-endian
+chunk during packing; existing binary chunks are decoded and validated before acceptance. The remaining
 registered filenames are optional: `cameras.bin`, `material-gaussians.bin`, `residuals.bin`,
 `cluster-hierarchy.bin`, `proxy-mesh.bin`, `textures.bin`, `collision.bin`, `thumbnail.bin`, and
 `benchmark-path.json`.
+
+Packages containing Canonical Asset chunks use package minor version `1.1`; Gaussian-only v1
+packages remain `1.0`. The added registered chunk types are `canonical-asset` (12),
+`canonical-mesh` (13), and `canonical-confidence` (14). A Canonical Asset profile requires all
+three plus `cameras`; partial profiles are rejected by semantic inspection. The canonical mesh is
+the editable high-quality surface. `proxy-mesh` remains a distinct simplified representation for
+occlusion, collision, navigation, and shadow transfer.
 
 An optional `proxy.ply` is treated like a source representation for `proxy-mesh.bin`. The packer
 strictly accepts ASCII or binary-little-endian triangulated PLY with finite positions, nondegenerate
@@ -73,3 +82,12 @@ position, normalized float32 normal, float32 confidence in `[0,1]`, and packed R
 payload is a tightly packed little-endian uint32 triangle-index array. Readers enforce exact size,
 allocation budgets, finite coordinate bounds, normalized normals, triangulation, in-range indices,
 and nondegenerate index triples.
+
+## Canonical Asset chunks v1
+
+The `canonical-asset` chunk stores the validated source manifest. The `canonical-mesh` chunk stores
+a complete glTF 2 GLB whose buffers and images are embedded; external URIs are forbidden. PBR
+materials, UVs, and encoded texture images therefore remain native glTF data rather than a second
+private texture format. `cameras` uses the compiler-independent `AETHCAM` camera-rig codec, and
+`canonical-confidence` uses the `AETHCF` little-endian float32 codec with one value in `[0,1]` per
+mesh vertex. See [Canonical Asset v1](CANONICAL_ASSET.md) for the unpacked schema and invariants.

@@ -1,3 +1,4 @@
+#include <aether/canonical/CanonicalAsset.hpp>
 #include <aether/gaussian/GaussianCodec.hpp>
 #include <aether/gaussian/PlyLoader.hpp>
 #include <aether/hybrid/ProxyMeshCodec.hpp>
@@ -7,6 +8,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdio>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -26,7 +30,7 @@ struct ChunkSource final {
 constexpr std::array sources{
     ChunkSource{aether::package::ChunkType::metadata, "metadata.json", true},
     ChunkSource{aether::package::ChunkType::cameras, "cameras.bin", false},
-    ChunkSource{aether::package::ChunkType::baseGaussians, "base-gaussians.bin", true},
+    ChunkSource{aether::package::ChunkType::baseGaussians, "base-gaussians.bin", false},
     ChunkSource{aether::package::ChunkType::materialGaussians, "material-gaussians.bin", false},
     ChunkSource{aether::package::ChunkType::residuals, "residuals.bin", false},
     ChunkSource{aether::package::ChunkType::clusterHierarchy, "cluster-hierarchy.bin", false},
@@ -75,9 +79,11 @@ std::string escapeJson(std::string_view value) {
 int usage() {
     std::cout << "Usage: aether-pack <scene-directory> [--output scene.aether] "
                  "[--preset balanced] [--dry-run] [--json]\n\n"
-                 "The directory schema uses metadata.json and either base-gaussians.ply or "
-                 "canonical base-gaussians.bin as required inputs. Optional proxy geometry uses "
-                 "proxy.ply or canonical proxy-mesh.bin.\n"
+                 "The directory schema requires metadata.json and at least one primary "
+                 "representation: base-gaussians.ply/base-gaussians.bin, or a validated "
+                 "canonical-asset.json profile containing a self-contained metric GLB, cameras, "
+                 "confidence, and provenance. Optional proxy geometry uses proxy.ply or "
+                 "proxy-mesh.bin.\n"
                  "Presets: full, balanced, memory-constrained, performance, cinematic.\n";
     return 0;
 }
@@ -90,6 +96,13 @@ int fail(std::string_view message, bool json, int code = 2) {
         std::cerr << message << '\n';
     }
     return code;
+}
+
+bool requestsJson(int argc, char** argv) noexcept {
+    for (int index = 1; index < argc; ++index)
+        if (std::strcmp(argv[index], "--json") == 0)
+            return true;
+    return false;
 }
 
 std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
@@ -160,7 +173,7 @@ aether::Result<std::vector<std::byte>> readFile(const std::filesystem::path& pat
 }
 } // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     int parseExitCode = 0;
     auto options = parseOptions(argc, argv, parseExitCode);
     if (!options)
@@ -174,7 +187,30 @@ int main(int argc, char** argv) {
     aether::package::PackageWriter writer;
     std::size_t chunkCount = 0;
     std::uint64_t sourceBytes = 0;
+    std::size_t canonicalVertices = 0;
+    std::size_t canonicalTriangles = 0;
+    std::size_t canonicalCameras = 0;
+    std::size_t canonicalMaterials = 0;
+    std::size_t canonicalImages = 0;
+    const auto canonicalManifestPath = options->input / "canonical-asset.json";
+    const bool hasCanonicalProfile =
+        std::filesystem::is_regular_file(canonicalManifestPath, error) && !error;
+    std::optional<aether::canonical::CanonicalAssetPayload> canonicalAsset;
+    if (hasCanonicalProfile) {
+        auto loaded = aether::canonical::CanonicalAssetLoader::load(options->input);
+        if (!loaded)
+            return fail(loaded.error().describe(), options->json, 3);
+        canonicalVertices = loaded->vertexCount;
+        canonicalTriangles = loaded->triangleCount;
+        canonicalCameras = loaded->cameraCount;
+        canonicalMaterials = loaded->materialCount;
+        canonicalImages = loaded->imageCount;
+        canonicalAsset = std::move(*loaded);
+    }
+    bool hasBaseGaussians = false;
     for (const ChunkSource& source : sources) {
+        if (canonicalAsset && source.type == aether::package::ChunkType::cameras)
+            continue;
         auto path = options->input / source.filename;
         const bool isBaseGaussians = source.type == aether::package::ChunkType::baseGaussians;
         const bool isProxyMesh = source.type == aether::package::ChunkType::proxyMesh;
@@ -190,6 +226,8 @@ int main(int argc, char** argv) {
                 return fail("Missing required chunk file: " + path.string(), options->json);
             continue;
         }
+        if (isBaseGaussians)
+            hasBaseGaussians = true;
         aether::Result<std::vector<std::byte>> bytes =
             aether::fail(aether::ErrorCode::internal, "Chunk source was not processed");
         if (isBaseGaussians && path.extension() == ".ply") {
@@ -224,6 +262,30 @@ int main(int argc, char** argv) {
         ++chunkCount;
     }
 
+    if (canonicalAsset) {
+        constexpr std::array canonicalChunks{
+            aether::package::ChunkType::canonicalAsset,
+            aether::package::ChunkType::canonicalMesh,
+            aether::package::ChunkType::cameras,
+            aether::package::ChunkType::canonicalConfidence,
+        };
+        const std::array<std::span<const std::byte>, canonicalChunks.size()> canonicalBytes{
+            canonicalAsset->manifestBytes,
+            canonicalAsset->meshBytes,
+            canonicalAsset->cameraBytes,
+            canonicalAsset->confidenceBytes,
+        };
+        for (std::size_t index = 0; index < canonicalChunks.size(); ++index) {
+            sourceBytes += canonicalBytes[index].size();
+            if (auto added = writer.addChunk(canonicalChunks[index], canonicalBytes[index], true);
+                !added)
+                return fail(added.error().describe(), options->json, 3);
+            ++chunkCount;
+        }
+    }
+    if (!hasBaseGaussians && !canonicalAsset)
+        return fail("Scene requires base Gaussians or a canonical asset profile", options->json);
+
     if (!options->dryRun) {
         auto result = writer.write(options->output);
         if (!result)
@@ -233,11 +295,39 @@ int main(int argc, char** argv) {
         std::cout << "{\"ok\":true,\"dryRun\":" << (options->dryRun ? "true" : "false")
                   << ",\"preset\":\"" << escapeJson(options->preset)
                   << "\",\"chunks\":" << chunkCount << ",\"sourceBytes\":" << sourceBytes
-                  << ",\"output\":\"" << escapeJson(options->output.string()) << "\"}\n";
+                  << ",\"canonical\":" << (canonicalAsset ? "true" : "false")
+                  << ",\"canonicalVertices\":" << canonicalVertices
+                  << ",\"canonicalTriangles\":" << canonicalTriangles
+                  << ",\"canonicalCameras\":" << canonicalCameras
+                  << ",\"canonicalMaterials\":" << canonicalMaterials
+                  << ",\"canonicalImages\":" << canonicalImages << ",\"output\":\""
+                  << escapeJson(options->output.string()) << "\"}\n";
     } else {
         std::cout << (options->dryRun ? "Validated " : "Packed ") << chunkCount << " chunks ("
                   << sourceBytes << " source bytes)"
                   << (options->dryRun ? "" : " to " + options->output.string()) << '\n';
     }
     return 0;
+}
+
+int main(int argc, char** argv) noexcept {
+    const bool json = requestsJson(argc, argv);
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        if (json)
+            std::fputs("{\"ok\":false,\"error\":{\"code\":\"internal\",\"message\":\"Unhandled "
+                       "package failure\"}}\n",
+                       stderr);
+        else
+            std::fprintf(stderr, "Unhandled package failure: %s\n", error.what());
+    } catch (...) {
+        if (json)
+            std::fputs("{\"ok\":false,\"error\":{\"code\":\"internal\",\"message\":\"Unhandled "
+                       "package failure\"}}\n",
+                       stderr);
+        else
+            std::fputs("Unhandled package failure\n", stderr);
+    }
+    return 5;
 }

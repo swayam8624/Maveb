@@ -1,3 +1,4 @@
+#include <aether/canonical/CanonicalAsset.hpp>
 #include <aether/core/Diagnostics.hpp>
 #include <aether/core/Error.hpp>
 #include <aether/core/JobSystem.hpp>
@@ -986,6 +987,8 @@ void testAetherPackage() {
     auto reader = aether::package::PackageReader::open(path);
     expect(reader.has_value(), "AETHER package header, table, and content hash validate");
     if (reader) {
+        expect(reader->info().majorVersion == 1 && reader->info().minorVersion == 0,
+               "Gaussian-only packages remain backward-compatible package version 1.0");
         expect(reader->info().chunks.size() == 2, "AETHER chunk table round-trips");
         auto decoded = reader->readChunk(aether::package::ChunkType::baseGaussians);
         expect(decoded.has_value() && *decoded == gaussians,
@@ -1003,6 +1006,52 @@ void testAetherPackage() {
     expect(!aether::package::PackageReader::open(path).has_value(),
            "Whole-package hash rejects corrupted content");
     std::filesystem::remove(path);
+}
+
+void testCanonicalAssetCodecs() {
+    aether::canonical::CameraRecord camera;
+    camera.id = "sony-0001";
+    camera.sourceId = "sony-a7v";
+    camera.image = "sony/0001.jpg";
+    camera.width = 1920;
+    camera.height = 1080;
+    camera.intrinsics = {1200.0, 1200.0, 960.0, 540.0};
+    camera.cameraToWorld = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                            0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0};
+    camera.timestampNanoseconds = 42;
+    camera.confidence = 0.9;
+    aether::canonical::CameraRig rig{{camera}};
+    auto encodedRig = aether::canonical::CameraRigCodec::encode(rig);
+    expect(encodedRig.has_value(), "Canonical camera rig encodes deterministically");
+    if (encodedRig) {
+        auto decodedRig = aether::canonical::CameraRigCodec::decode(*encodedRig);
+        expect(decodedRig.has_value() && decodedRig->cameras.size() == 1 &&
+                   decodedRig->cameras[0].image == camera.image &&
+                   decodedRig->cameras[0].cameraToWorld[12] == 1.0,
+               "Canonical camera rig preserves identity, calibration, and metric pose");
+        (*encodedRig)[0] = std::byte{0};
+        expect(!aether::canonical::CameraRigCodec::decode(*encodedRig).has_value(),
+               "Canonical camera decoder rejects invalid magic");
+    }
+    rig.cameras[0].cameraToWorld[0] = 2.0;
+    expect(!aether::canonical::CameraRigCodec::encode(rig).has_value(),
+           "Canonical camera encoder rejects a non-rigid transform");
+
+    constexpr std::array confidence{0.0F, 0.5F, 1.0F};
+    auto encodedConfidence = aether::canonical::ConfidenceCodec::encode(confidence);
+    expect(encodedConfidence.has_value(), "Canonical vertex confidence encodes deterministically");
+    if (encodedConfidence) {
+        auto decodedConfidence = aether::canonical::ConfidenceCodec::decode(*encodedConfidence);
+        expect(decodedConfidence.has_value() &&
+                   *decodedConfidence == std::vector<float>(confidence.begin(), confidence.end()),
+               "Canonical vertex confidence round-trips exactly");
+        (*encodedConfidence)[31] = std::byte{1};
+        expect(!aether::canonical::ConfidenceCodec::decode(*encodedConfidence).has_value(),
+               "Canonical confidence decoder rejects non-zero reserved fields");
+    }
+    constexpr std::array invalidConfidence{-0.1F};
+    expect(!aether::canonical::ConfidenceCodec::encode(invalidConfidence).has_value(),
+           "Canonical confidence encoder rejects values outside zero to one");
 }
 
 void testGaussianPly() {
@@ -1148,6 +1197,7 @@ int runTests() {
     testLocalShadowProjections();
     testSha256();
     testAetherPackage();
+    testCanonicalAssetCodecs();
     testGaussianPly();
     if (failures == 0) {
         std::cout << "All AETHER foundation tests passed\n";

@@ -61,6 +61,10 @@ renumber or replace the product phases.
   fixture; a billion-voxel logical room allocates only local observed blocks, and resident,
   candidate, extraction, disjoint-ray, and footprint-overflow failures are bounded and
   transactional. Extraction still uses a bounded dense active-span snapshot.
+- [x] [E2] **Canonical Asset v1 contract:** `.aether` can represent a self-contained metric textured
+  GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
+  geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
+  requiring Gaussian content. Real Sony+iPad fusion into this frame remains an E3 gate.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

@@ -5,6 +5,8 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <span>
+#include <string_view>
 
 namespace aether::mesh {
 
@@ -30,6 +32,13 @@ class GltfLoader final {
     /// Output: validated, indexed triangle primitives and metallic-roughness material factors.
     /// Task: isolate fastgltf and untrusted-file handling from renderer/GPU ownership.
     [[nodiscard]] static Result<MeshAsset> load(const std::filesystem::path& path,
+                                                const GltfLimits& limits = {});
+
+    /// Input: complete in-memory `.glb` bytes, a diagnostic name, and explicit limits.
+    /// Output: the same validated renderable asset produced by the filesystem loader.
+    /// Task: validate self-contained package payloads without temporary files or path access.
+    [[nodiscard]] static Result<MeshAsset> load(std::span<const std::byte> bytes,
+                                                std::string_view diagnosticName,
                                                 const GltfLimits& limits = {});
 };
 

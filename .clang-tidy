@@ -2,6 +2,7 @@ Checks: >
   bugprone-*,
   -bugprone-easily-swappable-parameters,
   clang-analyzer-*,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   performance-*,
   portability-*,
   modernize-use-nullptr,

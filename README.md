@@ -26,6 +26,9 @@ verified, shippable milestones. The current foundation contains:
   world frame.
 - A versioned, hashed, bounded, per-chunk compressed [`.aether` container](docs/formats/AETHER_PACKAGE.md)
   with `aether-pack` and `aether-inspect` command-line tools.
+- A [Canonical Asset v1](docs/formats/CANONICAL_ASSET.md) profile that packages a self-contained
+  metric textured GLB, calibrated cameras, per-vertex confidence, coordinate-frame semantics, and
+  hashed geometry/appearance provenance without requiring Gaussian content.
 - A bounded [standard 3DGS PLY importer](docs/formats/GAUSSIAN_PLY.md) and deterministic
   anisotropic CPU reference rasterizer.
 - A Metal 3 Gaussian correctness path with projection, covariance, stable tile/depth ordering,
