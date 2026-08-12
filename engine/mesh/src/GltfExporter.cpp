@@ -1,72 +1,25 @@
 #include <aether/mesh/GltfExporter.hpp>
+#include <aether/scene/Transform.hpp>
+
+#include <fastgltf/core.hpp>
+#include <fastgltf/types.hpp>
 
 #include <algorithm>
 #include <array>
 #include <bit>
 #include <cmath>
-#include <cstdio>
 #include <fstream>
-#include <iomanip>
 #include <limits>
-#include <locale>
-#include <span>
-#include <sstream>
+#include <memory>
+#include <optional>
+#include <ranges>
 #include <string>
 #include <string_view>
-#include <vector>
 
 namespace aether::mesh {
 namespace {
 
-constexpr std::uint32_t glbMagic = 0x46546c67U;
-constexpr std::uint32_t jsonChunkType = 0x4e4f534aU;
-constexpr std::uint32_t binaryChunkType = 0x004e4942U;
-constexpr std::uint32_t floatComponent = 5126;
-constexpr std::uint32_t unsignedIntComponent = 5125;
-constexpr std::uint32_t arrayBufferTarget = 34962;
-constexpr std::uint32_t elementArrayBufferTarget = 34963;
-
-struct BufferView final {
-    std::uint64_t offset{};
-    std::uint64_t bytes{};
-    std::optional<std::uint32_t> target;
-};
-
-struct Accessor final {
-    std::size_t bufferView{};
-    std::uint32_t componentType{};
-    std::size_t count{};
-    std::string_view type;
-    std::optional<std::array<float, 3>> minimum;
-    std::optional<std::array<float, 3>> maximum;
-};
-
-struct PrimitiveExport final {
-    std::size_t position{};
-    std::size_t normal{};
-    std::size_t tangent{};
-    std::size_t textureCoordinate{};
-    std::optional<std::size_t> color;
-    std::size_t indices{};
-};
-
-struct ImageExport final {
-    std::size_t bufferView{};
-    std::string_view mimeType;
-};
-
-void append32(std::vector<std::byte>& output, std::uint32_t value) {
-    for (std::uint32_t shift = 0; shift < 32; shift += 8)
-        output.push_back(static_cast<std::byte>((value >> shift) & 0xffU));
-}
-
-void appendFloat(std::vector<std::byte>& output, float value) {
-    append32(output, std::bit_cast<std::uint32_t>(value));
-}
-
-void align4(std::vector<std::byte>& output) {
-    output.insert(output.end(), (4U - output.size() % 4U) % 4U, std::byte{0});
-}
+constexpr std::size_t glbMaximumBytes = std::numeric_limits<std::uint32_t>::max();
 
 bool finite(simd_float2 value) {
     return std::isfinite(value.x) && std::isfinite(value.y);
@@ -88,609 +41,664 @@ bool finite(simd_float4x4 value) {
     return true;
 }
 
-std::string escapeJson(std::string_view value) {
-    std::string result;
-    result.reserve(value.size());
-    constexpr char hexadecimal[] = "0123456789abcdef";
-    for (const char rawCharacter : value) {
-        const auto character = static_cast<unsigned char>(rawCharacter);
-        switch (character) {
-        case '"':
-            result += "\\\"";
-            break;
-        case '\\':
-            result += "\\\\";
-            break;
-        case '\b':
-            result += "\\b";
-            break;
-        case '\f':
-            result += "\\f";
-            break;
-        case '\n':
-            result += "\\n";
-            break;
-        case '\r':
-            result += "\\r";
-            break;
-        case '\t':
-            result += "\\t";
-            break;
-        default:
-            if (character < 0x20U) {
-                result += "\\u00";
-                result += hexadecimal[(character >> 4U) & 0x0fU];
-                result += hexadecimal[character & 0x0fU];
-            } else {
-                result += static_cast<char>(character);
-            }
-        }
-    }
-    return result;
+Result<void> checkName(std::string_view name, const GltfExportLimits& limits,
+                       std::size_t& totalNameBytes, const char* kind) {
+    if (name.size() > limits.maximumNameBytes)
+        return fail(ErrorCode::resourceExhausted, std::string("GLB ") + kind + " name is too long");
+    if (name.find('\0') != std::string_view::npos)
+        return fail(ErrorCode::corruptData, std::string("GLB ") + kind + " name contains NUL");
+    if (name.size() > limits.maximumTotalNameBytes - totalNameBytes)
+        return fail(ErrorCode::resourceExhausted, "Static GLB names exceed their total byte limit");
+    totalNameBytes += name.size();
+    return {};
 }
 
-Result<std::string_view> imageMimeType(std::span<const std::byte> bytes) {
-    constexpr std::array pngMagic{std::byte{0x89}, std::byte{'P'},  std::byte{'N'},
-                                  std::byte{'G'},  std::byte{0x0d}, std::byte{0x0a},
-                                  std::byte{0x1a}, std::byte{0x0a}};
-    if (bytes.size() >= pngMagic.size() &&
-        std::equal(pngMagic.begin(), pngMagic.end(), bytes.begin()))
-        return "image/png";
+Result<fastgltf::MimeType> imageMime(std::span<const std::byte> bytes) {
+    constexpr std::array png{std::byte{0x89}, std::byte{'P'},  std::byte{'N'},  std::byte{'G'},
+                             std::byte{0x0d}, std::byte{0x0a}, std::byte{0x1a}, std::byte{0x0a}};
+    if (bytes.size() >= png.size() && std::ranges::equal(png, bytes.first(png.size())))
+        return fastgltf::MimeType::PNG;
     if (bytes.size() >= 3 && bytes[0] == std::byte{0xff} && bytes[1] == std::byte{0xd8} &&
         bytes[2] == std::byte{0xff})
-        return "image/jpeg";
+        return fastgltf::MimeType::JPEG;
     return fail(ErrorCode::unsupported,
-                "Native GLB export supports embedded PNG and JPEG textures only");
+                "Static GLB export currently embeds only PNG or JPEG texture images");
 }
 
-std::uint32_t wrapMode(SamplerAddressMode mode) {
+fastgltf::Filter minificationFilter(const TextureAsset& texture) {
+    if (texture.mipFilter == SamplerMipFilter::none)
+        return texture.minification == SamplerFilter::nearest ? fastgltf::Filter::Nearest
+                                                              : fastgltf::Filter::Linear;
+    if (texture.mipFilter == SamplerMipFilter::nearest)
+        return texture.minification == SamplerFilter::nearest
+                   ? fastgltf::Filter::NearestMipMapNearest
+                   : fastgltf::Filter::LinearMipMapNearest;
+    return texture.minification == SamplerFilter::nearest ? fastgltf::Filter::NearestMipMapLinear
+                                                          : fastgltf::Filter::LinearMipMapLinear;
+}
+
+fastgltf::Wrap wrapMode(SamplerAddressMode mode) {
     switch (mode) {
     case SamplerAddressMode::clampToEdge:
-        return 33071;
+        return fastgltf::Wrap::ClampToEdge;
     case SamplerAddressMode::mirroredRepeat:
-        return 33648;
+        return fastgltf::Wrap::MirroredRepeat;
     case SamplerAddressMode::repeat:
-        return 10497;
+        return fastgltf::Wrap::Repeat;
     }
-    return 10497;
+    return fastgltf::Wrap::Repeat;
 }
 
-std::uint32_t magnificationFilter(SamplerFilter filter) {
-    return filter == SamplerFilter::nearest ? 9728 : 9729;
+bool defaultTransform(const PbrMaterial::UvTransform& transform) {
+    return transform.scale.x == 1.0F && transform.scale.y == 1.0F && transform.offset.x == 0.0F &&
+           transform.offset.y == 0.0F && transform.rotation == 0.0F;
 }
 
-std::uint32_t minificationFilter(const TextureAsset& texture) {
-    if (texture.mipFilter == SamplerMipFilter::none)
-        return texture.minification == SamplerFilter::nearest ? 9728 : 9729;
-    if (texture.mipFilter == SamplerMipFilter::nearest)
-        return texture.minification == SamplerFilter::nearest ? 9984 : 9985;
-    return texture.minification == SamplerFilter::nearest ? 9986 : 9987;
+template <typename TextureInfo>
+Result<TextureInfo> makeTextureInfo(std::size_t textureIndex,
+                                    const PbrMaterial::UvTransform& transform,
+                                    std::size_t textureCount) {
+    if (textureIndex >= textureCount)
+        return fail(ErrorCode::corruptData, "GLB material references an invalid texture");
+    if (!finite(transform.scale) || !finite(transform.offset) || !std::isfinite(transform.rotation))
+        return fail(ErrorCode::corruptData, "GLB material UV transform is not finite");
+    TextureInfo info;
+    info.textureIndex = textureIndex;
+    info.texCoordIndex = 0;
+    if (!defaultTransform(transform)) {
+        info.transform = std::make_unique<fastgltf::TextureTransform>();
+        info.transform->rotation = transform.rotation;
+        info.transform->uvOffset = {transform.offset.x, transform.offset.y};
+        info.transform->uvScale = {transform.scale.x, transform.scale.y};
+    }
+    return info;
 }
 
-bool nonIdentity(const PbrMaterial::UvTransform& transform) {
-    return transform.scale.x != 1.0F || transform.scale.y != 1.0F || transform.offset.x != 0.0F ||
-           transform.offset.y != 0.0F || transform.rotation != 0.0F;
-}
-
-Result<void> validateMaterial(const PbrMaterial& material, std::size_t textureCount) {
-    if (!finite(material.baseColor) || !finite(material.emissive) ||
-        !std::isfinite(material.metallic) || !std::isfinite(material.roughness) ||
-        !std::isfinite(material.normalScale) || !std::isfinite(material.occlusionStrength) ||
-        !std::isfinite(material.alphaCutoff) || material.metallic < 0.0F ||
-        material.metallic > 1.0F || material.roughness < 0.0F || material.roughness > 1.0F ||
-        material.normalScale < 0.0F || material.occlusionStrength < 0.0F ||
-        material.occlusionStrength > 1.0F || material.alphaCutoff < 0.0F ||
-        material.alphaCutoff > 1.0F || (material.alphaBlend && material.alphaMask))
-        return fail(ErrorCode::corruptData, "Mesh material factors are invalid", material.name);
+bool hasTextureTransform(const PbrMaterial& material) {
     const std::array bindings{material.baseColorTexture, material.metallicRoughnessTexture,
                               material.normalTexture, material.occlusionTexture,
                               material.emissiveTexture};
-    for (std::size_t slot = 0; slot < bindings.size(); ++slot) {
-        const auto binding = bindings[slot];
-        if (binding.has_value()) {
-            const auto textureIndex = binding.value();
-            if (textureIndex >= textureCount)
-                return fail(ErrorCode::corruptData, "Mesh material texture index is invalid",
-                            material.name);
+    for (std::size_t index = 0; index < bindings.size(); ++index)
+        if (bindings[index] && !defaultTransform(material.uvTransforms[index]))
+            return true;
+    return false;
+}
+
+bool isImplicitDefault(const PbrMaterial& material) {
+    return material.baseColor.x == 1.0F && material.baseColor.y == 1.0F &&
+           material.baseColor.z == 1.0F && material.baseColor.w == 1.0F &&
+           material.emissive.x == 0.0F && material.emissive.y == 0.0F &&
+           material.emissive.z == 0.0F && material.metallic == 1.0F && material.roughness == 1.0F &&
+           material.normalScale == 1.0F && material.occlusionStrength == 1.0F &&
+           material.alphaCutoff == 0.5F && !material.doubleSided && !material.alphaBlend &&
+           !material.alphaMask && !material.baseColorTexture &&
+           !material.metallicRoughnessTexture && !material.normalTexture &&
+           !material.occlusionTexture && !material.emissiveTexture;
+}
+
+class StaticAssetBuilder final {
+  public:
+    explicit StaticAssetBuilder(const GltfExportLimits& limits) : limits_(limits) {}
+
+    Result<fastgltf::Asset> build(const MeshAsset& source) {
+        if (source.primitives.empty())
+            return fail(ErrorCode::invalidArgument, "Cannot export a GLB with no primitives");
+        if (source.primitives.size() > limits_.maximumPrimitives ||
+            source.materials.size() > limits_.maximumMaterials ||
+            source.textures.size() > limits_.maximumTextures ||
+            source.images.size() > limits_.maximumImages)
+            return fail(ErrorCode::resourceExhausted,
+                        "Static GLB asset exceeds object-count limits");
+        if (!source.animations.empty() || !source.skins.empty())
+            return fail(ErrorCode::unsupported,
+                        "Static GLB export does not accept animations or skins");
+        if (auto name = checkName(source.name, limits_, totalNameBytes_, "asset"); !name)
+            return std::unexpected(name.error());
+
+        fastgltf::Asset output;
+        fastgltf::AssetInfo info;
+        info.gltfVersion = "2.0";
+        info.generator = "Maveb deterministic native static GLB exporter";
+        output.assetInfo = std::move(info);
+
+        if (auto images = appendImages(source, output); !images)
+            return std::unexpected(images.error());
+        if (auto textures = appendTextures(source, output); !textures)
+            return std::unexpected(textures.error());
+        if (auto materials = appendMaterials(source, output); !materials)
+            return std::unexpected(materials.error());
+        if (auto meshes = appendMeshes(source, output); !meshes)
+            return std::unexpected(meshes.error());
+        if (auto scene = appendScene(source, output); !scene)
+            return std::unexpected(scene.error());
+
+        fastgltf::Buffer buffer;
+        buffer.byteLength = binary_.size();
+        buffer.name = "Maveb canonical binary payload";
+        buffer.data = fastgltf::sources::Vector{std::move(binary_), fastgltf::MimeType::GltfBuffer};
+        output.buffers.push_back(std::move(buffer));
+        return output;
+    }
+
+  private:
+    Result<void> ensureGrowth(std::size_t bytes) const {
+        const auto maximum = std::min<std::uint64_t>(limits_.maximumOutputBytes, glbMaximumBytes);
+        if (bytes > maximum || binary_.size() > maximum - bytes)
+            return fail(ErrorCode::resourceExhausted,
+                        "Static GLB binary payload exceeds its limit");
+        return {};
+    }
+
+    Result<void> alignBinary() {
+        const std::size_t padding = (4U - binary_.size() % 4U) % 4U;
+        if (auto growth = ensureGrowth(padding); !growth)
+            return growth;
+        binary_.insert(binary_.end(), padding, std::byte{0});
+        return {};
+    }
+
+    Result<std::size_t> beginView() {
+        if (auto aligned = alignBinary(); !aligned)
+            return std::unexpected(aligned.error());
+        return binary_.size();
+    }
+
+    Result<void> append32(std::uint32_t value) {
+        if (auto growth = ensureGrowth(sizeof(value)); !growth)
+            return growth;
+        for (std::uint32_t shift = 0; shift < 32; shift += 8)
+            binary_.push_back(static_cast<std::byte>((value >> shift) & 0xffU));
+        return {};
+    }
+
+    Result<void> appendFloat(float value) {
+        return append32(std::bit_cast<std::uint32_t>(value));
+    }
+
+    Result<std::size_t> finishView(fastgltf::Asset& output, std::size_t offset,
+                                   std::optional<fastgltf::BufferTarget> target,
+                                   std::string_view name) {
+        if (binary_.size() <= offset)
+            return fail(ErrorCode::corruptData, "Static GLB buffer view is empty");
+        fastgltf::BufferView view;
+        view.bufferIndex = 0;
+        view.byteOffset = offset;
+        view.byteLength = binary_.size() - offset;
+        if (target)
+            view.target = *target;
+        view.name = std::string(name);
+        output.bufferViews.push_back(std::move(view));
+        return output.bufferViews.size() - 1;
+    }
+
+    Result<void> appendImages(const MeshAsset& source, fastgltf::Asset& output) {
+        std::size_t totalImageBytes = 0;
+        output.images.reserve(source.images.size());
+        for (const auto& image : source.images) {
+            if (auto name = checkName(image.name, limits_, totalNameBytes_, "image"); !name)
+                return name;
+            if (image.bytes.empty() || image.bytes.size() > limits_.maximumImageBytes ||
+                totalImageBytes > limits_.maximumImageBytes - image.bytes.size())
+                return fail(ErrorCode::resourceExhausted,
+                            "Static GLB image bytes exceed their limit");
+            auto mime = imageMime(image.bytes);
+            if (!mime)
+                return std::unexpected(mime.error());
+            auto offset = beginView();
+            if (!offset)
+                return std::unexpected(offset.error());
+            if (auto growth = ensureGrowth(image.bytes.size()); !growth)
+                return growth;
+            binary_.insert(binary_.end(), image.bytes.begin(), image.bytes.end());
+            auto view = finishView(output, *offset, std::nullopt, image.name);
+            if (!view)
+                return std::unexpected(view.error());
+            fastgltf::Image encoded;
+            encoded.name = image.name;
+            encoded.data = fastgltf::sources::BufferView{*view, *mime};
+            output.images.push_back(std::move(encoded));
+            totalImageBytes += image.bytes.size();
         }
-        const auto& transform = material.uvTransforms[slot];
-        if (!finite(transform.scale) || !finite(transform.offset) ||
-            !std::isfinite(transform.rotation))
-            return fail(ErrorCode::corruptData, "Mesh material UV transform is not finite",
-                        material.name);
+        return {};
     }
-    return {};
-}
 
-Result<void> checkGrowth(std::uint64_t current, std::uint64_t additional, std::uint64_t limit,
-                         std::string_view purpose) {
-    if (additional > limit || current > limit - additional)
-        return fail(ErrorCode::resourceExhausted, "Native GLB export exceeds its byte budget",
-                    std::string(purpose));
-    return {};
-}
+    Result<void> appendTextures(const MeshAsset& source, fastgltf::Asset& output) const {
+        output.samplers.reserve(source.textures.size());
+        output.textures.reserve(source.textures.size());
+        for (std::size_t index = 0; index < source.textures.size(); ++index) {
+            const auto& texture = source.textures[index];
+            if (texture.imageIndex >= source.images.size())
+                return fail(ErrorCode::corruptData,
+                            "Static GLB texture references an invalid image");
+            fastgltf::Sampler sampler;
+            sampler.name = "Sampler " + std::to_string(index);
+            sampler.magFilter = texture.magnification == SamplerFilter::nearest
+                                    ? fastgltf::Filter::Nearest
+                                    : fastgltf::Filter::Linear;
+            sampler.minFilter = minificationFilter(texture);
+            sampler.wrapS = wrapMode(texture.addressU);
+            sampler.wrapT = wrapMode(texture.addressV);
+            output.samplers.push_back(std::move(sampler));
 
-template <typename Writer>
-Result<std::size_t> appendBufferView(std::vector<std::byte>& binary, std::vector<BufferView>& views,
-                                     std::uint64_t bytes, std::optional<std::uint32_t> target,
-                                     std::uint64_t limit, Writer&& writer) {
-    align4(binary);
-    if (auto growth = checkGrowth(binary.size(), bytes, limit, "binary buffer"); !growth)
-        return std::unexpected(growth.error());
-    const std::size_t viewIndex = views.size();
-    views.push_back(BufferView{binary.size(), bytes, target});
-    binary.reserve(binary.size() + static_cast<std::size_t>(bytes));
-    writer(binary);
-    if (binary.size() != views.back().offset + bytes)
-        return fail(ErrorCode::internal, "Native GLB attribute writer produced an invalid size");
-    return viewIndex;
-}
-
-void writeTextureBinding(std::ostringstream& json, std::string_view name,
-                         const std::optional<std::size_t>& texture,
-                         const PbrMaterial::UvTransform& transform, bool& first,
-                         std::optional<float> scalar = std::nullopt,
-                         std::string_view scalarName = {}) {
-    if (!texture)
-        return;
-    if (!first)
-        json << ',';
-    first = false;
-    json << '"' << name << "\":{\"index\":" << *texture;
-    if (scalar)
-        json << ",\"" << scalarName << "\":" << *scalar;
-    if (nonIdentity(transform)) {
-        json << ",\"extensions\":{\"KHR_texture_transform\":{\"offset\":[" << transform.offset.x
-             << ',' << transform.offset.y << "],\"rotation\":" << transform.rotation
-             << ",\"scale\":[" << transform.scale.x << ',' << transform.scale.y << "]}}";
+            fastgltf::Texture exported;
+            exported.name = "Texture " + std::to_string(index);
+            exported.imageIndex = texture.imageIndex;
+            exported.samplerIndex = index;
+            output.textures.push_back(std::move(exported));
+        }
+        return {};
     }
-    json << '}';
-}
+
+    Result<void> appendMaterials(const MeshAsset& source, fastgltf::Asset& output) {
+        if (!source.materials.empty() && !isImplicitDefault(source.materials.front()))
+            return fail(ErrorCode::corruptData,
+                        "Static GLB material slot zero must remain the implicit default");
+        if (std::ranges::any_of(source.materials, hasTextureTransform))
+            output.extensionsUsed.emplace_back(fastgltf::extensions::KHR_texture_transform);
+        if (source.materials.size() > 1)
+            output.materials.reserve(source.materials.size() - 1);
+        for (std::size_t index = 1; index < source.materials.size(); ++index) {
+            const auto& material = source.materials[index];
+            if (auto name = checkName(material.name, limits_, totalNameBytes_, "material"); !name)
+                return name;
+            if (!finite(material.baseColor) || !finite(material.emissive) ||
+                !std::isfinite(material.metallic) || !std::isfinite(material.roughness) ||
+                !std::isfinite(material.normalScale) ||
+                !std::isfinite(material.occlusionStrength) ||
+                !std::isfinite(material.alphaCutoff) || material.metallic < 0.0F ||
+                material.metallic > 1.0F || material.roughness < 0.0F ||
+                material.roughness > 1.0F || material.normalScale < 0.0F ||
+                material.occlusionStrength < 0.0F || material.occlusionStrength > 1.0F ||
+                material.alphaCutoff < 0.0F || material.alphaCutoff > 1.0F ||
+                std::ranges::any_of(std::array{material.baseColor.x, material.baseColor.y,
+                                               material.baseColor.z, material.baseColor.w},
+                                    [](float value) { return value < 0.0F || value > 1.0F; }) ||
+                material.emissive.x < 0.0F || material.emissive.y < 0.0F ||
+                material.emissive.z < 0.0F)
+                return fail(ErrorCode::corruptData, "Static GLB material factors are invalid");
+            if (material.alphaBlend && material.alphaMask)
+                return fail(ErrorCode::corruptData,
+                            "Static GLB material cannot be alpha blend and alpha mask");
+
+            fastgltf::Material exported;
+            exported.name = material.name;
+            exported.pbrData.baseColorFactor = {material.baseColor.x, material.baseColor.y,
+                                                material.baseColor.z, material.baseColor.w};
+            exported.pbrData.metallicFactor = material.metallic;
+            exported.pbrData.roughnessFactor = material.roughness;
+            exported.emissiveFactor = {material.emissive.x, material.emissive.y,
+                                       material.emissive.z};
+            exported.doubleSided = material.doubleSided;
+            exported.alphaCutoff = material.alphaCutoff;
+            exported.alphaMode = material.alphaBlend  ? fastgltf::AlphaMode::Blend
+                                 : material.alphaMask ? fastgltf::AlphaMode::Mask
+                                                      : fastgltf::AlphaMode::Opaque;
+            if (material.baseColorTexture) {
+                auto info = makeTextureInfo<fastgltf::TextureInfo>(
+                    *material.baseColorTexture, material.uvTransforms[0], source.textures.size());
+                if (!info)
+                    return std::unexpected(info.error());
+                exported.pbrData.baseColorTexture = std::move(*info);
+            }
+            if (material.metallicRoughnessTexture) {
+                auto info = makeTextureInfo<fastgltf::TextureInfo>(
+                    *material.metallicRoughnessTexture, material.uvTransforms[1],
+                    source.textures.size());
+                if (!info)
+                    return std::unexpected(info.error());
+                exported.pbrData.metallicRoughnessTexture = std::move(*info);
+            }
+            if (material.normalTexture) {
+                auto info = makeTextureInfo<fastgltf::NormalTextureInfo>(
+                    *material.normalTexture, material.uvTransforms[2], source.textures.size());
+                if (!info)
+                    return std::unexpected(info.error());
+                info->scale = material.normalScale;
+                exported.normalTexture = std::move(*info);
+            }
+            if (material.occlusionTexture) {
+                auto info = makeTextureInfo<fastgltf::OcclusionTextureInfo>(
+                    *material.occlusionTexture, material.uvTransforms[3], source.textures.size());
+                if (!info)
+                    return std::unexpected(info.error());
+                info->strength = material.occlusionStrength;
+                exported.occlusionTexture = std::move(*info);
+            }
+            if (material.emissiveTexture) {
+                auto info = makeTextureInfo<fastgltf::TextureInfo>(
+                    *material.emissiveTexture, material.uvTransforms[4], source.textures.size());
+                if (!info)
+                    return std::unexpected(info.error());
+                exported.emissiveTexture = std::move(*info);
+            }
+            output.materials.push_back(std::move(exported));
+        }
+        return {};
+    }
+
+    // The adjacent indices deliberately mirror glTF's buffer-view then element-count fields.
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+    Result<std::size_t> appendAccessor(fastgltf::Asset& output, std::size_t view, std::size_t count,
+                                       fastgltf::AccessorType type,
+                                       fastgltf::ComponentType component, std::string_view name) {
+        fastgltf::Accessor accessor;
+        accessor.bufferViewIndex = view;
+        accessor.byteOffset = 0;
+        accessor.count = count;
+        accessor.type = type;
+        accessor.componentType = component;
+        accessor.name = std::string(name);
+        output.accessors.push_back(std::move(accessor));
+        return output.accessors.size() - 1;
+    }
+
+    Result<void> appendMeshes(const MeshAsset& source, fastgltf::Asset& output) {
+        std::size_t totalVertices = 0;
+        std::size_t totalIndices = 0;
+        output.meshes.reserve(source.primitives.size());
+        for (std::size_t primitiveIndex = 0; primitiveIndex < source.primitives.size();
+             ++primitiveIndex) {
+            const auto& primitive = source.primitives[primitiveIndex];
+            if (auto name = checkName(primitive.name, limits_, totalNameBytes_, "primitive"); !name)
+                return name;
+            if (primitive.vertices.empty() || primitive.indices.empty() ||
+                primitive.indices.size() % 3 != 0)
+                return fail(ErrorCode::corruptData,
+                            "Static GLB primitive must contain indexed triangles");
+            if (primitive.vertices.size() > limits_.maximumVertices - totalVertices ||
+                primitive.indices.size() > limits_.maximumIndices - totalIndices)
+                return fail(ErrorCode::resourceExhausted,
+                            "Static GLB geometry exceeds vertex or index limits");
+            if (primitive.hasSkinAttributes || !primitive.morphTargets.empty() ||
+                !primitive.defaultMorphWeights.empty())
+                return fail(ErrorCode::unsupported,
+                            "Static GLB export does not accept skin or morph attributes");
+            if (!primitive.vertexColors.empty() &&
+                primitive.vertexColors.size() != primitive.vertices.size())
+                return fail(ErrorCode::corruptData,
+                            "Static GLB vertex-color count does not match vertices");
+            if ((!source.materials.empty() && primitive.materialIndex >= source.materials.size()) ||
+                (source.materials.empty() && primitive.materialIndex != 0))
+                return fail(ErrorCode::corruptData,
+                            "Static GLB primitive references an invalid material");
+
+            simd_float3 minimum = primitive.vertices.front().position;
+            simd_float3 maximum = minimum;
+            bool hasAnyTangent = false;
+            bool hasCompleteTangents = true;
+            for (const auto& vertex : primitive.vertices) {
+                if (!finite(vertex.position) || !finite(vertex.normal) || !finite(vertex.tangent) ||
+                    !finite(vertex.textureCoordinate) ||
+                    std::abs(simd_length(vertex.normal) - 1.0F) > 1.0e-3F)
+                    return fail(ErrorCode::corruptData,
+                                "Static GLB primitive contains invalid vertex attributes");
+                const simd_float3 tangent = {vertex.tangent.x, vertex.tangent.y, vertex.tangent.z};
+                const bool tangentPresent = simd_length_squared(tangent) > 1.0e-20F;
+                hasAnyTangent = hasAnyTangent || tangentPresent;
+                hasCompleteTangents = hasCompleteTangents && tangentPresent &&
+                                      std::abs(simd_length(tangent) - 1.0F) <= 1.0e-3F &&
+                                      std::abs(std::abs(vertex.tangent.w) - 1.0F) <= 1.0e-6F;
+                minimum = simd_min(minimum, vertex.position);
+                maximum = simd_max(maximum, vertex.position);
+            }
+            if (hasAnyTangent && !hasCompleteTangents)
+                return fail(ErrorCode::corruptData,
+                            "Static GLB primitive contains partial or invalid tangents");
+            for (const auto color : primitive.vertexColors)
+                if (!finite(color) || color.x < 0.0F || color.x > 1.0F || color.y < 0.0F ||
+                    color.y > 1.0F || color.z < 0.0F || color.z > 1.0F)
+                    return fail(ErrorCode::corruptData,
+                                "Static GLB primitive contains an invalid vertex color");
+            for (std::size_t index = 0; index < primitive.indices.size(); index += 3) {
+                const auto a = primitive.indices[index];
+                const auto b = primitive.indices[index + 1];
+                const auto c = primitive.indices[index + 2];
+                if (a >= primitive.vertices.size() || b >= primitive.vertices.size() ||
+                    c >= primitive.vertices.size() || a == b || b == c || a == c)
+                    return fail(ErrorCode::corruptData,
+                                "Static GLB primitive contains an invalid triangle");
+                const auto edge1 = primitive.vertices[b].position - primitive.vertices[a].position;
+                const auto edge2 = primitive.vertices[c].position - primitive.vertices[a].position;
+                if (simd_length_squared(simd_cross(edge1, edge2)) <= 1.0e-20F)
+                    return fail(ErrorCode::corruptData,
+                                "Static GLB primitive contains a zero-area triangle");
+            }
+
+            fastgltf::Primitive exportedPrimitive;
+            auto position = appendVec3(output, primitive, &MeshVertex::position, "POSITION");
+            auto normal = appendVec3(output, primitive, &MeshVertex::normal, "NORMAL");
+            auto uv = appendVec2(output, primitive, &MeshVertex::textureCoordinate, "TEXCOORD_0");
+            auto indices = appendIndices(output, primitive);
+            if (!position || !normal || !uv || !indices)
+                return std::unexpected((!position ? position.error()
+                                        : !normal ? normal.error()
+                                        : !uv     ? uv.error()
+                                                  : indices.error()));
+            output.accessors[*position].min = fastgltf::AccessorBoundsArray::ForType<double>(3);
+            output.accessors[*position].max = fastgltf::AccessorBoundsArray::ForType<double>(3);
+            for (std::size_t axis = 0; axis < 3; ++axis) {
+                output.accessors[*position].min->set<double>(axis, minimum[axis]);
+                output.accessors[*position].max->set<double>(axis, maximum[axis]);
+            }
+            exportedPrimitive.attributes.emplace_back(fastgltf::Attribute{"POSITION", *position});
+            exportedPrimitive.attributes.emplace_back(fastgltf::Attribute{"NORMAL", *normal});
+            if (hasCompleteTangents) {
+                auto tangent = appendVec4(output, primitive, &MeshVertex::tangent, "TANGENT");
+                if (!tangent)
+                    return std::unexpected(tangent.error());
+                exportedPrimitive.attributes.emplace_back(fastgltf::Attribute{"TANGENT", *tangent});
+            }
+            exportedPrimitive.attributes.emplace_back(fastgltf::Attribute{"TEXCOORD_0", *uv});
+            if (!primitive.vertexColors.empty()) {
+                auto color = appendColors(output, primitive);
+                if (!color)
+                    return std::unexpected(color.error());
+                exportedPrimitive.attributes.emplace_back(fastgltf::Attribute{"COLOR_0", *color});
+            }
+            exportedPrimitive.indicesAccessor = *indices;
+            if (primitive.materialIndex > 0)
+                exportedPrimitive.materialIndex = primitive.materialIndex - 1;
+
+            fastgltf::Mesh mesh;
+            mesh.name = primitive.name.empty() ? "Primitive " + std::to_string(primitiveIndex)
+                                               : primitive.name;
+            mesh.primitives.push_back(std::move(exportedPrimitive));
+            output.meshes.push_back(std::move(mesh));
+            totalVertices += primitive.vertices.size();
+            totalIndices += primitive.indices.size();
+        }
+        return {};
+    }
+
+    template <typename Member>
+    Result<std::size_t> appendAttribute(fastgltf::Asset& output, const MeshPrimitive& primitive,
+                                        Member member, std::size_t components,
+                                        fastgltf::AccessorType type, std::string_view name) {
+        auto offset = beginView();
+        if (!offset)
+            return std::unexpected(offset.error());
+        for (const auto& vertex : primitive.vertices)
+            for (std::size_t component = 0; component < components; ++component)
+                if (auto appended = appendFloat((vertex.*member)[component]); !appended)
+                    return std::unexpected(appended.error());
+        auto view = finishView(output, *offset, fastgltf::BufferTarget::ArrayBuffer, name);
+        if (!view)
+            return std::unexpected(view.error());
+        return appendAccessor(output, *view, primitive.vertices.size(), type,
+                              fastgltf::ComponentType::Float, name);
+    }
+
+    Result<std::size_t> appendVec2(fastgltf::Asset& output, const MeshPrimitive& primitive,
+                                   simd_float2 MeshVertex::* member, std::string_view name) {
+        return appendAttribute(output, primitive, member, 2, fastgltf::AccessorType::Vec2, name);
+    }
+
+    Result<std::size_t> appendVec3(fastgltf::Asset& output, const MeshPrimitive& primitive,
+                                   simd_float3 MeshVertex::* member, std::string_view name) {
+        return appendAttribute(output, primitive, member, 3, fastgltf::AccessorType::Vec3, name);
+    }
+
+    Result<std::size_t> appendVec4(fastgltf::Asset& output, const MeshPrimitive& primitive,
+                                   simd_float4 MeshVertex::* member, std::string_view name) {
+        return appendAttribute(output, primitive, member, 4, fastgltf::AccessorType::Vec4, name);
+    }
+
+    Result<std::size_t> appendColors(fastgltf::Asset& output, const MeshPrimitive& primitive) {
+        auto offset = beginView();
+        if (!offset)
+            return std::unexpected(offset.error());
+        for (const auto color : primitive.vertexColors)
+            for (std::size_t component = 0; component < 3; ++component)
+                if (auto appended = appendFloat(color[component]); !appended)
+                    return std::unexpected(appended.error());
+        auto view = finishView(output, *offset, fastgltf::BufferTarget::ArrayBuffer, "COLOR_0");
+        if (!view)
+            return std::unexpected(view.error());
+        return appendAccessor(output, *view, primitive.vertexColors.size(),
+                              fastgltf::AccessorType::Vec3, fastgltf::ComponentType::Float,
+                              "COLOR_0");
+    }
+
+    Result<std::size_t> appendIndices(fastgltf::Asset& output, const MeshPrimitive& primitive) {
+        auto offset = beginView();
+        if (!offset)
+            return std::unexpected(offset.error());
+        for (const auto index : primitive.indices)
+            if (auto appended = append32(index); !appended)
+                return std::unexpected(appended.error());
+        auto view =
+            finishView(output, *offset, fastgltf::BufferTarget::ElementArrayBuffer, "INDICES");
+        if (!view)
+            return std::unexpected(view.error());
+        return appendAccessor(output, *view, primitive.indices.size(),
+                              fastgltf::AccessorType::Scalar, fastgltf::ComponentType::UnsignedInt,
+                              "INDICES");
+    }
+
+    Result<void> appendScene(const MeshAsset& source, fastgltf::Asset& output) {
+        std::vector<MeshInstance> instances = source.instances;
+        if (instances.empty()) {
+            instances.reserve(source.primitives.size());
+            for (std::size_t index = 0; index < source.primitives.size(); ++index) {
+                MeshInstance instance;
+                instance.name = source.primitives[index].name;
+                instance.primitiveIndex = index;
+                instances.push_back(std::move(instance));
+            }
+        }
+        if (instances.size() > limits_.maximumInstances)
+            return fail(ErrorCode::resourceExhausted, "Static GLB exceeds instance-count limit");
+        fastgltf::Scene exportedScene;
+        exportedScene.name = source.name.empty() ? "Maveb Scene" : source.name;
+        exportedScene.nodeIndices.reserve(instances.size());
+        output.nodes.reserve(instances.size());
+        for (std::size_t index = 0; index < instances.size(); ++index) {
+            const auto& instance = instances[index];
+            if (instance.primitiveIndex >= source.primitives.size())
+                return fail(ErrorCode::corruptData,
+                            "Static GLB instance references an invalid primitive");
+            if (instance.skinIndex || !instance.morphWeights.empty())
+                return fail(ErrorCode::unsupported,
+                            "Static GLB export does not accept skinned or morphed instances");
+            if (!finite(instance.worldTransform) ||
+                std::abs(simd_determinant(instance.worldTransform)) < 1.0e-8F ||
+                std::abs(instance.worldTransform.columns[0].w) > 1.0e-6F ||
+                std::abs(instance.worldTransform.columns[1].w) > 1.0e-6F ||
+                std::abs(instance.worldTransform.columns[2].w) > 1.0e-6F ||
+                std::abs(instance.worldTransform.columns[3].w - 1.0F) > 1.0e-6F)
+                return fail(ErrorCode::corruptData,
+                            "Static GLB instance transform is non-finite or singular");
+            if (auto name = checkName(instance.name, limits_, totalNameBytes_, "instance"); !name)
+                return name;
+            auto decomposed = ::aether::scene::decomposeTransform(instance.worldTransform);
+            if (!decomposed)
+                return fail(ErrorCode::unsupported,
+                            "Static GLB instance transform cannot be represented as TRS",
+                            decomposed.error().describe());
+            fastgltf::TRS transform;
+            transform.translation = fastgltf::math::fvec3{
+                decomposed->translation.x, decomposed->translation.y, decomposed->translation.z};
+            transform.rotation =
+                fastgltf::math::fquat{decomposed->rotation.vector.x, decomposed->rotation.vector.y,
+                                      decomposed->rotation.vector.z, decomposed->rotation.vector.w};
+            transform.scale = fastgltf::math::fvec3{decomposed->scale.x, decomposed->scale.y,
+                                                    decomposed->scale.z};
+            fastgltf::Node node;
+            node.name = instance.name.empty() ? "Instance " + std::to_string(index) : instance.name;
+            node.meshIndex = instance.primitiveIndex;
+            node.transform = transform;
+            output.nodes.push_back(std::move(node));
+            exportedScene.nodeIndices.push_back(index);
+        }
+        output.scenes.push_back(std::move(exportedScene));
+        output.defaultScene = 0;
+        return {};
+    }
+
+    const GltfExportLimits& limits_;
+    std::size_t totalNameBytes_{};
+    std::vector<std::byte> binary_;
+};
 
 } // namespace
 
-Result<GltfExportReport> GltfExporter::writeGlb(const MeshAsset& asset,
-                                                const std::filesystem::path& destination,
-                                                const GltfExportLimits& limits) {
-    if (destination.empty())
-        return fail(ErrorCode::invalidArgument, "GLB destination is empty");
-    if (asset.primitives.empty() || asset.primitives.size() > limits.maximumPrimitives)
-        return fail(ErrorCode::invalidArgument, "GLB export requires a bounded mesh primitive set");
-    if (!asset.animations.empty() || !asset.skins.empty())
-        return fail(
-            ErrorCode::unsupported,
-            "Native GLB reconstruction export does not silently discard animation or skins");
-    if (asset.images.size() > limits.maximumImages)
-        return fail(ErrorCode::resourceExhausted, "GLB image count exceeds its limit");
+Result<std::vector<std::byte>> GltfExporter::encodeStatic(const MeshAsset& asset,
+                                                          const GltfExportLimits& limits) {
+    if (limits.maximumOutputBytes == 0 || limits.maximumOutputBytes > glbMaximumBytes ||
+        limits.maximumPrimitives == 0 || limits.maximumInstances == 0 ||
+        limits.maximumMaterials == 0 || limits.maximumTextures == 0 ||
+        limits.maximumVertices == 0 || limits.maximumIndices == 0 || limits.maximumImages == 0 ||
+        limits.maximumImageBytes == 0 || limits.maximumNameBytes == 0 ||
+        limits.maximumTotalNameBytes == 0)
+        return fail(ErrorCode::invalidArgument, "Static GLB export limits are invalid");
+    StaticAssetBuilder builder(limits);
+    auto output = builder.build(asset);
+    if (!output)
+        return std::unexpected(output.error());
+    fastgltf::Exporter exporter;
+    auto encoded = exporter.writeGltfBinary(*output, fastgltf::ExportOptions::ValidateAsset);
+    if (!encoded)
+        return fail(ErrorCode::corruptData, "fastgltf rejected the authored static GLB asset",
+                    std::string(fastgltf::getErrorMessage(encoded.error())));
+    if (encoded->output.empty() || encoded->output.size() > limits.maximumOutputBytes)
+        return fail(ErrorCode::resourceExhausted, "Encoded static GLB exceeds its output limit");
+    if (std::ranges::any_of(encoded->bufferPaths,
+                            [](const auto& path) { return path.has_value(); }) ||
+        std::ranges::any_of(encoded->imagePaths, [](const auto& path) { return path.has_value(); }))
+        return fail(ErrorCode::internal, "Static GLB exporter left an external resource");
+    return std::move(encoded->output);
+}
 
-    std::uint64_t totalImageBytes{};
-    std::vector<std::string_view> imageMimeTypes;
-    imageMimeTypes.reserve(asset.images.size());
-    for (const auto& image : asset.images) {
-        if (image.bytes.empty() || image.bytes.size() > limits.maximumImageBytes ||
-            totalImageBytes > limits.maximumImageBytes - image.bytes.size())
-            return fail(ErrorCode::resourceExhausted, "GLB image payload exceeds its limit",
-                        image.name);
-        auto mimeType = imageMimeType(image.bytes);
-        if (!mimeType)
-            return std::unexpected(mimeType.error());
-        imageMimeTypes.push_back(*mimeType);
-        totalImageBytes += image.bytes.size();
-    }
-    for (const auto& texture : asset.textures)
-        if (texture.imageIndex >= asset.images.size())
-            return fail(ErrorCode::corruptData, "Mesh texture references an invalid image");
-    for (const auto& material : asset.materials)
-        if (auto validated = validateMaterial(material, asset.textures.size()); !validated)
-            return std::unexpected(validated.error());
-
-    std::vector<MeshInstance> instances = asset.instances;
-    if (instances.empty()) {
-        instances.reserve(asset.primitives.size());
-        for (std::size_t primitive = 0; primitive < asset.primitives.size(); ++primitive) {
-            MeshInstance instance;
-            instance.name = asset.primitives[primitive].name;
-            instance.primitiveIndex = primitive;
-            instances.push_back(std::move(instance));
-        }
-    }
-    if (instances.empty() || instances.size() > limits.maximumInstances)
-        return fail(ErrorCode::resourceExhausted, "GLB instance count exceeds its limit");
-    for (const auto& instance : instances) {
-        if (instance.primitiveIndex >= asset.primitives.size())
-            return fail(ErrorCode::corruptData, "Mesh instance references an invalid primitive");
-        if (instance.skinIndex || !instance.morphWeights.empty())
-            return fail(ErrorCode::unsupported,
-                        "Native GLB reconstruction export does not silently discard deformation");
-        const float determinant = simd_determinant(instance.worldTransform);
-        if (!finite(instance.worldTransform) || !std::isfinite(determinant) ||
-            std::abs(determinant) <= 1.0e-12F)
-            return fail(ErrorCode::corruptData, "Mesh instance transform is non-finite or singular",
-                        instance.name);
-    }
-
-    std::vector<std::byte> binary;
-    std::vector<BufferView> bufferViews;
-    std::vector<Accessor> accessors;
-    std::vector<PrimitiveExport> primitiveExports;
-    primitiveExports.reserve(asset.primitives.size());
-    std::size_t totalVertices{};
-    std::size_t totalIndices{};
-    for (const auto& primitive : asset.primitives) {
-        if (primitive.vertices.empty() || primitive.indices.empty() ||
-            primitive.indices.size() % 3 != 0)
-            return fail(ErrorCode::corruptData, "Mesh primitive has invalid triangle geometry",
-                        primitive.name);
-        if (primitive.hasSkinAttributes || !primitive.morphTargets.empty() ||
-            !primitive.defaultMorphWeights.empty())
-            return fail(ErrorCode::unsupported,
-                        "Native GLB reconstruction export does not silently discard deformation",
-                        primitive.name);
-        if ((!asset.materials.empty() && primitive.materialIndex >= asset.materials.size()) ||
-            (asset.materials.empty() && primitive.materialIndex != 0))
-            return fail(ErrorCode::corruptData, "Mesh primitive material index is invalid",
-                        primitive.name);
-        if (!primitive.vertexColors.empty() &&
-            primitive.vertexColors.size() != primitive.vertices.size())
-            return fail(ErrorCode::corruptData, "Mesh vertex-color count does not match vertices",
-                        primitive.name);
-        if (primitive.vertices.size() > limits.maximumVertices - totalVertices ||
-            primitive.indices.size() > limits.maximumIndices - totalIndices)
-            return fail(ErrorCode::resourceExhausted, "GLB geometry exceeds its allocation limit");
-        totalVertices += primitive.vertices.size();
-        totalIndices += primitive.indices.size();
-
-        std::array<float, 3> minimum{primitive.vertices.front().position.x,
-                                     primitive.vertices.front().position.y,
-                                     primitive.vertices.front().position.z};
-        std::array<float, 3> maximum = minimum;
-        for (const auto& vertex : primitive.vertices) {
-            if (!finite(vertex.position) || !finite(vertex.normal) || !finite(vertex.tangent) ||
-                !finite(vertex.textureCoordinate) ||
-                simd_length_squared(vertex.normal) <= 1.0e-20F ||
-                simd_length_squared(vertex.tangent.xyz) <= 1.0e-20F)
-                return fail(ErrorCode::corruptData, "Mesh vertex attributes are invalid",
-                            primitive.name);
-            minimum[0] = std::min(minimum[0], vertex.position.x);
-            minimum[1] = std::min(minimum[1], vertex.position.y);
-            minimum[2] = std::min(minimum[2], vertex.position.z);
-            maximum[0] = std::max(maximum[0], vertex.position.x);
-            maximum[1] = std::max(maximum[1], vertex.position.y);
-            maximum[2] = std::max(maximum[2], vertex.position.z);
-        }
-        if (std::ranges::any_of(primitive.vertexColors,
-                                [](simd_float3 color) { return !finite(color); }))
-            return fail(ErrorCode::corruptData, "Mesh vertex color is not finite", primitive.name);
-        for (std::size_t index = 0; index < primitive.indices.size(); index += 3) {
-            const auto first = primitive.indices[index];
-            const auto second = primitive.indices[index + 1];
-            const auto third = primitive.indices[index + 2];
-            if (first >= primitive.vertices.size() || second >= primitive.vertices.size() ||
-                third >= primitive.vertices.size() || first == second || second == third ||
-                first == third)
-                return fail(ErrorCode::corruptData, "Mesh triangle indices are invalid",
-                            primitive.name);
-            const auto edge1 =
-                primitive.vertices[second].position - primitive.vertices[first].position;
-            const auto edge2 =
-                primitive.vertices[third].position - primitive.vertices[first].position;
-            if (simd_length_squared(simd_cross(edge1, edge2)) <= 1.0e-20F)
-                return fail(ErrorCode::corruptData, "Mesh contains a zero-area triangle",
-                            primitive.name);
-        }
-
-        PrimitiveExport exported;
-        auto appendAttribute =
-            [&](std::size_t components, const auto& valueWriter, std::string_view type,
-                std::optional<std::array<float, 3>> attributeMinimum = {},
-                std::optional<std::array<float, 3>> attributeMaximum = {}) -> Result<std::size_t> {
-            const std::uint64_t bytes = primitive.vertices.size() * components * sizeof(float);
-            auto view = appendBufferView(binary, bufferViews, bytes, arrayBufferTarget,
-                                         limits.maximumOutputBytes, valueWriter);
-            if (!view)
-                return std::unexpected(view.error());
-            const std::size_t accessor = accessors.size();
-            accessors.push_back(Accessor{*view, floatComponent, primitive.vertices.size(), type,
-                                         attributeMinimum, attributeMaximum});
-            return accessor;
-        };
-        auto position = appendAttribute(
-            3,
-            [&](auto& output) {
-                for (const auto& vertex : primitive.vertices) {
-                    appendFloat(output, vertex.position.x);
-                    appendFloat(output, vertex.position.y);
-                    appendFloat(output, vertex.position.z);
-                }
-            },
-            "VEC3", minimum, maximum);
-        auto normal = appendAttribute(
-            3,
-            [&](auto& output) {
-                for (const auto& vertex : primitive.vertices) {
-                    appendFloat(output, vertex.normal.x);
-                    appendFloat(output, vertex.normal.y);
-                    appendFloat(output, vertex.normal.z);
-                }
-            },
-            "VEC3");
-        auto tangent = appendAttribute(
-            4,
-            [&](auto& output) {
-                for (const auto& vertex : primitive.vertices) {
-                    appendFloat(output, vertex.tangent.x);
-                    appendFloat(output, vertex.tangent.y);
-                    appendFloat(output, vertex.tangent.z);
-                    appendFloat(output, vertex.tangent.w);
-                }
-            },
-            "VEC4");
-        auto textureCoordinate = appendAttribute(
-            2,
-            [&](auto& output) {
-                for (const auto& vertex : primitive.vertices) {
-                    appendFloat(output, vertex.textureCoordinate.x);
-                    appendFloat(output, vertex.textureCoordinate.y);
-                }
-            },
-            "VEC2");
-        if (!position || !normal || !tangent || !textureCoordinate)
-            return fail(ErrorCode::internal, "Unable to append GLB mesh attributes");
-        exported.position = *position;
-        exported.normal = *normal;
-        exported.tangent = *tangent;
-        exported.textureCoordinate = *textureCoordinate;
-        if (!primitive.vertexColors.empty()) {
-            auto color = appendAttribute(
-                3,
-                [&](auto& output) {
-                    for (const auto value : primitive.vertexColors) {
-                        appendFloat(output, value.x);
-                        appendFloat(output, value.y);
-                        appendFloat(output, value.z);
-                    }
-                },
-                "VEC3");
-            if (!color)
-                return std::unexpected(color.error());
-            exported.color = *color;
-        }
-        const std::uint64_t indexBytes = primitive.indices.size() * sizeof(std::uint32_t);
-        auto indexView = appendBufferView(binary, bufferViews, indexBytes, elementArrayBufferTarget,
-                                          limits.maximumOutputBytes, [&](auto& output) {
-                                              for (const auto index : primitive.indices)
-                                                  append32(output, index);
-                                          });
-        if (!indexView)
-            return std::unexpected(indexView.error());
-        exported.indices = accessors.size();
-        accessors.push_back(
-            Accessor{*indexView, unsignedIntComponent, primitive.indices.size(), "SCALAR", {}, {}});
-        primitiveExports.push_back(exported);
-    }
-
-    std::vector<ImageExport> imageExports;
-    imageExports.reserve(asset.images.size());
-    for (std::size_t index = 0; index < asset.images.size(); ++index) {
-        const auto& image = asset.images[index];
-        auto view = appendBufferView(binary, bufferViews, image.bytes.size(), std::nullopt,
-                                     limits.maximumOutputBytes, [&](auto& output) {
-                                         output.insert(output.end(), image.bytes.begin(),
-                                                       image.bytes.end());
-                                     });
-        if (!view)
-            return std::unexpected(view.error());
-        imageExports.push_back(ImageExport{*view, imageMimeTypes[index]});
-    }
-    align4(binary);
-
-    const bool usesTextureTransform =
-        std::ranges::any_of(asset.materials, [](const auto& material) {
-            return std::ranges::any_of(material.uvTransforms, nonIdentity);
-        });
-    std::ostringstream json;
-    json.imbue(std::locale::classic());
-    json << std::setprecision(std::numeric_limits<float>::max_digits10);
-    json << "{\"asset\":{\"version\":\"2.0\",\"generator\":\"Maveb native GLB exporter\"}";
-    if (usesTextureTransform)
-        json << ",\"extensionsUsed\":[\"KHR_texture_transform\"]";
-    json << ",\"scene\":0,\"scenes\":[{\"nodes\":[";
-    for (std::size_t index = 0; index < instances.size(); ++index) {
-        if (index > 0)
-            json << ',';
-        json << index;
-    }
-    json << "]}],\"nodes\":[";
-    for (std::size_t index = 0; index < instances.size(); ++index) {
-        if (index > 0)
-            json << ',';
-        const auto& instance = instances[index];
-        json << "{\"name\":\"" << escapeJson(instance.name)
-             << "\",\"mesh\":" << instance.primitiveIndex << ",\"matrix\":[";
-        bool first = true;
-        for (std::size_t column = 0; column < 4; ++column)
-            for (std::size_t row = 0; row < 4; ++row) {
-                if (!first)
-                    json << ',';
-                first = false;
-                json << instance.worldTransform.columns[column][row];
-            }
-        json << "]}";
-    }
-    json << "],\"meshes\":[";
-    for (std::size_t index = 0; index < asset.primitives.size(); ++index) {
-        if (index > 0)
-            json << ',';
-        const auto& primitive = asset.primitives[index];
-        const auto& exported = primitiveExports[index];
-        json << "{\"name\":\"" << escapeJson(primitive.name)
-             << "\",\"primitives\":[{\"attributes\":{\"POSITION\":" << exported.position
-             << ",\"NORMAL\":" << exported.normal << ",\"TANGENT\":" << exported.tangent
-             << ",\"TEXCOORD_0\":" << exported.textureCoordinate;
-        if (exported.color)
-            json << ",\"COLOR_0\":" << *exported.color;
-        json << "},\"indices\":" << exported.indices;
-        if (primitive.materialIndex > 0)
-            json << ",\"material\":" << primitive.materialIndex - 1;
-        json << "}]}";
-    }
-    json << ']';
-
-    if (asset.materials.size() > 1) {
-        json << ",\"materials\":[";
-        for (std::size_t index = 1; index < asset.materials.size(); ++index) {
-            if (index > 1)
-                json << ',';
-            const auto& material = asset.materials[index];
-            json << "{\"name\":\"" << escapeJson(material.name)
-                 << "\",\"pbrMetallicRoughness\":{\"baseColorFactor\":[" << material.baseColor.x
-                 << ',' << material.baseColor.y << ',' << material.baseColor.z << ','
-                 << material.baseColor.w << "],\"metallicFactor\":" << material.metallic
-                 << ",\"roughnessFactor\":" << material.roughness;
-            if (material.baseColorTexture) {
-                json << ",\"baseColorTexture\":{\"index\":" << *material.baseColorTexture;
-                if (nonIdentity(material.uvTransforms[0])) {
-                    const auto& transform = material.uvTransforms[0];
-                    json << ",\"extensions\":{\"KHR_texture_transform\":{\"offset\":["
-                         << transform.offset.x << ',' << transform.offset.y
-                         << "],\"rotation\":" << transform.rotation << ",\"scale\":["
-                         << transform.scale.x << ',' << transform.scale.y << "]}}";
-                }
-                json << '}';
-            }
-            if (material.metallicRoughnessTexture) {
-                json << ",\"metallicRoughnessTexture\":{\"index\":"
-                     << *material.metallicRoughnessTexture;
-                if (nonIdentity(material.uvTransforms[1])) {
-                    const auto& transform = material.uvTransforms[1];
-                    json << ",\"extensions\":{\"KHR_texture_transform\":{\"offset\":["
-                         << transform.offset.x << ',' << transform.offset.y
-                         << "],\"rotation\":" << transform.rotation << ",\"scale\":["
-                         << transform.scale.x << ',' << transform.scale.y << "]}}";
-                }
-                json << '}';
-            }
-            json << '}';
-            bool firstProperty = false;
-            writeTextureBinding(json, "normalTexture", material.normalTexture,
-                                material.uvTransforms[2], firstProperty, material.normalScale,
-                                "scale");
-            writeTextureBinding(json, "occlusionTexture", material.occlusionTexture,
-                                material.uvTransforms[3], firstProperty, material.occlusionStrength,
-                                "strength");
-            writeTextureBinding(json, "emissiveTexture", material.emissiveTexture,
-                                material.uvTransforms[4], firstProperty);
-            json << ",\"emissiveFactor\":[" << material.emissive.x << ',' << material.emissive.y
-                 << ',' << material.emissive.z << ']';
-            if (material.doubleSided)
-                json << ",\"doubleSided\":true";
-            if (material.alphaBlend)
-                json << ",\"alphaMode\":\"BLEND\"";
-            else if (material.alphaMask)
-                json << ",\"alphaMode\":\"MASK\",\"alphaCutoff\":" << material.alphaCutoff;
-            json << '}';
-        }
-        json << ']';
-    }
-    if (!asset.textures.empty()) {
-        json << ",\"samplers\":[";
-        for (std::size_t index = 0; index < asset.textures.size(); ++index) {
-            if (index > 0)
-                json << ',';
-            const auto& texture = asset.textures[index];
-            json << "{\"magFilter\":" << magnificationFilter(texture.magnification)
-                 << ",\"minFilter\":" << minificationFilter(texture)
-                 << ",\"wrapS\":" << wrapMode(texture.addressU)
-                 << ",\"wrapT\":" << wrapMode(texture.addressV) << '}';
-        }
-        json << "],\"textures\":[";
-        for (std::size_t index = 0; index < asset.textures.size(); ++index) {
-            if (index > 0)
-                json << ',';
-            json << "{\"sampler\":" << index << ",\"source\":" << asset.textures[index].imageIndex
-                 << '}';
-        }
-        json << ']';
-    }
-    if (!asset.images.empty()) {
-        json << ",\"images\":[";
-        for (std::size_t index = 0; index < asset.images.size(); ++index) {
-            if (index > 0)
-                json << ',';
-            json << "{\"name\":\"" << escapeJson(asset.images[index].name)
-                 << "\",\"bufferView\":" << imageExports[index].bufferView << ",\"mimeType\":\""
-                 << imageExports[index].mimeType << "\"}";
-        }
-        json << ']';
-    }
-    json << ",\"buffers\":[{\"byteLength\":" << binary.size() << "}],\"bufferViews\":[";
-    for (std::size_t index = 0; index < bufferViews.size(); ++index) {
-        if (index > 0)
-            json << ',';
-        const auto& view = bufferViews[index];
-        json << "{\"buffer\":0,\"byteOffset\":" << view.offset << ",\"byteLength\":" << view.bytes;
-        if (view.target)
-            json << ",\"target\":" << *view.target;
-        json << '}';
-    }
-    json << "],\"accessors\":[";
-    for (std::size_t index = 0; index < accessors.size(); ++index) {
-        if (index > 0)
-            json << ',';
-        const auto& accessor = accessors[index];
-        json << "{\"bufferView\":" << accessor.bufferView
-             << ",\"componentType\":" << accessor.componentType << ",\"count\":" << accessor.count
-             << ",\"type\":\"" << accessor.type << '"';
-        if (accessor.minimum)
-            json << ",\"min\":[" << (*accessor.minimum)[0] << ',' << (*accessor.minimum)[1] << ','
-                 << (*accessor.minimum)[2] << ']';
-        if (accessor.maximum)
-            json << ",\"max\":[" << (*accessor.maximum)[0] << ',' << (*accessor.maximum)[1] << ','
-                 << (*accessor.maximum)[2] << ']';
-        json << '}';
-    }
-    json << "]}";
-
-    std::string jsonBytes = json.str();
-    jsonBytes.append((4U - jsonBytes.size() % 4U) % 4U, ' ');
-    const std::uint64_t totalBytes = 12ULL + 8ULL + jsonBytes.size() + 8ULL + binary.size();
-    if (totalBytes > limits.maximumOutputBytes ||
-        totalBytes > std::numeric_limits<std::uint32_t>::max())
-        return fail(ErrorCode::resourceExhausted, "GLB output exceeds 32-bit container limits");
-    std::vector<std::byte> output;
-    output.reserve(static_cast<std::size_t>(totalBytes));
-    append32(output, glbMagic);
-    append32(output, 2);
-    append32(output, static_cast<std::uint32_t>(totalBytes));
-    append32(output, static_cast<std::uint32_t>(jsonBytes.size()));
-    append32(output, jsonChunkType);
-    for (const char character : jsonBytes)
-        output.push_back(static_cast<std::byte>(static_cast<unsigned char>(character)));
-    append32(output, static_cast<std::uint32_t>(binary.size()));
-    append32(output, binaryChunkType);
-    output.insert(output.end(), binary.begin(), binary.end());
-
+Result<void> GltfExporter::writeStatic(const MeshAsset& asset,
+                                       const std::filesystem::path& destination,
+                                       const GltfExportLimits& limits) {
+    if (destination.empty() || destination.extension() != ".glb")
+        return fail(ErrorCode::invalidArgument, "Static GLB output must use the .glb extension");
+    auto encoded = encodeStatic(asset, limits);
+    if (!encoded)
+        return std::unexpected(encoded.error());
     auto temporary = destination;
     temporary += ".tmp";
     std::error_code filesystemError;
     std::filesystem::remove(temporary, filesystemError);
-    filesystemError.clear();
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
-    stream.write(reinterpret_cast<const char*>(output.data()),
-                 static_cast<std::streamsize>(output.size()));
-    stream.close();
-    if (!stream) {
+    if (!stream)
+        return fail(ErrorCode::io, "Unable to create temporary GLB", temporary.string());
+    stream.write(reinterpret_cast<const char*>(encoded->data()),
+                 static_cast<std::streamsize>(encoded->size()));
+    stream.flush();
+    if (!stream.good()) {
+        stream.close();
         std::filesystem::remove(temporary, filesystemError);
-        return fail(ErrorCode::io, "Unable to write complete GLB", destination);
+        return fail(ErrorCode::io, "Unable to write complete GLB", destination.string());
     }
+    stream.close();
     std::filesystem::rename(temporary, destination, filesystemError);
     if (filesystemError) {
         std::filesystem::remove(temporary, filesystemError);
-        return fail(ErrorCode::io, "Unable to publish GLB atomically", filesystemError.message());
+        return fail(ErrorCode::io, "Unable to publish GLB atomically", destination.string());
     }
-    return GltfExportReport{
-        asset.primitives.size(), instances.size(),      totalVertices,       totalIndices / 3,
-        asset.materials.size(),  asset.textures.size(), asset.images.size(), totalBytes};
+    return {};
 }
 
 } // namespace aether::mesh

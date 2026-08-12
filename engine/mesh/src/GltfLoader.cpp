@@ -171,28 +171,14 @@ std::size_t MeshAsset::indexCount() const noexcept {
     return result;
 }
 
-Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const GltfLimits& limits) {
-    std::error_code filesystemError;
-    const auto fileBytes = std::filesystem::file_size(path, filesystemError);
-    if (filesystemError) {
-        return fail(ErrorCode::notFound, "Unable to read glTF file", path.string());
-    }
-    if (fileBytes == 0 || fileBytes > limits.maximumFileBytes) {
-        return fail(ErrorCode::resourceExhausted, "glTF file size is empty or exceeds its limit",
-                    path.string());
-    }
-
-    auto source = fastgltf::MappedGltfFile::FromPath(path);
-    if (!source) {
-        return fail(ErrorCode::corruptData, "Unable to map glTF file",
-                    std::string(fastgltf::getErrorMessage(source.error())));
-    }
+Result<MeshAsset> loadData(fastgltf::GltfDataGetter& source, const std::filesystem::path& directory,
+                           std::string_view diagnosticName, const GltfLimits& limits) {
     fastgltf::Parser parser(fastgltf::Extensions::KHR_mesh_quantization |
                             fastgltf::Extensions::KHR_texture_transform);
     constexpr auto options =
         fastgltf::Options::LoadExternalBuffers | fastgltf::Options::LoadExternalImages |
         fastgltf::Options::GenerateMeshIndices | fastgltf::Options::DecomposeNodeMatrices;
-    auto parsed = parser.loadGltf(source.get(), path.parent_path(), options,
+    auto parsed = parser.loadGltf(source, directory, options,
                                   fastgltf::Category::OnlyRenderable |
                                       fastgltf::Category::Animations | fastgltf::Category::Skins);
     if (parsed.error() != fastgltf::Error::None) {
@@ -202,7 +188,7 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
     fastgltf::Asset& sourceAsset = parsed.get();
 
     MeshAsset result;
-    result.name = path.stem().string();
+    result.name = std::string(diagnosticName);
     result.nodes.resize(sourceAsset.nodes.size());
     for (std::size_t nodeIndex = 0; nodeIndex < sourceAsset.nodes.size(); ++nodeIndex) {
         const auto& sourceNode = sourceAsset.nodes[nodeIndex];
@@ -439,7 +425,6 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
 
             bool hasNormals = false;
             bool hasTextureCoordinates = false;
-            bool hasVertexColors = false;
             bool hasTangents = false;
             bool hasJoints = false;
             bool hasWeights = false;
@@ -474,32 +459,40 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
             if (const auto* colorAttribute = sourcePrimitive.findAttribute("COLOR_0");
                 colorAttribute != sourcePrimitive.attributes.end()) {
                 const auto& accessor = sourceAsset.accessors[colorAttribute->accessorIndex];
-                if (accessor.count != primitive.vertices.size() ||
-                    accessor.componentType != fastgltf::ComponentType::Float ||
+                const bool supportedComponent =
+                    accessor.componentType == fastgltf::ComponentType::Float ||
+                    ((accessor.componentType == fastgltf::ComponentType::UnsignedByte ||
+                      accessor.componentType == fastgltf::ComponentType::UnsignedShort) &&
+                     accessor.normalized);
+                if (accessor.count != primitive.vertices.size() || !supportedComponent ||
                     (accessor.type != fastgltf::AccessorType::Vec3 &&
                      accessor.type != fastgltf::AccessorType::Vec4))
-                    return fail(ErrorCode::unsupported,
-                                "AETHER requires COLOR_0 float VEC3 or opaque VEC4 data");
+                    return fail(ErrorCode::corruptData, "glTF vertex-color accessor is invalid");
                 primitive.vertexColors.resize(primitive.vertices.size());
+                bool unsupportedAlpha = false;
                 if (accessor.type == fastgltf::AccessorType::Vec3) {
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(
-                        sourceAsset, accessor,
-                        [&](const fastgltf::math::fvec3& value, std::size_t index) {
+                        sourceAsset, accessor, [&](const auto& value, std::size_t index) {
                             primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
                         });
                 } else {
-                    bool transparentVertex = false;
                     fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(
-                        sourceAsset, accessor,
-                        [&](const fastgltf::math::fvec4& value, std::size_t index) {
+                        sourceAsset, accessor, [&](const auto& value, std::size_t index) {
                             primitive.vertexColors[index] = {value.x(), value.y(), value.z()};
-                            transparentVertex |= std::abs(value.w() - 1.0F) > 1.0e-6F;
+                            unsupportedAlpha =
+                                unsupportedAlpha || std::abs(value.w() - 1.0F) > 1.0e-6F;
                         });
-                    if (transparentVertex)
-                        return fail(ErrorCode::unsupported,
-                                    "MeshAsset does not represent COLOR_0 vertex alpha");
                 }
-                hasVertexColors = true;
+                if (unsupportedAlpha)
+                    return fail(ErrorCode::unsupported,
+                                "AETHER mesh colors do not yet represent COLOR_0 alpha");
+                if (std::ranges::any_of(primitive.vertexColors, [](simd_float3 color) {
+                        return !std::isfinite(color.x) || !std::isfinite(color.y) ||
+                               !std::isfinite(color.z) || color.x < 0.0F || color.x > 1.0F ||
+                               color.y < 0.0F || color.y > 1.0F || color.z < 0.0F || color.z > 1.0F;
+                    }))
+                    return fail(ErrorCode::corruptData,
+                                "glTF vertex color is outside linear zero-to-one range");
             }
             if (const auto* tangentAttribute = sourcePrimitive.findAttribute("TANGENT");
                 tangentAttribute != sourcePrimitive.attributes.end()) {
@@ -580,12 +573,6 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
             }
             if (!hasTangents)
                 generateTangents(primitive);
-            if (hasVertexColors &&
-                std::ranges::any_of(primitive.vertexColors, [](simd_float3 color) {
-                    return !std::isfinite(color.x) || !std::isfinite(color.y) ||
-                           !std::isfinite(color.z);
-                }))
-                return fail(ErrorCode::corruptData, "glTF vertex color is not finite");
             if (sourcePrimitive.targets.size() > limits.maximumMorphTargetsPerPrimitive)
                 return fail(ErrorCode::resourceExhausted,
                             "glTF primitive exceeds morph-target limit");
@@ -865,6 +852,34 @@ Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const Gltf
         result.animations.push_back(std::move(clip));
     }
     return result;
+}
+
+Result<MeshAsset> GltfLoader::load(const std::filesystem::path& path, const GltfLimits& limits) {
+    std::error_code filesystemError;
+    const auto fileBytes = std::filesystem::file_size(path, filesystemError);
+    if (filesystemError)
+        return fail(ErrorCode::notFound, "Unable to read glTF file", path.string());
+    if (fileBytes == 0 || fileBytes > limits.maximumFileBytes)
+        return fail(ErrorCode::resourceExhausted, "glTF file size is empty or exceeds its limit",
+                    path.string());
+
+    auto source = fastgltf::MappedGltfFile::FromPath(path);
+    if (!source)
+        return fail(ErrorCode::corruptData, "Unable to map glTF file",
+                    std::string(fastgltf::getErrorMessage(source.error())));
+    return loadData(source.get(), path.parent_path(), path.stem().string(), limits);
+}
+
+Result<MeshAsset> GltfLoader::load(std::span<const std::byte> bytes,
+                                   std::string_view diagnosticName, const GltfLimits& limits) {
+    if (bytes.empty() || bytes.size() > limits.maximumFileBytes)
+        return fail(ErrorCode::resourceExhausted, "glTF payload is empty or exceeds its limit",
+                    std::string(diagnosticName));
+    auto source = fastgltf::GltfDataBuffer::FromBytes(bytes.data(), bytes.size());
+    if (!source)
+        return fail(ErrorCode::corruptData, "Unable to copy glTF payload",
+                    std::string(fastgltf::getErrorMessage(source.error())));
+    return loadData(source.get(), std::filesystem::path{"."}, diagnosticName, limits);
 }
 
 } // namespace aether::mesh

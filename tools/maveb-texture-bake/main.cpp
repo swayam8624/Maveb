@@ -613,7 +613,7 @@ int run(int argc, char** argv) {
         destination += ".dry-run.tmp.glb";
     std::error_code error;
     std::filesystem::remove(destination, error);
-    auto exported = aether::mesh::GltfExporter::writeGlb(asset, destination);
+    auto exported = aether::mesh::GltfExporter::writeStatic(asset, destination);
     if (!exported)
         return fail(exported.error().describe(), options->json, 5);
     auto roundTrip = aether::mesh::GltfLoader::load(destination);

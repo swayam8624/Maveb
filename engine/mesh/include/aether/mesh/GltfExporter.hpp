@@ -6,41 +6,40 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <vector>
 
 namespace aether::mesh {
 
 struct GltfExportLimits final {
-    std::size_t maximumVertices{50'000'000};
-    std::size_t maximumIndices{150'000'000};
+    std::uint64_t maximumOutputBytes{1ULL * 1024ULL * 1024ULL * 1024ULL};
     std::size_t maximumPrimitives{1'000'000};
     std::size_t maximumInstances{1'000'000};
+    std::size_t maximumMaterials{1'000'000};
+    std::size_t maximumTextures{1'000'000};
+    std::size_t maximumVertices{50'000'000};
+    std::size_t maximumIndices{150'000'000};
     std::size_t maximumImages{100'000};
     std::size_t maximumImageBytes{1ULL * 1024ULL * 1024ULL * 1024ULL};
-    std::uint64_t maximumOutputBytes{4ULL * 1024ULL * 1024ULL * 1024ULL - 1ULL};
-};
-
-struct GltfExportReport final {
-    std::size_t primitives{};
-    std::size_t instances{};
-    std::size_t vertices{};
-    std::size_t triangles{};
-    std::size_t materials{};
-    std::size_t textures{};
-    std::size_t images{};
-    std::uint64_t outputBytes{};
+    std::size_t maximumNameBytes{4096};
+    std::size_t maximumTotalNameBytes{64ULL * 1024ULL * 1024ULL};
 };
 
 class GltfExporter final {
   public:
-    /// Input: a validated static reconstruction mesh and explicit resource limits.
-    /// Output: one deterministic, self-contained glTF 2 GLB published atomically.
-    /// Task: preserve indexed geometry, flat world instances, PBR materials, embedded images,
-    /// samplers, UV transforms, alpha modes, and optional vertex colors without Blender.
-    /// Failure: animation, skins, morph targets, unsupported image encodings, malformed geometry,
-    /// singular transforms, allocation overflow, or I/O failure produce structured errors.
-    [[nodiscard]] static Result<GltfExportReport> writeGlb(const MeshAsset& asset,
-                                                           const std::filesystem::path& destination,
-                                                           const GltfExportLimits& limits = {});
+    /// Input: a validated static mesh asset in glTF's right-handed, Y-up metre frame.
+    /// Output: deterministic, self-contained glTF 2 GLB bytes with embedded PNG/JPEG images.
+    /// Task: author canonical reconstruction surfaces without a Blender conversion dependency.
+    /// Failure: rejects unbounded, malformed, skinned, animated, or morph-target content rather
+    /// than silently dropping data; those non-canonical profiles require a future exporter mode.
+    [[nodiscard]] static Result<std::vector<std::byte>>
+    encodeStatic(const MeshAsset& asset, const GltfExportLimits& limits = {});
+
+    /// Input: the same static asset plus a `.glb` destination.
+    /// Output: an atomically replaced self-contained GLB file.
+    /// Task: keep partial files out of reconstruction exports when validation or I/O fails.
+    [[nodiscard]] static Result<void> writeStatic(const MeshAsset& asset,
+                                                  const std::filesystem::path& destination,
+                                                  const GltfExportLimits& limits = {});
 };
 
 } // namespace aether::mesh
