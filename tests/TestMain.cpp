@@ -1,3 +1,4 @@
+#include <aether/canonical/CanonicalAsset.hpp>
 #include <aether/core/Diagnostics.hpp>
 #include <aether/core/Error.hpp>
 #include <aether/core/JobSystem.hpp>
@@ -15,10 +16,10 @@
 #include <aether/mesh/TransparentSort.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
-#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
 #include <aether/reconstruction/GeometryEvaluation.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
+#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/rendergraph/RenderGraph.hpp>
 #include <aether/scene/Camera.hpp>
 #include <aether/scene/CameraController.hpp>
@@ -32,6 +33,7 @@
 #include <bit>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -145,13 +147,11 @@ void testOracleTsdfReconstruction() {
     expect(volume.has_value(), "Valid bounded dense TSDF volume is created");
     if (!volume)
         return;
-    expect(!volume->extractMesh().has_value(),
-           "An unobserved TSDF volume cannot produce geometry");
+    expect(!volume->extractMesh().has_value(), "An unobserved TSDF volume cannot produce geometry");
 
     constexpr std::uint32_t width = 64;
     constexpr std::uint32_t height = 64;
-    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3,
-                                 std::byte{128});
+    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3, std::byte{128});
     std::vector<std::byte> depth(static_cast<std::size_t>(width) * height * sizeof(float));
     constexpr float planeDepth = 1.0F;
     for (std::size_t index = 0; index < static_cast<std::size_t>(width) * height; ++index)
@@ -203,9 +203,10 @@ void testOracleTsdfReconstruction() {
     expect(boundsEstimator.has_value() &&
                boundsEstimator->observe(packet, *pose, *observation).has_value(),
            "Calibrated metric depth contributes to automatic TSDF bounds");
-    auto estimatedBounds = boundsEstimator ? boundsEstimator->estimate()
-                                           : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
-                                                 std::unexpected(boundsEstimator.error()));
+    auto estimatedBounds = boundsEstimator
+                               ? boundsEstimator->estimate()
+                               : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
+                                     std::unexpected(boundsEstimator.error()));
     expect(estimatedBounds.has_value() && estimatedBounds->sampledPoints == 256 &&
                estimatedBounds->volume.dimensions[2] >= 2 &&
                estimatedBounds->volume.dimensions[0] <= 64 &&
@@ -214,8 +215,7 @@ void testOracleTsdfReconstruction() {
     expect(volume->integrate(packet, *pose, *observation).has_value(),
            "Known-pose metric depth updates the TSDF");
     auto mesh = volume->extractMesh();
-    expect(mesh.has_value() && !mesh->primitives.empty() &&
-               !mesh->primitives[0].indices.empty(),
+    expect(mesh.has_value() && !mesh->primitives.empty() && !mesh->primitives[0].indices.empty(),
            "Observed TSDF extracts a connected zero-crossing surface");
     if (!mesh)
         return;
@@ -223,19 +223,16 @@ void testOracleTsdfReconstruction() {
     std::vector<std::array<double, 3>> reference;
     for (int y = -10; y <= 10; ++y)
         for (int x = -10; x <= 10; ++x)
-            reference.push_back({static_cast<double>(x) * 0.04,
-                                 static_cast<double>(y) * 0.04, 1.0});
+            reference.push_back(
+                {static_cast<double>(x) * 0.04, static_cast<double>(y) * 0.04, 1.0});
     auto metrics = aether::reconstruction::evaluateGeometry(*mesh, reference, 0.05);
     expect(metrics.has_value() && metrics->accuracyMeanMetres <= 0.02,
            "Oracle plane reconstruction stays within half a voxel accuracy");
-    expect(metrics.has_value() && metrics->invalidIndices == 0 &&
-               metrics->degenerateTriangles == 0,
+    expect(metrics.has_value() && metrics->invalidIndices == 0 && metrics->degenerateTriangles == 0,
            "Extracted oracle mesh contains valid non-degenerate triangles");
 
-    const auto firstPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
-    const auto secondPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
+    const auto firstPath = std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
+    const auto secondPath = std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
     expect(aether::mesh::exportToPly(*mesh, firstPath).has_value() &&
                aether::mesh::exportToPly(*mesh, secondPath).has_value(),
            "Hardened PLY exporter atomically writes oracle geometry");
@@ -681,6 +678,7 @@ void testMeshAnimation() {
 
     asset.nodes[0].parentIndex = 1;
     std::vector<aether::scene::Transform> cyclicLocals;
+    cyclicLocals.reserve(asset.nodes.size());
     for (const auto& node : asset.nodes)
         cyclicLocals.push_back(node.localTransform);
     expect(!aether::mesh::resolveWorldTransforms(asset, cyclicLocals).has_value(),
@@ -923,6 +921,8 @@ void testAetherPackage() {
     auto reader = aether::package::PackageReader::open(path);
     expect(reader.has_value(), "AETHER package header, table, and content hash validate");
     if (reader) {
+        expect(reader->info().majorVersion == 1 && reader->info().minorVersion == 0,
+               "Gaussian-only packages remain backward-compatible package version 1.0");
         expect(reader->info().chunks.size() == 2, "AETHER chunk table round-trips");
         auto decoded = reader->readChunk(aether::package::ChunkType::baseGaussians);
         expect(decoded.has_value() && *decoded == gaussians,
@@ -940,6 +940,52 @@ void testAetherPackage() {
     expect(!aether::package::PackageReader::open(path).has_value(),
            "Whole-package hash rejects corrupted content");
     std::filesystem::remove(path);
+}
+
+void testCanonicalAssetCodecs() {
+    aether::canonical::CameraRecord camera;
+    camera.id = "sony-0001";
+    camera.sourceId = "sony-a7v";
+    camera.image = "sony/0001.jpg";
+    camera.width = 1920;
+    camera.height = 1080;
+    camera.intrinsics = {1200.0, 1200.0, 960.0, 540.0};
+    camera.cameraToWorld = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                            0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0};
+    camera.timestampNanoseconds = 42;
+    camera.confidence = 0.9;
+    aether::canonical::CameraRig rig{{camera}};
+    auto encodedRig = aether::canonical::CameraRigCodec::encode(rig);
+    expect(encodedRig.has_value(), "Canonical camera rig encodes deterministically");
+    if (encodedRig) {
+        auto decodedRig = aether::canonical::CameraRigCodec::decode(*encodedRig);
+        expect(decodedRig.has_value() && decodedRig->cameras.size() == 1 &&
+                   decodedRig->cameras[0].image == camera.image &&
+                   decodedRig->cameras[0].cameraToWorld[12] == 1.0,
+               "Canonical camera rig preserves identity, calibration, and metric pose");
+        (*encodedRig)[0] = std::byte{0};
+        expect(!aether::canonical::CameraRigCodec::decode(*encodedRig).has_value(),
+               "Canonical camera decoder rejects invalid magic");
+    }
+    rig.cameras[0].cameraToWorld[0] = 2.0;
+    expect(!aether::canonical::CameraRigCodec::encode(rig).has_value(),
+           "Canonical camera encoder rejects a non-rigid transform");
+
+    constexpr std::array confidence{0.0F, 0.5F, 1.0F};
+    auto encodedConfidence = aether::canonical::ConfidenceCodec::encode(confidence);
+    expect(encodedConfidence.has_value(), "Canonical vertex confidence encodes deterministically");
+    if (encodedConfidence) {
+        auto decodedConfidence = aether::canonical::ConfidenceCodec::decode(*encodedConfidence);
+        expect(decodedConfidence.has_value() &&
+                   *decodedConfidence == std::vector<float>(confidence.begin(), confidence.end()),
+               "Canonical vertex confidence round-trips exactly");
+        (*encodedConfidence)[31] = std::byte{1};
+        expect(!aether::canonical::ConfidenceCodec::decode(*encodedConfidence).has_value(),
+               "Canonical confidence decoder rejects non-zero reserved fields");
+    }
+    constexpr std::array invalidConfidence{-0.1F};
+    expect(!aether::canonical::ConfidenceCodec::encode(invalidConfidence).has_value(),
+           "Canonical confidence encoder rejects values outside zero to one");
 }
 
 void testGaussianPly() {
@@ -1062,7 +1108,7 @@ void testGaussianPly() {
 
 } // namespace
 
-int main() {
+int runTests() {
     testErrors();
     testResourceLocator();
     testDiagnostics();
@@ -1084,9 +1130,21 @@ int main() {
     testLocalShadowProjections();
     testSha256();
     testAetherPackage();
+    testCanonicalAssetCodecs();
     testGaussianPly();
     if (failures == 0) {
         std::cout << "All AETHER foundation tests passed\n";
     }
     return failures == 0 ? 0 : 1;
+}
+
+int main() noexcept {
+    try {
+        return runTests();
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: unhandled foundation-test exception: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "FAIL: unhandled foundation-test exception\n";
+    }
+    return 1;
 }

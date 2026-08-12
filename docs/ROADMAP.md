@@ -36,6 +36,10 @@ renumber or replace the product phases.
 - [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
   provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
   validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
+- [x] [E2] **Canonical Asset v1 contract:** `.aether` can represent a self-contained metric textured
+  GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
+  geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
+  requiring Gaussian content. Real Sony+iPad fusion into this frame remains an E3 gate.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

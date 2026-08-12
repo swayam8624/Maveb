@@ -23,6 +23,9 @@ enum class ChunkType : std::uint32_t {
     collision = 9,
     thumbnail = 10,
     benchmarkPath = 11,
+    canonicalAsset = 12,
+    canonicalMesh = 13,
+    canonicalConfidence = 14,
 };
 
 enum class Compression { none, zstd };

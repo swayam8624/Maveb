@@ -1,6 +1,11 @@
+#include <aether/canonical/CanonicalAsset.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
 
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -38,9 +43,16 @@ int usage() {
     std::cout << "Usage: aether-inspect [--json] <scene.aether>\n";
     return 0;
 }
+
+bool requestsJson(int argc, char** argv) noexcept {
+    for (int index = 1; index < argc; ++index)
+        if (std::strcmp(argv[index], "--json") == 0)
+            return true;
+    return false;
+}
 } // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     bool json = false;
     std::filesystem::path path;
     for (int index = 1; index < argc; ++index) {
@@ -74,6 +86,71 @@ int main(int argc, char** argv) {
         return 3;
     }
     const auto& info = package->info();
+    const auto hasChunk = [&](aether::package::ChunkType type) {
+        return std::ranges::any_of(info.chunks,
+                                   [&](const auto& chunk) { return chunk.type == type; });
+    };
+    const bool hasAnyCanonicalChunk = hasChunk(aether::package::ChunkType::canonicalAsset) ||
+                                      hasChunk(aether::package::ChunkType::canonicalMesh) ||
+                                      hasChunk(aether::package::ChunkType::canonicalConfidence);
+    std::optional<aether::canonical::CanonicalManifest> canonicalManifest;
+    std::size_t canonicalCameras = 0;
+    std::size_t canonicalConfidenceValues = 0;
+    if (hasAnyCanonicalChunk) {
+        if (info.majorVersion == 1 && info.minorVersion < 1) {
+            std::cerr << (json ? "{\"ok\":false,\"error\":{\"code\":\"canonical-asset-error\","
+                                 "\"message\":\"Canonical asset chunks require package version "
+                                 "1.1 or newer\"}}\n"
+                               : "Canonical asset chunks require package version 1.1 or newer\n");
+            return 4;
+        }
+        if (!hasChunk(aether::package::ChunkType::canonicalAsset) ||
+            !hasChunk(aether::package::ChunkType::canonicalMesh) ||
+            !hasChunk(aether::package::ChunkType::canonicalConfidence) ||
+            !hasChunk(aether::package::ChunkType::cameras)) {
+            std::cerr << (json ? "{\"ok\":false,\"error\":{\"code\":\"canonical-asset-error\","
+                                 "\"message\":\"Canonical asset chunks are incomplete\"}}\n"
+                               : "Canonical asset chunks are incomplete\n");
+            return 4;
+        }
+        auto manifestBytes = package->readChunk(aether::package::ChunkType::canonicalAsset);
+        auto meshBytes = package->readChunk(aether::package::ChunkType::canonicalMesh);
+        auto cameraBytes = package->readChunk(aether::package::ChunkType::cameras);
+        auto confidenceBytes = package->readChunk(aether::package::ChunkType::canonicalConfidence);
+        if (!manifestBytes || !meshBytes || !cameraBytes || !confidenceBytes) {
+            std::cerr << (json ? "{\"ok\":false,\"error\":{\"code\":\"canonical-asset-error\","
+                                 "\"message\":\"Unable to read canonical asset chunks\"}}\n"
+                               : "Unable to read canonical asset chunks\n");
+            return 4;
+        }
+        auto manifest = aether::canonical::CanonicalAssetLoader::parseManifest(*manifestBytes);
+        auto mesh = aether::canonical::CanonicalAssetLoader::validateMeshPayload(*meshBytes);
+        auto cameras = aether::canonical::CameraRigCodec::decode(*cameraBytes);
+        auto confidence = aether::canonical::ConfidenceCodec::decode(*confidenceBytes);
+        if (!manifest || !mesh || !cameras || !confidence) {
+            const auto message = !manifest  ? manifest.error().describe()
+                                 : !mesh    ? mesh.error().describe()
+                                 : !cameras ? cameras.error().describe()
+                                            : confidence.error().describe();
+            std::cerr << (json ? "{\"ok\":false,\"error\":{\"code\":\"canonical-asset-error\","
+                                 "\"message\":\"" +
+                                     escapeJson(message) + "\"}}\n"
+                               : message + "\n");
+            return 4;
+        }
+        if (confidence->size() != mesh->vertexCount) {
+            const std::string message =
+                "Canonical confidence count does not match canonical mesh vertices";
+            std::cerr << (json ? "{\"ok\":false,\"error\":{\"code\":\"canonical-asset-error\","
+                                 "\"message\":\"" +
+                                     escapeJson(message) + "\"}}\n"
+                               : message + "\n");
+            return 4;
+        }
+        canonicalCameras = cameras->cameras.size();
+        canonicalConfidenceValues = confidence->size();
+        canonicalManifest = std::move(*manifest);
+    }
     if (json) {
         std::cout << "{\"schemaVersion\":1,\"path\":\"" << escapeJson(path.string())
                   << "\",\"packageVersion\":\"" << info.majorVersion << '.' << info.minorVersion
@@ -90,7 +167,16 @@ int main(int argc, char** argv) {
                       << "\",\"storedBytes\":" << chunk.storedBytes
                       << ",\"uncompressedBytes\":" << chunk.uncompressedBytes << '}';
         }
-        std::cout << "]}\n";
+        std::cout << "],\"canonical\":" << (canonicalManifest ? "true" : "false");
+        if (canonicalManifest) {
+            std::cout << ",\"canonicalAsset\":{\"name\":\"" << escapeJson(canonicalManifest->name)
+                      << "\",\"coordinateSystem\":\""
+                      << escapeJson(canonicalManifest->coordinateSystem)
+                      << "\",\"metersPerUnit\":" << canonicalManifest->metersPerUnit
+                      << ",\"cameras\":" << canonicalCameras
+                      << ",\"confidenceValues\":" << canonicalConfidenceValues << '}';
+        }
+        std::cout << "}\n";
     } else {
         std::cout << "Scene: " << path << "\nVersion: " << info.majorVersion << '.'
                   << info.minorVersion << "\nBytes: " << info.fileBytes
@@ -102,6 +188,32 @@ int main(int argc, char** argv) {
                       << (chunk.compression == aether::package::Compression::zstd ? " (zstd)" : "")
                       << (chunk.required ? " required" : " optional") << '\n';
         }
+        if (canonicalManifest)
+            std::cout << "Canonical asset: " << canonicalManifest->name << " (" << canonicalCameras
+                      << " cameras, " << canonicalConfidenceValues << " confidence values, metres, "
+                      << canonicalManifest->coordinateSystem << ")\n";
     }
     return 0;
+}
+
+int main(int argc, char** argv) noexcept {
+    const bool json = requestsJson(argc, argv);
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        if (json)
+            std::fputs("{\"ok\":false,\"error\":{\"code\":\"internal\",\"message\":\"Unhandled "
+                       "package inspection failure\"}}\n",
+                       stderr);
+        else
+            std::fprintf(stderr, "Unhandled package inspection failure: %s\n", error.what());
+    } catch (...) {
+        if (json)
+            std::fputs("{\"ok\":false,\"error\":{\"code\":\"internal\",\"message\":\"Unhandled "
+                       "package inspection failure\"}}\n",
+                       stderr);
+        else
+            std::fputs("Unhandled package inspection failure\n", stderr);
+    }
+    return 5;
 }
