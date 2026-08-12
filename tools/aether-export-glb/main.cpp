@@ -189,14 +189,13 @@ int run(int argc, char** argv) {
                   << ",\"input\":\"" << escapeJson(options->input.string()) << "\",\"output\":\""
                   << escapeJson(options->output.string()) << "\",\"sha256\":\""
                   << aether::package::Sha256::hex(*hash) << "\",\"bytes\":" << outputBytes
-                  << ",\"primitives\":" << primitives
-                  << ",\"instances\":" << instances << ",\"vertices\":" << vertices
-                  << ",\"triangles\":" << triangles
+                  << ",\"primitives\":" << primitives << ",\"instances\":" << instances
+                  << ",\"vertices\":" << vertices << ",\"triangles\":" << triangles
                   << ",\"materials\":" << materials << ",\"textures\":" << textures
                   << ",\"images\":" << images << "}\n";
     } else {
-        std::cout << (options->dryRun ? "Validated" : "Exported") << " native GLB with "
-                  << vertices << " vertices and " << triangles << " triangles\n";
+        std::cout << (options->dryRun ? "Validated" : "Exported") << " native GLB with " << vertices
+                  << " vertices and " << triangles << " triangles\n";
     }
     return 0;
 }

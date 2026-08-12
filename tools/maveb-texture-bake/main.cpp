@@ -665,8 +665,7 @@ int run(int argc, char** argv) {
                    << ",\"visibilityHeight\":" << options->bake.visibilityHeight
                    << ",\"gutterPixels\":" << options->bake.gutterPixels
                    << ",\"maximumCamerasPerTriangle\":" << options->bake.maximumCamerasPerTriangle
-                   << "},\"result\":{\"glbSha256\":\"" << hash
-                   << "\",\"glbBytes\":" << bytes.size()
+                   << "},\"result\":{\"glbSha256\":\"" << hash << "\",\"glbBytes\":" << bytes.size()
                    << ",\"triangles\":" << baked->report.triangles
                    << ",\"cameras\":" << baked->report.cameras
                    << ",\"coverage\":" << baked->report.coverage
