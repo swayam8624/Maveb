@@ -1,3 +1,4 @@
+#include <aether/canonical/CanonicalAsset.hpp>
 #include <aether/core/Diagnostics.hpp>
 #include <aether/core/Error.hpp>
 #include <aether/core/JobSystem.hpp>
@@ -10,15 +11,17 @@
 #include <aether/hybrid/ProxyMeshCodec.hpp>
 #include <aether/hybrid/ProxyPlyLoader.hpp>
 #include <aether/mesh/Animation.hpp>
+#include <aether/mesh/GltfExporter.hpp>
 #include <aether/mesh/GltfLoader.hpp>
 #include <aether/mesh/PlyExporter.hpp>
 #include <aether/mesh/TransparentSort.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
-#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
 #include <aether/reconstruction/GeometryEvaluation.hpp>
+#include <aether/reconstruction/ReconstructionInput.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
+#include <aether/reconstruction/SparseModelValidator.hpp>
 #include <aether/rendergraph/RenderGraph.hpp>
 #include <aether/scene/Camera.hpp>
 #include <aether/scene/CameraController.hpp>
@@ -32,6 +35,7 @@
 #include <bit>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -113,6 +117,29 @@ void testSparseCoverageValidation() {
                "Sparse coverage report retains registration and graph evidence");
         expect(valid->maximumViewAngleDegrees > 10.0,
                "Sparse coverage report measures camera angular diversity");
+        const std::array<std::filesystem::path, 3> selectedNames{"a.jpg", "b.jpg", "c.jpg"};
+        auto exact =
+            aether::reconstruction::validateSparseTextModel(root, selectedNames, thresholds);
+        expect(exact.has_value() && exact->passed(),
+               "Sparse coverage accepts registered names from the exact selected input list");
+        const std::array<std::filesystem::path, 3> foreignNames{"a.jpg", "b.jpg", "other.jpg"};
+        auto foreign =
+            aether::reconstruction::validateSparseTextModel(root, foreignNames, thresholds);
+        expect(foreign.has_value() && !foreign->passed(),
+               "Sparse coverage rejects a foreign registered image even when counts match");
+        auto stronger = *valid;
+        stronger.trackedPoints += 100;
+        std::vector<aether::reconstruction::SparseModelCandidate> candidates{
+            {"0", root / "0", root / "0-text", *valid},
+            {"1", root / "1", root / "1-text", stronger}};
+        auto selected = aether::reconstruction::selectBestSparseModel(candidates);
+        expect(selected.has_value() && selected->candidateIndex == 1 &&
+                   selected->reason.find("model 1") != std::string::npos,
+               "Sparse model selection ranks every passing model instead of assuming model zero");
+        candidates[0].coverage.issues.emplace_back("fixture failure");
+        candidates[1].coverage.issues.emplace_back("fixture failure");
+        expect(!aether::reconstruction::selectBestSparseModel(candidates).has_value(),
+               "Sparse model selection rejects a set with no passing candidate");
     }
     thresholds.minimumTrackedPoints = 2;
     auto weak = aether::reconstruction::validateSparseTextModel(root, 3, thresholds);
@@ -133,6 +160,48 @@ void testSparseCoverageValidation() {
     std::filesystem::remove_all(root);
 }
 
+void testReconstructionInputContract() {
+    const auto root = std::filesystem::temp_directory_path() / "aether-input-contract-test";
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root);
+    const auto manifestPath = root / "camera-groups.json";
+    {
+        std::ofstream manifest(manifestPath);
+        manifest << R"({
+  "schemaVersion": 1,
+  "groups": [
+    {"id":"sony","relativeDirectory":"sony","device":"Sony Alpha 7 V","lens":"FE 28-70mm F3.5-5.6 OSS","focalLengthMillimetres":35,"calibrationId":"sony-35-v1"},
+    {"id":"ipad","relativeDirectory":"ipad","device":"iPad Pro 11-inch 3rd generation","lens":"wide","calibrationId":"ipad-wide-v1"}
+  ]
+})";
+    }
+    auto manifest = aether::reconstruction::loadCameraGroupManifest(manifestPath);
+    expect(manifest.has_value() && manifest->groups.size() == 2,
+           "Versioned camera-group metadata preserves device, lens, and calibration identity");
+    if (manifest) {
+        const std::vector<std::filesystem::path> covered{
+            "sony/frame-0001.jpg", "sony/frame-0002.jpg", "ipad/frame-0001.jpg"};
+        expect(aether::reconstruction::validateCameraGroups(*manifest, covered).has_value(),
+               "Every selected image maps to exactly one declared camera folder");
+        const std::vector<std::filesystem::path> uncovered{"sony/frame-0001.jpg",
+                                                           "unknown/frame-0001.jpg"};
+        expect(!aether::reconstruction::validateCameraGroups(*manifest, uncovered).has_value(),
+               "Undeclared multi-camera images are rejected instead of merged silently");
+    }
+    {
+        std::ofstream nested(manifestPath, std::ios::trunc);
+        nested
+            << R"({"schemaVersion":1,"groups":[{"id":"nested","relativeDirectory":"sony/zoom","device":"Sony","lens":"zoom"}]})";
+    }
+    expect(!aether::reconstruction::loadCameraGroupManifest(manifestPath).has_value(),
+           "Camera groups reject nested directories that COLMAP could ambiguously merge");
+    expect(aether::reconstruction::defaultMatcher(
+               aether::reconstruction::ReconstructionInputKind::video) ==
+               aether::reconstruction::MatcherStrategy::sequential,
+           "Video reconstruction defaults to sequence-aware matching");
+    std::filesystem::remove_all(root);
+}
+
 void testOracleTsdfReconstruction() {
     aether::reconstruction::DenseTsdfConfig config;
     config.dimensions = {21, 21, 17};
@@ -145,13 +214,11 @@ void testOracleTsdfReconstruction() {
     expect(volume.has_value(), "Valid bounded dense TSDF volume is created");
     if (!volume)
         return;
-    expect(!volume->extractMesh().has_value(),
-           "An unobserved TSDF volume cannot produce geometry");
+    expect(!volume->extractMesh().has_value(), "An unobserved TSDF volume cannot produce geometry");
 
     constexpr std::uint32_t width = 64;
     constexpr std::uint32_t height = 64;
-    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3,
-                                 std::byte{128});
+    std::vector<std::byte> color(static_cast<std::size_t>(width) * height * 3, std::byte{128});
     std::vector<std::byte> depth(static_cast<std::size_t>(width) * height * sizeof(float));
     constexpr float planeDepth = 1.0F;
     for (std::size_t index = 0; index < static_cast<std::size_t>(width) * height; ++index)
@@ -203,9 +270,10 @@ void testOracleTsdfReconstruction() {
     expect(boundsEstimator.has_value() &&
                boundsEstimator->observe(packet, *pose, *observation).has_value(),
            "Calibrated metric depth contributes to automatic TSDF bounds");
-    auto estimatedBounds = boundsEstimator ? boundsEstimator->estimate()
-                                           : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
-                                                 std::unexpected(boundsEstimator.error()));
+    auto estimatedBounds = boundsEstimator
+                               ? boundsEstimator->estimate()
+                               : aether::Result<aether::reconstruction::DenseTsdfBoundsResult>(
+                                     std::unexpected(boundsEstimator.error()));
     expect(estimatedBounds.has_value() && estimatedBounds->sampledPoints == 256 &&
                estimatedBounds->volume.dimensions[2] >= 2 &&
                estimatedBounds->volume.dimensions[0] <= 64 &&
@@ -214,8 +282,7 @@ void testOracleTsdfReconstruction() {
     expect(volume->integrate(packet, *pose, *observation).has_value(),
            "Known-pose metric depth updates the TSDF");
     auto mesh = volume->extractMesh();
-    expect(mesh.has_value() && !mesh->primitives.empty() &&
-               !mesh->primitives[0].indices.empty(),
+    expect(mesh.has_value() && !mesh->primitives.empty() && !mesh->primitives[0].indices.empty(),
            "Observed TSDF extracts a connected zero-crossing surface");
     if (!mesh)
         return;
@@ -223,19 +290,16 @@ void testOracleTsdfReconstruction() {
     std::vector<std::array<double, 3>> reference;
     for (int y = -10; y <= 10; ++y)
         for (int x = -10; x <= 10; ++x)
-            reference.push_back({static_cast<double>(x) * 0.04,
-                                 static_cast<double>(y) * 0.04, 1.0});
+            reference.push_back(
+                {static_cast<double>(x) * 0.04, static_cast<double>(y) * 0.04, 1.0});
     auto metrics = aether::reconstruction::evaluateGeometry(*mesh, reference, 0.05);
     expect(metrics.has_value() && metrics->accuracyMeanMetres <= 0.02,
            "Oracle plane reconstruction stays within half a voxel accuracy");
-    expect(metrics.has_value() && metrics->invalidIndices == 0 &&
-               metrics->degenerateTriangles == 0,
+    expect(metrics.has_value() && metrics->invalidIndices == 0 && metrics->degenerateTriangles == 0,
            "Extracted oracle mesh contains valid non-degenerate triangles");
 
-    const auto firstPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
-    const auto secondPath =
-        std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
+    const auto firstPath = std::filesystem::temp_directory_path() / "aether-oracle-first.ply";
+    const auto secondPath = std::filesystem::temp_directory_path() / "aether-oracle-second.ply";
     expect(aether::mesh::exportToPly(*mesh, firstPath).has_value() &&
                aether::mesh::exportToPly(*mesh, secondPath).has_value(),
            "Hardened PLY exporter atomically writes oracle geometry");
@@ -626,7 +690,125 @@ void testGltfLoader() {
         const simd_float4 tangent = textured->primitives[0].vertices[0].tangent;
         expect(simd_length(simd_float3{tangent.x, tangent.y, tangent.z}) > 0.99F,
                "Missing glTF tangents are generated from UV gradients");
+
+        textured->primitives[0].vertexColors = {simd_float3{1.0F, 0.0F, 0.0F},
+                                                simd_float3{0.0F, 1.0F, 0.0F},
+                                                simd_float3{0.0F, 0.0F, 1.0F}};
+        auto firstGlb = aether::mesh::GltfExporter::encodeStatic(*textured);
+        auto secondGlb = aether::mesh::GltfExporter::encodeStatic(*textured);
+        expect(firstGlb.has_value() && secondGlb.has_value() && *firstGlb == *secondGlb,
+               "Native static GLB encoding is byte-for-byte deterministic");
+        if (firstGlb) {
+            auto semantic = aether::canonical::CanonicalAssetLoader::validateMeshPayload(*firstGlb);
+            expect(semantic.has_value() && semantic->vertexCount == 3 &&
+                       semantic->triangleCount == 1 && semantic->imageCount == 1,
+                   "Native GLB passes canonical self-contained textured-mesh validation");
+            auto roundTrip = aether::mesh::GltfLoader::load(*firstGlb, "native-round-trip");
+            expect(roundTrip.has_value() && roundTrip->vertexCount() == 3 &&
+                       roundTrip->indexCount() == 3 && roundTrip->images.size() == 1 &&
+                       roundTrip->textures.size() == 1 && roundTrip->materials.size() == 2,
+                   "Native GLB reload preserves geometry, images, textures, and materials");
+            if (roundTrip) {
+                const auto& material = roundTrip->materials[1];
+                const auto& transform = material.uvTransforms[0];
+                const auto& sampler = roundTrip->textures[0];
+                const bool colorsMatch =
+                    roundTrip->primitives[0].vertexColors.size() ==
+                        textured->primitives[0].vertexColors.size() &&
+                    std::ranges::equal(roundTrip->primitives[0].vertexColors,
+                                       textured->primitives[0].vertexColors,
+                                       [](simd_float3 left, simd_float3 right) {
+                                           return simd_length(left - right) < 1.0e-6F;
+                                       });
+                expect(material.baseColorTexture == 0 &&
+                           std::abs(transform.scale.x - 2.0F) < 1.0e-6F &&
+                           std::abs(transform.offset.x - 0.25F) < 1.0e-6F && colorsMatch &&
+                           sampler.mipFilter == aether::mesh::SamplerMipFilter::linear &&
+                           sampler.addressU == aether::mesh::SamplerAddressMode::clampToEdge &&
+                           sampler.addressV == aether::mesh::SamplerAddressMode::mirroredRepeat,
+                       "Native GLB round-trip preserves PBR binding, UV transform, colors, and "
+                       "sampler state");
+            }
+        }
+
+        const auto output = std::filesystem::temp_directory_path() / "aether-native-static.glb";
+        std::filesystem::remove(output);
+        expect(aether::mesh::GltfExporter::writeStatic(*textured, output).has_value(),
+               "Native GLB publishes atomically to a .glb destination");
+        std::ifstream originalStream(output, std::ios::binary);
+        const std::vector<char> originalBytes((std::istreambuf_iterator<char>(originalStream)),
+                                              std::istreambuf_iterator<char>());
+        auto invalid = *textured;
+        invalid.primitives[0].indices[0] = 99;
+        expect(!aether::mesh::GltfExporter::writeStatic(invalid, output).has_value(),
+               "Native GLB rejects an out-of-range triangle before replacing output");
+        std::ifstream preservedStream(output, std::ios::binary);
+        const std::vector<char> preservedBytes((std::istreambuf_iterator<char>(preservedStream)),
+                                               std::istreambuf_iterator<char>());
+        expect(originalBytes == preservedBytes,
+               "Failed native GLB export preserves the previously published artifact");
+        std::filesystem::remove(output);
+
+        aether::mesh::GltfExportLimits tinyExport;
+        tinyExport.maximumOutputBytes = 64;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces the configured total byte budget");
+        tinyExport = {};
+        tinyExport.maximumMaterials = 1;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces material-count limits before authoring");
+        tinyExport = {};
+        tinyExport.maximumTotalNameBytes = 1;
+        expect(!aether::mesh::GltfExporter::encodeStatic(*textured, tinyExport).has_value(),
+               "Native GLB enforces aggregate source-name limits before authoring");
+        invalid = *textured;
+        invalid.images[0].bytes = {std::byte{'n'}, std::byte{'o'}, std::byte{'t'}};
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects unsupported or mislabeled image payloads");
+        invalid = *textured;
+        invalid.materials[0].roughness = 0.5F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects authored data in the implicit default material slot");
     }
+
+    if (instanced) {
+        auto glb = aether::mesh::GltfExporter::encodeStatic(*instanced);
+        expect(glb.has_value(), "Native GLB encodes shared-primitive scene instances");
+        if (glb) {
+            auto roundTrip = aether::mesh::GltfLoader::load(*glb, "instanced-round-trip");
+            bool transformsMatch = roundTrip.has_value() && roundTrip->instances.size() == 3;
+            if (transformsMatch) {
+                for (std::size_t instance = 0; instance < 3; ++instance)
+                    for (std::size_t column = 0; column < 4; ++column)
+                        transformsMatch =
+                            transformsMatch &&
+                            simd_length(
+                                roundTrip->instances[instance].worldTransform.columns[column] -
+                                instanced->instances[instance].worldTransform.columns[column]) <
+                                1.0e-6F;
+            }
+            expect(transformsMatch,
+                   "Native GLB preserves shared-primitive instances and world transforms");
+        }
+
+        auto invalid = *instanced;
+        invalid.instances[0].worldTransform.columns[0].w = 1.0F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects non-affine instance transforms");
+        invalid = *instanced;
+        invalid.instances[0].worldTransform.columns[1].x = 0.25F;
+        expect(!aether::mesh::GltfExporter::encodeStatic(invalid).has_value(),
+               "Native GLB rejects instance shear that cannot be represented as TRS");
+    }
+    if (animated)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*animated).has_value(),
+               "Static GLB explicitly rejects animation instead of dropping it");
+    if (skinned)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*skinned).has_value(),
+               "Static GLB explicitly rejects skinning instead of dropping it");
+    if (morphed)
+        expect(!aether::mesh::GltfExporter::encodeStatic(*morphed).has_value(),
+               "Static GLB explicitly rejects morph targets instead of dropping them");
 }
 
 void testMeshAnimation() {
@@ -681,6 +863,7 @@ void testMeshAnimation() {
 
     asset.nodes[0].parentIndex = 1;
     std::vector<aether::scene::Transform> cyclicLocals;
+    cyclicLocals.reserve(asset.nodes.size());
     for (const auto& node : asset.nodes)
         cyclicLocals.push_back(node.localTransform);
     expect(!aether::mesh::resolveWorldTransforms(asset, cyclicLocals).has_value(),
@@ -923,6 +1106,8 @@ void testAetherPackage() {
     auto reader = aether::package::PackageReader::open(path);
     expect(reader.has_value(), "AETHER package header, table, and content hash validate");
     if (reader) {
+        expect(reader->info().majorVersion == 1 && reader->info().minorVersion == 0,
+               "Gaussian-only packages remain backward-compatible package version 1.0");
         expect(reader->info().chunks.size() == 2, "AETHER chunk table round-trips");
         auto decoded = reader->readChunk(aether::package::ChunkType::baseGaussians);
         expect(decoded.has_value() && *decoded == gaussians,
@@ -940,6 +1125,52 @@ void testAetherPackage() {
     expect(!aether::package::PackageReader::open(path).has_value(),
            "Whole-package hash rejects corrupted content");
     std::filesystem::remove(path);
+}
+
+void testCanonicalAssetCodecs() {
+    aether::canonical::CameraRecord camera;
+    camera.id = "sony-0001";
+    camera.sourceId = "sony-a7v";
+    camera.image = "sony/0001.jpg";
+    camera.width = 1920;
+    camera.height = 1080;
+    camera.intrinsics = {1200.0, 1200.0, 960.0, 540.0};
+    camera.cameraToWorld = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                            0.0, 0.0, 1.0, 0.0, 1.0, 2.0, 3.0, 1.0};
+    camera.timestampNanoseconds = 42;
+    camera.confidence = 0.9;
+    aether::canonical::CameraRig rig{{camera}};
+    auto encodedRig = aether::canonical::CameraRigCodec::encode(rig);
+    expect(encodedRig.has_value(), "Canonical camera rig encodes deterministically");
+    if (encodedRig) {
+        auto decodedRig = aether::canonical::CameraRigCodec::decode(*encodedRig);
+        expect(decodedRig.has_value() && decodedRig->cameras.size() == 1 &&
+                   decodedRig->cameras[0].image == camera.image &&
+                   decodedRig->cameras[0].cameraToWorld[12] == 1.0,
+               "Canonical camera rig preserves identity, calibration, and metric pose");
+        (*encodedRig)[0] = std::byte{0};
+        expect(!aether::canonical::CameraRigCodec::decode(*encodedRig).has_value(),
+               "Canonical camera decoder rejects invalid magic");
+    }
+    rig.cameras[0].cameraToWorld[0] = 2.0;
+    expect(!aether::canonical::CameraRigCodec::encode(rig).has_value(),
+           "Canonical camera encoder rejects a non-rigid transform");
+
+    constexpr std::array confidence{0.0F, 0.5F, 1.0F};
+    auto encodedConfidence = aether::canonical::ConfidenceCodec::encode(confidence);
+    expect(encodedConfidence.has_value(), "Canonical vertex confidence encodes deterministically");
+    if (encodedConfidence) {
+        auto decodedConfidence = aether::canonical::ConfidenceCodec::decode(*encodedConfidence);
+        expect(decodedConfidence.has_value() &&
+                   *decodedConfidence == std::vector<float>(confidence.begin(), confidence.end()),
+               "Canonical vertex confidence round-trips exactly");
+        (*encodedConfidence)[31] = std::byte{1};
+        expect(!aether::canonical::ConfidenceCodec::decode(*encodedConfidence).has_value(),
+               "Canonical confidence decoder rejects non-zero reserved fields");
+    }
+    constexpr std::array invalidConfidence{-0.1F};
+    expect(!aether::canonical::ConfidenceCodec::encode(invalidConfidence).has_value(),
+           "Canonical confidence encoder rejects values outside zero to one");
 }
 
 void testGaussianPly() {
@@ -1062,11 +1293,12 @@ void testGaussianPly() {
 
 } // namespace
 
-int main() {
+int runTests() {
     testErrors();
     testResourceLocator();
     testDiagnostics();
     testSparseCoverageValidation();
+    testReconstructionInputContract();
     testOracleTsdfReconstruction();
     testProxyMeshContract();
     testProfiler();
@@ -1084,9 +1316,21 @@ int main() {
     testLocalShadowProjections();
     testSha256();
     testAetherPackage();
+    testCanonicalAssetCodecs();
     testGaussianPly();
     if (failures == 0) {
         std::cout << "All AETHER foundation tests passed\n";
     }
     return failures == 0 ? 0 : 1;
+}
+
+int main() noexcept {
+    try {
+        return runTests();
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: unhandled foundation-test exception: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "FAIL: unhandled foundation-test exception\n";
+    }
+    return 1;
 }

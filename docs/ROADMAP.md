@@ -17,16 +17,32 @@ renumber or replace the product phases.
 - [x] [E2] **R1 CPU oracle foundation:** known-pose metric-depth providers, calibrated weighted TSDF,
   bounded dense reference volume, confidence rejection, unobserved-volume rejection, shared
   cube-edge isosurface vertices, deterministic geometry metrics, and atomic validated PLY output.
-- [ ] [E0] **R1 exit evidence:** classic Marching Cubes case-table parity, sphere fixture, reference
-  RGB-D capture, median/p95 surface error, normal error, F-score, and committed raw report.
+- [x] [E4] **R1 extractor evidence:** a separately licensed classic Marching Cubes reference
+  exhaustively validates all 256 cases; the resolved production extractor covers all 254
+  non-trivial cases and a shared-face ambiguity fixture. Sphere, box, thin-wall, disconnected-
+  sphere, and torus fixtures report surface error, manifold edges, components, and Euler
+  characteristic in a committed reproducible raw report.
+- [ ] [E3] **R1 recorded-capture accuracy gate:** the public ARKitScenes slice reports real metric
+  accuracy, completeness, F-score, and normal error, but its 18.35 mm median / 29.19 mm p95 surface
+  error does not meet the original 5 mm / 15 mm gate. Better source resolution and sparse fusion
+  remain required; synthetic extractor evidence does not close this real-capture gate.
 - [x] [E3] **R1 public RGB-D slice:** ARKitScenes trajectory/depth axes are mapped through the exact
   schema-v2 convention, automatic bounded-volume selection drives real CPU TSDF fusion, and the
   30-frame slice reports metric accuracy/completeness/F-score/normal error against its reference
-  mesh. The full R1 gate remains open for the sphere/parity and committed E4 artifacts above.
+  mesh. The extractor gate is closed independently; the stricter real-capture accuracy gate above
+  remains open.
 - [ ] [E2] **R2 production capture:** the iPad LiDAR companion now has permission UX, a zero-copy
   RealityKit preview, normal-tracking/depth admission, a three-frame bounded writer queue, native
-  YUV/depth strides, atomic recording, hashes, counters, and file export. Device/format controls,
-  interrupted-session recovery, richer diagnostics, and the 30-minute soak remain open.
+- YUV/depth strides, callback-time host timestamps, linear append-only recording, hash-verified
+  interrupted-session recovery, motion/quality/backpressure-aware adaptive admission, counters,
+  and file export. Device/format controls, richer diagnostics, real interruption evidence, and the
+  30-minute soak remain open.
+- [x] [E2] **Offline video input contract:** deterministic ImageIO keyframe admission rejects blur,
+  exposure failures, low contrast, near duplicates, and appearance discontinuities; video uses
+  sequential/local-window COLMAP matching; explicit camera-group manifests preserve device/lens/
+  focal/calibration identity; and every sparse model is exported, validated, ranked, and recorded.
+  Real Sony/iPad footage, geometric parallax selection, targeted cross-group matching, and E3
+  reconstruction evidence remain open.
 - [ ] [E0] **R3 visual odometry:** calibrated initialization, PnP/local mapping, confidence, tracking
   loss, relocalization, submaps, and recorded trajectory metrics.
 - [ ] [E2] **R4 depth providers:** MavebCapture records Apple scene depth/confidence/intrinsics/poses;
@@ -36,6 +52,23 @@ renumber or replace the product phases.
 - [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
   provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
   validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
+- [x] [E2] **Sony+iPad metric alignment foundation:** robust deterministic camera-pose Sim(3),
+  outlier rejection, degeneracy checks, metric position/orientation quality gates, verified capture
+  replay, and complete metric COLMAP camera-rig export pass synthetic artifact tests. A paired
+  physical capture and measured E3 report remain open.
+- [x] [E2] **R5 sparse CPU reference:** deterministic power-of-two voxel blocks preserve the dense
+  oracle's projection/fusion equations and resolved extraction exactly on a translated/rotated
+  fixture; a billion-voxel logical room allocates only local observed blocks, and resident,
+  candidate, extraction, disjoint-ray, and footprint-overflow failures are bounded and
+  transactional. Extraction still uses a bounded dense active-span snapshot.
+- [x] [E2] **Canonical Asset v1 contract:** `.aether` can represent a self-contained metric textured
+  GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
+  geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
+  requiring Gaussian content. Real Sony+iPad fusion into this frame remains an E3 gate.
+- [x] [E2] **Native static GLB authoring:** deterministic bounded export preserves indexed geometry,
+  vertex colors, static instances, embedded PNG/JPEG images, core PBR materials, samplers, and UV
+  transforms. Animation, skins, morph targets, malformed topology, and hostile limits fail rather
+  than being silently dropped. USDZ ingestion remains the explicit Blender-backed Apple baseline.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

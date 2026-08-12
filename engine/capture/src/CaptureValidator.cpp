@@ -2,8 +2,8 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CoreGraphics.h>
-#include <ImageIO/ImageIO.h>
 #include <ImageIO/CGImageProperties.h>
+#include <ImageIO/ImageIO.h>
 
 #include <algorithm>
 #include <array>
@@ -16,31 +16,43 @@ namespace {
 template <typename T> class CfOwner {
   public:
     explicit CfOwner(T value = nullptr) : value_(value) {}
-    ~CfOwner() { if (value_) CFRelease(value_); }
+    ~CfOwner() {
+        if (value_)
+            CFRelease(value_);
+    }
     CfOwner(const CfOwner&) = delete;
     CfOwner& operator=(const CfOwner&) = delete;
-    T get() const { return value_; }
+    T get() const {
+        return value_;
+    }
+
   private:
     T value_;
 };
 
 std::optional<double> number(CFDictionaryRef dictionary, CFStringRef key) {
-    if (!dictionary) return std::nullopt;
+    if (!dictionary)
+        return std::nullopt;
     const auto value = static_cast<CFNumberRef>(CFDictionaryGetValue(dictionary, key));
-    if (!value || CFGetTypeID(value) != CFNumberGetTypeID()) return std::nullopt;
+    if (!value || CFGetTypeID(value) != CFNumberGetTypeID())
+        return std::nullopt;
     double result{};
-    if (!CFNumberGetValue(value, kCFNumberDoubleType, &result)) return std::nullopt;
+    if (!CFNumberGetValue(value, kCFNumberDoubleType, &result))
+        return std::nullopt;
     return result;
 }
 
 std::string string(CFDictionaryRef dictionary, CFStringRef key) {
-    if (!dictionary) return {};
+    if (!dictionary)
+        return {};
     const auto value = static_cast<CFStringRef>(CFDictionaryGetValue(dictionary, key));
-    if (!value || CFGetTypeID(value) != CFStringGetTypeID()) return {};
+    if (!value || CFGetTypeID(value) != CFStringGetTypeID())
+        return {};
     const auto length = CFStringGetLength(value);
     const auto bytes = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
     std::string result(static_cast<std::size_t>(bytes), '\0');
-    if (!CFStringGetCString(value, result.data(), bytes, kCFStringEncodingUTF8)) return {};
+    if (!CFStringGetCString(value, result.data(), bytes, kCFStringEncodingUTF8))
+        return {};
     result.resize(std::char_traits<char>::length(result.c_str()));
     return result;
 }
@@ -60,10 +72,13 @@ std::optional<ImageMeasurement> measure(const std::filesystem::path& path,
     CfOwner<CFURLRef> url(CFURLCreateFromFileSystemRepresentation(
         nullptr, reinterpret_cast<const UInt8*>(pathString.c_str()),
         static_cast<CFIndex>(pathString.size()), false));
-    CfOwner<CGImageSourceRef> source(url.get() ? CGImageSourceCreateWithURL(url.get(), nullptr) : nullptr);
-    if (!source.get() || CGImageSourceGetCount(source.get()) == 0) return std::nullopt;
+    CfOwner<CGImageSourceRef> source(url.get() ? CGImageSourceCreateWithURL(url.get(), nullptr)
+                                               : nullptr);
+    if (!source.get() || CGImageSourceGetCount(source.get()) == 0)
+        return std::nullopt;
 
-    CfOwner<CFDictionaryRef> properties(CGImageSourceCopyPropertiesAtIndex(source.get(), 0, nullptr));
+    CfOwner<CFDictionaryRef> properties(
+        CGImageSourceCopyPropertiesAtIndex(source.get(), 0, nullptr));
     auto widthValue = number(properties.get(), kCGImagePropertyPixelWidth);
     auto heightValue = number(properties.get(), kCGImagePropertyPixelHeight);
     constexpr double maximumImageDimension = 200000.0;
@@ -72,17 +87,20 @@ std::optional<ImageMeasurement> measure(const std::filesystem::path& path,
         return std::nullopt;
 
     const auto maximumDimensionValue = static_cast<long>(maximumDimension);
-    const auto thumbnailSize = static_cast<CFNumberRef>(CFNumberCreate(
-        nullptr, kCFNumberLongType, &maximumDimensionValue));
+    const auto thumbnailSize = static_cast<CFNumberRef>(
+        CFNumberCreate(nullptr, kCFNumberLongType, &maximumDimensionValue));
     CfOwner<CFNumberRef> thumbnailSizeOwner(thumbnailSize);
     const void* keys[]{kCGImageSourceCreateThumbnailFromImageAlways,
                        kCGImageSourceCreateThumbnailWithTransform,
                        kCGImageSourceThumbnailMaxPixelSize};
     const void* values[]{kCFBooleanTrue, kCFBooleanTrue, thumbnailSize};
-    CfOwner<CFDictionaryRef> thumbnailOptions(CFDictionaryCreate(
-        nullptr, keys, values, 3, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
-    CfOwner<CGImageRef> image(CGImageSourceCreateThumbnailAtIndex(source.get(), 0, thumbnailOptions.get()));
-    if (!image.get()) return std::nullopt;
+    CfOwner<CFDictionaryRef> thumbnailOptions(CFDictionaryCreate(nullptr, keys, values, 3,
+                                                                 &kCFTypeDictionaryKeyCallBacks,
+                                                                 &kCFTypeDictionaryValueCallBacks));
+    CfOwner<CGImageRef> image(
+        CGImageSourceCreateThumbnailAtIndex(source.get(), 0, thumbnailOptions.get()));
+    if (!image.get())
+        return std::nullopt;
 
     const auto width = CGImageGetWidth(image.get());
     const auto height = CGImageGetHeight(image.get());
@@ -90,7 +108,8 @@ std::optional<ImageMeasurement> measure(const std::filesystem::path& path,
     CfOwner<CGColorSpaceRef> colourSpace(CGColorSpaceCreateDeviceGray());
     CfOwner<CGContextRef> context(CGBitmapContextCreate(pixels.data(), width, height, 8, width,
                                                         colourSpace.get(), kCGImageAlphaNone));
-    if (!context.get()) return std::nullopt;
+    if (!context.get())
+        return std::nullopt;
     CGContextDrawImage(context.get(),
                        CGRectMake(0, 0, static_cast<CGFloat>(width), static_cast<CGFloat>(height)),
                        image.get());
@@ -121,29 +140,58 @@ std::optional<ImageMeasurement> measure(const std::filesystem::path& path,
     result.path = path;
     std::error_code sizeError;
     result.fileBytes = std::filesystem::file_size(path, sizeError);
-    if (sizeError) return std::nullopt;
+    if (sizeError)
+        return std::nullopt;
     result.width = static_cast<std::size_t>(*widthValue);
     result.height = static_cast<std::size_t>(*heightValue);
     result.meanLuminance = mean;
     result.luminanceDeviation = std::sqrt(variance);
     result.sharpness = laplacianCount ? laplacianEnergy / static_cast<double>(laplacianCount) : 0.0;
-    const auto exif = properties.get() ? static_cast<CFDictionaryRef>(
-        CFDictionaryGetValue(properties.get(), kCGImagePropertyExifDictionary)) : nullptr;
+    const auto exif = properties.get() ? static_cast<CFDictionaryRef>(CFDictionaryGetValue(
+                                             properties.get(), kCGImagePropertyExifDictionary))
+                                       : nullptr;
     result.exposureSeconds = number(exif, kCGImagePropertyExifExposureTime);
     result.fNumber = number(exif, kCGImagePropertyExifFNumber);
     result.focalLengthMillimetres = number(exif, kCGImagePropertyExifFocalLength);
     if (exif) {
-        const auto isoArray = static_cast<CFArrayRef>(CFDictionaryGetValue(exif, kCGImagePropertyExifISOSpeedRatings));
-        if (isoArray && CFGetTypeID(isoArray) == CFArrayGetTypeID() && CFArrayGetCount(isoArray) > 0) {
+        const auto isoArray = static_cast<CFArrayRef>(
+            CFDictionaryGetValue(exif, kCGImagePropertyExifISOSpeedRatings));
+        if (isoArray && CFGetTypeID(isoArray) == CFArrayGetTypeID() &&
+            CFArrayGetCount(isoArray) > 0) {
             const auto isoNumber = static_cast<CFNumberRef>(CFArrayGetValueAtIndex(isoArray, 0));
             double iso{};
-            if (isoNumber && CFNumberGetValue(isoNumber, kCFNumberDoubleType, &iso)) result.iso = iso;
+            if (isoNumber && CFNumberGetValue(isoNumber, kCFNumberDoubleType, &iso))
+                result.iso = iso;
         }
     }
-    const auto tiff = properties.get() ? static_cast<CFDictionaryRef>(
-        CFDictionaryGetValue(properties.get(), kCGImagePropertyTIFFDictionary)) : nullptr;
+    const auto tiff = properties.get() ? static_cast<CFDictionaryRef>(CFDictionaryGetValue(
+                                             properties.get(), kCGImagePropertyTIFFDictionary))
+                                       : nullptr;
     result.cameraMake = string(tiff, kCGImagePropertyTIFFMake);
     result.cameraModel = string(tiff, kCGImagePropertyTIFFModel);
+    std::array<std::uint64_t,
+               ImageMeasurement::fingerprintWidth * ImageMeasurement::fingerprintHeight>
+        fingerprintSums{};
+    std::array<std::uint64_t,
+               ImageMeasurement::fingerprintWidth * ImageMeasurement::fingerprintHeight>
+        fingerprintCounts{};
+    for (std::size_t y = 0; y < height; ++y)
+        for (std::size_t x = 0; x < width; ++x) {
+            const std::size_t fingerprintX =
+                std::min(ImageMeasurement::fingerprintWidth - 1,
+                         x * ImageMeasurement::fingerprintWidth / width);
+            const std::size_t fingerprintY =
+                std::min(ImageMeasurement::fingerprintHeight - 1,
+                         y * ImageMeasurement::fingerprintHeight / height);
+            const std::size_t fingerprintIndex =
+                fingerprintY * ImageMeasurement::fingerprintWidth + fingerprintX;
+            fingerprintSums[fingerprintIndex] += pixels[y * width + x];
+            ++fingerprintCounts[fingerprintIndex];
+        }
+    for (std::size_t index = 0; index < result.appearanceFingerprint.size(); ++index)
+        if (fingerprintCounts[index] > 0)
+            result.appearanceFingerprint[index] =
+                static_cast<std::uint8_t>(fingerprintSums[index] / fingerprintCounts[index]);
     return result;
 }
 } // namespace
@@ -154,7 +202,8 @@ bool CaptureReport::valid() const {
     });
 }
 
-CaptureReport validateCapture(const std::filesystem::path& input, const ValidationOptions& options) {
+CaptureReport validateCapture(const std::filesystem::path& input,
+                              const ValidationOptions& options) {
     CaptureReport report;
     report.root = input;
     if (!std::filesystem::is_directory(input)) {
@@ -188,21 +237,24 @@ CaptureReport validateCapture(const std::filesystem::path& input, const Validati
         }
     }
     if (report.images.size() < options.minimumImages) {
-        report.issues.push_back({CaptureIssue::Severity::error, "insufficient-images",
-                                 "At least " + std::to_string(options.minimumImages) +
-                                     " decodable images are required", std::nullopt});
+        report.issues.push_back(
+            {CaptureIssue::Severity::error, "insufficient-images",
+             "At least " + std::to_string(options.minimumImages) + " decodable images are required",
+             std::nullopt});
     }
     for (const auto& image : report.images) {
         constexpr std::uint64_t workingBytesPerPixel = 16;
-        const auto pixels = static_cast<std::uint64_t>(image.width) *
-                            static_cast<std::uint64_t>(image.height);
+        const auto pixels =
+            static_cast<std::uint64_t>(image.width) * static_cast<std::uint64_t>(image.height);
         report.estimatedWorkingBytes += pixels * workingBytesPerPixel;
     }
-    if (report.images.empty()) return report;
+    if (report.images.empty())
+        return report;
 
     std::vector<double> sharpness;
     sharpness.reserve(report.images.size());
-    for (const auto& image : report.images) sharpness.push_back(image.sharpness);
+    for (const auto& image : report.images)
+        sharpness.push_back(image.sharpness);
     std::sort(sharpness.begin(), sharpness.end());
     report.medianSharpness = sharpness[sharpness.size() / 2];
     if (report.medianSharpness > 0.0) {
@@ -213,14 +265,16 @@ CaptureReport validateCapture(const std::filesystem::path& input, const Validati
         }
     }
 
-    auto [minimum, maximum] = std::minmax_element(report.images.begin(), report.images.end(),
+    auto [minimum, maximum] = std::minmax_element(
+        report.images.begin(), report.images.end(),
         [](const auto& a, const auto& b) { return a.meanLuminance < b.meanLuminance; });
     constexpr double epsilon = 1.0 / 255.0;
-    report.exposureSpreadStops = std::log2((maximum->meanLuminance + epsilon) /
-                                           (minimum->meanLuminance + epsilon));
+    report.exposureSpreadStops =
+        std::log2((maximum->meanLuminance + epsilon) / (minimum->meanLuminance + epsilon));
     if (report.exposureSpreadStops > options.exposureSpreadWarningStops)
         report.issues.push_back({CaptureIssue::Severity::warning, "exposure-spread",
-                                 "Image luminance spread exceeds the configured stop threshold", std::nullopt});
+                                 "Image luminance spread exceeds the configured stop threshold",
+                                 std::nullopt});
     return report;
 }
 

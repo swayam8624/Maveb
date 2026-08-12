@@ -21,8 +21,16 @@ verified, shippable milestones. The current foundation contains:
 - A SwiftUI macOS application whose Objective-C++ bridge keeps Metal objects out of Swift.
 - A Swift 6 [MavebCapture iPad companion](apps/MavebCapture/README.md) that records checked,
   calibrated RGB + LiDAR packages for deterministic desktop fusion.
+- A deterministic robust COLMAP-to-iPad Sim(3) alignment path that rejects camera-pose outliers,
+  measures metric position/orientation residuals, and emits every Sony/COLMAP camera in the iPad
+  world frame.
 - A versioned, hashed, bounded, per-chunk compressed [`.aether` container](docs/formats/AETHER_PACKAGE.md)
   with `aether-pack` and `aether-inspect` command-line tools.
+- A [Canonical Asset v1](docs/formats/CANONICAL_ASSET.md) profile that packages a self-contained
+  metric textured GLB, calibrated cameras, per-vertex confidence, coordinate-frame semantics, and
+  hashed geometry/appearance provenance without requiring Gaussian content.
+- A bounded, deterministic [native static GLB writer](docs/formats/NATIVE_GLB_EXPORT.md) for
+  Maveb-owned indexed meshes, vertex colors, embedded textures, PBR materials, and static instances.
 - A bounded [standard 3DGS PLY importer](docs/formats/GAUSSIAN_PLY.md) and deterministic
   anisotropic CPU reference rasterizer.
 - A Metal 3 Gaussian correctness path with projection, covariance, stable tile/depth ordering,
@@ -35,6 +43,9 @@ verified, shippable milestones. The current foundation contains:
   generated mipmaps and tangents, glTF samplers, material texture maps, normal mapping, and alpha
   mask/blend states.
 - A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
+- A deterministic block-sparse CPU TSDF reference that matches the dense oracle exactly on a
+  translated/rotated fixture while allocating only observed room-scale blocks. Mesh extraction is
+  still a bounded dense snapshot; sparse Metal fusion and incremental block meshing remain open.
 - [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
   Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
   dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs
@@ -109,10 +120,15 @@ build/debug/tools/aether-inspect/aether-inspect scene.aether --json
 build/debug/apps/AetherBenchmark/aether-benchmark scene.aether \
   --camera-path camera-path.json --width 1920 --height 1080 --json
 build/debug/tools/aether-capture/aether-capture validate dataset/images --json
+build/debug/tools/aether-keyframes/aether-keyframes extracted-frames \
+  --output keyframes --json
 build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
-  --output proxy.ply --voxel 0.01 --truncation 0.04 --json
+build/debug/tools/aether-fuse/aether-fuse recorded-capture \
+  --output proxy.glb --voxel 0.01 --truncation 0.04 --json
+build/debug/tools/maveb-align-sensors/maveb-align-sensors colmap/sparse/0 ipad.mavebcapture \
+  --matches camera-matches.json --output metric-camera-rig.json --json
 ```
 
 For the real-data regression layer:
@@ -121,7 +137,7 @@ For the real-data regression layer:
 export MAVEB_DATA="$HOME/Datasets/MavebBench"
 ./tools/run-mavebbench.zsh doctor
 ./tools/run-mavebbench.zsh run eth3d-pipes --steps 2000 --checkpoint-every 1000
-./tools/run-mavebbench.zsh run uco3d-object --video-fps 2 --steps 2000
+./tools/run-mavebbench.zsh run uco3d-object --video-fps 12 --steps 2000
 ./tools/run-mavebbench.zsh run arkitscenes-47333462 --arkit-max-frames 30
 ./tools/run-mavebbench.zsh report --output benchmarks/latest-report.md
 ```

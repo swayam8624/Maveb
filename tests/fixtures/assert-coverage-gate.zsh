@@ -13,9 +13,10 @@ ${reconstruct} ${dataset} --output ${output} --colmap ${colmap} --brush ${brush}
 exit_code=$?
 set -e
 [[ ${exit_code} == 5 ]]
-[[ -f ${output}/pose-coverage.json ]]
+[[ -f ${output}/sparse-selection.json ]]
 [[ ! -e ${output}/pose-coverage-validation.complete ]]
 [[ ! -e ${output}/exports/base-gaussians.ply ]]
 [[ ! -e ${output}/proxy/proxy.ply ]]
-/usr/bin/grep -q '"passed":false' ${output}/pose-coverage.json
+/usr/bin/grep -q '"selectedModel":null' ${output}/sparse-selection.json
+/usr/bin/grep -q '"passed":false' ${output}/sparse-selection.json
 /usr/bin/grep -q '"status":"coverage-failed"' ${output}/job.json

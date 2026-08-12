@@ -1,11 +1,30 @@
 add_executable(AetherTests
     TestMain.cpp
 )
-target_link_libraries(AetherTests PRIVATE Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction)
+target_link_libraries(AetherTests PRIVATE Aether::Canonical Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction)
 target_compile_definitions(AetherTests PRIVATE
     AETHER_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
 aether_configure_target(AetherTests)
 add_test(NAME AetherTests COMMAND AetherTests)
+
+add_executable(AetherOracleGeometryTests OracleGeometryTests.cpp)
+target_link_libraries(AetherOracleGeometryTests PRIVATE Aether::Reconstruction)
+aether_configure_target(AetherOracleGeometryTests)
+add_test(NAME AetherOracleGeometryTests
+    COMMAND AetherOracleGeometryTests --json-output
+        "${PROJECT_BINARY_DIR}/test-artifacts/r1-oracle-geometry.json")
+
+add_executable(AetherSparseTsdfTests SparseTsdfTests.cpp)
+target_link_libraries(AetherSparseTsdfTests PRIVATE Aether::Reconstruction)
+aether_configure_target(AetherSparseTsdfTests)
+add_test(NAME AetherSparseTsdfTests
+    COMMAND AetherSparseTsdfTests --json-output
+        "${PROJECT_BINARY_DIR}/test-artifacts/r5-sparse-cpu-tsdf.json")
+add_test(NAME AetherSparseTsdfEvidence
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+        "${PROJECT_BINARY_DIR}/test-artifacts/r5-sparse-cpu-tsdf.json"
+        "${PROJECT_SOURCE_DIR}/benchmarks/evidence/r5-sparse-cpu-m2-pro-2026-08-12.json")
+set_tests_properties(AetherSparseTsdfEvidence PROPERTIES DEPENDS AetherSparseTsdfTests)
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
@@ -22,6 +41,14 @@ if(TARGET AetherCapture)
         "-framework CoreFoundation" "-framework CoreGraphics" "-framework ImageIO")
     aether_configure_target(AetherCaptureTests)
     add_test(NAME AetherCaptureTests COMMAND AetherCaptureTests)
+endif()
+
+if(TARGET aether-keyframes AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherKeyframeSelectorCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-keyframe-cli.py"
+            $<TARGET_FILE:aether-keyframes>
+            "${CMAKE_CURRENT_BINARY_DIR}/keyframe-selector-cli")
 endif()
 
 if(TARGET AetherMetal AND TARGET AetherShaders)
@@ -88,6 +115,15 @@ if(TARGET aether-benchmark AND TARGET aether-pack)
         FIXTURES_REQUIRED AetherBenchmarkScene WILL_FAIL TRUE)
 endif()
 
+if(TARGET aether-pack AND TARGET aether-inspect AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherCanonicalAssetCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-canonical-asset.py"
+            $<TARGET_FILE:aether-pack>
+            $<TARGET_FILE:aether-inspect>
+            "${CMAKE_CURRENT_BINARY_DIR}/canonical-asset-cli")
+endif()
+
 if(TARGET aether-reconstruct)
     set(AETHER_RECONSTRUCTION_TEST_JOB "${CMAKE_CURRENT_BINARY_DIR}/reconstruction-job")
     add_test(NAME AetherReconstructionAdapter
@@ -106,6 +142,30 @@ if(TARGET aether-reconstruct)
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-weak.zsh"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    add_test(NAME AetherReconstructionMultiModelSelection
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-multi-model-selection.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera"
+            "${CMAKE_CURRENT_BINARY_DIR}/reconstruction-multi-model-job"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-multi.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera/camera-groups.json")
+    add_test(NAME AetherReconstructionFailedJobStatus
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-failed-job-status.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${CMAKE_CURRENT_BINARY_DIR}/reconstruction-failed-job"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-fail.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    add_test(NAME AetherReconstructionVideoInputContract
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-video-input-contract.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${CMAKE_CURRENT_BINARY_DIR}/video-input-contract"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera/camera-groups.json")
     add_test(NAME AetherReconstructionProxyResume
         COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-proxy-resume.zsh"
             $<TARGET_FILE:aether-reconstruct>
@@ -136,6 +196,16 @@ if(TARGET aether-reconstruct)
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
     set_tests_properties(AetherReconstructionResumeIdentity PROPERTIES
         DEPENDS AetherBrushCheckpointRecovery)
+    add_test(NAME AetherReconstructionStrategyResumeIdentity
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-strategy-resume.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${AETHER_RECONSTRUCTION_TEST_JOB}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    set_tests_properties(AetherReconstructionStrategyResumeIdentity PROPERTIES
+        DEPENDS AetherReconstructionResumeIdentity)
 endif()
 
 if(TARGET aether-fuse)
@@ -152,4 +222,63 @@ if(TARGET maveb-photogrammetry AND Python3_Interpreter_FOUND)
             $<TARGET_FILE:maveb-photogrammetry>
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
             "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz")
+endif()
+
+if(CMAKE_Swift_COMPILER)
+    add_executable(MavebCaptureJournalTests
+        CaptureJournalTests.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureManifest.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureJournal.swift
+    )
+    set_target_properties(MavebCaptureJournalTests PROPERTIES Swift_LANGUAGE_VERSION 6)
+    target_compile_options(MavebCaptureJournalTests PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:-parse-as-library>")
+    target_link_libraries(MavebCaptureJournalTests PRIVATE
+        "-framework CryptoKit"
+        "-framework Foundation")
+    add_test(NAME MavebCaptureJournalTests COMMAND MavebCaptureJournalTests)
+
+    add_executable(MavebCaptureAdmissionTests
+        CaptureAdmissionTests.swift
+        ${PROJECT_SOURCE_DIR}/apps/MavebCapture/Sources/CaptureAdmission.swift
+    )
+    set_target_properties(MavebCaptureAdmissionTests PROPERTIES Swift_LANGUAGE_VERSION 6)
+    target_compile_options(MavebCaptureAdmissionTests PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:-parse-as-library>")
+    target_link_libraries(MavebCaptureAdmissionTests PRIVATE "-framework Foundation")
+    add_test(NAME MavebCaptureAdmissionTests COMMAND MavebCaptureAdmissionTests)
+endif()
+
+if(TARGET maveb-align-sensors AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebSensorAlignmentCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-sensor-alignment.py"
+            $<TARGET_FILE:maveb-align-sensors>
+            "${CMAKE_CURRENT_BINARY_DIR}/sensor-alignment")
+endif()
+
+
+
+add_executable(MavebTextureBakerTests TextureBakerTests.cpp)
+target_link_libraries(MavebTextureBakerTests PRIVATE Aether::Reconstruction)
+aether_configure_target(MavebTextureBakerTests)
+add_test(NAME MavebTextureBakerTests COMMAND MavebTextureBakerTests)
+
+
+if(TARGET aether-export-glb AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherNativeGlbExport
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-native-glb.py"
+            $<TARGET_FILE:aether-export-glb>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+            "${CMAKE_CURRENT_BINARY_DIR}/native-glb")
+endif()
+
+
+if(TARGET maveb-texture-bake AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebTextureBakeCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-texture-bake.py"
+            $<TARGET_FILE:maveb-texture-bake>
+            "${CMAKE_CURRENT_BINARY_DIR}/texture-bake")
 endif()

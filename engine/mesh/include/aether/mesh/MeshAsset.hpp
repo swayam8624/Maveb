@@ -1,7 +1,7 @@
 #pragma once
 
-#include <shared/AetherShaderTypes.h>
 #include <aether/scene/Transform.hpp>
+#include <shared/AetherShaderTypes.h>
 #include <simd/simd.h>
 
 #include <array>
@@ -128,6 +128,8 @@ struct AnimationClip final {
 
 struct MeshAsset final {
     std::string name;
+    /// Slot zero is the engine's implicit glTF default and is never authored as a material.
+    /// Imported or generated authored materials begin at slot one.
     std::vector<PbrMaterial> materials;
     std::vector<EncodedImage> images;
     std::vector<TextureAsset> textures;

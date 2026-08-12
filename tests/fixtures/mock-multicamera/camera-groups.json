@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "groups": [
+    {
+      "id": "sony-a7v-35mm",
+      "relativeDirectory": "sony",
+      "device": "Sony Alpha 7 V",
+      "lens": "FE 28-70mm F3.5-5.6 OSS",
+      "focalLengthMillimetres": 35,
+      "calibrationId": "sony-a7v-35mm-v1"
+    },
+    {
+      "id": "ipad-wide",
+      "relativeDirectory": "ipad",
+      "device": "iPad Pro 11-inch 3rd generation",
+      "lens": "wide",
+      "calibrationId": "ipad-wide-v1"
+    }
+  ]
+}

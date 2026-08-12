@@ -37,6 +37,20 @@ jobs:
       - name: Test
         run: ctest --test-dir build/sanitizer --output-on-failure
 
+  ipad-capture:
+    name: iPad Capture Compile
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure iPad application
+        run: >-
+          cmake -S apps/MavebCapture -B build/ipad-capture -G Xcode
+          -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0
+      - name: Build without signing
+        run: >-
+          cmake --build build/ipad-capture --config Debug --
+          -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+
   format:
     name: Format/Lint
     runs-on: macos-15

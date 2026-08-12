@@ -42,6 +42,7 @@ def resolve_tools() -> dict[str, str | None]:
     deps = ROOT / ".aether-deps/bin"
     candidates = {
         "aether-capture": [ROOT / "build/debug/tools/aether-capture/aether-capture", ROOT / "build/ci/tools/aether-capture/aether-capture"],
+        "aether-keyframes": [ROOT / "build/debug/tools/aether-keyframes/aether-keyframes", ROOT / "build/ci/tools/aether-keyframes/aether-keyframes"],
         "aether-reconstruct": [ROOT / "build/debug/tools/aether-reconstruct/aether-reconstruct", ROOT / "build/ci/tools/aether-reconstruct/aether-reconstruct"],
         "aether-fuse": [ROOT / "build/debug/tools/aether-fuse/aether-fuse", ROOT / "build/ci/tools/aether-fuse/aether-fuse"],
         "maveb-photogrammetry": [ROOT / "build/debug/tools/maveb-photogrammetry/maveb-photogrammetry", ROOT / "build/ci/tools/maveb-photogrammetry/maveb-photogrammetry"],
@@ -116,12 +117,17 @@ def validate_images(images: Path, t: dict[str,str|None]) -> tuple[str,dict[str,A
     if not t["aether-capture"]: return "blocked", {"reason":"aether-capture-not-found"}
     return command_step([t["aether-capture"], "validate", str(images), "--json"], success_key="valid")
 
-def reconstruct(images: Path, output: Path, t: dict[str,str|None], a: argparse.Namespace) -> tuple[str,dict[str,Any]]:
+def reconstruct(images: Path, output: Path, t: dict[str,str|None], a: argparse.Namespace, *,
+                input_kind: str = "photos", image_list: Path | None = None,
+                preprocessing_manifest: Path | None = None) -> tuple[str,dict[str,Any]]:
     req = ("aether-reconstruct","colmap","brush","aether-proxy"); missing=[n for n in req if not t[n]]
     if missing: return "blocked", {"reason":"missing-tools","tools":missing}
     argv=[t["aether-reconstruct"],str(images),"--output",str(output),"--colmap",t["colmap"],"--brush",t["brush"],
           "--proxy",t["aether-proxy"],"--trainer","brush","--seed","42","--steps",str(a.steps),
           "--checkpoint-every",str(a.checkpoint_every),"--json"]
+    argv += ["--input-kind",input_kind]
+    if image_list is not None: argv += ["--image-list",str(image_list)]
+    if preprocessing_manifest is not None: argv += ["--preprocessing-manifest",str(preprocessing_manifest)]
     if a.dry_run: argv.append("--dry-run")
     return command_step(argv)
 
@@ -130,8 +136,12 @@ def extract_video(video: Path, output: Path, t: dict[str,str|None], fps: float) 
     output.mkdir(parents=True, exist_ok=True)
     result=run_command([t["ffmpeg"],"-hide_banner","-loglevel","error","-y","-i",str(video),"-vf",f"fps={fps:g}","-q:v","2",str(output/"frame_%06d.jpg")])
     count=len(list(output.glob("frame_*.jpg"))); status="pass" if result.returncode==0 and count>=3 else "fail"
-    return status,{"command":result.to_json(),"frameCount":count,"framesDirectory":str(output),"samplingFps":fps,
-                   "note":"Deterministic uniform baseline; adaptive keyframe selection remains a separate gate."}
+    return status,{"command":result.to_json(),"frameCount":count,"framesDirectory":str(output),"candidateFps":fps,
+                   "note":"Deterministic candidate decode; quality and appearance-overlap admission runs next."}
+
+def select_keyframes(frames: Path, output: Path, t: dict[str,str|None]) -> tuple[str,dict[str,Any]]:
+    if not t["aether-keyframes"]: return "blocked", {"reason":"aether-keyframes-not-found"}
+    return command_step([t["aether-keyframes"],str(frames),"--output",str(output),"--json"])
 
 def video_metadata(video: Path,t:dict[str,str|None])->dict[str,Any]:
     if not t["ffprobe"]: return {"status":"blocked","reason":"ffprobe-not-found"}
@@ -179,7 +189,7 @@ def evaluate_metric_geometry(candidate:Path,reference:Path,output:Path,t:dict[st
 def evaluate_geometry(job:Path,resolved:dict[str,Any],t:dict[str,str|None],max_points:int)->tuple[str,dict[str,Any]]:
     py=t.get("proxy-python")
     if not py: return "blocked", {"reason":"proxy-python-not-found"}
-    candidate=job/"proxy/proxy.ply"; cameras=job/"sparse/0-text/images.txt"
+    candidate=job/"proxy/proxy.ply"; cameras=job/"sparse/selected-text/images.txt"
     if not candidate.is_file() or not cameras.is_file(): return "fail", {"reason":"candidate-geometry-or-cameras-missing"}
     argv=[py,str(GEOMETRY_EVALUATOR),str(candidate),resolved["referenceGeometry"],"--candidate-cameras",str(cameras),
           "--reference-cameras",resolved["referenceCameras"],"--align","camera","--thresholds","0.01,0.02,0.05",
@@ -209,7 +219,13 @@ def run_dataset(a:argparse.Namespace,m:dict[str,Any],t:dict[str,str|None])->dict
         video=Path(resolved["video"]); record["steps"].append({"name":"video-metadata",**video_metadata(video,t)})
         frames=run_dir/"frames"; status,d=extract_video(video,frames,t,a.video_fps); record["steps"].append({"name":"video-frame-extraction","status":status,**d})
         if status=="pass": status,d=validate_images(frames,t); record["steps"].append({"name":"capture-validation","status":status,**d})
-        if status=="pass" and not a.validate_only and not a.skip_reconstruction: status,d=reconstruct(frames,run_dir/"reconstruction",t,a); record["steps"].append({"name":"reconstruction","status":status,**d})
+        keyframes=run_dir/"keyframes"
+        if status=="pass": status,d=select_keyframes(frames,keyframes,t); record["steps"].append({"name":"keyframe-selection","status":status,**d})
+        if status=="pass" and not a.validate_only and not a.skip_reconstruction:
+            status,d=reconstruct(frames,run_dir/"reconstruction",t,a,input_kind="video",
+                                 image_list=keyframes/"selected-images.txt",
+                                 preprocessing_manifest=keyframes/"keyframes.json")
+            record["steps"].append({"name":"reconstruction","status":status,**d})
         if status=="pass" and a.photogrammetry and not a.validate_only:
             model=run_dir/"photogrammetry/model.usdz"; status,d=photogrammetry(frames,model,t,a,sequential=True); record["steps"].append({"name":"apple-photogrammetry","status":status,**d})
             if status=="pass" and a.convert_glb and not a.dry_run:
@@ -284,7 +300,7 @@ def parser()->argparse.ArgumentParser:
     p=argparse.ArgumentParser(description="Maveb real-data reconstruction benchmark harness"); sub=p.add_subparsers(dest="command",required=True)
     sub.add_parser("list"); sub.add_parser("doctor")
     def opts(x):
-        x.add_argument("--steps",type=int,default=2000); x.add_argument("--checkpoint-every",type=int,default=1000); x.add_argument("--video-fps",type=float,default=2.0)
+        x.add_argument("--steps",type=int,default=2000); x.add_argument("--checkpoint-every",type=int,default=1000); x.add_argument("--video-fps",type=float,default=12.0)
         x.add_argument("--arkit-stride",type=int,default=6); x.add_argument("--arkit-max-frames",type=int,default=300); x.add_argument("--geometry-max-points",type=int,default=500_000)
         x.add_argument("--arkit-max-axis",type=int,default=128); x.add_argument("--arkit-bounds-stride",type=int,default=8)
         x.add_argument("--arkit-voxel",type=float,default=0.01); x.add_argument("--arkit-padding",type=float,default=0.08)

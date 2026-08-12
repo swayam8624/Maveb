@@ -24,7 +24,7 @@ case ${command} in
     mkdir -p ${database:h}
     : > ${database}
     ;;
-  exhaustive_matcher)
+  exhaustive_matcher|sequential_matcher)
     [[ -f $(value_after --database_path $@) ]]
     ;;
   mapper)
