@@ -1,5 +1,6 @@
 add_library(AetherMesh STATIC
     src/Animation.cpp
+    src/GltfExporter.cpp
     src/GltfLoader.cpp
     src/PlyExporter.cpp
 )

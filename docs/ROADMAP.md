@@ -40,6 +40,10 @@ renumber or replace the product phases.
   GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
   geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
   requiring Gaussian content. Real Sony+iPad fusion into this frame remains an E3 gate.
+- [x] [E2] **Native static GLB authoring:** deterministic bounded export preserves indexed geometry,
+  vertex colors, static instances, embedded PNG/JPEG images, core PBR materials, samplers, and UV
+  transforms. Animation, skins, morph targets, malformed topology, and hostile limits fail rather
+  than being silently dropped. USDZ ingestion remains the explicit Blender-backed Apple baseline.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and
