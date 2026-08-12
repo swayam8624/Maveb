@@ -25,8 +25,10 @@ renumber or replace the product phases.
   mesh. The full R1 gate remains open for the sphere/parity and committed E4 artifacts above.
 - [ ] [E2] **R2 production capture:** the iPad LiDAR companion now has permission UX, a zero-copy
   RealityKit preview, normal-tracking/depth admission, a three-frame bounded writer queue, native
-  YUV/depth strides, atomic recording, hashes, counters, and file export. Device/format controls,
-  interrupted-session recovery, richer diagnostics, and the 30-minute soak remain open.
+  YUV/depth strides, callback-time host timestamps, linear append-only recording, hash-verified
+  interrupted-session recovery, motion/quality/backpressure-aware adaptive admission, counters,
+  and file export. Device/format controls, richer diagnostics, real interruption evidence, and the
+  30-minute soak remain open.
 - [ ] [E0] **R3 visual odometry:** calibrated initialization, PnP/local mapping, confidence, tracking
   loss, relocalization, submaps, and recorded trajectory metrics.
 - [ ] [E2] **R4 depth providers:** MavebCapture records Apple scene depth/confidence/intrinsics/poses;
