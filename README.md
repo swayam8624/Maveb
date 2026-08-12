@@ -109,6 +109,8 @@ build/debug/tools/aether-inspect/aether-inspect scene.aether --json
 build/debug/apps/AetherBenchmark/aether-benchmark scene.aether \
   --camera-path camera-path.json --width 1920 --height 1080 --json
 build/debug/tools/aether-capture/aether-capture validate dataset/images --json
+build/debug/tools/aether-keyframes/aether-keyframes extracted-frames \
+  --output keyframes --json
 build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
   --output reconstruction-job --trainer brush --seed 42 --dry-run --json
 build/debug/tools/aether-fuse/aether-fuse recorded-capture \
@@ -121,7 +123,7 @@ For the real-data regression layer:
 export MAVEB_DATA="$HOME/Datasets/MavebBench"
 ./tools/run-mavebbench.zsh doctor
 ./tools/run-mavebbench.zsh run eth3d-pipes --steps 2000 --checkpoint-every 1000
-./tools/run-mavebbench.zsh run uco3d-object --video-fps 2 --steps 2000
+./tools/run-mavebbench.zsh run uco3d-object --video-fps 12 --steps 2000
 ./tools/run-mavebbench.zsh run arkitscenes-47333462 --arkit-max-frames 30
 ./tools/run-mavebbench.zsh report --output benchmarks/latest-report.md
 ```

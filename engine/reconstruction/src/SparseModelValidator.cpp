@@ -6,7 +6,9 @@
 #include <cstdint>
 #include <fstream>
 #include <limits>
+#include <set>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -14,6 +16,7 @@ namespace aether::reconstruction {
 namespace {
 struct ImagePose final {
     std::uint64_t id{};
+    std::filesystem::path name;
     std::array<double, 3> center{};
     std::array<double, 3> forward{};
 };
@@ -28,10 +31,11 @@ Result<std::vector<ImagePose>> parseImages(const std::filesystem::path& path) {
         return fail(ErrorCode::notFound, "COLMAP text model is missing images.txt", path);
     std::vector<ImagePose> poses;
     std::unordered_set<std::uint64_t> ids;
+    std::set<std::filesystem::path> names;
     std::string line;
     bool expectObservationLine = false;
     while (std::getline(stream, line)) {
-        if (line.size() > 16U * 1024U * 1024U)
+        if (line.size() > 16ULL * 1024ULL * 1024ULL)
             return fail(ErrorCode::resourceExhausted,
                         "COLMAP images.txt line exceeds safety limit");
         if (!line.empty() && line.front() == '#')
@@ -64,8 +68,19 @@ Result<std::vector<ImagePose>> parseImages(const std::filesystem::path& path) {
             imageId == 0 || cameraId == 0 || name.empty() || !finite(qw) || !finite(qx) ||
             !finite(qy) || !finite(qz) || !finite(tx) || !finite(ty) || !finite(tz))
             return fail(ErrorCode::corruptData, "COLMAP images.txt contains an invalid pose line");
+        std::filesystem::path imageName(name);
+        if (imageName.is_absolute())
+            return fail(ErrorCode::corruptData, "COLMAP image name must be relative", name);
+        for (const auto& component : imageName)
+            if (component == "..")
+                return fail(ErrorCode::corruptData, "COLMAP image name contains path traversal",
+                            name);
+        imageName = imageName.lexically_normal();
         if (!ids.insert(imageId).second)
             return fail(ErrorCode::corruptData, "COLMAP images.txt contains a duplicate image ID");
+        if (!names.insert(imageName).second)
+            return fail(ErrorCode::corruptData, "COLMAP images.txt contains a duplicate image name",
+                        imageName);
         const double length = std::sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
         if (!finite(length) || length < 1.0e-12)
             return fail(ErrorCode::corruptData, "COLMAP image quaternion is degenerate");
@@ -83,6 +98,7 @@ Result<std::vector<ImagePose>> parseImages(const std::filesystem::path& path) {
         const std::array<double, 3> translation{tx, ty, tz};
         ImagePose pose;
         pose.id = imageId;
+        pose.name = std::move(imageName);
         for (std::size_t axis = 0; axis < 3; ++axis) {
             pose.center[axis] =
                 -(rotation[0][axis] * translation[0] + rotation[1][axis] * translation[1] +
@@ -123,7 +139,7 @@ Result<TrackGraph> parseTracks(const std::filesystem::path& path,
     while (std::getline(stream, line)) {
         if (line.empty() || line.front() == '#')
             continue;
-        if (line.size() > 16U * 1024U * 1024U)
+        if (line.size() > 16ULL * 1024ULL * 1024ULL)
             return fail(ErrorCode::resourceExhausted,
                         "COLMAP points3D.txt line exceeds safety limit");
         std::istringstream values(line);
@@ -172,9 +188,11 @@ Result<TrackGraph> parseTracks(const std::filesystem::path& path,
 }
 } // namespace
 
-Result<SparseCoverageReport> validateSparseTextModel(const std::filesystem::path& modelDirectory,
-                                                     std::size_t inputImageCount,
-                                                     const SparseCoverageThresholds& thresholds) {
+Result<SparseCoverageReport>
+validateSparseTextModelImpl(const std::filesystem::path& modelDirectory,
+                            std::size_t inputImageCount,
+                            std::span<const std::filesystem::path> selectedImages,
+                            const SparseCoverageThresholds& thresholds) {
     if (inputImageCount == 0 || thresholds.minimumRegisteredImages < 2 ||
         !finite(thresholds.minimumRegistrationRatio) || thresholds.minimumRegistrationRatio <= 0 ||
         thresholds.minimumRegistrationRatio > 1 || thresholds.minimumTrackedPoints == 0 ||
@@ -247,6 +265,27 @@ Result<SparseCoverageReport> validateSparseTextModel(const std::filesystem::path
         report.issues.emplace_back("Too few images registered in the sparse model");
     if (report.registeredImages > inputImageCount)
         report.issues.emplace_back("Sparse model contains images outside the validated input set");
+    if (!selectedImages.empty()) {
+        std::set<std::filesystem::path> expected;
+        for (const auto& selected : selectedImages) {
+            if (selected.empty() || selected.is_absolute())
+                return fail(ErrorCode::invalidArgument,
+                            "Selected sparse-model image path must be relative", selected);
+            auto normalized = selected.lexically_normal();
+            for (const auto& component : normalized)
+                if (component == "..")
+                    return fail(ErrorCode::invalidArgument,
+                                "Selected sparse-model image path contains traversal", selected);
+            if (!expected.insert(std::move(normalized)).second)
+                return fail(ErrorCode::invalidArgument,
+                            "Selected sparse-model image path is duplicated", selected);
+        }
+        for (const auto& pose : *poses)
+            if (!expected.contains(pose.name))
+                report.issues.emplace_back("Sparse model registered an image outside the exact "
+                                           "selected input list: " +
+                                           pose.name.generic_string());
+    }
     if (report.registrationRatio < thresholds.minimumRegistrationRatio)
         report.issues.emplace_back("Registered-image ratio is below the required coverage");
     if (report.trackedPoints < thresholds.minimumTrackedPoints)
@@ -258,6 +297,68 @@ Result<SparseCoverageReport> validateSparseTextModel(const std::filesystem::path
     if (report.maximumViewAngleDegrees < thresholds.minimumViewAngleDegrees)
         report.issues.emplace_back("Registered cameras lack angular diversity");
     return report;
+}
+
+Result<SparseCoverageReport> validateSparseTextModel(const std::filesystem::path& modelDirectory,
+                                                     std::size_t inputImageCount,
+                                                     const SparseCoverageThresholds& thresholds) {
+    return validateSparseTextModelImpl(modelDirectory, inputImageCount, {}, thresholds);
+}
+
+Result<SparseCoverageReport>
+validateSparseTextModel(const std::filesystem::path& modelDirectory,
+                        std::span<const std::filesystem::path> selectedImages,
+                        const SparseCoverageThresholds& thresholds) {
+    if (selectedImages.empty())
+        return fail(ErrorCode::invalidArgument, "Selected sparse-model image list is empty");
+    return validateSparseTextModelImpl(modelDirectory, selectedImages.size(), selectedImages,
+                                       thresholds);
+}
+
+Result<SparseModelSelection>
+selectBestSparseModel(const std::vector<SparseModelCandidate>& candidates) {
+    if (candidates.empty())
+        return fail(ErrorCode::notFound, "COLMAP did not produce a sparse model");
+    std::optional<std::size_t> selected;
+    auto rank = [](const SparseModelCandidate& candidate) {
+        const auto& coverage = candidate.coverage;
+        return std::tuple{coverage.connectedImages,         coverage.registeredImages,
+                          coverage.trackedPoints,           coverage.meanTrackLength,
+                          coverage.maximumViewAngleDegrees, coverage.baselineDiagonal};
+    };
+    for (std::size_t index = 0; index < candidates.size(); ++index) {
+        if (!candidates[index].coverage.passed())
+            continue;
+        if (!selected || rank(candidates[index]) > rank(candidates[*selected]))
+            selected = index;
+    }
+    if (!selected) {
+        std::string context;
+        for (const auto& candidate : candidates) {
+            if (!context.empty())
+                context += " · ";
+            context += candidate.id + ":";
+            if (candidate.coverage.issues.empty())
+                context += "invalid";
+            else
+                for (std::size_t index = 0; index < candidate.coverage.issues.size(); ++index) {
+                    if (index > 0)
+                        context += ",";
+                    context += candidate.coverage.issues[index];
+                }
+        }
+        return fail(ErrorCode::unsupported, "No sparse model passed the coverage gate", context);
+    }
+    const auto& winner = candidates[*selected];
+    std::ostringstream reason;
+    reason << "Selected model " << winner.id << " from " << candidates.size()
+           << " candidates: largest connected image set (" << winner.coverage.connectedImages
+           << "), then registered images (" << winner.coverage.registeredImages
+           << "), tracked points (" << winner.coverage.trackedPoints << "), mean track length ("
+           << winner.coverage.meanTrackLength << "), angular diversity ("
+           << winner.coverage.maximumViewAngleDegrees << " deg), and baseline ("
+           << winner.coverage.baselineDiagonal << ")";
+    return SparseModelSelection{*selected, reason.str()};
 }
 
 } // namespace aether::reconstruction

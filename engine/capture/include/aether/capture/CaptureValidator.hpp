@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -8,6 +10,9 @@
 namespace aether::capture {
 
 struct ImageMeasurement {
+    static constexpr std::size_t fingerprintWidth = 16;
+    static constexpr std::size_t fingerprintHeight = 16;
+
     std::filesystem::path path;
     std::uint64_t fileBytes{};
     std::size_t width{};
@@ -21,6 +26,7 @@ struct ImageMeasurement {
     std::optional<double> focalLengthMillimetres;
     std::string cameraMake;
     std::string cameraModel;
+    std::array<std::uint8_t, fingerprintWidth * fingerprintHeight> appearanceFingerprint{};
 };
 
 struct CaptureIssue {

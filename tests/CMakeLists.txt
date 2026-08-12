@@ -24,6 +24,14 @@ if(TARGET AetherCapture)
     add_test(NAME AetherCaptureTests COMMAND AetherCaptureTests)
 endif()
 
+if(TARGET aether-keyframes AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherKeyframeSelectorCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-keyframe-cli.py"
+            $<TARGET_FILE:aether-keyframes>
+            "${CMAKE_CURRENT_BINARY_DIR}/keyframe-selector-cli")
+endif()
+
 if(TARGET AetherMetal AND TARGET AetherShaders)
     add_executable(AetherMetalTests MetalTests.cpp)
     target_link_libraries(AetherMetalTests PRIVATE Aether::Metal)
@@ -106,6 +114,30 @@ if(TARGET aether-reconstruct)
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-weak.zsh"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    add_test(NAME AetherReconstructionMultiModelSelection
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-multi-model-selection.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera"
+            "${CMAKE_CURRENT_BINARY_DIR}/reconstruction-multi-model-job"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-multi.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera/camera-groups.json")
+    add_test(NAME AetherReconstructionFailedJobStatus
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-failed-job-status.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${CMAKE_CURRENT_BINARY_DIR}/reconstruction-failed-job"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap-fail.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    add_test(NAME AetherReconstructionVideoInputContract
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-video-input-contract.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${CMAKE_CURRENT_BINARY_DIR}/video-input-contract"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-multicamera/camera-groups.json")
     add_test(NAME AetherReconstructionProxyResume
         COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-proxy-resume.zsh"
             $<TARGET_FILE:aether-reconstruct>
@@ -136,6 +168,16 @@ if(TARGET aether-reconstruct)
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
     set_tests_properties(AetherReconstructionResumeIdentity PROPERTIES
         DEPENDS AetherBrushCheckpointRecovery)
+    add_test(NAME AetherReconstructionStrategyResumeIdentity
+        COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-strategy-resume.zsh"
+            $<TARGET_FILE:aether-reconstruct>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction"
+            "${AETHER_RECONSTRUCTION_TEST_JOB}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-colmap.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-brush.zsh"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-proxy.zsh")
+    set_tests_properties(AetherReconstructionStrategyResumeIdentity PROPERTIES
+        DEPENDS AetherReconstructionResumeIdentity)
 endif()
 
 if(TARGET aether-fuse)
