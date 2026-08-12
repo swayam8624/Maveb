@@ -44,6 +44,11 @@ renumber or replace the product phases.
 - [x] [E3] **RGB textured-mesh baseline:** native Apple photogrammetry produces checkpointed,
   provenance-hashed textured USDZ from deterministic video frames and Blender converts it to a
   validated material-bearing GLB. Custom RGB depth and LiDAR/Sony fusion remain R4 work.
+- [x] [E2] **R5 sparse CPU reference:** deterministic power-of-two voxel blocks preserve the dense
+  oracle's projection/fusion equations and resolved extraction exactly on a translated/rotated
+  fixture; a billion-voxel logical room allocates only local observed blocks, and resident,
+  candidate, extraction, disjoint-ray, and footprint-overflow failures are bounded and
+  transactional. Extraction still uses a bounded dense active-span snapshot.
 - [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
   memory pressure, persistence, and CPU/GPU agreement.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and

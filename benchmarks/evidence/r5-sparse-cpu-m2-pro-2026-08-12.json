@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "evidenceLevel": "E2-fixture",
+  "backend": "deterministic-cpu-block-sparse-tsdf",
+  "parity": {
+    "blockResolution": 4,
+    "cameraPose": "translated-and-yaw-rotated",
+    "repeatedFrames": 2,
+    "denseObservedVoxels": 3712,
+    "sparseObservedVoxels": 3712,
+    "exactVoxelAgreement": true,
+    "exactResolvedMeshAgreement": true,
+    "allocatedBlocks": 106,
+    "meshVertices": 882,
+    "meshTriangles": 1680
+  },
+  "roomScaleLogicalGrid": {
+    "blockResolution": 8,
+    "dimensions": [1001, 1001, 1001],
+    "logicalVoxels": 1003003001,
+    "allocatedBlocks": 1102,
+    "allocatedVoxels": 564224,
+    "observedVoxels": 419871,
+    "voxelPayloadBytes": 13541376,
+    "allocationRatio": 0.00056253470771021157,
+    "unallocatedPercent": 99.943746529228989,
+    "lastFrameCandidateBlocks": 3936,
+    "lastFrameVoxelUpdates": 419871
+  },
+  "transactionalBudgetFailure": true,
+  "limitations": [
+    "Synthetic plane evidence is not real-capture E3 accuracy evidence.",
+    "Extraction uses a bounded dense snapshot of the allocated span; incremental block meshing remains open."
+  ]
+}

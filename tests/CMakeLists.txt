@@ -14,6 +14,18 @@ add_test(NAME AetherOracleGeometryTests
     COMMAND AetherOracleGeometryTests --json-output
         "${PROJECT_BINARY_DIR}/test-artifacts/r1-oracle-geometry.json")
 
+add_executable(AetherSparseTsdfTests SparseTsdfTests.cpp)
+target_link_libraries(AetherSparseTsdfTests PRIVATE Aether::Reconstruction)
+aether_configure_target(AetherSparseTsdfTests)
+add_test(NAME AetherSparseTsdfTests
+    COMMAND AetherSparseTsdfTests --json-output
+        "${PROJECT_BINARY_DIR}/test-artifacts/r5-sparse-cpu-tsdf.json")
+add_test(NAME AetherSparseTsdfEvidence
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+        "${PROJECT_BINARY_DIR}/test-artifacts/r5-sparse-cpu-tsdf.json"
+        "${PROJECT_SOURCE_DIR}/benchmarks/evidence/r5-sparse-cpu-m2-pro-2026-08-12.json")
+set_tests_properties(AetherSparseTsdfEvidence PROPERTIES DEPENDS AetherSparseTsdfTests)
+
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME AetherProxyPythonTests
