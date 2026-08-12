@@ -7,6 +7,11 @@ target_compile_definitions(AetherTests PRIVATE
 aether_configure_target(AetherTests)
 add_test(NAME AetherTests COMMAND AetherTests)
 
+add_executable(AetherSensorAlignmentTests SensorAlignmentTests.cpp)
+target_link_libraries(AetherSensorAlignmentTests PRIVATE Aether::Reconstruction)
+aether_configure_target(AetherSensorAlignmentTests)
+add_test(NAME AetherSensorAlignmentTests COMMAND AetherSensorAlignmentTests)
+
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME AetherProxyPythonTests
@@ -152,4 +157,12 @@ if(TARGET maveb-photogrammetry AND Python3_Interpreter_FOUND)
             $<TARGET_FILE:maveb-photogrammetry>
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
             "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz")
+endif()
+
+if(TARGET maveb-align-sensors AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebSensorAlignmentCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-sensor-alignment.py"
+            $<TARGET_FILE:maveb-align-sensors>
+            "${CMAKE_CURRENT_BINARY_DIR}/sensor-alignment")
 endif()
