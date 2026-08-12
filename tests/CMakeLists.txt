@@ -264,3 +264,28 @@ if(TARGET maveb-align-sensors AND Python3_Interpreter_FOUND)
             $<TARGET_FILE:maveb-align-sensors>
             "${CMAKE_CURRENT_BINARY_DIR}/sensor-alignment")
 endif()
+
+
+add_executable(MavebTextureBakerTests TextureBakerTests.cpp)
+target_link_libraries(MavebTextureBakerTests PRIVATE Aether::Reconstruction)
+aether_configure_target(MavebTextureBakerTests)
+add_test(NAME MavebTextureBakerTests COMMAND MavebTextureBakerTests)
+
+
+if(TARGET aether-export-glb AND Python3_Interpreter_FOUND)
+    add_test(NAME AetherNativeGlbExport
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-native-glb.py"
+            $<TARGET_FILE:aether-export-glb>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+            "${CMAKE_CURRENT_BINARY_DIR}/native-glb")
+endif()
+
+
+if(TARGET maveb-texture-bake AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebTextureBakeCli
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-texture-bake.py"
+            $<TARGET_FILE:maveb-texture-bake>
+            "${CMAKE_CURRENT_BINARY_DIR}/texture-bake")
+endif()

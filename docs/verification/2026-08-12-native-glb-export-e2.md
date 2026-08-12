@@ -1,71 +1,46 @@
-# Native static GLB export — E2 verification
+# 2026-08-12 native static GLB export evidence
 
-Date: 2026-08-12
+This tranche establishes an E2 native publication boundary for validated static `MeshAsset` data.
+It is fixture evidence, not a claim that AETHER can ingest Apple's USDZ output without Blender.
 
-Scope: deterministic bounded GLB authoring from Maveb `MeshAsset`, loader support for `COLOR_0`,
-and recorded RGB-D oracle export through `aether-fuse`.
+## Contract
 
-## Evidence boundary
+`GltfExporter::writeGlb` publishes one deterministic glTF 2.0 binary file through atomic sibling
+replacement. The supported static subset preserves:
 
-This is E2 fixture evidence. It proves deterministic encoding, semantic validation, hostile-input
-rejection, atomic replacement, static instance and PBR round-trips, and a CLI oracle smoke test. It
-does not prove real Sony/iPad alignment, texture reconstruction, geometric accuracy on a new
-capture, or USDZ ingestion.
+- indexed triangle primitives and flat world-space instances;
+- positions, normals, tangents, primary UVs, and optional RGB vertex colors;
+- metallic-roughness factors, base-color/metallic-roughness/normal/emissive textures, samplers,
+  alpha modes, double-sided state, and per-slot `KHR_texture_transform`;
+- PNG and JPEG source bytes embedded as GLB buffer views.
 
-## Commands and results
+Animation, skins, morph targets, non-triangle topology, invalid indices, degenerate triangles,
+non-finite or singular transforms, non-opaque vertex-color alpha, unsupported image encodings, and
+configured resource-limit overflow return structured errors. They are not silently flattened.
 
-Warnings-as-errors CPU build and the complete registered test suite:
+## Verification
+
+The C++ test constructs a two-instance textured asset with RGB vertex colors, writes it twice,
+requires byte-identical output, and re-imports it through the strict production loader. It checks
+geometry counts, resources, transforms, UV transforms, and vertex colors, then exercises animation,
+degenerate-index, and invalid-image rejection.
+
+The `AetherNativeGlbExport` command test treats the CLI as a black box. It verifies its JSON report
+and SHA-256, byte-for-byte determinism, valid GLB chunk lengths, embedded buffers/images, required
+attributes and texture-transform declaration, dry-run destination non-mutation and cleanup, plus
+structured animation rejection with no partial output.
+
+Commands used for this evidence record:
 
 ```bash
-cmake --build --preset ci --parallel 8
+cmake --preset ci
+cmake --build --preset ci -j 8
 ctest --preset ci --output-on-failure
-```
 
-Result: build succeeded; 11/11 tests passed. `AetherTests` covers byte-for-byte determinism,
-canonical GLB validation, load/export round-trip, embedded image and sampler preservation, PBR and
-UV-transform preservation, vertex colors, reflected instance transforms, invalid topology,
-unsupported animated profiles, configured limits, and atomic destination preservation.
-`AetherOracleFusionCli` writes both PLY and GLB and checks their file signatures.
-
-Address/undefined-behavior sanitizer build and complete suite:
-
-```bash
-cmake --build --preset sanitizer --parallel 8
+cmake --preset sanitizer
+cmake --build --preset sanitizer -j 8
 ctest --test-dir build/sanitizer --output-on-failure
 ```
 
-Result: build succeeded; 11/11 tests passed with no sanitizer report.
-
-Changed-file static analysis using the installed Homebrew LLVM and active Xcode SDK:
-
-```bash
-SDK=$(xcrun --show-sdk-path)
-/opt/homebrew/opt/llvm/bin/clang-tidy -p build/ci --warnings-as-errors='*' \
-  --extra-arg="-isysroot$SDK" \
-  --extra-arg="-isystem$SDK/usr/include/c++/v1" \
-  engine/mesh/src/GltfExporter.cpp engine/mesh/src/GltfLoader.cpp \
-  tools/aether-fuse/main.cpp tests/TestMain.cpp
-```
-
-Result: completed with no unsuppressed diagnostic. Two narrow suppressions remain documented in
-source: the established CLI `main` exception boundary and the intentional buffer-view/count
-parameter order mirroring a glTF accessor.
-
-Formatting, whitespace, shell syntax, and benchmark harness regression tests:
-
-```bash
-/opt/homebrew/opt/llvm/bin/clang-format --dry-run --Werror \
-  engine/mesh/include/aether/mesh/GltfExporter.hpp engine/mesh/src/GltfExporter.cpp \
-  engine/mesh/include/aether/mesh/MeshAsset.hpp engine/mesh/src/GltfLoader.cpp \
-  tests/TestMain.cpp tools/aether-fuse/main.cpp
-git diff --check
-zsh -n tests/fixtures/assert-oracle-fusion.zsh
-python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
-```
-
-Result: formatting, whitespace, and shell syntax checks succeeded; 16 Python tests ran, 14 passed,
-and 2 dataset-dependent tests were skipped by their existing guards.
-
-During verification, the first exact transform assertion exposed corrupted reflection axes when a
-matrix was decomposed by the loader. The exporter now emits validated TRS, preserves mirrored
-instances, and explicitly rejects shear; the final suites above include that regression test.
+The exact executed results are recorded in the tranche handoff. A real photogrammetry artifact and
+native USDZ ingestion are intentionally outside this E2 fixture gate.

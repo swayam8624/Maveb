@@ -6,6 +6,7 @@ add_library(AetherReconstruction STATIC
     src/SparseTsdfVolume.cpp
     src/GeometryEvaluation.cpp
     src/RecordedProviders.cpp
+    src/TextureBaker.cpp
     src/ColmapCameraRig.cpp
     src/SensorAlignment.cpp
 )
