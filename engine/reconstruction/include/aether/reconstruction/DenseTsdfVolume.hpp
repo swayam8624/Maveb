@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace aether::reconstruction {
@@ -47,14 +48,14 @@ struct DenseTsdfBoundsResult final {
 /// Output: a dense reference volume enclosing robust observed-surface quantiles.
 /// Task: choose deterministic oracle bounds without trusting noisy depth extrema.
 class DenseTsdfBoundsEstimator final {
-public:
+  public:
     static Result<DenseTsdfBoundsEstimator> create(DenseTsdfBoundsConfig config = {});
 
     Result<void> observe(const capture::CapturePacket& packet, const PoseEstimate& pose,
                          const DepthObservation& depth);
     Result<DenseTsdfBoundsResult> estimate() const;
 
-private:
+  private:
     explicit DenseTsdfBoundsEstimator(DenseTsdfBoundsConfig config);
 
     DenseTsdfBoundsConfig config_;
@@ -63,19 +64,30 @@ private:
 
 /// Deterministic CPU correctness implementation. Camera coordinates use +Z forward.
 class DenseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
-public:
+  public:
     static Result<DenseTsdfVolume> create(DenseTsdfConfig config);
 
-    Result<void> integrate(const capture::CapturePacket& packet,
-                           const PoseEstimate& pose,
+    /// Input: a complete, finite, normalized signed-distance grid and observation weights.
+    /// Output: a dense oracle volume whose samples exactly match the supplied scalar field.
+    /// Task: exercise mesh extraction independently from camera projection and sensor fusion.
+    static Result<DenseTsdfVolume> fromScalarField(DenseTsdfConfig config,
+                                                   std::span<const TsdfVoxel> voxels);
+
+    Result<void> integrate(const capture::CapturePacket& packet, const PoseEstimate& pose,
                            const DepthObservation& depth) override;
     Result<mesh::MeshAsset> extractMesh() const override;
 
-    [[nodiscard]] const DenseTsdfConfig& config() const noexcept { return config_; }
-    [[nodiscard]] const std::vector<TsdfVoxel>& voxels() const noexcept { return voxels_; }
-    [[nodiscard]] std::size_t integratedFrames() const noexcept { return integratedFrames_; }
+    [[nodiscard]] const DenseTsdfConfig& config() const noexcept {
+        return config_;
+    }
+    [[nodiscard]] const std::vector<TsdfVoxel>& voxels() const noexcept {
+        return voxels_;
+    }
+    [[nodiscard]] std::size_t integratedFrames() const noexcept {
+        return integratedFrames_;
+    }
 
-private:
+  private:
     explicit DenseTsdfVolume(DenseTsdfConfig config);
     [[nodiscard]] std::size_t index(std::uint32_t x, std::uint32_t y,
                                     std::uint32_t z) const noexcept;

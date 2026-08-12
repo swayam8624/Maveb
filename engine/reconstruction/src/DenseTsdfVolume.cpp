@@ -36,9 +36,7 @@ double dot(const Vec3& a, const Vec3& b) {
 }
 
 Vec3 cross(const Vec3& a, const Vec3& b) {
-    return {a[1] * b[2] - a[2] * b[1],
-            a[2] * b[0] - a[0] * b[2],
-            a[0] * b[1] - a[1] * b[0]};
+    return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
 }
 
 Vec3 normalized(const Vec3& value) {
@@ -60,10 +58,9 @@ bool finitePose(const capture::RigidPose& pose) {
     for (const auto value : pose.translation)
         if (!std::isfinite(value))
             return false;
-    const auto norm = std::sqrt(pose.orientation[0] * pose.orientation[0] +
-                                pose.orientation[1] * pose.orientation[1] +
-                                pose.orientation[2] * pose.orientation[2] +
-                                pose.orientation[3] * pose.orientation[3]);
+    const auto norm = std::sqrt(
+        pose.orientation[0] * pose.orientation[0] + pose.orientation[1] * pose.orientation[1] +
+        pose.orientation[2] * pose.orientation[2] + pose.orientation[3] * pose.orientation[3]);
     return std::abs(norm - 1.0) <= 1.0e-3;
 }
 
@@ -81,27 +78,23 @@ double confidenceWeight(const capture::ImagePlane* plane, std::uint32_t x, std::
     return static_cast<double>(std::to_integer<std::uint8_t>(row[x])) / 255.0;
 }
 
-std::array<float, 3> readColor(const capture::CapturePacket& packet,
-                               std::uint32_t x, std::uint32_t y) {
+std::array<float, 3> readColor(const capture::CapturePacket& packet, std::uint32_t x,
+                               std::uint32_t y) {
     if (packet.colorPlanes.empty() || !packet.colorPlanes.front().valid())
         return {};
     const auto& plane = packet.colorPlanes.front();
     if (packet.calibration.width == 0 || packet.calibration.height == 0)
         return {};
     const auto colorX = std::min<std::uint32_t>(
-        plane.width - 1,
-        static_cast<std::uint32_t>(
-            static_cast<std::uint64_t>(x) * plane.width / packet.calibration.width));
+        plane.width - 1, static_cast<std::uint32_t>(static_cast<std::uint64_t>(x) * plane.width /
+                                                    packet.calibration.width));
     const auto colorY = std::min<std::uint32_t>(
-        plane.height - 1,
-        static_cast<std::uint32_t>(
-            static_cast<std::uint64_t>(y) * plane.height / packet.calibration.height));
-    const auto* row = plane.buffer.data +
-                      static_cast<std::size_t>(colorY) * plane.rowStrideBytes;
+        plane.height - 1, static_cast<std::uint32_t>(static_cast<std::uint64_t>(y) * plane.height /
+                                                     packet.calibration.height));
+    const auto* row = plane.buffer.data + static_cast<std::size_t>(colorY) * plane.rowStrideBytes;
     switch (plane.format) {
     case capture::PixelFormat::gray8: {
-        const auto value =
-            static_cast<float>(std::to_integer<std::uint8_t>(row[colorX])) / 255.0F;
+        const auto value = static_cast<float>(std::to_integer<std::uint8_t>(row[colorX])) / 255.0F;
         return {value, value, value};
     }
     case capture::PixelFormat::rgb8: {
@@ -122,20 +115,16 @@ std::array<float, 3> readColor(const capture::CapturePacket& packet,
         const auto& chroma = packet.colorPlanes[1];
         const auto chromaX = std::min<std::uint32_t>(chroma.width - 1, colorX / 2);
         const auto chromaY = std::min<std::uint32_t>(chroma.height - 1, colorY / 2);
-        const auto* chromaRow = chroma.buffer.data +
-                                static_cast<std::size_t>(chromaY) *
-                                    chroma.rowStrideBytes;
+        const auto* chromaRow =
+            chroma.buffer.data + static_cast<std::size_t>(chromaY) * chroma.rowStrideBytes;
         const auto* chromaPixel = chromaRow + static_cast<std::size_t>(chromaX) * 2;
         const float luminance = std::clamp(
-            (static_cast<float>(std::to_integer<std::uint8_t>(row[colorX])) - 16.0F) /
-                219.0F,
-            0.0F, 1.0F);
+            (static_cast<float>(std::to_integer<std::uint8_t>(row[colorX])) - 16.0F) / 219.0F, 0.0F,
+            1.0F);
         const float cb =
-            (static_cast<float>(std::to_integer<std::uint8_t>(chromaPixel[0])) - 128.0F) /
-            224.0F;
+            (static_cast<float>(std::to_integer<std::uint8_t>(chromaPixel[0])) - 128.0F) / 224.0F;
         const float cr =
-            (static_cast<float>(std::to_integer<std::uint8_t>(chromaPixel[1])) - 128.0F) /
-            224.0F;
+            (static_cast<float>(std::to_integer<std::uint8_t>(chromaPixel[1])) - 128.0F) / 224.0F;
         return {
             std::clamp(luminance + 1.5748F * cr, 0.0F, 1.0F),
             std::clamp(luminance - 0.1873F * cb - 0.4681F * cr, 0.0F, 1.0F),
@@ -148,14 +137,29 @@ std::array<float, 3> readColor(const capture::CapturePacket& packet,
 }
 
 constexpr std::array<std::array<int, 3>, 8> cornerOffsets{{
-    {{0, 0, 0}}, {{1, 0, 0}}, {{1, 1, 0}}, {{0, 1, 0}},
-    {{0, 0, 1}}, {{1, 0, 1}}, {{1, 1, 1}}, {{0, 1, 1}},
+    {{0, 0, 0}},
+    {{1, 0, 0}},
+    {{1, 1, 0}},
+    {{0, 1, 0}},
+    {{0, 0, 1}},
+    {{1, 0, 1}},
+    {{1, 1, 1}},
+    {{0, 1, 1}},
 }};
 
 constexpr std::array<std::array<int, 2>, 12> edgeCorners{{
-    {{0, 1}}, {{1, 2}}, {{2, 3}}, {{3, 0}},
-    {{4, 5}}, {{5, 6}}, {{6, 7}}, {{7, 4}},
-    {{0, 4}}, {{1, 5}}, {{2, 6}}, {{3, 7}},
+    {{0, 1}},
+    {{1, 2}},
+    {{2, 3}},
+    {{3, 0}},
+    {{4, 5}},
+    {{5, 6}},
+    {{6, 7}},
+    {{7, 4}},
+    {{0, 4}},
+    {{1, 5}},
+    {{2, 6}},
+    {{3, 7}},
 }};
 
 struct Face final {
@@ -175,7 +179,7 @@ constexpr std::array<Face, 6> faces{{
 } // namespace
 
 DenseTsdfBoundsEstimator::DenseTsdfBoundsEstimator(DenseTsdfBoundsConfig config)
-    : config_(std::move(config)) {}
+    : config_(config) {}
 
 Result<DenseTsdfBoundsEstimator> DenseTsdfBoundsEstimator::create(DenseTsdfBoundsConfig config) {
     if (config.pixelStride == 0 || config.maximumAxisVoxels < 2 ||
@@ -185,7 +189,7 @@ Result<DenseTsdfBoundsEstimator> DenseTsdfBoundsEstimator::create(DenseTsdfBound
         config.lowerQuantile < 0.0 || config.upperQuantile > 1.0 ||
         config.lowerQuantile >= config.upperQuantile)
         return fail(ErrorCode::invalidArgument, "TSDF automatic-bounds configuration is invalid");
-    return DenseTsdfBoundsEstimator(std::move(config));
+    return DenseTsdfBoundsEstimator(config);
 }
 
 Result<void> DenseTsdfBoundsEstimator::observe(const capture::CapturePacket& packet,
@@ -275,9 +279,9 @@ Result<DenseTsdfBoundsResult> DenseTsdfBoundsEstimator::estimate() const {
     return result;
 }
 
-DenseTsdfVolume::DenseTsdfVolume(DenseTsdfConfig config) : config_(std::move(config)) {
-    const auto count = static_cast<std::size_t>(config_.dimensions[0]) *
-                       config_.dimensions[1] * config_.dimensions[2];
+DenseTsdfVolume::DenseTsdfVolume(DenseTsdfConfig config) : config_(config) {
+    const auto count = static_cast<std::size_t>(config_.dimensions[0]) * config_.dimensions[1] *
+                       config_.dimensions[2];
     voxels_.resize(count);
 }
 
@@ -299,19 +303,39 @@ Result<DenseTsdfVolume> DenseTsdfVolume::create(DenseTsdfConfig config) {
     for (const auto value : config.originMetres)
         if (!std::isfinite(value))
             return fail(ErrorCode::invalidArgument, "TSDF origin is non-finite");
-    return DenseTsdfVolume(std::move(config));
+    return DenseTsdfVolume(config);
+}
+
+Result<DenseTsdfVolume> DenseTsdfVolume::fromScalarField(DenseTsdfConfig config,
+                                                         std::span<const TsdfVoxel> voxels) {
+    auto volume = create(config);
+    if (!volume)
+        return std::unexpected(volume.error());
+    if (voxels.size() != volume->voxels_.size())
+        return fail(ErrorCode::invalidArgument,
+                    "Scalar-field sample count does not match TSDF dimensions");
+    for (const auto& voxel : voxels) {
+        if (!std::isfinite(voxel.distance) || voxel.distance < -1.0F || voxel.distance > 1.0F ||
+            !std::isfinite(voxel.weight) || voxel.weight < 0.0F)
+            return fail(
+                ErrorCode::invalidArgument,
+                "Scalar-field samples must contain finite normalized distances and weights");
+        for (const auto channel : voxel.color)
+            if (!std::isfinite(channel))
+                return fail(ErrorCode::invalidArgument,
+                            "Scalar-field sample colors must be finite");
+    }
+    volume->voxels_.assign(voxels.begin(), voxels.end());
+    return volume;
 }
 
 std::size_t DenseTsdfVolume::index(std::uint32_t x, std::uint32_t y,
                                    std::uint32_t z) const noexcept {
-    return (static_cast<std::size_t>(z) * config_.dimensions[1] + y) *
-               config_.dimensions[0] +
-           x;
+    return (static_cast<std::size_t>(z) * config_.dimensions[1] + y) * config_.dimensions[0] + x;
 }
 
 Result<void> DenseTsdfVolume::integrate(const capture::CapturePacket& packet,
-                                        const PoseEstimate& pose,
-                                        const DepthObservation& depth) {
+                                        const PoseEstimate& pose, const DepthObservation& depth) {
     if (!finitePose(pose.cameraToWorld) || pose.confidence < 0.0 || pose.confidence > 1.0)
         return fail(ErrorCode::invalidArgument, "Pose estimate is invalid");
     if (!pose.metricScale)
@@ -325,11 +349,10 @@ Result<void> DenseTsdfVolume::integrate(const capture::CapturePacket& packet,
         packet.calibration.fx <= 0.0 || packet.calibration.fy <= 0.0)
         return fail(ErrorCode::invalidArgument,
                     "Depth dimensions, scale, or camera intrinsics are invalid");
-    if (depth.confidence &&
-        (!depth.confidence->valid() ||
-         depth.confidence->format != capture::PixelFormat::confidenceUInt8 ||
-         depth.confidence->width != depth.depthMetres.width ||
-         depth.confidence->height != depth.depthMetres.height))
+    if (depth.confidence && (!depth.confidence->valid() ||
+                             depth.confidence->format != capture::PixelFormat::confidenceUInt8 ||
+                             depth.confidence->width != depth.depthMetres.width ||
+                             depth.confidence->height != depth.depthMetres.height))
         return fail(ErrorCode::invalidArgument, "Depth confidence plane is invalid");
 
     const auto& cameraToWorld = pose.cameraToWorld;
@@ -367,8 +390,7 @@ Result<void> DenseTsdfVolume::integrate(const capture::CapturePacket& packet,
                 const auto observedDepth =
                     static_cast<double>(readDepth(depth.depthMetres, px, py)) *
                     depth.scaleMetresPerUnit;
-                if (!std::isfinite(observedDepth) ||
-                    observedDepth < config_.minimumDepthMetres ||
+                if (!std::isfinite(observedDepth) || observedDepth < config_.minimumDepthMetres ||
                     observedDepth > config_.maximumDepthMetres)
                     continue;
                 const auto confidence = confidenceWeight(depth.confidence, px, py);
@@ -389,16 +411,16 @@ Result<void> DenseTsdfVolume::integrate(const capture::CapturePacket& packet,
                     std::min(config_.maximumWeight, oldWeight + sampleWeight);
                 const auto contribution = std::min(sampleWeight, combinedWeight);
                 const auto retained = combinedWeight - contribution;
-                voxel.distance = static_cast<float>(
-                    (static_cast<double>(voxel.distance) * retained +
-                     normalizedDistance * contribution) /
-                    combinedWeight);
+                voxel.distance =
+                    static_cast<float>((static_cast<double>(voxel.distance) * retained +
+                                        normalizedDistance * contribution) /
+                                       combinedWeight);
                 const auto color = readColor(packet, px, py);
                 for (std::size_t channel = 0; channel < 3; ++channel)
-                    voxel.color[channel] = static_cast<float>(
-                        (static_cast<double>(voxel.color[channel]) * retained +
-                         static_cast<double>(color[channel]) * contribution) /
-                        combinedWeight);
+                    voxel.color[channel] =
+                        static_cast<float>((static_cast<double>(voxel.color[channel]) * retained +
+                                            static_cast<double>(color[channel]) * contribution) /
+                                           combinedWeight);
                 voxel.weight = static_cast<float>(combinedWeight);
                 ++voxel.observations;
                 ++updates;
@@ -467,9 +489,8 @@ Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
                 for (std::size_t edge = 0; edge < edgeCorners.size(); ++edge) {
                     const auto a = edgeCorners[edge][0];
                     const auto b = edgeCorners[edge][1];
-                    activeEdges[edge] =
-                        (values[static_cast<std::size_t>(a)] < 0.0F) !=
-                        (values[static_cast<std::size_t>(b)] < 0.0F);
+                    activeEdges[edge] = (values[static_cast<std::size_t>(a)] < 0.0F) !=
+                                        (values[static_cast<std::size_t>(b)] < 0.0F);
                 }
                 const auto connect = [&](int a, int b) {
                     adjacency[static_cast<std::size_t>(a)].push_back(b);
@@ -526,19 +547,18 @@ Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
 
                     const auto cornerA = static_cast<std::size_t>(a);
                     const auto cornerB = static_cast<std::size_t>(b);
-                    const auto denominator = static_cast<double>(values[cornerA]) -
-                                             static_cast<double>(values[cornerB]);
-                    const auto t = std::abs(denominator) > 1.0e-12
-                                       ? std::clamp(static_cast<double>(values[cornerA]) /
-                                                        denominator,
-                                                    0.0, 1.0)
-                                       : 0.5;
+                    const auto denominator =
+                        static_cast<double>(values[cornerA]) - static_cast<double>(values[cornerB]);
+                    const auto t =
+                        std::abs(denominator) > 1.0e-12
+                            ? std::clamp(static_cast<double>(values[cornerA]) / denominator, 0.0,
+                                         1.0)
+                            : 0.5;
                     const auto pa = position(ax, ay, az);
                     const auto pb = position(bx, by, bz);
                     const auto point = add(pa, scale(subtract(pb, pa), t));
-                    const auto normal = normalized(add(
-                        scale(gradient(ax, ay, az), 1.0 - t),
-                        scale(gradient(bx, by, bz), t)));
+                    const auto normal = normalized(
+                        add(scale(gradient(ax, ay, az), 1.0 - t), scale(gradient(bx, by, bz), t)));
                     std::array<float, 3> color{};
                     for (std::size_t channel = 0; channel < 3; ++channel)
                         color[channel] = static_cast<float>(
@@ -546,9 +566,9 @@ Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
                             static_cast<double>(corners[cornerB]->color[channel]) * t);
 
                     mesh::MeshVertex vertex{};
-                    vertex.position = simd_make_float3(static_cast<float>(point[0]),
-                                                       static_cast<float>(point[1]),
-                                                       static_cast<float>(point[2]));
+                    vertex.position =
+                        simd_make_float3(static_cast<float>(point[0]), static_cast<float>(point[1]),
+                                         static_cast<float>(point[2]));
                     vertex.normal = simd_make_float3(static_cast<float>(normal[0]),
                                                      static_cast<float>(normal[1]),
                                                      static_cast<float>(normal[2]));
@@ -591,38 +611,36 @@ Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
                         const auto vertexIndex = vertexForEdge(edge);
                         loop.push_back(vertexIndex);
                         const auto& vertex = primitive.vertices[vertexIndex];
-                        centre = add(centre, {vertex.position.x, vertex.position.y,
-                                              vertex.position.z});
-                        centreNormal = add(centreNormal, {vertex.normal.x, vertex.normal.y,
-                                                         vertex.normal.z});
+                        centre =
+                            add(centre, {vertex.position.x, vertex.position.y, vertex.position.z});
+                        centreNormal =
+                            add(centreNormal, {vertex.normal.x, vertex.normal.y, vertex.normal.z});
                         centreColor += primitive.vertexColors[vertexIndex];
                     }
                     centre = scale(centre, 1.0 / static_cast<double>(loop.size()));
                     centreNormal = normalized(centreNormal);
                     centreColor /= static_cast<float>(loop.size());
                     mesh::MeshVertex centreVertex{};
-                    centreVertex.position = simd_make_float3(
-                        static_cast<float>(centre[0]), static_cast<float>(centre[1]),
-                        static_cast<float>(centre[2]));
-                    centreVertex.normal = simd_make_float3(
-                        static_cast<float>(centreNormal[0]),
-                        static_cast<float>(centreNormal[1]),
-                        static_cast<float>(centreNormal[2]));
+                    centreVertex.position = simd_make_float3(static_cast<float>(centre[0]),
+                                                             static_cast<float>(centre[1]),
+                                                             static_cast<float>(centre[2]));
+                    centreVertex.normal = simd_make_float3(static_cast<float>(centreNormal[0]),
+                                                           static_cast<float>(centreNormal[1]),
+                                                           static_cast<float>(centreNormal[2]));
                     centreVertex.tangent = simd_make_float4(1.0F, 0.0F, 0.0F, 1.0F);
-                    const auto centreIndex =
-                        static_cast<std::uint32_t>(primitive.vertices.size());
+                    const auto centreIndex = static_cast<std::uint32_t>(primitive.vertices.size());
                     primitive.vertices.push_back(centreVertex);
                     primitive.vertexColors.push_back(centreColor);
 
                     const auto& first = primitive.vertices[loop[0]].position;
                     const auto& second = primitive.vertices[loop[1]].position;
-                    const auto windingNormal = cross(
-                        {static_cast<double>(first.x - centreVertex.position.x),
-                         static_cast<double>(first.y - centreVertex.position.y),
-                         static_cast<double>(first.z - centreVertex.position.z)},
-                        {static_cast<double>(second.x - centreVertex.position.x),
-                         static_cast<double>(second.y - centreVertex.position.y),
-                         static_cast<double>(second.z - centreVertex.position.z)});
+                    const auto windingNormal =
+                        cross({static_cast<double>(first.x - centreVertex.position.x),
+                               static_cast<double>(first.y - centreVertex.position.y),
+                               static_cast<double>(first.z - centreVertex.position.z)},
+                              {static_cast<double>(second.x - centreVertex.position.x),
+                               static_cast<double>(second.y - centreVertex.position.y),
+                               static_cast<double>(second.z - centreVertex.position.z)});
                     if (dot(windingNormal, centreNormal) < 0.0)
                         std::reverse(loop.begin(), loop.end());
                     for (std::size_t index = 0; index < loop.size(); ++index) {

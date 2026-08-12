@@ -124,6 +124,28 @@ The dense volume remains a correctness oracle. Its automatic voxel growth makes 
 safe and bounded, but does not replace the future sparse Metal volume needed to preserve fine
 resolution across a room.
 
+`SparseTsdfVolume` is the deterministic CPU bridge between that oracle and the future Metal
+backend. It preserves the dense implementation's nearest-pixel projection, confidence rejection,
+normalized signed distance, weight saturation, color integration, and extraction topology while
+allocating ordered 8-cubed voxel blocks only along valid depth-ray free space and the truncation
+band. Candidate, resident, and extraction budgets fail transactionally: a rejected frame cannot
+partially update an existing volume. Dirty block coordinates are stable and explicitly
+acknowledged, which gives the Metal backend and incremental extractor a testable scheduling
+contract. See [the sparse TSDF contract](formats/SPARSE_TSDF.md).
+
+This CPU implementation is E2 fixture evidence, not the R5 production backend. It currently forms
+a bounded dense snapshot of the allocated block span and invokes the resolved dense extractor.
+Incremental block-border meshing, snapshot isolation, persistence/eviction, Metal allocation, and
+real-capture CPU/GPU agreement remain open and the roadmap continues to label R5 incomplete.
+
+Isosurface correctness is verified independently from camera projection and fusion. A complete
+normalized scalar field can instantiate the dense oracle directly, and a separately implemented
+classic Marching Cubes case-table extractor provides the reference topology. The shipping dense
+extractor retains its face-center asymptotic decision and shared-edge reuse because the exhaustive
+and ambiguous-face fixtures prove closed manifold output while preserving deterministic topology.
+`AetherOracleGeometryTests` regenerates the raw report for all 256 classic cases plus analytic
+sphere, box, 30 mm thin-wall, disconnected-sphere, and torus fields.
+
 ## Local textured photogrammetry
 
 `maveb-photogrammetry` uses Apple's `PhotogrammetrySession` as the production RGB mesh baseline.
