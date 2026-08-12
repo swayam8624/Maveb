@@ -665,7 +665,7 @@ int run(int argc, char** argv) {
                    << ",\"gutterPixels\":" << options->bake.gutterPixels
                    << ",\"maximumCamerasPerTriangle\":" << options->bake.maximumCamerasPerTriangle
                    << "},\"result\":{\"glbSha256\":\"" << hash
-                   << "\",\"glbBytes\":" << exported->outputBytes
+                   << "\",\"glbBytes\":" << bytes.size()
                    << ",\"triangles\":" << baked->report.triangles
                    << ",\"cameras\":" << baked->report.cameras
                    << ",\"coverage\":" << baked->report.coverage
@@ -692,7 +692,7 @@ int run(int argc, char** argv) {
                   << ",\"cameras\":" << baked->report.cameras
                   << ",\"coverage\":" << baked->report.coverage
                   << ",\"textureBytes\":" << asset.images[0].bytes.size()
-                  << ",\"glbBytes\":" << exported->outputBytes << "}\n";
+                  << ",\"glbBytes\":" << bytes.size() << "}\n";
     else
         std::cout << "Baked metric textured GLB from " << baked->report.cameras << " cameras with "
                   << baked->report.coverage * 100.0F << "% observed texel coverage\n";
