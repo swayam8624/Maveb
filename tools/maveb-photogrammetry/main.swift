@@ -211,17 +211,18 @@ private struct MavebPhotogrammetry {
   static func main() async {
     do {
       let options = try parseOptions(Array(CommandLine.arguments.dropFirst()))
-      guard PhotogrammetrySession.isSupported else { throw ToolError.unsupported }
       let images = try imageURLs(in: options.input)
       let inputs = try records(for: images, relativeTo: options.input)
       if options.dryRun {
         emitJSON([
           "ok": true, "dryRun": true, "images": images.count,
+          "runtimeSupported": PhotogrammetrySession.isSupported,
           "input": options.input.path, "output": options.output.path,
           "detail": options.detailName,
         ])
         return
       }
+      guard PhotogrammetrySession.isSupported else { throw ToolError.unsupported }
 
       try FileManager.default.createDirectory(
         at: options.output.deletingLastPathComponent(), withIntermediateDirectories: true)

@@ -5,7 +5,8 @@ on:
   pull_request:
 
 jobs:
-  cpu-foundation:
+  native-tests:
+    name: CPU Build + Tests
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -15,10 +16,17 @@ jobs:
         run: cmake --build --preset ci --parallel
       - name: Test
         run: ctest --preset ci
+
+  benchmark-python-tests:
+    name: MavebBench Tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
       - name: MavebBench unit tests
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
 
   sanitizer:
+    name: Sanitizer
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -28,3 +36,71 @@ jobs:
         run: cmake --build --preset sanitizer --parallel
       - name: Test
         run: ctest --test-dir build/sanitizer --output-on-failure
+
+  format:
+    name: Format/Lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check whitespace and source formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              base="HEAD^"
+            fi
+          fi
+          git diff --check "$base" HEAD
+          cpp_files=()
+          while IFS= read -r file; do
+            [[ -n "$file" ]] && cpp_files+=("$file")
+          done < <(git diff --diff-filter=ACMR --name-only "$base" HEAD -- \
+            '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx')
+          if (( ${#cpp_files[@]} )); then
+            "$(brew --prefix llvm@18)/bin/clang-format" --dry-run --Werror "${cpp_files[@]}"
+          fi
+          swift_files=()
+          while IFS= read -r file; do
+            [[ -n "$file" ]] && swift_files+=("$file")
+          done < <(git diff --diff-filter=ACMR --name-only "$base" HEAD -- '*.swift')
+          if (( ${#swift_files[@]} )); then
+            xcrun swift-format lint --strict "${swift_files[@]}"
+          fi
+
+  static-analysis:
+    name: Changed-files Static Analysis
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configure compile database
+        run: cmake --preset ci
+      - name: Analyze changed C and C++ files
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              base="HEAD^"
+            fi
+          fi
+          sources=()
+          while IFS= read -r file; do
+            [[ -n "$file" ]] && sources+=("$file")
+          done < <(git diff --diff-filter=ACMR --name-only "$base" HEAD -- \
+            'engine/**' 'apps/**' 'tools/**' 'tests/**' | \
+            grep -E '\.(c|cc|cpp|cxx)$' || true)
+          if (( ${#sources[@]} )); then
+            "$(brew --prefix llvm@18)/bin/clang-tidy" -p build/ci \
+              --warnings-as-errors='*' "${sources[@]}"
+          fi
