@@ -529,17 +529,17 @@ class StaticAssetBuilder final {
     }
 
     Result<std::size_t> appendVec2(fastgltf::Asset& output, const MeshPrimitive& primitive,
-                                   simd_float2 MeshVertex::* member, std::string_view name) {
+                                   simd_float2 MeshVertex::*member, std::string_view name) {
         return appendAttribute(output, primitive, member, 2, fastgltf::AccessorType::Vec2, name);
     }
 
     Result<std::size_t> appendVec3(fastgltf::Asset& output, const MeshPrimitive& primitive,
-                                   simd_float3 MeshVertex::* member, std::string_view name) {
+                                   simd_float3 MeshVertex::*member, std::string_view name) {
         return appendAttribute(output, primitive, member, 3, fastgltf::AccessorType::Vec3, name);
     }
 
     Result<std::size_t> appendVec4(fastgltf::Asset& output, const MeshPrimitive& primitive,
-                                   simd_float4 MeshVertex::* member, std::string_view name) {
+                                   simd_float4 MeshVertex::*member, std::string_view name) {
         return appendAttribute(output, primitive, member, 4, fastgltf::AccessorType::Vec4, name);
     }
 

@@ -224,11 +224,9 @@ Result<TextureBakeResult> TextureBaker::bake(const mesh::MeshPrimitive& source,
             !std::isfinite(camera.principalY) || !std::isfinite(camera.k1) ||
             !std::isfinite(camera.k2) || !std::isfinite(camera.k3) || !std::isfinite(camera.p1) ||
             !std::isfinite(camera.p2) || !finite(camera.cameraToWorld) ||
-            std::ranges::any_of(
-                camera.image.pixels,
-                [](simd_float3 color) {
-                    return !finite(color) || simd_any(color < simd_float3{});
-                }))
+            std::ranges::any_of(camera.image.pixels, [](simd_float3 color) {
+                return !finite(color) || simd_any(color < simd_float3{});
+            }))
             return fail(ErrorCode::corruptData, "Texture camera calibration or image is invalid",
                         camera.imageName);
         const auto cameraPixels = camera.image.width * camera.image.height;
