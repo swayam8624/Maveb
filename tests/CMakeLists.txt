@@ -257,13 +257,6 @@ if(TARGET maveb-align-sensors AND Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_BINARY_DIR}/sensor-alignment")
 endif()
 
-if(TARGET maveb-align-sensors AND Python3_Interpreter_FOUND)
-    add_test(NAME MavebSensorAlignmentCli
-        COMMAND ${Python3_EXECUTABLE}
-            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-sensor-alignment.py"
-            $<TARGET_FILE:maveb-align-sensors>
-            "${CMAKE_CURRENT_BINARY_DIR}/sensor-alignment")
-endif()
 
 
 add_executable(MavebTextureBakerTests TextureBakerTests.cpp)
