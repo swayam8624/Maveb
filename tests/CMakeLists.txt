@@ -7,6 +7,13 @@ target_compile_definitions(AetherTests PRIVATE
 aether_configure_target(AetherTests)
 add_test(NAME AetherTests COMMAND AetherTests)
 
+add_executable(AetherOracleGeometryTests OracleGeometryTests.cpp)
+target_link_libraries(AetherOracleGeometryTests PRIVATE Aether::Reconstruction)
+aether_configure_target(AetherOracleGeometryTests)
+add_test(NAME AetherOracleGeometryTests
+    COMMAND AetherOracleGeometryTests --json-output
+        "${PROJECT_BINARY_DIR}/test-artifacts/r1-oracle-geometry.json")
+
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME AetherProxyPythonTests

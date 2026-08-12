@@ -78,6 +78,14 @@ The dense volume remains a correctness oracle. Its automatic voxel growth makes 
 safe and bounded, but does not replace the future sparse Metal volume needed to preserve fine
 resolution across a room.
 
+Isosurface correctness is verified independently from camera projection and fusion. A complete
+normalized scalar field can instantiate the dense oracle directly, and a separately implemented
+classic Marching Cubes case-table extractor provides the reference topology. The shipping dense
+extractor retains its face-center asymptotic decision and shared-edge reuse because the exhaustive
+and ambiguous-face fixtures prove closed manifold output while preserving deterministic topology.
+`AetherOracleGeometryTests` regenerates the raw report for all 256 classic cases plus analytic
+sphere, box, 30 mm thin-wall, disconnected-sphere, and torus fields.
+
 ## Local textured photogrammetry
 
 `maveb-photogrammetry` uses Apple's `PhotogrammetrySession` as the production RGB mesh baseline.

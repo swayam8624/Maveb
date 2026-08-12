@@ -1,6 +1,7 @@
 add_library(AetherReconstruction STATIC
     src/SparseModelValidator.cpp
     src/DenseTsdfVolume.cpp
+    src/ReferenceMarchingCubes.cpp
     src/GeometryEvaluation.cpp
     src/RecordedProviders.cpp
 )
