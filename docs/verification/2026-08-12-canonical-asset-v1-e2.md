@@ -44,9 +44,9 @@ Result: 16 tests passed; two dependency-qualified tests were skipped on this inv
 Changed-file Clang analysis was run with the active Apple SDK explicitly supplied and
 `--warnings-as-errors='*'` over the canonical module, package writer, pack/inspect CLIs, and
 foundation tests. The installed LLVM 22 analyzer's false positive for fastgltf's bitmask-enum
-operators was disabled; all other checks remained enabled. Result: zero project diagnostics. C++
-formatting, Python bytecode compilation, and `git diff --check` also passed. Hosted CI uses its
-pinned LLVM 18 analysis configuration without that local exclusion.
+operators was disabled in the shared clang-tidy policy; all other checks remained enabled. Result:
+zero project diagnostics. C++ formatting, Python bytecode compilation, and `git diff --check` also
+passed.
 
 The generated fixture package semantically inspected as:
 
