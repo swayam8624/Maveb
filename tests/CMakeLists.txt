@@ -145,10 +145,11 @@ if(TARGET aether-fuse)
             "${CMAKE_CURRENT_BINARY_DIR}/oracle-fusion")
 endif()
 
-if(TARGET maveb-photogrammetry)
+if(TARGET maveb-photogrammetry AND Python3_Interpreter_FOUND)
     add_test(NAME MavebPhotogrammetryContract
-        COMMAND $<TARGET_FILE:maveb-photogrammetry>
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-photogrammetry-contract.py"
+            $<TARGET_FILE:maveb-photogrammetry>
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/mock-reconstruction/images"
-            --output "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz"
-            --detail preview --dry-run --json)
+            "${CMAKE_CURRENT_BINARY_DIR}/photogrammetry-contract.usdz")
 endif()
