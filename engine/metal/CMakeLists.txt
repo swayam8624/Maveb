@@ -11,6 +11,7 @@ add_library(AetherMetal STATIC
     src/MetalSymbols.cpp
     src/Renderer.cpp
     src/ShaderABI.cpp
+    src/SparseMetalTsdfVolume.cpp
 )
 add_library(Aether::Metal ALIAS AetherMetal)
 
@@ -20,7 +21,7 @@ target_include_directories(AetherMetal PUBLIC
 )
 target_include_directories(AetherMetal SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/external/metal-cpp)
 target_link_libraries(AetherMetal
-    PUBLIC Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package
+    PUBLIC Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction
     PRIVATE
         ${METAL_FRAMEWORK}
         ${METALKIT_FRAMEWORK}

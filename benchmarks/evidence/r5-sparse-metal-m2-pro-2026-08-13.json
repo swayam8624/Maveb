@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "evidenceLevel": "E2-fixture",
+  "backend": "metal-3-block-sparse-tsdf",
+  "device": "Apple M2 Pro",
+  "parity": {
+    "blockResolution": 4,
+    "cameraPose": "translated-and-yaw-rotated",
+    "repeatedFrames": 2,
+    "candidateBlocks": 180,
+    "residentBlocks": 92,
+    "observedVoxels": 3253,
+    "voxelUpdates": 3253,
+    "comparedVoxels": 4820,
+    "mismatchedVoxels": 0
+  },
+  "boundedFailures": {
+    "residentBlockBudget": true,
+    "framePixelBudget": true,
+    "residentByteBudget": true,
+    "scratchByteBudget": true
+  },
+  "limitations": [
+    "Synthetic fixture evidence is not real-capture E3 accuracy evidence.",
+    "Synchronous fixture execution is not an R5 throughput claim.",
+    "Incremental meshing, persistence, eviction, and live scheduling remain open."
+  ]
+}

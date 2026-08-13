@@ -216,6 +216,36 @@ struct AetherGaussianCounters {
     AetherUInt earlyTerminations;
 };
 
+struct AetherTsdfVoxelGpu {
+    float distance;
+    float weight;
+    float colorRed;
+    float colorGreen;
+    float colorBlue;
+    AetherUInt observations;
+    AetherUInt padding0;
+    AetherUInt padding1;
+};
+
+struct AetherTsdfFrameUniforms {
+    // logical origin xyz, voxel edge length
+    AetherFloat4 originVoxelSize;
+    // truncation distance, minimum depth, maximum depth, maximum accumulated weight
+    AetherFloat4 truncationDepthWeight;
+    // fx, fy, cx, cy at the depth resolution
+    AetherFloat4 intrinsics;
+    // camera-to-world translation xyz, depth scale metres per source unit
+    AetherFloat4 cameraTranslationDepthScale;
+    // world-to-camera quaternion in w, x, y, z order
+    AetherFloat4 worldToCameraQuaternion;
+    // accepted pose confidence, depth confidence floor, confidence-plane-present flag, reserved
+    AetherFloat4 confidence;
+    // logical dimensions xyz, block resolution
+    AetherUInt4 gridDimensionsBlock;
+    // depth width, depth height, candidate block count, voxels per block
+    AetherUInt4 imageCandidates;
+};
+
 #ifndef __METAL_VERSION__
 static_assert(sizeof(AetherFullscreenVertex) == 16);
 static_assert(sizeof(AetherPresentationUniforms) == 16);
@@ -242,4 +272,6 @@ static_assert(sizeof(AetherProxyGpuVertex) == 32);
 static_assert(sizeof(AetherProxyUniforms) == 144);
 static_assert(sizeof(AetherProjectedGaussian) == 80);
 static_assert(sizeof(AetherGaussianCounters) == 16);
+static_assert(sizeof(AetherTsdfVoxelGpu) == 32);
+static_assert(sizeof(AetherTsdfFrameUniforms) == 128);
 #endif
