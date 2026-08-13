@@ -1,8 +1,10 @@
 #include <aether/reconstruction/DenseTsdfVolume.hpp>
+#include <aether/reconstruction/IncrementalSparseTsdfMesher.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
 #include <aether/reconstruction/SparseTsdfVolume.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -34,6 +36,10 @@ struct Evidence final {
     std::size_t parityMeshTriangles{};
     std::uint64_t roomLogicalVoxels{};
     aether::reconstruction::SparseTsdfStatistics room;
+    std::size_t incrementalDirtyBlocks{};
+    std::size_t incrementalUpdates{};
+    std::size_t incrementalPatches{};
+    std::size_t incrementalTriangles{};
 };
 
 Evidence evidence;
@@ -144,6 +150,106 @@ bool sameMesh(const aether::mesh::MeshAsset& left, const aether::mesh::MeshAsset
             return false;
     }
     return true;
+}
+
+std::size_t triangleCount(const aether::mesh::MeshAsset& mesh) {
+    std::size_t result{};
+    for (const auto& primitive : mesh.primitives)
+        result += primitive.indices.size() / 3;
+    return result;
+}
+
+bool exactPatchSeams(const aether::mesh::MeshAsset& mesh) {
+    std::size_t sharedVertices{};
+    for (std::size_t left = 0; left < mesh.primitives.size(); ++left)
+        for (std::size_t right = left + 1; right < mesh.primitives.size(); ++right)
+            for (const auto& a : mesh.primitives[left].vertices)
+                for (const auto& b : mesh.primitives[right].vertices) {
+                    const auto delta = a.position - b.position;
+                    if (std::abs(delta.x) > 1.0e-6F || std::abs(delta.y) > 1.0e-6F ||
+                        std::abs(delta.z) > 1.0e-6F)
+                        continue;
+                    ++sharedVertices;
+                    if (simd_any(a.position != b.position) || simd_any(a.normal != b.normal))
+                        return false;
+                }
+    return sharedVertices > 0;
+}
+
+void testIncrementalHaloMeshing() {
+    auto packet = makePlanePacket();
+    applyTestPose(packet);
+    const auto observation = providers(packet);
+    aether::reconstruction::SparseTsdfConfig config;
+    config.volume = planeConfig();
+    config.blockResolution = 4;
+    config.maximumBlocks = 1'000;
+    auto volume = aether::reconstruction::SparseTsdfVolume::create(config);
+    auto mesher = aether::reconstruction::IncrementalSparseTsdfMesher::create();
+    expect(volume && mesher, "incremental sparse meshing fixtures should be created");
+    if (!volume || !mesher)
+        return;
+    expect(volume->integrate(packet, observation.pose, observation.depth).has_value(),
+           "incremental sparse meshing fixture should integrate");
+    const auto snapshot = volume->snapshot();
+    const auto dirty = volume->dirtyBlocks();
+    const auto full = volume->extractMesh();
+    expect(snapshot && full, "incremental meshing should have a sparse field and full reference");
+    if (!snapshot || !full)
+        return;
+    auto updates = mesher->update(*snapshot, dirty);
+    expect(updates && !updates->empty() && mesher->generation() == snapshot->generation,
+           "dirty sparse blocks should produce completed-generation mesh patches");
+    const auto incremental = mesher->mesh();
+    expect(triangleCount(incremental) == triangleCount(*full),
+           "halo-owned incremental patches should cover every full-extraction triangle exactly");
+    expect(exactPatchSeams(incremental),
+           "positions and normals shared by adjacent patches should be bit-exact and seamless");
+    evidence.incrementalDirtyBlocks = dirty.size();
+    evidence.incrementalUpdates = updates ? updates->size() : 0;
+    evidence.incrementalPatches = mesher->patchCount();
+    evidence.incrementalTriangles = triangleCount(incremental);
+
+    auto deterministic = aether::reconstruction::IncrementalSparseTsdfMesher::create();
+    expect(deterministic.has_value(), "independent incremental mesher should be created");
+    if (!deterministic)
+        return;
+    auto repeated = deterministic->update(*snapshot, dirty);
+    expect(repeated && deterministic->patchCount() == mesher->patchCount() &&
+               triangleCount(deterministic->mesh()) == triangleCount(incremental),
+           "independent incremental patch construction should be deterministic");
+
+    aether::reconstruction::IncrementalSparseMesherConfig boundedConfig;
+    boundedConfig.maximumPatchesPerUpdate = 1;
+    auto bounded = aether::reconstruction::IncrementalSparseTsdfMesher::create(boundedConfig);
+    expect(bounded && !bounded->update(*snapshot, dirty) && bounded->patchCount() == 0,
+           "patch-budget failure should preserve an empty incremental cache");
+    aether::reconstruction::IncrementalSparseMesherConfig voxelBoundedConfig;
+    voxelBoundedConfig.maximumPatchVoxels = 8;
+    auto voxelBounded =
+        aether::reconstruction::IncrementalSparseTsdfMesher::create(voxelBoundedConfig);
+    expect(voxelBounded && !voxelBounded->update(*snapshot, dirty) &&
+               voxelBounded->patchCount() == 0,
+           "patch-voxel budget failure should preserve an empty incremental cache");
+    auto malformedSnapshot = *snapshot;
+    malformedSnapshot.blocks.push_back(malformedSnapshot.blocks.front());
+    auto malformed = aether::reconstruction::IncrementalSparseTsdfMesher::create();
+    const std::array<aether::reconstruction::TsdfBlockCoordinate, 1> outsideDirty{{{999, 0, 0}}};
+    expect(malformed && !malformed->update(malformedSnapshot, dirty) &&
+               !malformed->update(*snapshot, outsideDirty) && malformed->patchCount() == 0,
+           "malformed snapshots and out-of-range dirtiness should fail transactionally");
+
+    auto emptySnapshot = *snapshot;
+    ++emptySnapshot.generation;
+    for (auto& block : emptySnapshot.blocks)
+        std::fill(block.voxels.begin(), block.voxels.end(), aether::reconstruction::TsdfVoxel{});
+    auto removals = mesher->update(emptySnapshot, dirty);
+    expect(removals && mesher->patchCount() == 0 &&
+               std::ranges::all_of(
+                   *removals, [](const auto& update) { return !update.primitive.has_value(); }),
+           "an empty newer generation should explicitly remove every stale patch");
+    expect(!mesher->update(*snapshot, dirty) && mesher->patchCount() == 0,
+           "a stale snapshot should fail without restoring removed patches");
 }
 
 void testDenseParityAndDeterminism() {
@@ -292,12 +398,20 @@ void testRoomScaleLogicalGridAndTransactionalBudgets() {
     }
 }
 
-std::optional<std::filesystem::path> outputPath(int argc, char** argv) {
+struct OutputPaths final {
+    std::optional<std::filesystem::path> sparse;
+    std::optional<std::filesystem::path> incremental;
+};
+
+OutputPaths outputPaths(int argc, char** argv) {
     if (argc == 1)
-        return std::nullopt;
-    if (argc != 3 || std::string_view(argv[1]) != "--json-output")
-        throw std::runtime_error("Usage: AetherSparseTsdfTests [--json-output <path>]");
-    return std::filesystem::path(argv[2]);
+        return {};
+    if ((argc != 3 && argc != 5) || std::string_view(argv[1]) != "--json-output" ||
+        (argc == 5 && std::string_view(argv[3]) != "--incremental-json-output"))
+        throw std::runtime_error("Usage: AetherSparseTsdfTests [--json-output <path> "
+                                 "--incremental-json-output <path>]");
+    return {std::filesystem::path(argv[2]),
+            argc == 5 ? std::optional<std::filesystem::path>(argv[4]) : std::nullopt};
 }
 
 void writeEvidence(const std::filesystem::path& path) {
@@ -356,6 +470,44 @@ void writeEvidence(const std::filesystem::path& path) {
     std::filesystem::rename(temporary, path, error);
     if (error)
         throw std::runtime_error("Unable to publish sparse TSDF evidence atomically");
+}
+
+void writeIncrementalEvidence(const std::filesystem::path& path) {
+    std::ostringstream output;
+    output << "{\n"
+           << "  \"schemaVersion\": 1,\n"
+           << "  \"evidenceLevel\": \"E2-fixture\",\n"
+           << "  \"backend\": \"halo-owned-incremental-sparse-tsdf-mesher\",\n"
+           << "  \"dirtyBlocks\": " << evidence.incrementalDirtyBlocks << ",\n"
+           << "  \"patchUpdates\": " << evidence.incrementalUpdates << ",\n"
+           << "  \"residentPatches\": " << evidence.incrementalPatches << ",\n"
+           << "  \"incrementalTriangles\": " << evidence.incrementalTriangles << ",\n"
+           << "  \"fullExtractionTriangles\": " << evidence.parityMeshTriangles << ",\n"
+           << "  \"exactTriangleCoverage\": true,\n"
+           << "  \"bitExactSharedPositionsAndNormals\": true,\n"
+           << "  \"transactionalBudgetFailure\": true,\n"
+           << "  \"explicitPatchRemoval\": true,\n"
+           << "  \"staleGenerationRejection\": true,\n"
+           << "  \"limitations\": [\n"
+           << "    \"Patch extraction currently executes on the CPU from immutable sparse "
+              "snapshots.\",\n"
+           << "    \"Asynchronous scheduling and GPU-resident Marching Cubes remain open.\"\n"
+           << "  ]\n"
+           << "}\n";
+    std::error_code error;
+    std::filesystem::create_directories(path.parent_path(), error);
+    if (error)
+        throw std::runtime_error("Unable to create incremental meshing evidence directory");
+    auto temporary = path;
+    temporary += ".tmp";
+    std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+    stream << output.str();
+    stream.close();
+    if (!stream)
+        throw std::runtime_error("Unable to write incremental meshing evidence");
+    std::filesystem::rename(temporary, path, error);
+    if (error)
+        throw std::runtime_error("Unable to publish incremental meshing evidence atomically");
 }
 
 void testHostileConfiguration() {
@@ -433,12 +585,15 @@ void testHostileConfiguration() {
 
 int main(int argc, char** argv) noexcept {
     try {
-        const auto destination = outputPath(argc, argv);
+        const auto destinations = outputPaths(argc, argv);
         testDenseParityAndDeterminism();
+        testIncrementalHaloMeshing();
         testRoomScaleLogicalGridAndTransactionalBudgets();
         testHostileConfiguration();
-        if (failures == 0 && destination)
-            writeEvidence(*destination);
+        if (failures == 0 && destinations.sparse)
+            writeEvidence(*destinations.sparse);
+        if (failures == 0 && destinations.incremental)
+            writeIncrementalEvidence(*destinations.incremental);
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
         return EXIT_FAILURE;

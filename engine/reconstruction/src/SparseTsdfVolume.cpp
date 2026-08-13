@@ -438,6 +438,7 @@ Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
     }
     observedVoxels_ += observedDelta;
     ++integratedFrames_;
+    ++generation_;
     lastFrameCandidateBlocks_ = candidates.size();
     lastFrameVoxelUpdates_ = updates;
     return {};
@@ -581,7 +582,18 @@ SparseTsdfStatistics SparseTsdfVolume::statistics() const noexcept {
             .integratedFrames = integratedFrames_,
             .lastFrameCandidateBlocks = lastFrameCandidateBlocks_,
             .lastFrameVoxelUpdates = lastFrameVoxelUpdates_,
-            .dirtyBlocks = dirtyBlocks_.size()};
+            .dirtyBlocks = dirtyBlocks_.size(),
+            .generation = generation_};
+}
+
+Result<SparseTsdfSnapshot> SparseTsdfVolume::snapshot() const {
+    if (blocks_.empty())
+        return fail(ErrorCode::notFound, "Sparse TSDF contains no resident blocks");
+    SparseTsdfSnapshot result{config_, generation_, {}};
+    result.blocks.reserve(blocks_.size());
+    for (const auto& [coordinate, voxels] : blocks_)
+        result.blocks.push_back({coordinate, voxels});
+    return result;
 }
 
 std::optional<TsdfVoxel> SparseTsdfVolume::voxel(std::uint32_t x, std::uint32_t y,

@@ -33,16 +33,8 @@ struct SparseMetalTsdfStatistics final {
     std::uint64_t generation{};
 };
 
-struct SparseMetalTsdfBlockSnapshot final {
-    reconstruction::TsdfBlockCoordinate coordinate;
-    std::vector<reconstruction::TsdfVoxel> voxels;
-};
-
-struct SparseMetalTsdfSnapshot final {
-    reconstruction::SparseTsdfConfig config;
-    std::uint64_t generation{};
-    std::vector<SparseMetalTsdfBlockSnapshot> blocks;
-};
+using SparseMetalTsdfBlockSnapshot = reconstruction::SparseTsdfBlockSnapshot;
+using SparseMetalTsdfSnapshot = reconstruction::SparseTsdfSnapshot;
 
 /// Metal 3 sparse-block TSDF fusion backend. Candidate allocation remains deterministic on the
 /// host while all per-voxel admission, projection, confidence, color, and weighted fusion execute

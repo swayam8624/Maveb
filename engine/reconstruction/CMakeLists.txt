@@ -4,6 +4,7 @@ add_library(AetherReconstruction STATIC
     src/DenseTsdfVolume.cpp
     src/ReferenceMarchingCubes.cpp
     src/SparseTsdfVolume.cpp
+    src/IncrementalSparseTsdfMesher.cpp
     src/GeometryEvaluation.cpp
     src/RecordedProviders.cpp
     src/TextureBaker.cpp

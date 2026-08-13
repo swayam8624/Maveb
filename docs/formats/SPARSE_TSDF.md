@@ -57,16 +57,22 @@ initialized or copied into private scratch storage, fused there, and published t
 only after the command succeeds. A completed generation can be copied into an immutable CPU
 snapshot without exposing or racing the live resource.
 
-## Extraction and current limitation
+## Incremental extraction
 
-Extraction finds the allocated block AABB, checks its voxel count against the extraction budget,
+Full extraction finds the allocated block AABB, checks its voxel count against the extraction budget,
 copies that span into a dense scalar field, and invokes the same resolved extractor verified by the
 R1 Marching Cubes suite. This proves exact topology parity without inventing a second mesher.
 
-It is deliberately not scalable incremental meshing. R5 remains open until dirty blocks can be
-meshed with consistent one-block halos, blocks can be persisted and evicted under memory pressure,
-live work is scheduled asynchronously, and the Metal backend agrees with the CPU reference on real
-captures while meeting the throughput and soak gates.
+`IncrementalSparseTsdfMesher` consumes immutable completed-generation snapshots. Each patch owns
+the cells whose minimum corner lies in one sparse block. It reads a positive topology halo and a
+symmetric gradient halo, so adjacent patches emit each cell once while shared positions and normals
+remain bit-exact. A changed block invalidates itself and the seven negative neighbours whose cells
+can reference its samples. Updates explicitly replace or remove cached patches and stale generations
+are rejected transactionally.
+
+Patch extraction is currently CPU work over a snapshot. R5 remains open for selective Metal
+readback, GPU-resident Marching Cubes, persistence/eviction, asynchronous scheduling, real-capture
+agreement, and throughput/soak evidence.
 
 ## Evidence
 
@@ -82,3 +88,8 @@ voxel, proves completed-generation snapshot isolation and dirty-block parity, an
 frame-pixel, resident-byte, and scratch-byte failures. The M2 Pro fixture report is committed at
 `benchmarks/evidence/r5-sparse-metal-m2-pro-2026-08-13.json`. It is E2 evidence only; its
 synchronous wall time is intentionally not recorded as a performance claim.
+
+The incremental fixture processes 106 dirty blocks into 120 replacement/removal updates and 30
+resident surface patches. Those patches contain exactly the full extractor's 1,680 triangles, with
+bit-exact shared positions and normals. The raw report is
+`benchmarks/evidence/r5-incremental-meshing-m2-pro-2026-08-13.json`.
