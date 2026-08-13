@@ -1,9 +1,9 @@
-# Sparse CPU TSDF contract
+# Sparse TSDF contract
 
 `SparseTsdfVolume` is AETHER's deterministic CPU reference for a block-sparse metric TSDF. It is
-not a serialized file format and is not yet the live Metal backend. The contract exists so future
-GPU allocation, incremental meshing, persistence, and eviction can be compared against one precise
-implementation rather than against visual similarity.
+not a serialized file format. `SparseMetalTsdfVolume` is the fixture-level Metal 3 implementation
+of the same fusion equations. The contract exists so GPU fusion, incremental meshing, persistence,
+and eviction can be compared against one precise implementation rather than visual similarity.
 
 ## Logical and resident coordinates
 
@@ -19,10 +19,11 @@ block resolutions are powers of two from 2 through 32. Block `(bx, by, bz)` owns
 `(bx * B + lx, by * B + ly, bz * B + lz)`. Partial blocks at the positive volume boundary retain
 storage for a complete block, but out-of-domain samples are never fused or extracted.
 
-Resident blocks and dirty coordinates use lexicographic `(x, y, z)` ordering. This ordered CPU
-representation favors reproducibility over hash-table throughput. A production Metal backend may
-use hashing internally, but externally observed allocation, fusion, and extraction results must
-remain deterministic for identical inputs and configuration.
+Resident blocks and dirty coordinates use lexicographic `(x, y, z)` ordering. The CPU reference
+stores that order directly. The Metal path gives each coordinate a stable host-assigned slot and
+publishes snapshots in coordinate order. A future GPU hash lookup may change the internal search,
+but externally observed allocation, fusion, and extraction results must remain deterministic for
+identical inputs and configuration.
 
 ## Candidate allocation and fusion
 
@@ -50,6 +51,12 @@ voxels, payload bytes, integrated frames, last-frame candidates/updates, and dir
 reported independently. `clearDirtyBlocks()` is an explicit acknowledgement and never alters the
 volume.
 
+The Metal implementation adds independent frame-pixel, resident-byte, and per-frame scratch-byte
+limits. Candidate voxels are classified before resident slots are committed. Accepted blocks are
+initialized or copied into private scratch storage, fused there, and published to resident storage
+only after the command succeeds. A completed generation can be copied into an immutable CPU
+snapshot without exposing or racing the live resource.
+
 ## Extraction and current limitation
 
 Extraction finds the allocated block AABB, checks its voxel count against the extraction budget,
@@ -57,9 +64,9 @@ copies that span into a dense scalar field, and invokes the same resolved extrac
 R1 Marching Cubes suite. This proves exact topology parity without inventing a second mesher.
 
 It is deliberately not scalable incremental meshing. R5 remains open until dirty blocks can be
-meshed with consistent one-block halos, extraction/rendering are snapshot-isolated, blocks can be
-persisted and evicted under memory pressure, and the Metal backend agrees with both CPU references
-on fixtures and real captures.
+meshed with consistent one-block halos, blocks can be persisted and evicted under memory pressure,
+live work is scheduled asynchronously, and the Metal backend agrees with the CPU reference on real
+captures while meeting the throughput and soak gates.
 
 ## Evidence
 
@@ -68,3 +75,10 @@ translated and yaw-rotated camera, deterministic repeated runs, ordered dirty bl
 hostile inputs, transactional failures, and local allocation inside a billion-voxel logical room.
 The generated JSON must byte-match
 `benchmarks/evidence/r5-sparse-cpu-m2-pro-2026-08-12.json` during CTest.
+
+`AetherSparseMetalTsdfTests` runs the same translated/yaw-rotated frame through independent Metal
+volumes and the CPU reference, repeats fusion through weight saturation, compares every resident
+voxel, proves completed-generation snapshot isolation and dirty-block parity, and exercises block,
+frame-pixel, resident-byte, and scratch-byte failures. The M2 Pro fixture report is committed at
+`benchmarks/evidence/r5-sparse-metal-m2-pro-2026-08-13.json`. It is E2 evidence only; its
+synchronous wall time is intentionally not recorded as a performance claim.

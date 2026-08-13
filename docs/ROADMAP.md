@@ -61,6 +61,10 @@ renumber or replace the product phases.
   fixture; a billion-voxel logical room allocates only local observed blocks, and resident,
   candidate, extraction, disjoint-ray, and footprint-overflow failures are bounded and
   transactional. Extraction still uses a bounded dense active-span snapshot.
+- [x] [E2] **R5 sparse Metal fusion foundation:** shared deterministic candidate selection feeds a
+  Metal 3 classify/fuse path with deterministic resident slots, explicit frame/resident/scratch
+  budgets, scratch-before-publish updates, dirty blocks, immutable completed-generation snapshots,
+  and repeated-frame CPU/GPU voxel agreement on an M2 Pro fixture.
 - [x] [E2] **Canonical Asset v1 contract:** `.aether` can represent a self-contained metric textured
   GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
   geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
@@ -69,8 +73,10 @@ renumber or replace the product phases.
   vertex colors, static instances, embedded PNG/JPEG images, core PBR materials, samplers, and UV
   transforms. Animation, skins, morph targets, malformed topology, and hostile limits fail rather
   than being silently dropped. USDZ ingestion remains the explicit Blender-backed Apple baseline.
-- [ ] [E0] **R5 real-time fusion:** sparse Metal volume, dirty-block meshing, snapshot isolation,
-  memory pressure, persistence, and CPU/GPU agreement.
+- [ ] [E2] **R5 real-time fusion:** the fixture-level Metal volume and snapshot boundary exist;
+  asynchronous frame scheduling, halo-consistent dirty-block meshing, memory-pressure eviction,
+  persistence/recovery, real-capture CPU/GPU agreement, and the stated throughput/soak gates remain
+  open.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and
   truthful per-stage diagnostics.
 - [ ] [E0] **R7 hybrid completion:** reconstruction provenance/confidence, proxy shadow transfer,

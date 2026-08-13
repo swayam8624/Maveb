@@ -43,9 +43,10 @@ verified, shippable milestones. The current foundation contains:
   generated mipmaps and tangents, glTF samplers, material texture maps, normal mapping, and alpha
   mask/blend states.
 - A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
-- A deterministic block-sparse CPU TSDF reference that matches the dense oracle exactly on a
-  translated/rotated fixture while allocating only observed room-scale blocks. Mesh extraction is
-  still a bounded dense snapshot; sparse Metal fusion and incremental block meshing remain open.
+- Deterministic block-sparse CPU and Metal 3 TSDF paths with a shared candidate-block contract,
+  bounded GPU allocations, immutable completed-generation snapshots, and exact CPU/GPU fixture
+  agreement. Incremental block meshing, persistence/eviction, live scheduling, and real-capture
+  GPU evidence remain open.
 - [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
   Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
   dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs

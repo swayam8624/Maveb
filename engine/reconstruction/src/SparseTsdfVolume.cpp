@@ -308,55 +308,10 @@ std::size_t SparseTsdfVolume::localIndex(std::uint32_t x, std::uint32_t y,
 
 Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
                                          const PoseEstimate& pose, const DepthObservation& depth) {
-    if (auto valid = validateObservation(packet, pose, depth); !valid)
-        return valid;
-    std::set<TsdfBlockCoordinate> candidates;
-    const auto& cameraToWorld = pose.cameraToWorld;
-    for (std::uint32_t y = 0; y < depth.depthMetres.height; ++y) {
-        for (std::uint32_t x = 0; x < depth.depthMetres.width; ++x) {
-            const auto observedDepth =
-                static_cast<double>(readDepth(depth.depthMetres, x, y)) * depth.scaleMetresPerUnit;
-            const auto confidence = confidenceWeight(depth.confidence, x, y);
-            if (!std::isfinite(observedDepth) ||
-                observedDepth < config_.volume.minimumDepthMetres ||
-                observedDepth > config_.volume.maximumDepthMetres ||
-                confidence < depth.confidenceFloor || confidence * pose.confidence <= 0.0)
-                continue;
-            const double farDepth = observedDepth + config_.volume.truncationDistanceMetres;
-            const auto cameraPoint = [&](double cameraDepth) -> Vec3 {
-                return {(static_cast<double>(x) - packet.calibration.cx) * cameraDepth /
-                            packet.calibration.fx,
-                        (static_cast<double>(y) - packet.calibration.cy) * cameraDepth /
-                            packet.calibration.fy,
-                        cameraDepth};
-            };
-            const auto toWorld = [&](const Vec3& camera) {
-                return add(cameraToWorld.translation, rotate(cameraToWorld.orientation, camera));
-            };
-            const double footprint =
-                farDepth * 0.5 *
-                std::sqrt(1.0 / (packet.calibration.fx * packet.calibration.fx) +
-                          1.0 / (packet.calibration.fy * packet.calibration.fy));
-            const double blockMetres = config_.volume.voxelSizeMetres * config_.blockResolution;
-            const double inflationValue = std::ceil(footprint / blockMetres) + 1.0;
-            const auto counts = blockCounts(config_);
-            const auto maximumCount = std::max({counts[0], counts[1], counts[2]});
-            if (!std::isfinite(inflationValue) || inflationValue > maximumCount)
-                return fail(ErrorCode::resourceExhausted,
-                            "Sparse TSDF ray footprint exceeds the logical block grid");
-            const auto inflation = static_cast<std::uint32_t>(inflationValue);
-            auto traversed =
-                addRayBlocks(config_, toWorld(cameraPoint(config_.volume.minimumDepthMetres)),
-                             toWorld(cameraPoint(farDepth)), inflation, candidates);
-            if (!traversed)
-                return traversed;
-        }
-    }
-    if (candidates.empty())
-        return fail(ErrorCode::invalidArgument,
-                    "Depth frame does not intersect the configured sparse volume",
-                    std::to_string(packet.frameId));
-
+    auto selected = candidateBlocks(config_, packet, pose, depth);
+    if (!selected)
+        return std::unexpected(selected.error());
+    const std::set<TsdfBlockCoordinate> candidates(selected->begin(), selected->end());
     std::size_t potentialNewBlocks{};
     for (const auto& coordinate : candidates)
         if (!blocks_.contains(coordinate))
@@ -365,6 +320,7 @@ Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
         return fail(ErrorCode::resourceExhausted,
                     "Sparse TSDF candidate set exceeds its resident block budget");
 
+    const auto& cameraToWorld = pose.cameraToWorld;
     const std::array<double, 4> worldToCamera{
         cameraToWorld.orientation[0], -cameraToWorld.orientation[1], -cameraToWorld.orientation[2],
         -cameraToWorld.orientation[3]};
@@ -485,6 +441,63 @@ Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
     lastFrameCandidateBlocks_ = candidates.size();
     lastFrameVoxelUpdates_ = updates;
     return {};
+}
+
+Result<std::vector<TsdfBlockCoordinate>>
+SparseTsdfVolume::candidateBlocks(const SparseTsdfConfig& config,
+                                  const capture::CapturePacket& packet, const PoseEstimate& pose,
+                                  const DepthObservation& depth) {
+    if (auto validated = create(config); !validated)
+        return std::unexpected(validated.error());
+    if (auto valid = validateObservation(packet, pose, depth); !valid)
+        return std::unexpected(valid.error());
+    std::set<TsdfBlockCoordinate> candidates;
+    const auto& cameraToWorld = pose.cameraToWorld;
+    for (std::uint32_t y = 0; y < depth.depthMetres.height; ++y) {
+        for (std::uint32_t x = 0; x < depth.depthMetres.width; ++x) {
+            const auto observedDepth =
+                static_cast<double>(readDepth(depth.depthMetres, x, y)) * depth.scaleMetresPerUnit;
+            const auto confidence = confidenceWeight(depth.confidence, x, y);
+            if (!std::isfinite(observedDepth) || observedDepth < config.volume.minimumDepthMetres ||
+                observedDepth > config.volume.maximumDepthMetres ||
+                confidence < depth.confidenceFloor || confidence * pose.confidence <= 0.0)
+                continue;
+            const double farDepth = observedDepth + config.volume.truncationDistanceMetres;
+            const auto cameraPoint = [&](double cameraDepth) -> Vec3 {
+                return {(static_cast<double>(x) - packet.calibration.cx) * cameraDepth /
+                            packet.calibration.fx,
+                        (static_cast<double>(y) - packet.calibration.cy) * cameraDepth /
+                            packet.calibration.fy,
+                        cameraDepth};
+            };
+            const auto toWorld = [&](const Vec3& camera) {
+                return add(cameraToWorld.translation, rotate(cameraToWorld.orientation, camera));
+            };
+            const double footprint =
+                farDepth * 0.5 *
+                std::sqrt(1.0 / (packet.calibration.fx * packet.calibration.fx) +
+                          1.0 / (packet.calibration.fy * packet.calibration.fy));
+            const double blockMetres = config.volume.voxelSizeMetres * config.blockResolution;
+            const double inflationValue = std::ceil(footprint / blockMetres) + 1.0;
+            const auto counts = blockCounts(config);
+            const auto maximumCount = std::max({counts[0], counts[1], counts[2]});
+            if (!std::isfinite(inflationValue) || inflationValue > maximumCount)
+                return fail(ErrorCode::resourceExhausted,
+                            "Sparse TSDF ray footprint exceeds the logical block grid");
+            const auto inflation = static_cast<std::uint32_t>(inflationValue);
+            auto traversed =
+                addRayBlocks(config, toWorld(cameraPoint(config.volume.minimumDepthMetres)),
+                             toWorld(cameraPoint(farDepth)), inflation, candidates);
+            if (!traversed)
+                return std::unexpected(traversed.error());
+        }
+    }
+    if (candidates.empty())
+        return fail(ErrorCode::invalidArgument,
+                    "Depth frame does not intersect the configured sparse volume",
+                    std::to_string(packet.frameId));
+
+    return std::vector<TsdfBlockCoordinate>(candidates.begin(), candidates.end());
 }
 
 Result<mesh::MeshAsset> SparseTsdfVolume::extractMesh() const {

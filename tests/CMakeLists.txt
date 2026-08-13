@@ -51,6 +51,26 @@ if(TARGET aether-keyframes AND Python3_Interpreter_FOUND)
             "${CMAKE_CURRENT_BINARY_DIR}/keyframe-selector-cli")
 endif()
 
+if(TARGET AetherMetal)
+    add_executable(AetherSparseMetalTsdfTests SparseMetalTsdfTests.cpp)
+    target_link_libraries(AetherSparseMetalTsdfTests PRIVATE Aether::Metal)
+    target_compile_options(AetherSparseMetalTsdfTests PRIVATE -fblocks)
+    set(AETHER_SPARSE_METAL_TEST_LIBRARY "")
+    if(TARGET AetherShaders)
+        set(AETHER_SPARSE_METAL_TEST_LIBRARY
+            "${PROJECT_BINARY_DIR}/apps/AetherStudio/AetherShaders.metallib")
+    endif()
+    target_compile_definitions(AetherSparseMetalTsdfTests PRIVATE
+        AETHER_TEST_SHADER_LIBRARY="${AETHER_SPARSE_METAL_TEST_LIBRARY}")
+    aether_configure_target(AetherSparseMetalTsdfTests)
+    if(TARGET AetherShaders)
+        add_dependencies(AetherSparseMetalTsdfTests AetherShaders)
+        add_test(NAME AetherSparseMetalTsdfTests
+            COMMAND AetherSparseMetalTsdfTests --json-output
+                "${PROJECT_BINARY_DIR}/test-artifacts/r5-sparse-metal-tsdf.json")
+    endif()
+endif()
+
 if(TARGET AetherMetal AND TARGET AetherShaders)
     add_executable(AetherMetalTests MetalTests.cpp)
     target_link_libraries(AetherMetalTests PRIVATE Aether::Metal)

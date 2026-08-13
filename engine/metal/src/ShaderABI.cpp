@@ -51,3 +51,8 @@ static_assert(offsetof(AetherGaussianCamera, debugOptions) == 128);
 static_assert(sizeof(AetherProjectedGaussian) == 80);
 static_assert(offsetof(AetherProjectedGaussian, tileBounds) == 48);
 static_assert(sizeof(AetherGaussianCounters) == 16);
+static_assert(sizeof(AetherTsdfVoxelGpu) == 32);
+static_assert(offsetof(AetherTsdfVoxelGpu, observations) == 20);
+static_assert(sizeof(AetherTsdfFrameUniforms) == 128);
+static_assert(offsetof(AetherTsdfFrameUniforms, worldToCameraQuaternion) == 64);
+static_assert(offsetof(AetherTsdfFrameUniforms, gridDimensionsBlock) == 96);

@@ -50,6 +50,14 @@ class SparseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
     /// Task: validate a room-scale logical domain independently from its resident block count.
     static Result<SparseTsdfVolume> create(SparseTsdfConfig config);
 
+    /// Input: validated sparse-grid parameters, calibrated metric depth, and an accepted pose.
+    /// Output: the deterministic lexicographically ordered block set whose voxels may be updated.
+    /// Task: share the CPU reference's conservative ray/footprint allocation contract with Metal
+    /// backends without exposing or duplicating the fusion equations.
+    static Result<std::vector<TsdfBlockCoordinate>>
+    candidateBlocks(const SparseTsdfConfig& config, const capture::CapturePacket& packet,
+                    const PoseEstimate& pose, const DepthObservation& depth);
+
     /// Input: calibrated metric depth and an accepted metric camera pose.
     /// Output: one transactional update of only blocks intersecting valid depth-ray free space and
     /// the truncation band. Failure leaves all previously resident blocks unchanged.

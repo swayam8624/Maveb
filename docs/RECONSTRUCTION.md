@@ -126,19 +126,26 @@ The dense volume remains a correctness oracle. Its automatic voxel growth makes 
 safe and bounded, but does not replace the future sparse Metal volume needed to preserve fine
 resolution across a room.
 
-`SparseTsdfVolume` is the deterministic CPU bridge between that oracle and the future Metal
-backend. It preserves the dense implementation's nearest-pixel projection, confidence rejection,
+`SparseTsdfVolume` is the deterministic CPU bridge between that oracle and the Metal backend. It
+preserves the dense implementation's nearest-pixel projection, confidence rejection,
 normalized signed distance, weight saturation, color integration, and extraction topology while
 allocating ordered 8-cubed voxel blocks only along valid depth-ray free space and the truncation
 band. Candidate, resident, and extraction budgets fail transactionally: a rejected frame cannot
 partially update an existing volume. Dirty block coordinates are stable and explicitly
-acknowledged, which gives the Metal backend and incremental extractor a testable scheduling
-contract. See [the sparse TSDF contract](formats/SPARSE_TSDF.md).
+acknowledged. Candidate selection is now a shared contract used by both backends. See
+[the sparse TSDF contract](formats/SPARSE_TSDF.md).
 
-This CPU implementation is E2 fixture evidence, not the R5 production backend. It currently forms
-a bounded dense snapshot of the allocated block span and invokes the resolved dense extractor.
-Incremental block-border meshing, snapshot isolation, persistence/eviction, Metal allocation, and
-real-capture CPU/GPU agreement remain open and the roadmap continues to label R5 incomplete.
+`SparseMetalTsdfVolume` provides the first E2 Metal 3 fusion slice. The host assigns candidate and
+resident block slots deterministically; Metal kernels classify candidate voxels and perform the
+same calibrated depth, confidence, signed-distance, color, weight-saturation, and observation-count
+updates as the CPU reference. Updates are fused into bounded private scratch storage and copied to
+resident storage only after successful completion. Extraction consumers receive immutable CPU
+snapshots tagged with a completed generation rather than live Metal resources.
+
+This remains fixture evidence, not the R5 production backend. CPU extraction still forms a bounded
+dense active-span snapshot. Metal fusion is synchronous and is not wired to live reconstruction.
+Incremental block-border meshing, asynchronous scheduling, persistence/eviction, real-capture
+CPU/GPU agreement, and throughput/soak evidence remain open.
 
 Isosurface correctness is verified independently from camera projection and fusion. A complete
 normalized scalar field can instantiate the dense oracle directly, and a separately implemented
