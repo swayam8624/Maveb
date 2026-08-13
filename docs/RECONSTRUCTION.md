@@ -142,10 +142,17 @@ updates as the CPU reference. Updates are fused into bounded private scratch sto
 resident storage only after successful completion. Extraction consumers receive immutable CPU
 snapshots tagged with a completed generation rather than live Metal resources.
 
+`IncrementalSparseTsdfMesher` consumes that shared CPU/Metal snapshot schema and replaces only
+patches affected by dirty samples. A patch owns cells by their minimum grid corner, reads a positive
+topology halo and symmetric gradient halo, and invalidates negative neighbours when their cells can
+reference a changed block. This yields exact full-extraction triangle coverage and bit-exact shared
+positions/normals while allowing explicit patch removal and stale-generation rejection.
+
 This remains fixture evidence, not the R5 production backend. CPU extraction still forms a bounded
-dense active-span snapshot. Metal fusion is synchronous and is not wired to live reconstruction.
-Incremental block-border meshing, asynchronous scheduling, persistence/eviction, real-capture
-CPU/GPU agreement, and throughput/soak evidence remain open.
+dense active-span snapshot for full exports, and incremental patches still execute on the CPU.
+Metal fusion is synchronous and is not wired to live reconstruction. GPU-resident meshing,
+selective readback, asynchronous scheduling, persistence/eviction, real-capture CPU/GPU agreement,
+and throughput/soak evidence remain open.
 
 Isosurface correctness is verified independently from camera projection and fusion. A complete
 normalized scalar field can instantiate the dense oracle directly, and a separately implemented

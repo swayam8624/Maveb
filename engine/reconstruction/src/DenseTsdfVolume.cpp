@@ -436,6 +436,17 @@ Result<void> DenseTsdfVolume::integrate(const capture::CapturePacket& packet,
 }
 
 Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
+    return extractMeshCells({0, 0, 0}, {config_.dimensions[0] - 1, config_.dimensions[1] - 1,
+                                        config_.dimensions[2] - 1});
+}
+
+Result<mesh::MeshAsset>
+DenseTsdfVolume::extractMeshCells(const std::array<std::uint32_t, 3>& firstCell,
+                                  const std::array<std::uint32_t, 3>& onePastLastCell) const {
+    for (std::size_t axis = 0; axis < 3; ++axis)
+        if (firstCell[axis] >= onePastLastCell[axis] ||
+            onePastLastCell[axis] >= config_.dimensions[axis])
+            return fail(ErrorCode::invalidArgument, "Dense TSDF cell extraction range is invalid");
     mesh::MeshAsset asset;
     asset.name = "tsdf-isosurface";
     mesh::MeshPrimitive primitive;
@@ -464,9 +475,9 @@ Result<mesh::MeshAsset> DenseTsdfVolume::extractMesh() const {
         });
     };
 
-    for (std::uint32_t z = 0; z + 1 < config_.dimensions[2]; ++z) {
-        for (std::uint32_t y = 0; y + 1 < config_.dimensions[1]; ++y) {
-            for (std::uint32_t x = 0; x + 1 < config_.dimensions[0]; ++x) {
+    for (std::uint32_t z = firstCell[2]; z < onePastLastCell[2]; ++z) {
+        for (std::uint32_t y = firstCell[1]; y < onePastLastCell[1]; ++y) {
+            for (std::uint32_t x = firstCell[0]; x < onePastLastCell[0]; ++x) {
                 std::array<const TsdfVoxel*, 8> corners{};
                 std::array<float, 8> values{};
                 bool observed = true;

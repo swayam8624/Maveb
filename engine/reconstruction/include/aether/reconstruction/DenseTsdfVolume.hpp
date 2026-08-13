@@ -76,6 +76,12 @@ class DenseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
     Result<void> integrate(const capture::CapturePacket& packet, const PoseEstimate& pose,
                            const DepthObservation& depth) override;
     Result<mesh::MeshAsset> extractMesh() const override;
+    /// Input: half-open cell coordinates inside this sample grid.
+    /// Output: the resolved surface for only those cells while gradients may read the full field.
+    /// Task: support halo-consistent sparse patches without emitting neighbouring cells twice.
+    Result<mesh::MeshAsset>
+    extractMeshCells(const std::array<std::uint32_t, 3>& firstCell,
+                     const std::array<std::uint32_t, 3>& onePastLastCell) const;
 
     [[nodiscard]] const DenseTsdfConfig& config() const noexcept {
         return config_;

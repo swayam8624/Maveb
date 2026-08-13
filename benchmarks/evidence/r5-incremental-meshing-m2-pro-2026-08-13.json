@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "evidenceLevel": "E2-fixture",
+  "backend": "halo-owned-incremental-sparse-tsdf-mesher",
+  "dirtyBlocks": 106,
+  "patchUpdates": 120,
+  "residentPatches": 30,
+  "incrementalTriangles": 1680,
+  "fullExtractionTriangles": 1680,
+  "exactTriangleCoverage": true,
+  "bitExactSharedPositionsAndNormals": true,
+  "transactionalBudgetFailure": true,
+  "explicitPatchRemoval": true,
+  "staleGenerationRejection": true,
+  "limitations": [
+    "Patch extraction currently executes on the CPU from immutable sparse snapshots.",
+    "Asynchronous scheduling and GPU-resident Marching Cubes remain open."
+  ]
+}

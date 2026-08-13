@@ -65,6 +65,10 @@ renumber or replace the product phases.
   Metal 3 classify/fuse path with deterministic resident slots, explicit frame/resident/scratch
   budgets, scratch-before-publish updates, dirty blocks, immutable completed-generation snapshots,
   and repeated-frame CPU/GPU voxel agreement on an M2 Pro fixture.
+- [x] [E2] **R5 incremental meshing foundation:** immutable CPU and Metal snapshots feed bounded
+  dirty-owner patches with topology and symmetric gradient halos, seven-neighbour invalidation,
+  explicit removals, stale-generation rejection, bit-exact shared positions/normals, and exact
+  full-extraction triangle coverage.
 - [x] [E2] **Canonical Asset v1 contract:** `.aether` can represent a self-contained metric textured
   GLB, calibrated camera rig, explicit per-vertex confidence, coordinate convention, and hashed
   geometry/appearance provenance without pretending the proxy mesh is canonical geometry or
@@ -74,9 +78,9 @@ renumber or replace the product phases.
   transforms. Animation, skins, morph targets, malformed topology, and hostile limits fail rather
   than being silently dropped. USDZ ingestion remains the explicit Blender-backed Apple baseline.
 - [ ] [E2] **R5 real-time fusion:** the fixture-level Metal volume and snapshot boundary exist;
-  asynchronous frame scheduling, halo-consistent dirty-block meshing, memory-pressure eviction,
-  persistence/recovery, real-capture CPU/GPU agreement, and the stated throughput/soak gates remain
-  open.
+  deterministic incremental CPU patches now exist. GPU-resident Marching Cubes, asynchronous frame
+  scheduling, memory-pressure eviction, persistence/recovery, real-capture CPU/GPU agreement, and
+  the stated throughput/soak gates remain open.
 - [ ] [E0] **R6 Studio workflow:** immutable stage snapshots, explicit modes, recovery controls, and
   truthful per-stage diagnostics.
 - [ ] [E0] **R7 hybrid completion:** reconstruction provenance/confidence, proxy shadow transfer,

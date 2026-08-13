@@ -45,8 +45,9 @@ verified, shippable milestones. The current foundation contains:
 - A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
 - Deterministic block-sparse CPU and Metal 3 TSDF paths with a shared candidate-block contract,
   bounded GPU allocations, immutable completed-generation snapshots, and exact CPU/GPU fixture
-  agreement. Incremental block meshing, persistence/eviction, live scheduling, and real-capture
-  GPU evidence remain open.
+  agreement. A halo-consistent incremental CPU mesher replaces/removes only dirty cell-owner
+  patches with exact full-extraction triangle coverage. GPU-resident meshing,
+  persistence/eviction, live scheduling, and real-capture GPU evidence remain open.
 - [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
   Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
   dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs

@@ -40,6 +40,18 @@ struct SparseTsdfStatistics final {
     std::size_t lastFrameCandidateBlocks{};
     std::size_t lastFrameVoxelUpdates{};
     std::size_t dirtyBlocks{};
+    std::uint64_t generation{};
+};
+
+struct SparseTsdfBlockSnapshot final {
+    TsdfBlockCoordinate coordinate;
+    std::vector<TsdfVoxel> voxels;
+};
+
+struct SparseTsdfSnapshot final {
+    SparseTsdfConfig config;
+    std::uint64_t generation{};
+    std::vector<SparseTsdfBlockSnapshot> blocks;
 };
 
 /// Deterministic block-sparse CPU TSDF reference. Camera coordinates use +Z forward.
@@ -74,6 +86,7 @@ class SparseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
         return config_;
     }
     [[nodiscard]] SparseTsdfStatistics statistics() const noexcept;
+    [[nodiscard]] Result<SparseTsdfSnapshot> snapshot() const;
     [[nodiscard]] std::optional<TsdfVoxel> voxel(std::uint32_t x, std::uint32_t y,
                                                  std::uint32_t z) const noexcept;
     [[nodiscard]] std::vector<TsdfBlockCoordinate> dirtyBlocks() const;
@@ -96,6 +109,7 @@ class SparseTsdfVolume final : public IVolumeFusion, public IMeshExtractor {
     std::size_t integratedFrames_{};
     std::size_t lastFrameCandidateBlocks_{};
     std::size_t lastFrameVoxelUpdates_{};
+    std::uint64_t generation_{};
 };
 
 } // namespace aether::reconstruction

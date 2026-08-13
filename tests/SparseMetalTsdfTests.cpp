@@ -1,5 +1,6 @@
 #include <aether/metal/MetalPtr.hpp>
 #include <aether/metal/SparseMetalTsdfVolume.hpp>
+#include <aether/reconstruction/IncrementalSparseTsdfMesher.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
 #include <aether/reconstruction/SparseTsdfVolume.hpp>
 
@@ -144,6 +145,13 @@ bool sameSnapshot(const aether::metal::SparseMetalTsdfSnapshot& left,
     return true;
 }
 
+std::size_t triangleCount(const aether::mesh::MeshAsset& mesh) {
+    std::size_t result{};
+    for (const auto& primitive : mesh.primitives)
+        result += primitive.indices.size() / 3;
+    return result;
+}
+
 } // namespace
 
 int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
@@ -243,6 +251,18 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
            "Metal sparse allocation and fusion counters should match the CPU reference");
     expect((*gpu)->dirtyBlocks() == cpu->dirtyBlocks(),
            "Metal and CPU dirty-block coordinates should match exactly");
+    auto incremental = aether::reconstruction::IncrementalSparseTsdfMesher::create();
+    auto fullMesh = cpu->extractMesh();
+    auto patchUpdates =
+        incremental && finalSnapshot
+            ? incremental->update(*finalSnapshot, (*gpu)->dirtyBlocks())
+            : aether::Result<std::vector<aether::reconstruction::SparseMeshPatchUpdate>>(
+                  std::unexpected(aether::Error{aether::ErrorCode::internal,
+                                                "Incremental Metal snapshot fixture is unavailable",
+                                                {}}));
+    expect(incremental && fullMesh && patchUpdates &&
+               triangleCount(incremental->mesh()) == triangleCount(*fullMesh),
+           "Metal snapshots should drive exact-triangle incremental sparse mesh patches");
     (*gpu)->clearDirtyBlocks();
     expect((*gpu)->dirtyBlocks().empty() && (*gpu)->statistics().dirtyBlocks == 0,
            "Metal dirty-block acknowledgement should not alter resident data");
