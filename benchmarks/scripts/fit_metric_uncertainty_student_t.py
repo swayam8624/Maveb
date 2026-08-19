@@ -62,8 +62,6 @@ def vectorized_student_t_scene_balanced_objective(
     *,
     degrees_of_freedom: float = DEFAULT_DF,
 ) -> tuple[float, dict[str, float]]:
-    """Exact scene-balanced Student-t objective for the same v1 sigma model."""
-
     uncertainty.validate_config(config)
     base_sensor_sigma = (
         config.depth_noise_floor_metres
@@ -97,8 +95,6 @@ def fit_sensor_terms_student_t(
     arrays: gaussian_fit.CalibrationArrays | None = None,
     degrees_of_freedom: float = DEFAULT_DF,
 ) -> tuple[uncertainty.UncertaintyModelConfig, list[dict]]:
-    """Fit the same a/b/k sensor terms under a fixed robust Student-t likelihood."""
-
     if rounds <= 0:
         raise ValueError("rounds must be positive")
     if not math.isfinite(degrees_of_freedom) or degrees_of_freedom <= 2.0:
@@ -152,6 +148,7 @@ def main() -> int:
     parser.add_argument("input", type=Path, help="raw uncertainty observation JSONL")
     parser.add_argument("--split", type=Path, required=True, help="frozen calibration/held-out split")
     parser.add_argument("--output", type=Path, required=True, help="robust fitted model JSON")
+    parser.add_argument("--gaussian-predecessor", type=Path)
     parser.add_argument("--max-per-scene", type=int, default=100_000)
     parser.add_argument("--sample-seed", type=int, default=42)
     parser.add_argument("--rounds", type=int, default=6)
@@ -164,11 +161,7 @@ def main() -> int:
         all_samples = gaussian_fit.parse_jsonl(input_bytes.decode("utf-8").splitlines())
         calibration_scenes, split_payload = gaussian_fit.load_scene_split(args.split)
         samples = gaussian_fit.select_scenes(all_samples, calibration_scenes)
-        samples = gaussian_fit.stable_scene_downsample(
-            samples,
-            args.max_per_scene,
-            args.sample_seed,
-        )
+        samples = gaussian_fit.stable_scene_downsample(samples, args.max_per_scene, args.sample_seed)
         initial = uncertainty.UncertaintyModelConfig()
         arrays = gaussian_fit.calibration_arrays(samples, initial)
         before, before_by_scene = vectorized_student_t_scene_balanced_objective(
@@ -188,6 +181,23 @@ def main() -> int:
             fitted,
             degrees_of_freedom=args.degrees_of_freedom,
         )
+        predecessor = None
+        if args.gaussian_predecessor is not None:
+            predecessor_path = args.gaussian_predecessor.resolve()
+            predecessor_bytes = predecessor_path.read_bytes()
+            predecessor_payload = json.loads(predecessor_bytes)
+            if predecessor_payload.get("status") != "fitted-calibration-only-not-held-out-validated":
+                raise ValueError("Gaussian predecessor does not have the expected calibration-only status")
+            if predecessor_payload.get("inputSha256") != hashlib.sha256(input_bytes).hexdigest():
+                raise ValueError("Gaussian predecessor was fitted on a different calibration input")
+            if predecessor_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
+                raise ValueError("Gaussian predecessor was fitted on a different split")
+            predecessor = {
+                "path": str(predecessor_path),
+                "sha256": hashlib.sha256(predecessor_bytes).hexdigest(),
+                "modelId": predecessor_payload.get("modelId"),
+                "status": predecessor_payload.get("status"),
+            }
     except (OSError, RuntimeError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         print(f"fit_metric_uncertainty_student_t: {exc}")
         return 2
@@ -204,6 +214,7 @@ def main() -> int:
             "single-Gaussian U1 saturated both depth-noise upper bounds and the 0.25 m sigma cap "
             "on calibration-only data; Student-t(3) retains all samples while modeling the heavy tail"
         ),
+        "gaussianPredecessor": predecessor,
         "inputSha256": hashlib.sha256(input_bytes).hexdigest(),
         "splitSha256": hashlib.sha256(split_bytes).hexdigest(),
         "splitId": split_payload.get("id", "unknown"),
@@ -249,9 +260,7 @@ def main() -> int:
         },
         "boundaryFlags": {
             "depthNoiseFloorAtUpperBound": fitted.depth_noise_floor_metres >= 0.099999,
-            "depthNoiseQuadraticAtUpperBound": (
-                fitted.depth_noise_quadratic_metres_per_metre_squared >= 0.049999
-            ),
+            "depthNoiseQuadraticAtUpperBound": fitted.depth_noise_quadratic_metres_per_metre_squared >= 0.049999,
             "sensorConfidencePenaltyAtUpperBound": fitted.sensor_confidence_penalty >= 19.999,
         },
         "modelConfig": uncertainty.config_to_json(fitted),
