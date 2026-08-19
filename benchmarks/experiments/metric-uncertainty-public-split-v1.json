@@ -1,13 +1,15 @@
 {
   "schemaVersion": 1,
   "id": "metric-uncertainty-public-split-v1",
-  "status": "frozen-ca1m-laser-ground-truth-before-acquisition",
+  "status": "frozen-ca1m-faro-plus-arkitscenes-confidence-before-metric-sampling",
   "frozen": true,
-  "revision": 2,
+  "revision": 3,
   "refreeze": {
-    "performedBeforeAnyPublicSceneDownloadOrMetricInspection": true,
-    "reason": "Revision 1 used ARKitScenes 3DOD meshes as reference geometry. Before acquiring any selected scene or inspecting any outcome, the study was upgraded to CA-1M captures that provide FARO laser-scanner registered GT depth and poses. This makes the sensor-error target independent of the onboard ARKit depth being calibrated.",
-    "previousRevision": 1
+    "performedBeforeAnyMetricSampleWasGenerated": true,
+    "performedBeforeAnyHeldOutSceneWasOpenedForEvaluation": true,
+    "sceneMembershipChanged": false,
+    "reason": "Revision 2 correctly selected CA-1M captures with independent FARO ground truth, but assumed the released CA-1M tar archives also contained depth confidence. Inspection of the acquired calibration archive showed that the release contains ARKit depth and FARO GT depth but no confidence member. The same video IDs exist in ARKitScenes raw, whose synchronized 256x192 confidence PNGs are the authoritative 0/1/2 confidence source. Revision 3 keeps every selected scene unchanged and joins only that confidence sidecar by timestamp.",
+    "previousRevision": 2
   },
   "source": {
     "dataset": "CA-1M / Cubify Anything",
@@ -15,10 +17,16 @@
     "ca1mTrainIndex": "data/train.txt",
     "ca1mValidationIndex": "data/val.txt",
     "arkitVisitMetadata": "apple/ARKitScenes raw/raw_train_val_splits.csv",
+    "confidenceDataset": "ARKitScenes raw",
+    "confidenceRepository": "apple/ARKitScenes",
+    "confidenceAsset": "confidence",
+    "confidenceRepresentation": "uint8 PNG levels 0=low, 1=medium, 2=high",
+    "confidenceJoin": "nearest same-video timestamp; CA-1M integer nanoseconds to ARKitScenes decimal seconds under a preregistered strict tolerance",
     "selectionDate": "2026-08-19",
-    "groundTruth": "Per-frame FARO laser-scanner rendered depth registered to the capture camera",
-    "observedDepth": "Per-frame onboard ARKit LiDAR depth",
-    "selectionPolicy": "Choose three CA-1M train captures and five CA-1M val captures that also appear in ARKitScenes metadata with distinct visit IDs. Freeze membership before downloading any selected tar or inspecting any metric outcome."
+    "sourceCorrectionDate": "2026-08-20",
+    "groundTruth": "Per-frame FARO laser-scanner rendered depth registered to the capture camera from CA-1M",
+    "observedDepth": "Per-frame onboard ARKit LiDAR depth from CA-1M",
+    "selectionPolicy": "Choose three CA-1M train captures and five CA-1M val captures that also appear in ARKitScenes metadata with distinct visit IDs. Freeze membership before metric sampling or outcome inspection. Confidence is joined from ARKitScenes raw for the identical video IDs."
   },
   "smokeScenes": [
     "arkitscenes-47333462"
@@ -55,11 +63,14 @@
     "calibrationArkitFold": "Training",
     "heldOutArkitFold": "Validation",
     "faroGroundTruthRequired": true,
+    "externalConfidenceSidecarRequired": true,
+    "confidenceTimestampToleranceMilliseconds": 20.0,
+    "rawConfidenceLevelMustBePreserved": true,
+    "normalizedConfidenceHypothesis": "raw level / 2",
     "populateBeforeFitting": true,
-    "freezeBeforeAcquisition": true,
     "freezeBeforeHeldOutEvaluation": true,
     "smokeScenesMayNotServeAsEvidence": true,
     "selectionRule": "Selected scenes remain in the ledger even if difficult, missing frames, poorly calibrated, or negative. Replacement requires a new explicit split revision and invalidates any previously inspected outcome."
   },
-  "note": "Revision 2 is the first evidence-eligible split. Revision 1 was superseded before any selected public scene was downloaded or evaluated because its reference mesh was not independent enough for LiDAR error calibration."
+  "note": "Revision 3 changes no scene membership. It corrects only the confidence source after the acquired CA-1M calibration tar was found not to contain confidence. No valid metric sample, fitted coefficient, or held-out result existed before this correction."
 }
