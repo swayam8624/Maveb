@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Acquire ARKitScenes raw confidence sidecars for the frozen uncertainty study.
+"""Acquire ARKitScenes raw confidence plus low-res depth witnesses for the frozen study.
 
-Default role is calibration. Held-out confidence is not downloaded unless the caller explicitly
-requests `--role held-out` after the calibration model has been frozen. The wrapper validates every
-video/fold/visit against Apple's raw split CSV and delegates bytes to Apple's official
-download_data.py using only the `confidence` raw asset.
+Default role is calibration. Held-out sidecars are not downloaded unless the caller explicitly
+requests `--role held-out` after the calibration model has been frozen. Confidence is the research
+signal. Low-res depth is used only to infer the discrete image-orientation transform needed to align
+raw ARKitScenes sidecars with CA-1M's oriented ARKit depth frame.
 """
 
 from __future__ import annotations
@@ -16,6 +16,8 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+
+ASSETS = ("confidence", "lowres_depth")
 
 
 def sha256_file(path: Path) -> str:
@@ -30,7 +32,7 @@ def load_split(path: Path) -> tuple[dict, bytes]:
     raw = path.read_bytes()
     payload = json.loads(raw)
     if payload.get("schemaVersion") != 1 or payload.get("frozen") is not True:
-        raise ValueError("confidence acquisition requires the frozen schema-v1 split")
+        raise ValueError("sidecar acquisition requires the frozen schema-v1 split")
     source = payload.get("source", {})
     if source.get("dataset") != "CA-1M / Cubify Anything":
         raise ValueError("split does not use CA-1M ground truth")
@@ -48,10 +50,8 @@ def load_raw_index(path: Path) -> dict[str, tuple[str, str]]:
             raise ValueError("ARKitScenes raw split CSV lacks video_id/visit_id/fold")
         for row in reader:
             video = str(row["video_id"]).strip()
-            visit = str(row["visit_id"]).strip()
-            fold = str(row["fold"]).strip()
             if video:
-                rows[video] = (visit, fold)
+                rows[video] = (str(row["visit_id"]).strip(), str(row["fold"]).strip())
     if not rows:
         raise ValueError("ARKitScenes raw split CSV is empty")
     return rows
@@ -59,10 +59,10 @@ def load_raw_index(path: Path) -> dict[str, tuple[str, str]]:
 
 def scenes_for_role(payload: dict, role: str) -> list[str]:
     if role == "calibration":
-        return [str(value) for value in payload["calibrationScenes"]]
+        return [str(v) for v in payload["calibrationScenes"]]
     if role == "held-out":
-        return [str(value) for value in payload["heldOutScenes"]]
-    return [str(value) for value in payload["calibrationScenes"] + payload["heldOutScenes"]]
+        return [str(v) for v in payload["heldOutScenes"]]
+    return [str(v) for v in payload["calibrationScenes"] + payload["heldOutScenes"]]
 
 
 def plan(payload: dict, raw_index: dict[str, tuple[str, str]], output_root: Path, role: str) -> list[dict]:
@@ -75,13 +75,14 @@ def plan(payload: dict, raw_index: dict[str, tuple[str, str]], output_root: Path
         indexed = raw_index.get(video)
         if indexed is None:
             raise ValueError(f"{scene} is absent from ARKitScenes raw split CSV")
-        indexed_visit, indexed_fold = indexed
-        if indexed_visit != visit or indexed_fold != fold:
+        if indexed != (visit, fold):
             raise ValueError(
-                f"ARKitScenes metadata mismatch for {scene}: expected visit/fold {visit}/{fold}, "
-                f"found {indexed_visit}/{indexed_fold}"
+                f"ARKitScenes metadata mismatch for {scene}: expected {visit}/{fold}, "
+                f"found {indexed[0]}/{indexed[1]}"
             )
-        confidence = output_root / "raw" / fold / video / "confidence"
+        root = output_root / "raw" / fold / video
+        confidence = root / "confidence"
+        lowres_depth = root / "lowres_depth"
         entries.append(
             {
                 "scene": scene,
@@ -90,7 +91,13 @@ def plan(payload: dict, raw_index: dict[str, tuple[str, str]], output_root: Path
                 "visitId": visit,
                 "fold": fold,
                 "confidenceDirectory": str(confidence.resolve()),
-                "alreadyPresent": confidence.is_dir() and any(confidence.glob("*.png")),
+                "lowresDepthDirectory": str(lowres_depth.resolve()),
+                "alreadyPresent": (
+                    confidence.is_dir()
+                    and any(confidence.glob("*.png"))
+                    and lowres_depth.is_dir()
+                    and any(lowres_depth.glob("*.png"))
+                ),
             }
         )
     return entries
@@ -113,7 +120,7 @@ def execute_download(arkit_repo: Path, output_root: Path, entries: list[dict]) -
             "--download_dir",
             str(output_root),
             "--raw_dataset_assets",
-            "confidence",
+            *ASSETS,
             "--keep_zip",
         ]
         subprocess.run(command, cwd=arkit_repo, check=True)
@@ -140,10 +147,7 @@ def main() -> int:
         downloader = arkit_repo / "download_data.py"
         raw_csv = arkit_repo / "raw/raw_train_val_splits.csv"
         if not downloader.is_file() or not raw_csv.is_file():
-            raise ValueError(
-                "--arkitscenes-repo must be an apple/ARKitScenes clone containing download_data.py "
-                "and raw/raw_train_val_splits.csv"
-            )
+            raise ValueError("--arkitscenes-repo must contain download_data.py and raw split CSV")
         raw_index = load_raw_index(raw_csv)
         output_root = args.output_dir.resolve()
         entries = plan(payload, raw_index, output_root, args.role)
@@ -151,16 +155,21 @@ def main() -> int:
             execute_download(arkit_repo, output_root, entries)
             for entry in entries:
                 confidence = Path(entry["confidenceDirectory"])
-                pngs = sorted(confidence.glob("*.png")) if confidence.is_dir() else []
-                entry["downloaded"] = bool(pngs)
-                entry["confidencePngCount"] = len(pngs)
+                lowres_depth = Path(entry["lowresDepthDirectory"])
+                confidence_pngs = sorted(confidence.glob("*.png")) if confidence.is_dir() else []
+                depth_pngs = sorted(lowres_depth.glob("*.png")) if lowres_depth.is_dir() else []
+                entry["downloaded"] = bool(confidence_pngs and depth_pngs)
+                entry["confidencePngCount"] = len(confidence_pngs)
+                entry["lowresDepthPngCount"] = len(depth_pngs)
             if not all(entry.get("downloaded") for entry in entries):
-                raise ValueError("one or more frozen confidence sidecars were not acquired")
+                raise ValueError("one or more frozen ARKitScenes sidecars were not acquired")
 
         ledger = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "study": "metric-uncertainty-v1",
-            "asset": "ARKitScenes raw confidence",
+            "assets": list(ASSETS),
+            "confidenceRole": "research signal",
+            "lowresDepthRole": "orientation witness only",
             "role": args.role,
             "splitId": payload["id"],
             "splitRevision": payload.get("revision"),
