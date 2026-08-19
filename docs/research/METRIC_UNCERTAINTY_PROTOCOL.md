@@ -1,10 +1,10 @@
-# Maveb Research Protocol: Metric Geometric Uncertainty v1.1
+# Maveb Research Protocol: Metric Geometric Uncertainty v1.2
 
-- Status: preregistered before public evidence acquisition
+- Status: preregistered before valid public metric sampling
 - Branch family: `agent/metric-uncertainty-*`
 - Primary representation under study: metric geometry + 3D Gaussian Splatting
 - Primary question: **Can calibrated geometric uncertainty from heterogeneous consumer sensors improve sparse-view metric reconstruction without hiding geometry errors behind rendering quality?**
-- Public evidence revision: **CA-1M/FARO ground truth**
+- Public evidence revision: **CA-1M/FARO ground truth + ARKitScenes raw confidence**
 
 ## 1. Research posture
 
@@ -18,24 +18,38 @@ It asks whether observable sensing/registration signals can be converted into a 
 that is calibrated on disjoint data, survives causal negative controls, and improves geometry under
 sparse or corrupted observations. Negative and null results remain valid outcomes.
 
-## 2. Ground-truth correction before acquisition
+## 2. Public evidence source corrections before valid sampling
 
 The initial protocol proposed ARKitScenes mobile reconstruction meshes as the public reference. No
 selected public scene was downloaded, fitted, or evaluated under that plan. Before outcome
-inspection, the protocol was revised because a reference produced from the same mobile capture
-family is not independent enough for calibrating onboard LiDAR error.
+inspection, the reference was upgraded to CA-1M because its per-frame FARO laser-scanner rendered
+depth is independent of the onboard LiDAR observation being calibrated.
 
-Public U1/U2 evidence therefore uses **CA-1M**. For each selected capture CA-1M provides:
+The selected CA-1M archives were then acquired. Inspection of the first calibration archive revealed
+that the released tar contains ARKit depth, FARO GT depth, their separate intrinsics, and the
+registered pose, but **does not contain a confidence member**. No valid metric sample or fitted model
+existed at that point. The protocol was therefore corrected again without changing scene membership:
+confidence comes from the original ARKitScenes raw `confidence` asset for the identical video ID.
+Apple documents that asset as synchronized with low-resolution depth, 256x192 UInt8 PNG, with levels
+0=low, 1=medium, 2=high.
 
-- onboard ARKit LiDAR depth, 256x192 UInt16 millimetres;
-- released per-depth confidence in [0, 1];
-- a separate ARKit-depth intrinsic matrix;
-- FARO laser-scanner rendered GT depth, 512x384 UInt16 millimetres;
-- a separate GT-depth intrinsic matrix;
-- a registered camera pose in laser-scanner space.
+Public U1/U2 therefore uses:
 
-GT pixels with value zero are unregistered and are excluded. ARKit and GT depth pixels are matched
-by calibrated camera ray using their released intrinsics; a fixed 2x resize is forbidden. The old
+- **observation:** CA-1M onboard ARKit LiDAR depth, 256x192 UInt16 millimetres;
+- **sensor signal:** ARKitScenes raw confidence PNG, UInt8 levels 0/1/2;
+- **depth geometry:** CA-1M ARKit-depth intrinsic matrix;
+- **independent target:** CA-1M FARO rendered GT depth, 512x384 UInt16 millimetres;
+- **target geometry:** CA-1M GT-depth intrinsic matrix;
+- **pose provenance:** CA-1M registered camera pose in laser-scanner space.
+
+CA-1M integer timestamps are interpreted in nanoseconds. ARKitScenes confidence files use
+`{video_id}_{timestamp_seconds}.png`. Confidence is joined by nearest same-video timestamp under the
+frozen 20 ms tolerance; the raw 0/1/2 category and actual join delta are preserved in every sample.
+The v1 scalar hypothesis uses `c_sensor = raw_level / 2`, but raw categories remain available for
+future categorical ablation.
+
+GT pixels with value zero are unregistered and excluded. ARKit and GT depth pixels are matched by
+calibrated camera ray using their released intrinsics; a fixed 2x resize is forbidden. The old
 ARKitScenes mesh sampler remains an engineering smoke/orientation oracle only and cannot satisfy U1
 or U2 evidence gates.
 
@@ -98,15 +112,17 @@ Only after calibration may a reconstruction ablation use:
 w = clamp((sigma_reference / sigma_total)^2, w_min, w_max)
 ```
 
-CA-1M U1 fits **only** `a`, `b`, and `k`. Its registered public frames do not identify Maveb's future
+Public U1 fits **only** `a`, `b`, and `k`. Its registered public frames do not identify Maveb's future
 Sony↔iPad alignment term, and fitting those parameters here would create unearned degrees of freedom.
 Pose/alignment parameters remain frozen until a paired-sensor experiment can identify them.
 
 ## 6. Frozen public split
 
 The evidence-eligible split is `benchmarks/experiments/metric-uncertainty-public-split-v1.json`,
-revision 2. Membership was selected before any chosen tar archive was downloaded or any selected
-metric was inspected.
+revision 3. **Scene membership is unchanged from revision 2.** Revision 3 only corrects the confidence
+source after the acquired CA-1M tar was empirically found not to contain confidence. At the time of
+this correction there were zero valid metric samples, no fitted coefficients, and no held-out
+outcome.
 
 Calibration, CA-1M train / ARKitScenes Training metadata, distinct visits:
 
@@ -143,17 +159,27 @@ control.
 
 ## 8. Public U1/U2 procedure
 
-1. Validate frozen video membership against Apple's CA-1M `data/train.txt` / `data/val.txt`.
-2. Download only the eight selected CA-1M tar archives.
-3. For every sampled ARKit-depth pixel, map its calibrated camera ray into the GT-depth image using
-   the released source/target intrinsics.
-4. Exclude invalid ARKit depth, out-of-bounds mapped rays and zero/unregistered FARO GT depth.
-5. Emit signed error `e = z_arkit - z_faro`, confidence and all observable model inputs.
-6. Fit only sensor terms on the three calibration captures with scene-balanced Gaussian NLL.
-7. Freeze model config, input hash, split hash and code revision.
-8. Run the frozen model once on the five held-out captures.
-9. Evaluate intact, constant and deterministic within-scene shuffled confidence.
-10. Report every selected scene and write failure analysis before any fusion weighting is enabled.
+The orchestration has no `all` shortcut. The legal order is
+`prepare-calibration -> fit -> prepare-held-out -> evaluate`.
+
+1. Validate frozen video membership against Apple's CA-1M train/val indices and ARKitScenes raw split
+   CSV.
+2. Acquire only the three **Training** confidence sidecars first; held-out confidence remains
+   untouched until the calibration model exists.
+3. For each sampled CA-1M frame, convert its nanosecond timestamp to seconds and join the nearest
+   same-video ARKitScenes confidence PNG within 20 ms. Record the actual delta; unmatched frames are
+   skipped, never imputed.
+4. For every accepted ARKit-depth pixel, map its calibrated camera ray into FARO GT depth using the
+   separate source/target intrinsics.
+5. Exclude invalid ARKit depth, out-of-bounds mapped rays and zero/unregistered FARO GT depth.
+6. Emit signed error `e = z_arkit - z_faro`, raw confidence level, normalized confidence and all
+   observable model inputs.
+7. Fit only sensor terms on the three calibration captures with scene-balanced Gaussian NLL.
+8. Freeze model config, calibration input hash, split hash and code revision.
+9. Only then acquire/sample the five held-out Validation confidence sidecars.
+10. Run the frozen model once on those five captures and evaluate intact, constant and deterministic
+    within-scene shuffled confidence.
+11. Report every selected scene and write failure analysis before any fusion weighting is enabled.
 
 Pixels are measurement samples; **scene is the paper-level unit of evidence**.
 
@@ -168,7 +194,8 @@ Report per scene and aggregate:
 - RMS predicted sigma (sharpness);
 - Pearson correlation of predicted sigma with absolute error;
 - calibration curves/bins;
-- deterministic scene-bootstrap intervals.
+- deterministic scene-bootstrap intervals;
+- confidence timestamp join coverage and maximum/quantile join delta.
 
 A huge sigma that merely achieves coverage is not a successful model; sharpness and NLL prevent that
 failure from being hidden.
@@ -239,10 +266,11 @@ threshold changes.
 
 ## 15. Reproducibility contract
 
-Every evidence artifact records Maveb git SHA, split revision/hash, source archive hashes, scene,
-method/ablation, sampling parameters, perturbations, seed, exact argv, fitted-model hash and raw/report
-hashes. Bulk licensed data remains external; compact derived numerical evidence and provenance may be
-committed when licensing permits.
+Every evidence artifact records Maveb git SHA, split revision/hash, CA-1M archive hash, ARKitScenes
+confidence manifest hash, confidence join tolerance/deltas, scene, method/ablation, sampling
+parameters, perturbations, seed, exact argv, fitted-model hash and raw/report hashes. Bulk licensed
+data remains external; compact derived numerical evidence and provenance may be committed when
+licensing permits.
 
 ## 16. Literature/novelty rule
 
@@ -256,10 +284,10 @@ U3 and again before U4.
 
 - **U0 — measurement:** predictor, evaluator, bootstrap, controls, provenance, synthetic end-to-end
   fixture.
-- **U1 — calibration:** independent CA-1M/FARO error samples from three frozen calibration captures;
-  fit sensor terms only and freeze coefficients/hashes.
-- **U2 — held-out:** five frozen CA-1M validation captures, no retuning, intact/constant/shuffled
-  controls, calibration curves and failure analysis.
+- **U1 — calibration:** independent CA-1M/FARO errors plus ARKitScenes raw confidence from three
+  frozen calibration captures; fit sensor terms only and freeze coefficients/hashes.
+- **U2 — held-out:** five frozen CA-1M validation captures with separately acquired confidence, no
+  retuning, intact/constant/shuffled controls, calibration curves and failure analysis.
 - **U3 — fusion:** opt-in inverse-variance dense CPU TSDF ablation with B1/B2 preserved; full stress
   matrix before sparse/Metal ports.
 - **U4 — Gaussian:** isolated initialization/optimization/densification/pruning/regularization
