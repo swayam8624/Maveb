@@ -14,7 +14,7 @@ SPEC.loader.exec_module(acquire)
 
 
 class AcquireArkitScenesConfidenceTests(unittest.TestCase):
-    def test_plan_validates_fold_and_visit(self):
+    def test_plan_validates_fold_visit_and_both_sidecars(self):
         payload = {
             "calibrationScenes": ["ca1m-1"],
             "heldOutScenes": ["ca1m-2"],
@@ -38,10 +38,14 @@ class AcquireArkitScenesConfidenceTests(unittest.TestCase):
         self.assertEqual(len(planned), 1)
         self.assertEqual(planned[0]["videoId"], "1")
         self.assertTrue(planned[0]["confidenceDirectory"].endswith("raw/Training/1/confidence"))
+        self.assertTrue(planned[0]["lowresDepthDirectory"].endswith("raw/Training/1/lowres_depth"))
 
         bad_index = {"1": ("999", "Training"), "2": ("20", "Validation")}
         with self.assertRaisesRegex(ValueError, "metadata mismatch"):
             acquire.plan(payload, bad_index, Path("/tmp/data"), "calibration")
+
+    def test_assets_include_confidence_and_orientation_witness(self):
+        self.assertEqual(acquire.ASSETS, ("confidence", "lowres_depth"))
 
     def test_load_raw_index_uses_standard_library_csv(self):
         with tempfile.TemporaryDirectory() as directory:
