@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Run Maveb's frozen CA-1M metric-uncertainty public study.
+"""Run Maveb's frozen public metric-uncertainty study.
 
-Stages:
-  prepare   Extract ARKit-LiDAR vs FARO-depth observations from the frozen CA-1M archives.
-  fit       Fit sensor-only uncertainty coefficients on calibration scenes and freeze hashes.
-  evaluate  Run intact/constant/shuffled controls on held-out scenes without retuning.
-  all       prepare + fit + evaluate.
+The runner enforces the research gate order rather than providing an `all` shortcut:
+  prepare-calibration  Sample only the three CA-1M train scenes, joining ARKitScenes confidence.
+  fit                  Fit sensor-only coefficients on calibration observations and freeze hashes.
+  prepare-held-out     Sample only the five frozen held-out scenes after a fitted model exists.
+  evaluate             Evaluate intact/constant/shuffled confidence without retuning.
 
 The runner never downloads data and never modifies the frozen split.
 """
@@ -37,8 +37,11 @@ def load_split(path: Path) -> tuple[dict, bytes]:
     payload = json.loads(raw)
     if payload.get("schemaVersion") != 1 or payload.get("frozen") is not True:
         raise ValueError("study requires the frozen schema-v1 public split")
-    if payload.get("source", {}).get("dataset") != "CA-1M / Cubify Anything":
+    source = payload.get("source", {})
+    if source.get("dataset") != "CA-1M / Cubify Anything":
         raise ValueError("study requires the CA-1M FARO-ground-truth split")
+    if source.get("confidenceDataset") != "ARKitScenes raw":
+        raise ValueError("study requires the ARKitScenes raw confidence sidecar")
     calibration = [str(v) for v in payload.get("calibrationScenes", [])]
     held_out = [str(v) for v in payload.get("heldOutScenes", [])]
     if len(calibration) < 3 or len(held_out) < 5 or set(calibration) & set(held_out):
@@ -48,6 +51,10 @@ def load_split(path: Path) -> tuple[dict, bytes]:
 
 def archive_path(data_root: Path, entry: dict) -> Path:
     return data_root / f"ca1m-{entry['ca1mSplit']}-{entry['videoId']}.tar"
+
+
+def confidence_directory(confidence_root: Path, entry: dict) -> Path:
+    return confidence_root / "raw" / str(entry["arkitFold"]) / str(entry["videoId"]) / "confidence"
 
 
 def scene_paths(output_root: Path, scene: str) -> dict[str, Path]:
@@ -64,6 +71,8 @@ def concatenate_jsonl(inputs: list[Path], output: Path) -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8") as destination:
         for path in inputs:
+            if not path.is_file():
+                raise ValueError(f"required observation file is missing: {path}")
             with path.open("r", encoding="utf-8") as source:
                 for line in source:
                     if line.strip():
@@ -95,29 +104,38 @@ def annotate_method(input_path: Path, output_path: Path, method: str) -> int:
     return count
 
 
-def prepare(
+def prepare_scenes(
     *,
     repo_root: Path,
     data_root: Path,
+    confidence_root: Path,
     output_root: Path,
     split: dict,
+    scenes: list[str],
+    ledger_name: str,
     frame_stride: int,
     pixel_stride: int,
     maximum_samples: int,
+    confidence_max_delta_ms: float,
 ) -> list[dict]:
     sampler = repo_root / "benchmarks/scripts/ca1m_uncertainty_samples.py"
     prepared = []
-    for scene in split["calibrationScenes"] + split["heldOutScenes"]:
+    for scene in scenes:
         entry = split["sceneMetadata"][scene]
         archive = archive_path(data_root, entry)
+        confidence = confidence_directory(confidence_root, entry)
         if not archive.is_file():
             raise ValueError(f"missing frozen CA-1M archive for {scene}: {archive}")
+        if not confidence.is_dir():
+            raise ValueError(f"missing ARKitScenes confidence directory for {scene}: {confidence}")
         paths = scene_paths(output_root, scene)
         run(
             [
                 sys.executable,
                 str(sampler),
                 str(archive),
+                "--confidence-root",
+                str(confidence),
                 "--scene",
                 scene,
                 "--video-id",
@@ -130,6 +148,8 @@ def prepare(
                 str(pixel_stride),
                 "--max-samples",
                 str(maximum_samples),
+                "--confidence-max-delta-ms",
+                str(confidence_max_delta_ms),
             ],
             cwd=repo_root,
         )
@@ -139,19 +159,29 @@ def prepare(
                 "scene": scene,
                 "role": entry["role"],
                 "ca1mSplit": entry["ca1mSplit"],
+                "arkitFold": entry["arkitFold"],
                 "videoId": entry["videoId"],
                 "visitId": entry["visitId"],
                 "archive": str(archive.resolve()),
                 "archiveSha256": meta["archiveSha256"],
+                "confidenceRoot": str(confidence.resolve()),
+                "confidenceManifestSha256": meta["confidenceManifestSha256"],
                 "samples": str(paths["samples"].resolve()),
                 "sampleSha256": meta["outputSha256"],
                 "emittedSamples": meta["emittedSamples"],
                 "completeFrames": meta["completeFrames"],
                 "selectedFrames": meta["selectedFrames"],
+                "matchedConfidenceFrames": meta["matchedConfidenceFrames"],
+                "skippedFramesNoConfidence": meta["skippedFramesNoConfidence"],
+                "maximumObservedConfidenceDeltaMilliseconds": meta[
+                    "maximumObservedConfidenceDeltaMilliseconds"
+                ],
             }
         )
-    ledger = output_root / "prepare-ledger.json"
-    ledger.write_text(json.dumps({"schemaVersion": 1, "scenes": prepared}, indent=2, sort_keys=True) + "\n")
+    ledger = output_root / ledger_name
+    ledger.write_text(
+        json.dumps({"schemaVersion": 1, "scenes": prepared}, indent=2, sort_keys=True) + "\n"
+    )
     return prepared
 
 
@@ -188,7 +218,7 @@ def fit(
     if payload.get("status") != "fitted-calibration-only-not-held-out-validated":
         raise ValueError("fitter did not produce a calibration-only model")
     if payload.get("splitSha256") != sha256_file(split_path):
-        raise ValueError("fitted model split hash does not match the frozen CA-1M split")
+        raise ValueError("fitted model split hash does not match the frozen public split")
     return fitted
 
 
@@ -280,18 +310,24 @@ def evaluate(
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=("prepare", "fit", "evaluate", "all"), default="all")
+    parser.add_argument(
+        "--stage",
+        choices=("prepare-calibration", "fit", "prepare-held-out", "evaluate"),
+        required=True,
+    )
     parser.add_argument(
         "--split",
         type=Path,
         default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json",
     )
     parser.add_argument("--data-root", type=Path, required=True)
+    parser.add_argument("--confidence-root", type=Path)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--frame-stride", type=int, default=10)
     parser.add_argument("--pixel-stride", type=int, default=4)
     parser.add_argument("--max-samples", type=int, default=500_000)
     parser.add_argument("--max-per-scene", type=int, default=100_000)
+    parser.add_argument("--confidence-max-delta-ms", type=float, default=20.0)
     parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
@@ -303,18 +339,38 @@ def main() -> int:
         output_root = args.output_root.resolve()
         output_root.mkdir(parents=True, exist_ok=True)
         results: dict = {}
-        if args.stage in ("prepare", "all"):
-            results["prepare"] = prepare(
+
+        if args.stage in ("prepare-calibration", "prepare-held-out"):
+            if args.confidence_root is None:
+                raise ValueError(f"{args.stage} requires --confidence-root")
+            confidence_root = args.confidence_root.resolve()
+            if args.stage == "prepare-held-out":
+                fitted = output_root / "calibration/fitted-model.json"
+                if not fitted.is_file():
+                    raise ValueError("held-out preparation requires a frozen calibration model")
+                model_payload = json.loads(fitted.read_text())
+                if model_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
+                    raise ValueError("held-out preparation refuses a model from another split revision")
+                scenes = split["heldOutScenes"]
+                ledger_name = "held-out-prepare-ledger.json"
+            else:
+                scenes = split["calibrationScenes"]
+                ledger_name = "calibration-prepare-ledger.json"
+            results[args.stage] = prepare_scenes(
                 repo_root=repo_root,
                 data_root=data_root,
+                confidence_root=confidence_root,
                 output_root=output_root,
                 split=split,
+                scenes=scenes,
+                ledger_name=ledger_name,
                 frame_stride=args.frame_stride,
                 pixel_stride=args.pixel_stride,
                 maximum_samples=args.max_samples,
+                confidence_max_delta_ms=args.confidence_max_delta_ms,
             )
-        fitted = output_root / "calibration/fitted-model.json"
-        if args.stage in ("fit", "all"):
+
+        if args.stage == "fit":
             fitted = fit(
                 repo_root=repo_root,
                 output_root=output_root,
@@ -323,7 +379,9 @@ def main() -> int:
                 max_per_scene=args.max_per_scene,
             )
             results["fit"] = {"model": str(fitted.resolve()), "modelSha256": sha256_file(fitted)}
-        if args.stage in ("evaluate", "all"):
+
+        if args.stage == "evaluate":
+            fitted = output_root / "calibration/fitted-model.json"
             if not fitted.is_file():
                 raise ValueError("held-out evaluation requires calibration/fitted-model.json")
             model_payload = json.loads(fitted.read_text())
@@ -337,10 +395,11 @@ def main() -> int:
                 bootstrap=args.bootstrap,
                 seed=args.seed,
             )
+
         ledger = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "study": "metric-uncertainty-v1",
-            "evidenceSource": "CA-1M onboard ARKit LiDAR vs FARO rendered GT depth",
+            "evidenceSource": "CA-1M ARKit LiDAR vs FARO GT depth + ARKitScenes raw confidence",
             "stage": args.stage,
             "splitId": split["id"],
             "splitRevision": split.get("revision"),
@@ -349,7 +408,7 @@ def main() -> int:
             "outputRoot": str(output_root),
             "results": results,
         }
-        ledger_path = output_root / "study-ledger.json"
+        ledger_path = output_root / f"study-ledger-{args.stage}.json"
         ledger_path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n")
         print(json.dumps({"ok": True, "ledger": str(ledger_path.resolve())}, sort_keys=True))
         return 0
