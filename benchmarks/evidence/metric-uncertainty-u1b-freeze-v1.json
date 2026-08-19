@@ -4,7 +4,7 @@
   "stage": "U1b-robust-calibration-freeze",
   "status": "frozen-before-held-out-sidecar-acquisition",
   "fitCodeGitSha": "6d3b1ab2ac82cf7257c196d72aed07826b684e8a",
-  "preU2EvaluationCodeGitSha": "bcb597fd832c525619815d44e6c05f1a088628c4",
+  "preU2EvaluationCodeGitSha": "c8b0bcc52b47efb723d992740c83b79aceaee761",
   "splitId": "metric-uncertainty-public-split-v1",
   "splitRevision": 4,
   "splitSha256": "03bac386d32568c26af0d727b8555ac5a92dda22fd92740ffa281f2cc9fbdd10",
@@ -70,9 +70,10 @@
       "pearsonSigmaAbsoluteError"
     ],
     "paperEvidenceUnit": "scene",
+    "pixelBootstrap": "suppressed when scene is a grouping field",
     "pairedSceneBootstrapReplicates": 2000,
     "pairedSceneBootstrapSeed": 42,
     "differenceConvention": "intact minus control"
   },
-  "note": "This compact evidence manifest was committed after U1b calibration and before any ARKitScenes Validation confidence/lowres_depth sidecar was acquired or sampled. The pre-U2 evaluation code hash records the branch state after robust scoring/gating and paired scene-level control comparison were frozen."
+  "note": "This compact evidence manifest was committed after U1b calibration and before any ARKitScenes Validation confidence/lowres_depth sidecar was acquired or sampled. The pre-U2 evaluation code hash records the branch state after robust scoring/gating, paired scene-level control comparison, and suppression of inappropriate within-scene pixel bootstrap were frozen."
 }
