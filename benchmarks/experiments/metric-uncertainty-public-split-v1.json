@@ -1,21 +1,59 @@
 {
   "schemaVersion": 1,
   "id": "metric-uncertainty-public-split-v1",
-  "status": "population-required-before-u1",
-  "frozen": false,
+  "status": "frozen-before-u1-acquisition",
+  "frozen": true,
+  "source": {
+    "dataset": "ARKitScenes raw",
+    "splitCsv": "raw/raw_train_val_splits.csv",
+    "repository": "apple/ARKitScenes",
+    "selectionDate": "2026-08-19",
+    "selectionPolicy": "Three Training-fold calibration videos and five Validation-fold held-out videos, each from a distinct visit_id within its evidence group. The existing 47333462 engineering scene remains smoke-only.",
+    "requiredAssets": [
+      "mesh",
+      "confidence",
+      "lowres_depth",
+      "lowres_wide.traj",
+      "lowres_wide",
+      "lowres_wide_intrinsics"
+    ]
+  },
   "smokeScenes": [
     "arkitscenes-47333462"
   ],
-  "calibrationScenes": [],
-  "heldOutScenes": [],
+  "calibrationScenes": [
+    "arkitscenes-40777060",
+    "arkitscenes-40809740",
+    "arkitscenes-40958733"
+  ],
+  "heldOutScenes": [
+    "arkitscenes-41069021",
+    "arkitscenes-41069042",
+    "arkitscenes-41125696",
+    "arkitscenes-41142278",
+    "arkitscenes-41159503"
+  ],
+  "sceneMetadata": {
+    "arkitscenes-40777060": {"videoId": "40777060", "visitId": "369709", "fold": "Training", "role": "calibration"},
+    "arkitscenes-40809740": {"videoId": "40809740", "visitId": "376508", "fold": "Training", "role": "calibration"},
+    "arkitscenes-40958733": {"videoId": "40958733", "visitId": "379801", "fold": "Training", "role": "calibration"},
+    "arkitscenes-41069021": {"videoId": "41069021", "visitId": "381658", "fold": "Validation", "role": "held-out"},
+    "arkitscenes-41069042": {"videoId": "41069042", "visitId": "381649", "fold": "Validation", "role": "held-out"},
+    "arkitscenes-41125696": {"videoId": "41125696", "visitId": "382321", "fold": "Validation", "role": "held-out"},
+    "arkitscenes-41142278": {"videoId": "41142278", "visitId": "384651", "fold": "Validation", "role": "held-out"},
+    "arkitscenes-41159503": {"videoId": "41159503", "visitId": "381893", "fold": "Validation", "role": "held-out"}
+  },
   "rules": {
     "minimumCalibrationScenes": 3,
     "minimumHeldOutScenes": 5,
     "noSceneOverlap": true,
+    "noVisitOverlapWithinEvidenceGroup": true,
+    "calibrationFold": "Training",
+    "heldOutFold": "Validation",
     "populateBeforeFitting": true,
     "freezeBeforeHeldOutEvaluation": true,
     "smokeScenesMayNotServeAsSoleEvidence": true,
-    "selectionRule": "Choose scenes before comparing U4 against baselines; preserve all selected scene outcomes."
+    "selectionRule": "Scene membership is frozen before download, fitting, or held-out metric inspection. Failed or difficult selected scenes remain in the evidence ledger and may not be silently replaced."
   },
-  "note": "The repository currently wires one ARKitScenes engineering scene. This file intentionally refuses to invent additional dataset IDs. Populate calibrationScenes/heldOutScenes after the corresponding public sequences are acquired, commit the split, then set frozen=true before U1 fitting."
+  "note": "This split was selected from Apple's official raw_train_val_splits.csv before U1 fitting. It is intentionally small enough for an initial rigorous study while separating coefficient fitting from held-out evaluation at both video and dataset-fold level."
 }
