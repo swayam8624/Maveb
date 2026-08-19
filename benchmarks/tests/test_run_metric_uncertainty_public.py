@@ -40,20 +40,23 @@ class MetricUncertaintyPublicStudyTests(unittest.TestCase):
             self.assertEqual(row["scene"], "s")
             self.assertEqual(row["method"], "u2-ca1m-intact-confidence")
 
-    def test_load_split_requires_frozen_ca1m_source_and_isolation(self):
+    def test_load_split_requires_ca1m_truth_arkit_confidence_and_isolation(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "split.json"
             payload = {
                 "schemaVersion": 1,
                 "frozen": True,
-                "source": {"dataset": "CA-1M / Cubify Anything"},
+                "source": {
+                    "dataset": "CA-1M / Cubify Anything",
+                    "confidenceDataset": "ARKitScenes raw",
+                },
                 "calibrationScenes": ["a", "b", "c"],
                 "heldOutScenes": ["d", "e", "f", "g", "h"],
                 "sceneMetadata": {},
             }
             path.write_text(json.dumps(payload))
             loaded, _ = study.load_split(path)
-            self.assertEqual(loaded["source"]["dataset"], "CA-1M / Cubify Anything")
+            self.assertEqual(loaded["source"]["confidenceDataset"], "ARKitScenes raw")
 
             payload["heldOutScenes"][0] = "c"
             path.write_text(json.dumps(payload))
@@ -61,16 +64,24 @@ class MetricUncertaintyPublicStudyTests(unittest.TestCase):
                 study.load_split(path)
 
             payload["heldOutScenes"][0] = "d"
-            payload["source"]["dataset"] = "ARKitScenes raw"
+            payload["source"]["confidenceDataset"] = "CA-1M"
             path.write_text(json.dumps(payload))
-            with self.assertRaisesRegex(ValueError, "CA-1M"):
+            with self.assertRaisesRegex(ValueError, "confidence sidecar"):
                 study.load_split(path)
 
-    def test_archive_path_uses_ca1m_split_and_video_id(self):
-        entry = {"ca1mSplit": "val", "videoId": "45662921"}
+    def test_archive_and_confidence_paths_follow_frozen_metadata(self):
+        entry = {
+            "ca1mSplit": "val",
+            "arkitFold": "Validation",
+            "videoId": "45662921",
+        }
         self.assertEqual(
             study.archive_path(Path("/data"), entry),
             Path("/data/ca1m-val-45662921.tar"),
+        )
+        self.assertEqual(
+            study.confidence_directory(Path("/confidence"), entry),
+            Path("/confidence/raw/Validation/45662921/confidence"),
         )
 
 
