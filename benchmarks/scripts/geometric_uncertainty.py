@@ -31,6 +31,21 @@ class UncertaintyModelConfig:
     maximum_precision_weight: float = 1.0
 
 
+_CONFIG_JSON_KEYS = {
+    "minimumSigmaMetres": "minimum_sigma_metres",
+    "maximumSigmaMetres": "maximum_sigma_metres",
+    "depthNoiseFloorMetres": "depth_noise_floor_metres",
+    "depthNoiseQuadraticMetresPerMetreSquared":
+        "depth_noise_quadratic_metres_per_metre_squared",
+    "sensorConfidencePenalty": "sensor_confidence_penalty",
+    "poseTranslationFloorMetres": "pose_translation_floor_metres",
+    "poseTranslationScaleMetres": "pose_translation_scale_metres",
+    "referenceSigmaMetres": "reference_sigma_metres",
+    "minimumPrecisionWeight": "minimum_precision_weight",
+    "maximumPrecisionWeight": "maximum_precision_weight",
+}
+
+
 @dataclass(frozen=True)
 class UncertaintyObservation:
     depth_metres: float
@@ -80,6 +95,31 @@ def validate_config(config: UncertaintyModelConfig) -> None:
         raise ValueError("minimum_precision_weight must be positive")
     if config.maximum_precision_weight < config.minimum_precision_weight:
         raise ValueError("maximum_precision_weight must be >= minimum_precision_weight")
+
+
+def config_to_json(config: UncertaintyModelConfig) -> dict:
+    validate_config(config)
+    values = asdict(config)
+    reverse = {python_key: json_key for json_key, python_key in _CONFIG_JSON_KEYS.items()}
+    return {reverse[key]: value for key, value in values.items()}
+
+
+def config_from_json(payload: dict) -> UncertaintyModelConfig:
+    if "modelConfig" in payload:
+        payload = payload["modelConfig"]
+    if not isinstance(payload, dict):
+        raise ValueError("model config must be a JSON object")
+    unknown = sorted(set(payload) - set(_CONFIG_JSON_KEYS))
+    if unknown:
+        raise ValueError(f"unknown model config fields: {', '.join(unknown)}")
+    kwargs = {
+        python_key: float(payload[json_key])
+        for json_key, python_key in _CONFIG_JSON_KEYS.items()
+        if json_key in payload
+    }
+    config = UncertaintyModelConfig(**kwargs)
+    validate_config(config)
+    return config
 
 
 def validate_observation(observation: UncertaintyObservation) -> None:
@@ -165,7 +205,7 @@ def predict_uncertainty(
     )
 
 
-def _observation_from_json(payload: dict) -> UncertaintyObservation:
+def observation_from_json(payload: dict) -> UncertaintyObservation:
     return UncertaintyObservation(
         depth_metres=float(payload["depthMetres"]),
         sensor_confidence=float(payload["sensorConfidence"]),
@@ -201,11 +241,19 @@ def predict_jsonl(lines: Iterable[str], config: UncertaintyModelConfig) -> list[
             continue
         try:
             payload = json.loads(raw)
-            observation = _observation_from_json(payload)
+            observation = observation_from_json(payload)
             result = prediction_to_json(predict_uncertainty(observation, config))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise ValueError(f"invalid observation on line {line_number}: {exc}") from exc
-        for key in ("scene", "method", "viewCount", "seed", "sampleId", "signedErrorMetres"):
+        for key in (
+            "scene",
+            "method",
+            "viewCount",
+            "seed",
+            "sampleId",
+            "signedErrorMetres",
+            "arkitConfidenceLevel",
+        ):
             if key in payload:
                 result[key] = payload[key]
         predictions.append(result)
@@ -216,9 +264,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="JSONL observations")
     parser.add_argument("--output", type=Path, required=True, help="prediction JSONL")
+    parser.add_argument("--config", type=Path, help="frozen fitted model JSON")
     args = parser.parse_args()
 
-    predictions = predict_jsonl(args.input.read_text().splitlines(), UncertaintyModelConfig())
+    config = UncertaintyModelConfig()
+    if args.config:
+        config = config_from_json(json.loads(args.config.read_text()))
+    predictions = predict_jsonl(args.input.read_text().splitlines(), config)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as stream:
         for prediction in predictions:

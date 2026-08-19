@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-public-split-v1",
+  "status": "population-required-before-u1",
+  "frozen": false,
+  "smokeScenes": [
+    "arkitscenes-47333462"
+  ],
+  "calibrationScenes": [],
+  "heldOutScenes": [],
+  "rules": {
+    "minimumCalibrationScenes": 3,
+    "minimumHeldOutScenes": 5,
+    "noSceneOverlap": true,
+    "populateBeforeFitting": true,
+    "freezeBeforeHeldOutEvaluation": true,
+    "smokeScenesMayNotServeAsSoleEvidence": true,
+    "selectionRule": "Choose scenes before comparing U4 against baselines; preserve all selected scene outcomes."
+  },
+  "note": "The repository currently wires one ARKitScenes engineering scene. This file intentionally refuses to invent additional dataset IDs. Populate calibrationScenes/heldOutScenes after the corresponding public sequences are acquired, commit the split, then set frozen=true before U1 fitting."
+}
