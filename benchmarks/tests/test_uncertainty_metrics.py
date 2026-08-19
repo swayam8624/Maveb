@@ -92,6 +92,22 @@ class UncertaintyMetricsTests(unittest.TestCase):
         self.assertEqual(result["coverage2Sigma"], 0.0)
         self.assertIsNone(result["pearsonSigmaAbsoluteError"])
 
+    def test_student_t_score_is_reported_with_fixed_df(self):
+        samples = [
+            metrics.ErrorSample(0.02, 0.005),
+            metrics.ErrorSample(0.02, -0.01),
+            metrics.ErrorSample(0.02, 0.20),
+        ]
+        result = metrics.evaluate(samples, bin_count=1, student_t_df=3.0)
+        self.assertIn("studentTNll", result)
+        self.assertEqual(result["studentTDegreesOfFreedom"], 3.0)
+        self.assertTrue(result["studentTNll"] < result["gaussianNll"])
+
+    def test_student_t_requires_finite_variance(self):
+        samples = [metrics.ErrorSample(0.01, 0.01)]
+        with self.assertRaises(ValueError):
+            metrics.evaluate(samples, student_t_df=2.0)
+
     def test_jsonl_parser_rejects_zero_sigma(self):
         with self.assertRaises(ValueError):
             metrics.parse_jsonl(['{"predictedSigmaMetres":0,"signedErrorMetres":0.01}'])
@@ -103,19 +119,21 @@ class UncertaintyMetricsTests(unittest.TestCase):
             metrics.ErrorSample(0.03, 0.025),
             metrics.ErrorSample(0.04, -0.05),
         ]
-        first = metrics.bootstrap_intervals(samples, replicates=64, seed=7)
-        second = metrics.bootstrap_intervals(samples, replicates=64, seed=7)
+        first = metrics.bootstrap_intervals(samples, replicates=64, seed=7, student_t_df=3.0)
+        second = metrics.bootstrap_intervals(samples, replicates=64, seed=7, student_t_df=3.0)
         self.assertEqual(first, second)
         self.assertIn("expectedCalibrationErrorMetres", first)
+        self.assertIn("studentTNll", first)
 
     def test_grouping_keeps_scene_as_evidence_unit(self):
         samples = [
             metrics.ErrorSample(0.01, 0.01, scene="a", method="u", view_count=8),
             metrics.ErrorSample(0.01, -0.01, scene="b", method="u", view_count=8),
         ]
-        groups = metrics.grouped_evaluation(samples, bin_count=1)
+        groups = metrics.grouped_evaluation(samples, bin_count=1, student_t_df=3.0)
         self.assertEqual(len(groups), 2)
         self.assertEqual({record["group"]["scene"] for record in groups}, {"a", "b"})
+        self.assertTrue(all("studentTNll" in record["metrics"] for record in groups))
 
 
 if __name__ == "__main__":
