@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "id": "metric-uncertainty-public-split-v1",
-  "status": "frozen-ca1m-faro-plus-arkitscenes-confidence-before-metric-sampling",
+  "status": "frozen-ca1m-faro-plus-arkitscenes-confidence-with-depth-witness-before-valid-metric-sampling",
   "frozen": true,
-  "revision": 3,
+  "revision": 4,
   "refreeze": {
-    "performedBeforeAnyMetricSampleWasGenerated": true,
+    "performedBeforeAnyValidMetricSampleWasGenerated": true,
     "performedBeforeAnyHeldOutSceneWasOpenedForEvaluation": true,
     "sceneMembershipChanged": false,
-    "reason": "Revision 2 correctly selected CA-1M captures with independent FARO ground truth, but assumed the released CA-1M tar archives also contained depth confidence. Inspection of the acquired calibration archive showed that the release contains ARKit depth and FARO GT depth but no confidence member. The same video IDs exist in ARKitScenes raw, whose synchronized 256x192 confidence PNGs are the authoritative 0/1/2 confidence source. Revision 3 keeps every selected scene unchanged and joins only that confidence sidecar by timestamp.",
-    "previousRevision": 2
+    "reason": "Revision 3 correctly moved confidence to ARKitScenes raw, but the first attempted calibration join exposed a shape mismatch between CA-1M's oriented ARKit depth frame and the raw confidence PNG. The attempted output contained zero valid samples and no fitted model. Revision 4 keeps all eight scene IDs unchanged and adds ARKitScenes raw lowres_depth only as an orientation witness. For each sampled timestamp, the witness chooses the discrete dihedral image transform that best matches CA-1M ARKit depth; that exact transform is then applied to the ordinal confidence map without interpolation.",
+    "previousRevision": 3
   },
   "source": {
     "dataset": "CA-1M / Cubify Anything",
@@ -21,28 +21,20 @@
     "confidenceRepository": "apple/ARKitScenes",
     "confidenceAsset": "confidence",
     "confidenceRepresentation": "uint8 PNG levels 0=low, 1=medium, 2=high",
-    "confidenceJoin": "nearest same-video timestamp; CA-1M integer nanoseconds to ARKitScenes decimal seconds under a preregistered strict tolerance",
+    "orientationWitnessAsset": "lowres_depth",
+    "orientationWitnessRole": "select discrete raw-sidecar image transform only; never used as ground truth or fitted error target",
+    "sidecarJoin": "nearest same-video timestamp; CA-1M integer nanoseconds to ARKitScenes decimal seconds under a preregistered strict tolerance",
+    "orientationTransformSet": ["identity", "rot90-ccw", "rot180", "rot90-cw", "flip-lr", "flip-ud", "transpose", "transverse"],
+    "orientationSelection": "minimum median absolute valid-depth disagreement between transformed ARKitScenes lowres_depth and CA-1M wide/depth; p90 and valid overlap break ties",
     "selectionDate": "2026-08-19",
     "sourceCorrectionDate": "2026-08-20",
     "groundTruth": "Per-frame FARO laser-scanner rendered depth registered to the capture camera from CA-1M",
     "observedDepth": "Per-frame onboard ARKit LiDAR depth from CA-1M",
-    "selectionPolicy": "Choose three CA-1M train captures and five CA-1M val captures that also appear in ARKitScenes metadata with distinct visit IDs. Freeze membership before metric sampling or outcome inspection. Confidence is joined from ARKitScenes raw for the identical video IDs."
+    "selectionPolicy": "Three CA-1M train captures and five CA-1M val captures with distinct ARKitScenes visit IDs; scene membership is frozen before valid metric sampling."
   },
-  "smokeScenes": [
-    "arkitscenes-47333462"
-  ],
-  "calibrationScenes": [
-    "ca1m-42444499",
-    "ca1m-42444511",
-    "ca1m-42444574"
-  ],
-  "heldOutScenes": [
-    "ca1m-45662921",
-    "ca1m-45261179",
-    "ca1m-47115543",
-    "ca1m-45261143",
-    "ca1m-45261615"
-  ],
+  "smokeScenes": ["arkitscenes-47333462"],
+  "calibrationScenes": ["ca1m-42444499", "ca1m-42444511", "ca1m-42444574"],
+  "heldOutScenes": ["ca1m-45662921", "ca1m-45261179", "ca1m-47115543", "ca1m-45261143", "ca1m-45261615"],
   "sceneMetadata": {
     "ca1m-42444499": {"videoId": "42444499", "visitId": "421065", "ca1mSplit": "train", "arkitFold": "Training", "role": "calibration"},
     "ca1m-42444511": {"videoId": "42444511", "visitId": "421063", "ca1mSplit": "train", "arkitFold": "Training", "role": "calibration"},
@@ -64,13 +56,16 @@
     "heldOutArkitFold": "Validation",
     "faroGroundTruthRequired": true,
     "externalConfidenceSidecarRequired": true,
-    "confidenceTimestampToleranceMilliseconds": 20.0,
+    "orientationWitnessRequired": true,
+    "orientationWitnessMayNotBeUsedAsGroundTruth": true,
+    "sidecarTimestampToleranceMilliseconds": 20.0,
+    "confidenceInterpolationForbidden": true,
     "rawConfidenceLevelMustBePreserved": true,
     "normalizedConfidenceHypothesis": "raw level / 2",
     "populateBeforeFitting": true,
     "freezeBeforeHeldOutEvaluation": true,
     "smokeScenesMayNotServeAsEvidence": true,
-    "selectionRule": "Selected scenes remain in the ledger even if difficult, missing frames, poorly calibrated, or negative. Replacement requires a new explicit split revision and invalidates any previously inspected outcome."
+    "selectionRule": "Selected scenes remain in the ledger even if difficult, sparse, partially invalid, or unfavorable. Replacement requires an explicit new split revision and invalidates inspected outcomes."
   },
-  "note": "Revision 3 changes no scene membership. It corrects only the confidence source after the acquired CA-1M calibration tar was found not to contain confidence. No valid metric sample, fitted coefficient, or held-out result existed before this correction."
+  "note": "Revision 4 changes no scene membership. It records the lowres_depth orientation witness after the first confidence join produced zero valid samples because raw confidence and CA-1M depth had different image dimensions. No fitted coefficient or held-out outcome existed before this correction."
 }
