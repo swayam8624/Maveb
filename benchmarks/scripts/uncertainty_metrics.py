@@ -32,6 +32,13 @@ def _validate_sample(sample: ErrorSample) -> None:
         raise ValueError("view count must be non-negative")
 
 
+def _validate_student_t_df(degrees_of_freedom: float | None) -> None:
+    if degrees_of_freedom is None:
+        return
+    if not math.isfinite(degrees_of_freedom) or degrees_of_freedom <= 2.0:
+        raise ValueError("Student-t degrees of freedom must be finite and > 2")
+
+
 def parse_jsonl(lines: Iterable[str]) -> list[ErrorSample]:
     samples = []
     for line_number, raw in enumerate(lines, start=1):
@@ -73,6 +80,22 @@ def _pearson_sigma_absolute_error(samples: Sequence[ErrorSample]) -> float | Non
     return numerator / denominator
 
 
+def student_t_nll(sample: ErrorSample, degrees_of_freedom: float) -> float:
+    """Student-t NLL with predicted sigma interpreted as standard deviation."""
+
+    _validate_student_t_df(degrees_of_freedom)
+    nu = float(degrees_of_freedom)
+    scale = sample.predicted_sigma_metres * math.sqrt((nu - 2.0) / nu)
+    normalized_squared = (sample.signed_error_metres / scale) ** 2
+    return (
+        math.log(scale)
+        + 0.5 * math.log(nu * math.pi)
+        + math.lgamma(nu / 2.0)
+        - math.lgamma((nu + 1.0) / 2.0)
+        + 0.5 * (nu + 1.0) * math.log1p(normalized_squared / nu)
+    )
+
+
 def calibration_bins(samples: Sequence[ErrorSample], bin_count: int) -> list[dict]:
     if bin_count <= 0:
         raise ValueError("bin count must be positive")
@@ -102,9 +125,14 @@ def calibration_bins(samples: Sequence[ErrorSample], bin_count: int) -> list[dic
     return bins
 
 
-def evaluate(samples: Sequence[ErrorSample], bin_count: int = 10) -> dict:
+def evaluate(
+    samples: Sequence[ErrorSample],
+    bin_count: int = 10,
+    student_t_df: float | None = None,
+) -> dict:
     if not samples:
         raise ValueError("uncertainty evaluation requires at least one sample")
+    _validate_student_t_df(student_t_df)
     for sample in samples:
         _validate_sample(sample)
 
@@ -131,7 +159,7 @@ def evaluate(samples: Sequence[ErrorSample], bin_count: int = 10) -> dict:
         for sample in samples
     ) / count
 
-    return {
+    result = {
         "count": count,
         "empiricalRmseMetres": rmse,
         "sharpnessRmsSigmaMetres": sharpness,
@@ -142,6 +170,12 @@ def evaluate(samples: Sequence[ErrorSample], bin_count: int = 10) -> dict:
         "pearsonSigmaAbsoluteError": _pearson_sigma_absolute_error(samples),
         "bins": bins,
     }
+    if student_t_df is not None:
+        result["studentTNll"] = sum(
+            student_t_nll(sample, student_t_df) for sample in samples
+        ) / count
+        result["studentTDegreesOfFreedom"] = float(student_t_df)
+    return result
 
 
 def _metric_vector(metrics: dict) -> dict[str, float]:
@@ -153,6 +187,8 @@ def _metric_vector(metrics: dict) -> dict[str, float]:
         "coverage1Sigma": metrics["coverage1Sigma"],
         "coverage2Sigma": metrics["coverage2Sigma"],
     }
+    if "studentTNll" in metrics:
+        result["studentTNll"] = metrics["studentTNll"]
     correlation = metrics["pearsonSigmaAbsoluteError"]
     if correlation is not None:
         result["pearsonSigmaAbsoluteError"] = correlation
@@ -165,16 +201,18 @@ def bootstrap_intervals(
     bin_count: int = 10,
     replicates: int = 0,
     seed: int = 42,
+    student_t_df: float | None = None,
 ) -> dict[str, dict[str, float]]:
     if replicates < 0:
         raise ValueError("bootstrap replicates must be non-negative")
+    _validate_student_t_df(student_t_df)
     if replicates == 0:
         return {}
     rng = random.Random(seed)
     distributions: dict[str, list[float]] = {}
     for _ in range(replicates):
         draw = [samples[rng.randrange(len(samples))] for _ in samples]
-        for key, value in _metric_vector(evaluate(draw, bin_count)).items():
+        for key, value in _metric_vector(evaluate(draw, bin_count, student_t_df)).items():
             distributions.setdefault(key, []).append(value)
 
     intervals = {}
@@ -196,10 +234,12 @@ def grouped_evaluation(
     bin_count: int = 10,
     bootstrap_replicates: int = 0,
     bootstrap_seed: int = 42,
+    student_t_df: float | None = None,
 ) -> list[dict]:
     allowed = {"method", "scene", "view_count", "seed"}
     if any(field not in allowed for field in group_fields):
         raise ValueError(f"group fields must be drawn from {sorted(allowed)}")
+    _validate_student_t_df(student_t_df)
     groups: dict[tuple, list[ErrorSample]] = {}
     for sample in samples:
         key = tuple(getattr(sample, field) for field in group_fields)
@@ -208,7 +248,7 @@ def grouped_evaluation(
     results = []
     for key in sorted(groups, key=lambda item: tuple(str(value) for value in item)):
         group_samples = groups[key]
-        metrics = evaluate(group_samples, bin_count)
+        metrics = evaluate(group_samples, bin_count, student_t_df)
         results.append(
             {
                 "group": {
@@ -221,6 +261,7 @@ def grouped_evaluation(
                     bin_count=bin_count,
                     replicates=bootstrap_replicates,
                     seed=bootstrap_seed,
+                    student_t_df=student_t_df,
                 ),
             }
         )
@@ -231,23 +272,26 @@ def render_markdown(groups: Sequence[dict]) -> str:
     lines = [
         "# Metric uncertainty calibration",
         "",
-        "| Method | Scene | Views | N | RMSE (m) | ECE (m) | 1sigma cov. | 2sigma cov. | sigma<->|e| r |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Method | Scene | Views | N | RMSE (m) | ECE (m) | Gaussian NLL | Student-t NLL | 1sigma cov. | 2sigma cov. | sigma<->|e| r |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for record in groups:
         group = record["group"]
         metrics = record["metrics"]
         correlation = metrics["pearsonSigmaAbsoluteError"]
         correlation_text = "n/a" if correlation is None else f"{correlation:.4f}"
+        student_t_text = "n/a" if "studentTNll" not in metrics else f"{metrics['studentTNll']:.6f}"
         lines.append(
             "| {method} | {scene} | {views} | {count} | {rmse:.6f} | {ece:.6f} | "
-            "{c1:.3f} | {c2:.3f} | {corr} |".format(
+            "{gnll:.6f} | {tnll} | {c1:.3f} | {c2:.3f} | {corr} |".format(
                 method=group.get("method", "all"),
                 scene=group.get("scene", "all"),
                 views=group.get("viewCount", "all"),
                 count=metrics["count"],
                 rmse=metrics["empiricalRmseMetres"],
                 ece=metrics["expectedCalibrationErrorMetres"],
+                gnll=metrics["gaussianNll"],
+                tnll=student_t_text,
                 c1=metrics["coverage1Sigma"],
                 c2=metrics["coverage2Sigma"],
                 corr=correlation_text,
@@ -256,8 +300,9 @@ def render_markdown(groups: Sequence[dict]) -> str:
     lines.append("")
     lines.append(
         "ECE is the count-weighted absolute gap between predicted RMS sigma and empirical "
-        "RMSE in equal-count sigma bins. Scene-level summaries, not pooled pixels, are the "
-        "unit of evidence for research claims."
+        "RMSE in equal-count sigma bins. Student-t NLL is the primary proper score when a "
+        "Student-t calibration model is supplied; Gaussian NLL is retained as a legacy diagnostic. "
+        "Scene-level summaries, not pooled pixels, are the unit of evidence for research claims."
     )
     lines.append("")
     return "\n".join(lines)
@@ -271,6 +316,7 @@ def main() -> int:
     parser.add_argument("--bins", type=int, default=10)
     parser.add_argument("--bootstrap", type=int, default=0)
     parser.add_argument("--bootstrap-seed", type=int, default=42)
+    parser.add_argument("--student-t-df", type=float)
     parser.add_argument(
         "--group-by",
         default="method,scene,view_count",
@@ -278,6 +324,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    _validate_student_t_df(args.student_t_df)
     input_bytes = args.input.read_bytes()
     samples = parse_jsonl(input_bytes.decode("utf-8").splitlines())
     group_fields = tuple(field.strip() for field in args.group_by.split(",") if field.strip())
@@ -287,14 +334,17 @@ def main() -> int:
         bin_count=args.bins,
         bootstrap_replicates=args.bootstrap,
         bootstrap_seed=args.bootstrap_seed,
+        student_t_df=args.student_t_df,
     )
     report = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "inputSha256": hashlib.sha256(input_bytes).hexdigest(),
         "binCount": args.bins,
         "bootstrapReplicates": args.bootstrap,
         "bootstrapSeed": args.bootstrap_seed,
         "groupFields": list(group_fields),
+        "studentTDegreesOfFreedom": args.student_t_df,
+        "primaryProperScore": "studentTNll" if args.student_t_df is not None else "gaussianNll",
         "groups": groups,
     }
 
