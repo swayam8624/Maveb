@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "id": "metric-uncertainty-v1",
-  "protocolVersion": "1.1",
-  "status": "preregistered-before-public-acquisition",
+  "protocolVersion": "1.3",
+  "status": "u1b-robust-calibration-frozen-before-heldout",
   "researchQuestion": "Can calibrated geometric uncertainty from heterogeneous consumer sensors improve sparse-view metric reconstruction without hiding geometry errors behind rendering quality?",
   "primaryHypothesis": "Held-out sparse-view geometry improves when metric observations are weighted by calibrated inverse variance rather than naive confidence products.",
   "scopeFreeze": [
@@ -17,20 +17,24 @@
     "dataset": "CA-1M / Cubify Anything",
     "observation": "onboard ARKit LiDAR depth",
     "groundTruth": "FARO laser-scanner rendered depth",
+    "confidenceDataset": "ARKitScenes raw confidence",
+    "orientationWitness": "ARKitScenes raw lowres_depth; discrete transform selection only",
     "splitFile": "benchmarks/experiments/metric-uncertainty-public-split-v1.json",
-    "splitRevision": 2,
+    "splitRevision": 4,
     "calibrationScenes": 3,
     "heldOutScenes": 5,
     "sceneUnitOfEvidence": true,
     "rayCorrespondence": "map ARKit-depth pixel ray into FARO GT depth using separately released intrinsics",
-    "invalidGroundTruthRule": "zero FARO depth is unregistered and excluded"
+    "invalidGroundTruthRule": "zero FARO depth is unregistered and excluded",
+    "sidecarTimestampToleranceMilliseconds": 20.0
   },
   "methods": [
     {"id": "B0-sfm-only", "description": "RGB/SfM baseline with no metric-depth prior"},
     {"id": "B1-naive-confidence", "description": "Metric depth weighted by sensorConfidence * poseConfidence"},
     {"id": "B2-uniform-depth", "description": "All accepted metric-depth observations receive equal weight"},
-    {"id": "U1-public-sensor-uncertainty", "description": "CA-1M-calibrated sensor/depth uncertainty terms"},
-    {"id": "U2-no-sensor-confidence", "description": "Calibrated model with sensor confidence replaced by a constant"},
+    {"id": "U1a-gaussian-sensor-uncertainty", "description": "Original scene-balanced Gaussian calibration; retained as failed heavy-tail model"},
+    {"id": "U1b-student-t3-sensor-uncertainty", "description": "Fixed Student-t(3) robust calibration on the exact U1a sample set"},
+    {"id": "U2-no-sensor-confidence", "description": "Frozen robust model with sensor confidence replaced by a constant"},
     {"id": "U3-shuffled-confidence", "description": "Negative control with deterministic within-scene confidence permutation"},
     {"id": "U4-full-v1", "description": "Full decomposed metric uncertainty after paired alignment terms are identified"}
   ],
@@ -38,12 +42,15 @@
     "calibration": {
       "minimumScenes": 3,
       "families": ["CA-1M"],
-      "groundTruth": "FARO laser depth"
+      "groundTruth": "FARO laser depth",
+      "rawSamples": 455693,
+      "deterministicFitSamples": 294706
     },
     "heldOutPublic": {
       "minimumScenes": 5,
       "families": ["CA-1M"],
-      "groundTruth": "FARO laser depth"
+      "groundTruth": "FARO laser depth",
+      "sidecarsLockedUntilU1bFreeze": true
     },
     "rgbGeometryControls": ["ETH3D", "DTU"],
     "smokeOnly": ["arkitscenes-47333462"],
@@ -71,7 +78,6 @@
     "seeds": [11, 23, 42]
   },
   "uncertaintyModel": {
-    "status": "hypothesis-prior-not-calibrated",
     "combination": "independent-zero-mean-variance-sum",
     "defaults": {
       "minimumSigmaMetres": 0.001,
@@ -90,12 +96,35 @@
       "depthNoiseQuadraticMetresPerMetreSquared",
       "sensorConfidencePenalty"
     ],
+    "parameterBounds": {
+      "depthNoiseFloorMetres": [0.00001, 0.10],
+      "depthNoiseQuadraticMetresPerMetreSquared": [0.0, 0.05],
+      "sensorConfidencePenalty": [0.0, 20.0]
+    },
+    "u1a": {
+      "likelihood": "Gaussian",
+      "status": "failed-heavy-tail-calibration",
+      "modelSha256": "e34bf28d242f5eb7097751263afc79bde25335d08e805cf27b12ef20901a3509",
+      "calibrationInputSha256": "9b225e2398aa9f116c27b9f9cd3f3916dca83d82e8a3bae5818673b059698067",
+      "failureReason": "both geometric noise terms hit exact upper bounds and 31.7% of calibration predictions hit 0.25 m sigma cap"
+    },
+    "u1b": {
+      "likelihood": "Student-t",
+      "degreesOfFreedom": 3.0,
+      "degreesOfFreedomFitted": false,
+      "sigmaInterpretation": "standard deviation",
+      "studentTScale": "sigma * sqrt((nu - 2) / nu)",
+      "sameSamplesAsU1a": true,
+      "sameBoundsAsU1a": true,
+      "sampleFiltering": "none",
+      "status": "preregistered-before-heldout"
+    },
     "frozenUntilPairedStudy": [
       "poseTranslationFloorMetres",
       "poseTranslationScaleMetres",
       "cross-sensor alignment terms"
     ],
-    "fittingRule": "fit only on frozen calibration scenes; freeze model/input/split hashes before any held-out evaluation"
+    "fittingRule": "fit only on frozen calibration scenes; freeze robust model/input/split/code hashes before any held-out sidecar acquisition or evaluation"
   },
   "metrics": {
     "geometry": [
@@ -110,13 +139,18 @@
       "normal-angular-error-deg"
     ],
     "uncertainty": [
+      "mae-m",
       "rmse-m",
+      "median-absolute-error-m",
+      "p95-absolute-error-m",
+      "p99-absolute-error-m",
+      "student-t3-nll",
+      "legacy-gaussian-nll",
       "expected-calibration-error-m",
-      "gaussian-nll",
-      "coverage-1sigma",
-      "coverage-2sigma",
+      "coverage",
       "pearson-sigma-absolute-error",
-      "sharpness-rms-sigma-m"
+      "sharpness-rms-sigma-m",
+      "raw-confidence-error-strata"
     ],
     "rendering": ["psnr-db", "ssim", "lpips"],
     "systems": ["wall-time-s", "peak-resident-memory-bytes", "gaussian-count", "resident-tsdf-blocks"]
@@ -138,7 +172,8 @@
   },
   "implementationGates": [
     {"id": "U0", "name": "measurement", "requirements": ["deterministic predictor", "calibration evaluator", "causal controls", "unit tests", "hashed reports"]},
-    {"id": "U1", "name": "public-calibration", "requirements": ["three frozen CA-1M train captures", "FARO-vs-ARKit signed error samples", "sensor-only fitted/frozen coefficients"]},
+    {"id": "U1a", "name": "gaussian-public-calibration", "status": "failed-heavy-tail-model"},
+    {"id": "U1b", "name": "robust-public-calibration", "requirements": ["fixed Student-t(3)", "same deterministic calibration samples", "no filtering", "interior geometric coefficients", "frozen hashes"]},
     {"id": "U2", "name": "held-out-calibration", "requirements": ["five frozen CA-1M val captures", "no retuning", "intact/constant/shuffled reports", "failure analysis"]},
     {"id": "U3", "name": "fusion-ablation", "requirements": ["opt-in inverse-variance dense CPU TSDF weighting", "legacy baselines preserved", "full stress matrix"]},
     {"id": "U4", "name": "gaussian-ablation", "requirements": ["separate initialization, optimization, densification, pruning and regularization ablations"]}
