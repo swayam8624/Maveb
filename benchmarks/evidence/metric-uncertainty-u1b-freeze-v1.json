@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-v1",
+  "stage": "U1b-robust-calibration-freeze",
+  "status": "frozen-before-held-out-sidecar-acquisition",
+  "fitCodeGitSha": "6d3b1ab2ac82cf7257c196d72aed07826b684e8a",
+  "splitId": "metric-uncertainty-public-split-v1",
+  "splitRevision": 4,
+  "splitSha256": "03bac386d32568c26af0d727b8555ac5a92dda22fd92740ffa281f2cc9fbdd10",
+  "calibrationInputSha256": "9b225e2398aa9f116c27b9f9cd3f3916dca83d82e8a3bae5818673b059698067",
+  "robustModel": {
+    "modelId": "metric-uncertainty-v1-student-t3",
+    "sha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "likelihood": {
+      "family": "Student-t",
+      "degreesOfFreedom": 3.0,
+      "degreesOfFreedomFitted": false,
+      "sampleFiltering": "none",
+      "sigmaInterpretation": "standard deviation"
+    },
+    "modelConfig": {
+      "depthNoiseFloorMetres": 0.010634156727771725,
+      "depthNoiseQuadraticMetresPerMetreSquared": 0.004398048551220112,
+      "sensorConfidencePenalty": 5.990146384791633,
+      "minimumSigmaMetres": 0.001,
+      "maximumSigmaMetres": 0.25,
+      "referenceSigmaMetres": 0.01,
+      "minimumPrecisionWeight": 0.01,
+      "maximumPrecisionWeight": 1.0,
+      "poseTranslationFloorMetres": 0.001,
+      "poseTranslationScaleMetres": 0.02
+    },
+    "boundaryFlags": {
+      "depthNoiseFloorAtUpperBound": false,
+      "depthNoiseQuadraticAtUpperBound": false,
+      "sensorConfidencePenaltyAtUpperBound": false
+    },
+    "objective": {
+      "name": "mean-per-scene-student-t-nll",
+      "before": -1.3754205957259233,
+      "after": -2.3922085805321025
+    },
+    "samplesPerScene": {
+      "ca1m-42444499": 94706,
+      "ca1m-42444511": 100000,
+      "ca1m-42444574": 100000
+    }
+  },
+  "rejectedGaussianPredecessor": {
+    "sha256": "e34bf28d242f5eb7097751263afc79bde25335d08e805cf27b12ef20901a3509",
+    "reason": "single-Gaussian calibration saturated both depth-noise search ceilings under heavy-tailed ARKit-vs-FARO residuals"
+  },
+  "heldOutSceneIds": [
+    "ca1m-45662921",
+    "ca1m-45261179",
+    "ca1m-47115543",
+    "ca1m-45261143",
+    "ca1m-45261615"
+  ],
+  "note": "This compact evidence manifest was committed after U1b calibration and before any ARKitScenes Validation confidence/lowres_depth sidecar was acquired or sampled."
+}
