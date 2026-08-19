@@ -58,6 +58,21 @@ class FitMetricUncertaintyTests(unittest.TestCase):
                     index += 1
         return result
 
+    def test_vectorized_objective_matches_scalar_oracle(self):
+        samples = self.synthetic_samples()
+        config = uncertainty.UncertaintyModelConfig(
+            depth_noise_floor_metres=0.009,
+            depth_noise_quadratic_metres_per_metre_squared=0.003,
+            sensor_confidence_penalty=2.75,
+        )
+        scalar, scalar_by_scene = fitter.scene_balanced_objective(samples, config)
+        arrays = fitter.calibration_arrays(samples, config)
+        vectorized, vectorized_by_scene = fitter.vectorized_scene_balanced_objective(arrays, config)
+        self.assertAlmostEqual(vectorized, scalar, places=12)
+        self.assertEqual(set(vectorized_by_scene), set(scalar_by_scene))
+        for scene in scalar_by_scene:
+            self.assertAlmostEqual(vectorized_by_scene[scene], scalar_by_scene[scene], places=12)
+
     def test_fitting_improves_scene_balanced_likelihood(self):
         samples = self.synthetic_samples()
         initial = uncertainty.UncertaintyModelConfig()
@@ -84,6 +99,16 @@ class FitMetricUncertaintyTests(unittest.TestCase):
                 '"calibrationScenes":["a"],"heldOutScenes":["a"]}'
             )
             with self.assertRaises(ValueError):
+                fitter.load_scene_split(path)
+
+    def test_scene_split_rejects_unfrozen_split(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "split.json"
+            path.write_text(
+                '{"schemaVersion":1,"id":"fixture","frozen":false,'
+                '"calibrationScenes":["a"],"heldOutScenes":["b"]}'
+            )
+            with self.assertRaisesRegex(ValueError, "frozen"):
                 fitter.load_scene_split(path)
 
     def test_model_config_round_trip(self):
