@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Generate metric uncertainty observations from CA-1M depth and ARKitScenes confidence.
+"""Generate metric uncertainty observations from CA-1M depth and ARKitScenes sidecars.
 
 CA-1M supplies onboard ARKit LiDAR depth and independently rendered FARO laser-scanner depth for the
-same oriented camera frame. The released CA-1M tar archives used by this study do not include depth
-confidence, so confidence is joined from the original ARKitScenes raw asset for the same video ID.
+same oriented camera frame. ARKitScenes raw supplies the confidence signal. Because the raw sidecar
+may retain a different discrete image orientation than the CA-1M frame, raw `lowres_depth` is used
+only as an orientation witness: for every sampled frame we choose the dihedral image transform that
+best matches CA-1M's ARKit depth, then apply that exact transform to confidence.
 
-CA-1M timestamps are integer nanoseconds. ARKitScenes confidence files use
-`{video_id}_{timestamp_seconds}.png`; each sampled CA-1M frame is matched to the nearest confidence
-timestamp under a strict tolerance. The two depth maps have separate calibrated intrinsics, so depth
-samples are matched by camera ray rather than a fixed 2x resize. FARO depth zero means unregistered
-and is excluded.
+No interpolation is used for confidence. CA-1M and FARO depth correspondence is still performed by
+calibrated camera ray using their separate released intrinsics.
 """
 
 from __future__ import annotations
 
 import argparse
 from bisect import bisect_left
+from collections import Counter
 from dataclasses import dataclass
 import hashlib
 import io
@@ -26,12 +26,7 @@ import tarfile
 from typing import Iterator
 
 
-REQUIRED_SUFFIXES = {
-    "wide/depth",
-    "wide/depth/k",
-    "gt/depth",
-    "gt/depth/k",
-}
+REQUIRED_SUFFIXES = {"wide/depth", "wide/depth/k", "gt/depth", "gt/depth/k"}
 MM_TO_M = 1000.0
 NS_TO_S = 1_000_000_000.0
 
@@ -44,9 +39,17 @@ class FrameMembers:
 
 
 @dataclass(frozen=True)
-class ConfidenceFrame:
+class SidecarFrame:
     timestamp_seconds: float
     path: Path
+
+
+@dataclass(frozen=True)
+class OrientationMatch:
+    transform: str
+    median_abs_error_mm: float
+    p90_abs_error_mm: float
+    valid_pixels: int
 
 
 def sha256_file(path: Path) -> str:
@@ -57,9 +60,9 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def confidence_manifest_sha256(paths: set[Path]) -> str:
+def manifest_sha256(paths: set[Path]) -> str:
     digest = hashlib.sha256()
-    for path in sorted(paths, key=lambda value: value.name):
+    for path in sorted(paths, key=lambda value: str(value)):
         digest.update(path.name.encode("utf-8"))
         digest.update(b"\0")
         digest.update(sha256_file(path).encode("ascii"))
@@ -68,8 +71,6 @@ def confidence_manifest_sha256(paths: set[Path]) -> str:
 
 
 def member_identity(name: str) -> tuple[str, str, str] | None:
-    """Map a CA-1M tar member to (video_id, integer_timestamp, normalized suffix)."""
-
     clean = name.lstrip("./")
     if "/" not in clean:
         return None
@@ -113,13 +114,12 @@ def discover_frames(archive: tarfile.TarFile, expected_video_id: str) -> list[Fr
     return frames
 
 
-def parse_confidence_timestamp(path: Path, video_id: str) -> float | None:
+def parse_sidecar_timestamp(path: Path, video_id: str) -> float | None:
     prefix = f"{video_id}_"
     if path.suffix.lower() != ".png" or not path.stem.startswith(prefix):
         return None
-    token = path.stem[len(prefix) :]
     try:
-        value = float(token)
+        value = float(path.stem[len(prefix) :])
     except ValueError:
         return None
     if not math.isfinite(value) or value < 0.0:
@@ -127,30 +127,32 @@ def parse_confidence_timestamp(path: Path, video_id: str) -> float | None:
     return value
 
 
-def discover_confidence_frames(root: Path, video_id: str) -> list[ConfidenceFrame]:
+def parse_confidence_timestamp(path: Path, video_id: str) -> float | None:
+    return parse_sidecar_timestamp(path, video_id)
+
+
+def discover_sidecar_frames(root: Path, video_id: str, label: str) -> list[SidecarFrame]:
     frames = []
     for path in root.rglob("*.png"):
-        timestamp = parse_confidence_timestamp(path, video_id)
+        timestamp = parse_sidecar_timestamp(path, video_id)
         if timestamp is not None:
-            frames.append(ConfidenceFrame(timestamp, path))
+            frames.append(SidecarFrame(timestamp, path))
     frames.sort(key=lambda frame: frame.timestamp_seconds)
     if not frames:
-        raise ValueError(
-            f"no ARKitScenes confidence PNGs for video {video_id} under {root}"
-        )
+        raise ValueError(f"no ARKitScenes {label} PNGs for video {video_id} under {root}")
     for previous, current in zip(frames, frames[1:]):
         if current.timestamp_seconds == previous.timestamp_seconds:
-            raise ValueError(
-                f"duplicate ARKitScenes confidence timestamp {current.timestamp_seconds} for {video_id}"
-            )
+            raise ValueError(f"duplicate ARKitScenes {label} timestamp {current.timestamp_seconds}")
     return frames
 
 
-def nearest_confidence_frame(
-    frames: list[ConfidenceFrame],
-    timestamp_seconds: float,
-    maximum_delta_seconds: float,
-) -> tuple[ConfidenceFrame, float] | None:
+def discover_confidence_frames(root: Path, video_id: str) -> list[SidecarFrame]:
+    return discover_sidecar_frames(root, video_id, "confidence")
+
+
+def nearest_sidecar_frame(
+    frames: list[SidecarFrame], timestamp_seconds: float, maximum_delta_seconds: float
+) -> tuple[SidecarFrame, float] | None:
     times = [frame.timestamp_seconds for frame in frames]
     index = bisect_left(times, timestamp_seconds)
     candidates = []
@@ -167,6 +169,12 @@ def nearest_confidence_frame(
     return selected, delta
 
 
+def nearest_confidence_frame(
+    frames: list[SidecarFrame], timestamp_seconds: float, maximum_delta_seconds: float
+) -> tuple[SidecarFrame, float] | None:
+    return nearest_sidecar_frame(frames, timestamp_seconds, maximum_delta_seconds)
+
+
 def read_member(archive: tarfile.TarFile, member: tarfile.TarInfo) -> bytes:
     stream = archive.extractfile(member)
     if stream is None:
@@ -179,10 +187,7 @@ def parse_intrinsics(data: bytes) -> tuple[float, float, float, float]:
     flat = []
     if isinstance(matrix, list):
         for value in matrix:
-            if isinstance(value, list):
-                flat.extend(value)
-            else:
-                flat.append(value)
+            flat.extend(value if isinstance(value, list) else [value])
     if len(flat) != 9:
         raise ValueError("CA-1M depth intrinsics must contain 9 values")
     values = [float(value) for value in flat]
@@ -208,6 +213,67 @@ def decode_image(data: bytes):
     return image
 
 
+def apply_discrete_transform(image, transform: str):
+    import numpy as np
+
+    if transform == "identity":
+        return image
+    if transform == "rot90-ccw":
+        return np.rot90(image, 1)
+    if transform == "rot180":
+        return np.rot90(image, 2)
+    if transform == "rot90-cw":
+        return np.rot90(image, -1)
+    if transform == "flip-lr":
+        return np.fliplr(image)
+    if transform == "flip-ud":
+        return np.flipud(image)
+    if transform == "transpose":
+        return image.T
+    if transform == "transverse":
+        return np.flipud(np.fliplr(image.T))
+    raise ValueError(f"unknown sidecar transform: {transform}")
+
+
+def infer_orientation_transform(raw_depth, ca1m_depth, minimum_valid_pixels: int = 256) -> OrientationMatch:
+    import numpy as np
+
+    candidates = (
+        "identity",
+        "rot90-ccw",
+        "rot180",
+        "rot90-cw",
+        "flip-lr",
+        "flip-ud",
+        "transpose",
+        "transverse",
+    )
+    scored: list[OrientationMatch] = []
+    for name in candidates:
+        transformed = apply_discrete_transform(raw_depth, name)
+        if transformed.shape != ca1m_depth.shape:
+            continue
+        valid = (transformed > 0) & (ca1m_depth > 0)
+        count = int(np.count_nonzero(valid))
+        if count < minimum_valid_pixels:
+            continue
+        errors = np.abs(transformed[valid].astype(np.float64) - ca1m_depth[valid].astype(np.float64))
+        scored.append(
+            OrientationMatch(
+                transform=name,
+                median_abs_error_mm=float(np.median(errors)),
+                p90_abs_error_mm=float(np.percentile(errors, 90.0)),
+                valid_pixels=count,
+            )
+        )
+    if not scored:
+        raise ValueError(
+            f"unable to orient ARKitScenes lowres_depth {raw_depth.shape} to CA-1M depth {ca1m_depth.shape}"
+        )
+    scored.sort(key=lambda item: (item.median_abs_error_mm, item.p90_abs_error_mm, -item.valid_pixels, item.transform))
+    return scored[0]
+
+
 def project_pixel_between_intrinsics(
     x: int,
     y: int,
@@ -227,15 +293,11 @@ def confidence_level(raw) -> int:
         raise ValueError("ARKitScenes confidence must be finite")
     rounded = int(round(value))
     if abs(value - rounded) > 1e-6 or rounded not in (0, 1, 2):
-        raise ValueError(
-            f"ARKitScenes confidence must use documented uint8 levels 0/1/2, got {value}"
-        )
+        raise ValueError(f"ARKitScenes confidence must use documented uint8 levels 0/1/2, got {value}")
     return rounded
 
 
 def confidence_value(raw) -> float:
-    """Map ARKit's ordinal 0/1/2 confidence to an explicit [0, 1] hypothesis variable."""
-
     return confidence_level(raw) / 2.0
 
 
@@ -247,6 +309,9 @@ def sample_frame(
     confidence,
     confidence_timestamp_seconds: float,
     confidence_delta_seconds: float,
+    witness_timestamp_seconds: float,
+    witness_delta_seconds: float,
+    orientation: OrientationMatch,
     gt_depth,
     arkit_k: tuple[float, float, float, float],
     gt_k: tuple[float, float, float, float],
@@ -254,7 +319,9 @@ def sample_frame(
     maximum_depth_metres: float,
 ) -> Iterator[dict]:
     if arkit_depth.shape != confidence.shape:
-        raise ValueError("ARKit depth and ARKitScenes confidence dimensions differ")
+        raise ValueError(
+            f"oriented confidence shape {confidence.shape} still differs from ARKit depth {arkit_depth.shape}"
+        )
     height, width = arkit_depth.shape
     gt_height, gt_width = gt_depth.shape
     focal = math.sqrt(arkit_k[0] * arkit_k[1])
@@ -272,7 +339,6 @@ def sample_frame(
             if not math.isfinite(reference) or reference <= 0.0 or reference > maximum_depth_metres:
                 continue
             raw_confidence = confidence_level(confidence[y, x])
-            sensor_confidence = raw_confidence / 2.0
             yield {
                 "scene": scene,
                 "sampleId": f"{frame.video_id}-{frame.timestamp}-x{x}-y{y}",
@@ -280,6 +346,12 @@ def sample_frame(
                 "timestampNanoseconds": int(frame.timestamp),
                 "confidenceTimestampSeconds": confidence_timestamp_seconds,
                 "confidenceJoinDeltaMilliseconds": confidence_delta_seconds * 1000.0,
+                "orientationWitnessTimestampSeconds": witness_timestamp_seconds,
+                "orientationWitnessJoinDeltaMilliseconds": witness_delta_seconds * 1000.0,
+                "sidecarOrientationTransform": orientation.transform,
+                "orientationWitnessMedianAbsErrorMillimetres": orientation.median_abs_error_mm,
+                "orientationWitnessP90AbsErrorMillimetres": orientation.p90_abs_error_mm,
+                "orientationWitnessValidPixels": orientation.valid_pixels,
                 "pixelX": x,
                 "pixelY": y,
                 "gtPixelX": gxi,
@@ -288,7 +360,7 @@ def sample_frame(
                 "referenceDepthMetres": reference,
                 "signedErrorMetres": observed - reference,
                 "rawSensorConfidenceLevel": raw_confidence,
-                "sensorConfidence": sensor_confidence,
+                "sensorConfidence": raw_confidence / 2.0,
                 "confidenceSource": "ARKitScenes raw confidence uint8 0/1/2; normalized as level/2",
                 "poseConfidence": 1.0,
                 "reprojectionErrorPixels": 0.0,
@@ -302,6 +374,7 @@ def sample_frame(
 def generate_samples(
     archive_path: Path,
     confidence_root: Path,
+    lowres_depth_root: Path,
     output: Path,
     *,
     scene: str,
@@ -310,59 +383,69 @@ def generate_samples(
     pixel_stride: int = 4,
     maximum_samples: int = 500_000,
     maximum_depth_metres: float = 20.0,
-    maximum_confidence_delta_seconds: float = 0.020,
+    maximum_sidecar_delta_seconds: float = 0.020,
 ) -> dict:
     if frame_stride <= 0 or pixel_stride <= 0 or maximum_samples <= 0:
         raise ValueError("frame/pixel strides and maximum samples must be positive")
     if maximum_depth_metres <= 0.0 or not math.isfinite(maximum_depth_metres):
         raise ValueError("maximum depth must be finite and positive")
-    if maximum_confidence_delta_seconds <= 0.0 or not math.isfinite(maximum_confidence_delta_seconds):
-        raise ValueError("confidence timestamp tolerance must be finite and positive")
+    if maximum_sidecar_delta_seconds <= 0.0 or not math.isfinite(maximum_sidecar_delta_seconds):
+        raise ValueError("sidecar timestamp tolerance must be finite and positive")
 
-    confidence_frames = discover_confidence_frames(confidence_root, video_id)
+    confidence_frames = discover_sidecar_frames(confidence_root, video_id, "confidence")
+    witness_frames = discover_sidecar_frames(lowres_depth_root, video_id, "lowres_depth")
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary_output = output.with_suffix(output.suffix + ".tmp")
     temporary_output.unlink(missing_ok=True)
 
-    emitted = 0
-    selected_frames = 0
-    matched_frames = 0
-    skipped_frames_no_confidence = 0
-    complete_frames = 0
-    maximum_observed_delta_seconds = 0.0
+    emitted = selected_frames = matched_frames = skipped_frames_no_sidecar = complete_frames = 0
+    max_conf_delta = max_witness_delta = max_witness_median_mm = 0.0
     used_confidence_paths: set[Path] = set()
+    used_witness_paths: set[Path] = set()
+    transform_counts: Counter[str] = Counter()
 
     try:
-        with tarfile.open(archive_path, "r:*") as archive, temporary_output.open(
-            "w", encoding="utf-8"
-        ) as stream:
+        with tarfile.open(archive_path, "r:*") as archive, temporary_output.open("w", encoding="utf-8") as stream:
             frames = discover_frames(archive, video_id)
             complete_frames = len(frames)
             for frame_index in range(0, len(frames), frame_stride):
                 frame = frames[frame_index]
                 selected_frames += 1
                 timestamp_seconds = int(frame.timestamp) / NS_TO_S
-                match = nearest_confidence_frame(
-                    confidence_frames,
-                    timestamp_seconds,
-                    maximum_confidence_delta_seconds,
+                confidence_match = nearest_sidecar_frame(
+                    confidence_frames, timestamp_seconds, maximum_sidecar_delta_seconds
                 )
-                if match is None:
-                    skipped_frames_no_confidence += 1
+                witness_match = nearest_sidecar_frame(
+                    witness_frames, timestamp_seconds, maximum_sidecar_delta_seconds
+                )
+                if confidence_match is None or witness_match is None:
+                    skipped_frames_no_sidecar += 1
                     continue
-                confidence_frame, confidence_delta = match
-                matched_frames += 1
-                maximum_observed_delta_seconds = max(
-                    maximum_observed_delta_seconds,
-                    confidence_delta,
-                )
-                used_confidence_paths.add(confidence_frame.path)
+                confidence_frame, confidence_delta = confidence_match
+                witness_frame, witness_delta = witness_match
 
                 arkit_depth = decode_image(read_member(archive, frame.members["wide/depth"]))
-                confidence = decode_image(confidence_frame.path.read_bytes())
+                raw_confidence = decode_image(confidence_frame.path.read_bytes())
+                raw_witness_depth = decode_image(witness_frame.path.read_bytes())
+                orientation = infer_orientation_transform(raw_witness_depth, arkit_depth)
+                confidence = apply_discrete_transform(raw_confidence, orientation.transform)
+                if confidence.shape != arkit_depth.shape:
+                    raise ValueError(
+                        f"confidence transform {orientation.transform} produced {confidence.shape}, "
+                        f"expected {arkit_depth.shape}"
+                    )
+
                 gt_depth = decode_image(read_member(archive, frame.members["gt/depth"]))
                 arkit_k = parse_intrinsics(read_member(archive, frame.members["wide/depth/k"]))
                 gt_k = parse_intrinsics(read_member(archive, frame.members["gt/depth/k"]))
+                matched_frames += 1
+                used_confidence_paths.add(confidence_frame.path)
+                used_witness_paths.add(witness_frame.path)
+                transform_counts[orientation.transform] += 1
+                max_conf_delta = max(max_conf_delta, confidence_delta)
+                max_witness_delta = max(max_witness_delta, witness_delta)
+                max_witness_median_mm = max(max_witness_median_mm, orientation.median_abs_error_mm)
+
                 for row in sample_frame(
                     scene=scene,
                     frame=frame,
@@ -370,6 +453,9 @@ def generate_samples(
                     confidence=confidence,
                     confidence_timestamp_seconds=confidence_frame.timestamp_seconds,
                     confidence_delta_seconds=confidence_delta,
+                    witness_timestamp_seconds=witness_frame.timestamp_seconds,
+                    witness_delta_seconds=witness_delta,
+                    orientation=orientation,
                     gt_depth=gt_depth,
                     arkit_k=arkit_k,
                     gt_k=gt_k,
@@ -384,41 +470,48 @@ def generate_samples(
                     break
 
         if emitted == 0:
-            raise ValueError(
-                "CA-1M/ARKitScenes join produced no valid ARKit-vs-FARO depth samples"
-            )
+            raise ValueError("CA-1M/ARKitScenes join produced no valid ARKit-vs-FARO depth samples")
         temporary_output.replace(output)
     except Exception:
         temporary_output.unlink(missing_ok=True)
         raise
 
     metadata = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "scene": scene,
         "videoId": video_id,
         "archive": str(archive_path.resolve()),
         "archiveSha256": sha256_file(archive_path),
         "confidenceRoot": str(confidence_root.resolve()),
+        "lowresDepthRoot": str(lowres_depth_root.resolve()),
         "confidenceFilesDiscovered": len(confidence_frames),
+        "lowresDepthFilesDiscovered": len(witness_frames),
         "confidenceFilesUsed": len(used_confidence_paths),
-        "confidenceManifestSha256": confidence_manifest_sha256(used_confidence_paths),
+        "lowresDepthFilesUsed": len(used_witness_paths),
+        "confidenceManifestSha256": manifest_sha256(used_confidence_paths),
+        "orientationWitnessManifestSha256": manifest_sha256(used_witness_paths),
+        "sidecarTransformCounts": dict(sorted(transform_counts.items())),
+        "maximumOrientationWitnessMedianAbsErrorMillimetres": max_witness_median_mm,
         "output": str(output.resolve()),
         "outputSha256": sha256_file(output),
         "completeFrames": complete_frames,
         "selectedFrames": selected_frames,
+        "matchedSidecarFrames": matched_frames,
         "matchedConfidenceFrames": matched_frames,
-        "skippedFramesNoConfidence": skipped_frames_no_confidence,
+        "skippedFramesNoSidecar": skipped_frames_no_sidecar,
+        "skippedFramesNoConfidence": skipped_frames_no_sidecar,
         "emittedSamples": emitted,
         "frameStride": frame_stride,
         "pixelStride": pixel_stride,
         "maximumSamples": maximum_samples,
         "maximumDepthMetres": maximum_depth_metres,
-        "maximumConfidenceDeltaMilliseconds": maximum_confidence_delta_seconds * 1000.0,
-        "maximumObservedConfidenceDeltaMilliseconds": maximum_observed_delta_seconds * 1000.0,
+        "maximumSidecarDeltaMilliseconds": maximum_sidecar_delta_seconds * 1000.0,
+        "maximumObservedConfidenceDeltaMilliseconds": max_conf_delta * 1000.0,
+        "maximumObservedOrientationWitnessDeltaMilliseconds": max_witness_delta * 1000.0,
         "observationSource": "CA-1M onboard ARKit LiDAR depth",
         "confidenceSource": "ARKitScenes raw confidence uint8 0/1/2",
+        "orientationWitness": "ARKitScenes raw lowres_depth; used only to select a discrete image transform",
         "confidenceNormalization": "sensorConfidence = rawSensorConfidenceLevel / 2",
-        "confidenceJoin": "nearest timestamp in seconds under strict tolerance",
         "groundTruthSource": "CA-1M FARO laser-scanner rendered depth",
         "depthCorrespondence": "camera ray mapped using released ARKit-depth and GT-depth intrinsics",
     }
@@ -431,6 +524,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archive", type=Path)
     parser.add_argument("--confidence-root", type=Path, required=True)
+    parser.add_argument("--lowres-depth-root", type=Path, required=True)
     parser.add_argument("--scene", required=True)
     parser.add_argument("--video-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -444,6 +538,7 @@ def main() -> int:
         metadata = generate_samples(
             args.archive.resolve(),
             args.confidence_root.resolve(),
+            args.lowres_depth_root.resolve(),
             args.output.resolve(),
             scene=args.scene,
             video_id=args.video_id,
@@ -451,7 +546,7 @@ def main() -> int:
             pixel_stride=args.pixel_stride,
             maximum_samples=args.max_samples,
             maximum_depth_metres=args.max_depth,
-            maximum_confidence_delta_seconds=args.confidence_max_delta_ms / 1000.0,
+            maximum_sidecar_delta_seconds=args.confidence_max_delta_ms / 1000.0,
         )
     except (OSError, RuntimeError, ValueError, KeyError, json.JSONDecodeError, tarfile.TarError) as exc:
         print(f"ca1m_uncertainty_samples: {exc}")
