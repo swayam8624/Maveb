@@ -59,7 +59,11 @@ def predict_sigma(rows: list[dict], config: uncertainty.UncertaintyModelConfig) 
     return np.clip(sigma, config.minimum_sigma_metres, config.maximum_sigma_metres)
 
 
-def summarize(errors: np.ndarray, sigma: np.ndarray | None = None) -> dict:
+def summarize(
+    errors: np.ndarray,
+    sigma: np.ndarray | None = None,
+    maximum_sigma_metres: float | None = None,
+) -> dict:
     absolute = np.abs(errors)
     result = {
         "count": int(errors.size),
@@ -75,7 +79,8 @@ def summarize(errors: np.ndarray, sigma: np.ndarray | None = None) -> dict:
         "fractionAbsErrorOver100m": float(np.mean(absolute > 1.00)),
     }
     if sigma is not None:
-        capped = np.isclose(sigma, np.max(sigma), rtol=0.0, atol=1e-12)
+        cap = maximum_sigma_metres if maximum_sigma_metres is not None else float(np.max(sigma))
+        capped = np.isclose(sigma, cap, rtol=0.0, atol=1e-12)
         result.update(
             {
                 "sigmaRmsMetres": float(np.sqrt(np.mean(sigma * sigma))),
@@ -106,7 +111,6 @@ def main() -> int:
 
     scenes = np.asarray([str(row["scene"]) for row in rows], dtype=object)
     depth = np.asarray([float(row["depthMetres"]) for row in rows], dtype=np.float64)
-    confidence = np.asarray([float(row["sensorConfidence"]) for row in rows], dtype=np.float64)
     raw_confidence = np.asarray([int(row.get("rawSensorConfidenceLevel", round(float(row["sensorConfidence"]) * 2.0))) for row in rows], dtype=np.int64)
     errors = np.asarray([float(row["signedErrorMetres"]) for row in rows], dtype=np.float64)
     sigma = predict_sigma(rows, config)
@@ -120,7 +124,7 @@ def main() -> int:
     per_scene = {}
     for scene in sorted(set(scenes.tolist())):
         mask = scenes == scene
-        per_scene[scene] = summarize(errors[mask], sigma[mask])
+        per_scene[scene] = summarize(errors[mask], sigma[mask], config.maximum_sigma_metres)
         per_scene[scene]["gaussianNllFitted"] = gaussian_nll(errors[mask], sigma[mask])
         per_scene[scene]["gaussianNllSameDepthTermsNoConfidence"] = gaussian_nll(errors[mask], sigma_no_conf[mask])
 
@@ -128,14 +132,16 @@ def main() -> int:
     for level in (0, 1, 2):
         mask = raw_confidence == level
         if np.any(mask):
-            by_confidence[str(level)] = summarize(errors[mask], sigma[mask])
+            by_confidence[str(level)] = summarize(errors[mask], sigma[mask], config.maximum_sigma_metres)
 
     by_depth = {}
     for lower, upper in DEPTH_BINS:
         mask = (depth >= lower) & (depth < upper)
         if np.any(mask):
-            by_depth[f"[{lower:g},{upper:g})"] = summarize(errors[mask], sigma[mask])
+            by_depth[f"[{lower:g},{upper:g})"] = summarize(errors[mask], sigma[mask], config.maximum_sigma_metres)
 
+    fitted_nll = gaussian_nll(errors, sigma)
+    no_conf_nll = gaussian_nll(errors, sigma_no_conf)
     report = {
         "schemaVersion": 1,
         "status": "calibration-diagnostic-only-no-held-out-data",
@@ -146,10 +152,10 @@ def main() -> int:
             "depthNoiseQuadraticAtOriginalUpperBound": config.depth_noise_quadratic_metres_per_metre_squared >= 0.049999,
             "maximumSigmaMetres": config.maximum_sigma_metres,
         },
-        "aggregate": summarize(errors, sigma),
-        "aggregateGaussianNllFitted": gaussian_nll(errors, sigma),
-        "aggregateGaussianNllSameDepthTermsNoConfidence": gaussian_nll(errors, sigma_no_conf),
-        "confidenceIncrementNll": gaussian_nll(errors, sigma_no_conf) - gaussian_nll(errors, sigma),
+        "aggregate": summarize(errors, sigma, config.maximum_sigma_metres),
+        "aggregateGaussianNllFitted": fitted_nll,
+        "aggregateGaussianNllSameDepthTermsNoConfidence": no_conf_nll,
+        "confidenceIncrementNll": no_conf_nll - fitted_nll,
         "perScene": per_scene,
         "byRawConfidenceLevel": by_confidence,
         "byDepthMetres": by_depth,
