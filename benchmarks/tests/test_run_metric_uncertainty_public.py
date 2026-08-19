@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -83,6 +84,52 @@ class MetricUncertaintyPublicStudyTests(unittest.TestCase):
             study.confidence_directory(Path("/confidence"), entry),
             Path("/confidence/raw/Validation/45662921/confidence"),
         )
+        self.assertEqual(
+            study.lowres_depth_directory(Path("/confidence"), entry),
+            Path("/confidence/raw/Validation/45662921/lowres_depth"),
+        )
+
+    def test_held_out_gate_requires_exact_robust_model_and_unchanged_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            calibration = output / "calibration"
+            calibration.mkdir(parents=True)
+            observations = calibration / "observations.jsonl"
+            observations.write_text('{"sampleId":"x"}\n')
+            gaussian = calibration / study.GAUSSIAN_PREDECESSOR_FILENAME
+            gaussian.write_text('{"status":"failed-u1a"}\n')
+
+            split = {"revision": 4}
+            split_bytes = b'{"revision":4}'
+            robust = calibration / study.ROBUST_MODEL_FILENAME
+            payload = {
+                "modelId": study.ROBUST_MODEL_ID,
+                "status": study.ROBUST_STATUS,
+                "splitRevision": 4,
+                "splitSha256": hashlib.sha256(split_bytes).hexdigest(),
+                "inputSha256": study.sha256_file(observations),
+                "likelihood": {
+                    "family": "Student-t",
+                    "degreesOfFreedom": 3.0,
+                    "degreesOfFreedomFitted": False,
+                    "sampleFiltering": "none",
+                    "sigmaInterpretation": "standard deviation",
+                },
+                "boundaryFlags": {
+                    "depthNoiseFloorAtUpperBound": False,
+                    "depthNoiseQuadraticAtUpperBound": False,
+                    "sensorConfidencePenaltyAtUpperBound": False,
+                },
+                "gaussianPredecessor": {"sha256": study.sha256_file(gaussian)},
+            }
+            robust.write_text(json.dumps(payload))
+            path, loaded = study.validate_robust_model(output, split, split_bytes)
+            self.assertEqual(path, robust)
+            self.assertEqual(loaded["modelId"], study.ROBUST_MODEL_ID)
+
+            observations.write_text('{"sampleId":"changed"}\n')
+            with self.assertRaisesRegex(ValueError, "changed after robust model freeze"):
+                study.validate_robust_model(output, split, split_bytes)
 
 
 if __name__ == "__main__":
