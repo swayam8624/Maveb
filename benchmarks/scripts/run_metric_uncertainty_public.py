@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Run Maveb's frozen ARKitScenes metric-uncertainty public study.
+"""Run Maveb's frozen CA-1M metric-uncertainty public study.
 
 Stages:
-  prepare  Convert selected raw scenes and ray-sample signed depth error against reference meshes.
-  fit      Fit sensor-only uncertainty coefficients on calibration scenes and freeze hashes.
-  evaluate Run intact/constant/shuffled controls on held-out scenes and emit per-scene reports.
-  all      prepare + fit + evaluate.
+  prepare   Extract ARKit-LiDAR vs FARO-depth observations from the frozen CA-1M archives.
+  fit       Fit sensor-only uncertainty coefficients on calibration scenes and freeze hashes.
+  evaluate  Run intact/constant/shuffled controls on held-out scenes without retuning.
+  all       prepare + fit + evaluate.
 
-The runner never downloads data. Use acquire_arkit_uncertainty.py first.
+The runner never downloads data and never modifies the frozen split.
 """
 
 from __future__ import annotations
@@ -16,10 +16,8 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
-from typing import Iterable
 
 
 def sha256_file(path: Path) -> str:
@@ -39,35 +37,29 @@ def load_split(path: Path) -> tuple[dict, bytes]:
     payload = json.loads(raw)
     if payload.get("schemaVersion") != 1 or payload.get("frozen") is not True:
         raise ValueError("study requires the frozen schema-v1 public split")
+    if payload.get("source", {}).get("dataset") != "CA-1M / Cubify Anything":
+        raise ValueError("study requires the CA-1M FARO-ground-truth split")
     calibration = [str(v) for v in payload.get("calibrationScenes", [])]
     held_out = [str(v) for v in payload.get("heldOutScenes", [])]
     if len(calibration) < 3 or len(held_out) < 5 or set(calibration) & set(held_out):
         raise ValueError("public split does not satisfy 3-calibration / 5-held-out isolation")
-    metadata = payload.get("sceneMetadata")
-    if not isinstance(metadata, dict):
-        raise ValueError("public split is missing sceneMetadata")
     return payload, raw
 
 
-def scene_source(data_root: Path, entry: dict) -> Path:
-    return data_root / "raw" / str(entry["fold"]) / str(entry["videoId"])
-
-
-def reference_mesh(source: Path, video_id: str) -> Path:
-    return source / f"{video_id}_3dod_mesh.ply"
+def archive_path(data_root: Path, entry: dict) -> Path:
+    return data_root / f"ca1m-{entry['ca1mSplit']}-{entry['videoId']}.tar"
 
 
 def scene_paths(output_root: Path, scene: str) -> dict[str, Path]:
     root = output_root / "scenes" / scene
     return {
         "root": root,
-        "capture": root / "capture",
         "samples": root / "observations.jsonl",
         "sample_meta": root / "observations.jsonl.meta.json",
     }
 
 
-def concatenate_jsonl(inputs: Iterable[Path], output: Path) -> int:
+def concatenate_jsonl(inputs: list[Path], output: Path) -> int:
     count = 0
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8") as destination:
@@ -103,123 +95,60 @@ def annotate_method(input_path: Path, output_path: Path, method: str) -> int:
     return count
 
 
-def prepare_scene(
-    *,
-    repo_root: Path,
-    data_root: Path,
-    output_root: Path,
-    scene: str,
-    entry: dict,
-    ffmpeg: str,
-    proxy_python: str,
-    adapter_stride: int,
-    maximum_frames: int | None,
-    pixel_stride: int,
-    frame_stride: int,
-    maximum_samples: int,
-) -> dict:
-    paths = scene_paths(output_root, scene)
-    source = scene_source(data_root, entry)
-    video_id = str(entry["videoId"])
-    mesh = reference_mesh(source, video_id)
-    required = (
-        source / "confidence",
-        source / "lowres_depth",
-        source / "lowres_wide",
-        source / "lowres_wide_intrinsics",
-        source / "lowres_wide.traj",
-        mesh,
-    )
-    missing = [str(path) for path in required if not path.exists()]
-    if missing:
-        raise ValueError(f"{scene} is missing acquired assets: {', '.join(missing)}")
-
-    adapter = repo_root / "benchmarks/scripts/adapters/arkitscenes_to_aether.py"
-    sampler = repo_root / "benchmarks/scripts/arkit_uncertainty_samples.py"
-    if paths["capture"].exists():
-        shutil.rmtree(paths["capture"])
-    adapter_command = [
-        sys.executable,
-        str(adapter),
-        str(source),
-        "--output",
-        str(paths["capture"]),
-        "--stride",
-        str(adapter_stride),
-        "--ffmpeg",
-        ffmpeg,
-    ]
-    if maximum_frames is not None:
-        adapter_command.extend(["--max-frames", str(maximum_frames)])
-    run(adapter_command, cwd=repo_root)
-
-    sample_command = [
-        proxy_python,
-        str(sampler),
-        str(paths["capture"]),
-        str(mesh),
-        "--scene",
-        scene,
-        "--output",
-        str(paths["samples"]),
-        "--pixel-stride",
-        str(pixel_stride),
-        "--frame-stride",
-        str(frame_stride),
-        "--max-samples",
-        str(maximum_samples),
-    ]
-    run(sample_command, cwd=repo_root)
-    meta = json.loads(paths["sample_meta"].read_text())
-    if int(meta.get("emittedSamples", 0)) == 0:
-        raise ValueError(f"{scene} emitted no ground-truth uncertainty samples")
-    return {
-        "scene": scene,
-        "role": entry["role"],
-        "fold": entry["fold"],
-        "videoId": video_id,
-        "visitId": entry["visitId"],
-        "source": str(source.resolve()),
-        "referenceMesh": str(mesh.resolve()),
-        "samples": str(paths["samples"].resolve()),
-        "sampleSha256": sha256_file(paths["samples"]),
-        "emittedSamples": meta["emittedSamples"],
-        "referenceMisses": meta["referenceMisses"],
-    }
-
-
 def prepare(
     *,
     repo_root: Path,
     data_root: Path,
     output_root: Path,
     split: dict,
-    ffmpeg: str,
-    proxy_python: str,
-    adapter_stride: int,
-    maximum_frames: int | None,
-    pixel_stride: int,
     frame_stride: int,
+    pixel_stride: int,
     maximum_samples: int,
 ) -> list[dict]:
-    scenes = split["calibrationScenes"] + split["heldOutScenes"]
+    sampler = repo_root / "benchmarks/scripts/ca1m_uncertainty_samples.py"
     prepared = []
-    for scene in scenes:
+    for scene in split["calibrationScenes"] + split["heldOutScenes"]:
+        entry = split["sceneMetadata"][scene]
+        archive = archive_path(data_root, entry)
+        if not archive.is_file():
+            raise ValueError(f"missing frozen CA-1M archive for {scene}: {archive}")
+        paths = scene_paths(output_root, scene)
+        run(
+            [
+                sys.executable,
+                str(sampler),
+                str(archive),
+                "--scene",
+                scene,
+                "--video-id",
+                str(entry["videoId"]),
+                "--output",
+                str(paths["samples"]),
+                "--frame-stride",
+                str(frame_stride),
+                "--pixel-stride",
+                str(pixel_stride),
+                "--max-samples",
+                str(maximum_samples),
+            ],
+            cwd=repo_root,
+        )
+        meta = json.loads(paths["sample_meta"].read_text())
         prepared.append(
-            prepare_scene(
-                repo_root=repo_root,
-                data_root=data_root,
-                output_root=output_root,
-                scene=scene,
-                entry=split["sceneMetadata"][scene],
-                ffmpeg=ffmpeg,
-                proxy_python=proxy_python,
-                adapter_stride=adapter_stride,
-                maximum_frames=maximum_frames,
-                pixel_stride=pixel_stride,
-                frame_stride=frame_stride,
-                maximum_samples=maximum_samples,
-            )
+            {
+                "scene": scene,
+                "role": entry["role"],
+                "ca1mSplit": entry["ca1mSplit"],
+                "videoId": entry["videoId"],
+                "visitId": entry["visitId"],
+                "archive": str(archive.resolve()),
+                "archiveSha256": meta["archiveSha256"],
+                "samples": str(paths["samples"].resolve()),
+                "sampleSha256": meta["outputSha256"],
+                "emittedSamples": meta["emittedSamples"],
+                "completeFrames": meta["completeFrames"],
+                "selectedFrames": meta["selectedFrames"],
+            }
         )
     ledger = output_root / "prepare-ledger.json"
     ledger.write_text(json.dumps({"schemaVersion": 1, "scenes": prepared}, indent=2, sort_keys=True) + "\n")
@@ -235,8 +164,10 @@ def fit(
     max_per_scene: int,
 ) -> Path:
     calibration_raw = output_root / "calibration/observations.jsonl"
-    inputs = [scene_paths(output_root, scene)["samples"] for scene in split["calibrationScenes"]]
-    concatenate_jsonl(inputs, calibration_raw)
+    concatenate_jsonl(
+        [scene_paths(output_root, scene)["samples"] for scene in split["calibrationScenes"]],
+        calibration_raw,
+    )
     fitted = output_root / "calibration/fitted-model.json"
     fitter = repo_root / "benchmarks/scripts/fit_metric_uncertainty.py"
     run(
@@ -255,10 +186,9 @@ def fit(
     )
     payload = json.loads(fitted.read_text())
     if payload.get("status") != "fitted-calibration-only-not-held-out-validated":
-        raise ValueError("fitter did not produce the expected frozen calibration-only model")
-    expected_split_sha = sha256_file(split_path)
-    if payload.get("splitSha256") != expected_split_sha:
-        raise ValueError("fitted model split hash does not match the frozen study split")
+        raise ValueError("fitter did not produce a calibration-only model")
+    if payload.get("splitSha256") != sha256_file(split_path):
+        raise ValueError("fitted model split hash does not match the frozen CA-1M split")
     return fitted
 
 
@@ -269,29 +199,28 @@ def evaluate(
     split: dict,
     fitted_model: Path,
     bootstrap: int,
-    bootstrap_seed: int,
+    seed: int,
 ) -> dict:
     held_raw = output_root / "held-out/observations.jsonl"
-    inputs = [scene_paths(output_root, scene)["samples"] for scene in split["heldOutScenes"]]
-    concatenate_jsonl(inputs, held_raw)
-
+    concatenate_jsonl(
+        [scene_paths(output_root, scene)["samples"] for scene in split["heldOutScenes"]],
+        held_raw,
+    )
     controls = repo_root / "benchmarks/scripts/uncertainty_controls.py"
     predictor = repo_root / "benchmarks/scripts/geometric_uncertainty.py"
     metrics = repo_root / "benchmarks/scripts/uncertainty_metrics.py"
-
     reports = {}
     for mode, method in (
-        ("intact", "u1-intact-confidence"),
-        ("constant", "u1-constant-confidence"),
-        ("shuffled", "u1-shuffled-confidence"),
+        ("intact", "u2-ca1m-intact-confidence"),
+        ("constant", "u2-ca1m-constant-confidence"),
+        ("shuffled", "u2-ca1m-shuffled-confidence"),
     ):
-        mode_root = output_root / "held-out" / mode
-        controlled = mode_root / "controlled.jsonl"
-        annotated = mode_root / "controlled-method.jsonl"
-        predictions = mode_root / "predictions.jsonl"
-        report = mode_root / "calibration-report.json"
-        markdown = mode_root / "calibration-report.md"
-
+        root = output_root / "held-out" / mode
+        controlled = root / "controlled.jsonl"
+        annotated = root / "controlled-method.jsonl"
+        predictions = root / "predictions.jsonl"
+        report = root / "calibration-report.json"
+        markdown = root / "calibration-report.md"
         run(
             [
                 sys.executable,
@@ -302,7 +231,7 @@ def evaluate(
                 "--mode",
                 mode,
                 "--seed",
-                str(bootstrap_seed),
+                str(seed),
                 "--constant",
                 "0.5",
             ],
@@ -335,13 +264,12 @@ def evaluate(
                 "--bootstrap",
                 str(bootstrap),
                 "--bootstrap-seed",
-                str(bootstrap_seed),
+                str(seed),
             ],
             cwd=repo_root,
         )
         reports[mode] = {
             "method": method,
-            "controlledSha256": sha256_file(controlled),
             "predictionsSha256": sha256_file(predictions),
             "report": str(report.resolve()),
             "reportSha256": sha256_file(report),
@@ -351,93 +279,78 @@ def evaluate(
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
-    default_split = repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("prepare", "fit", "evaluate", "all"), default="all")
-    parser.add_argument("--split", type=Path, default=default_split)
+    parser.add_argument(
+        "--split",
+        type=Path,
+        default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json",
+    )
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or "ffmpeg")
-    parser.add_argument(
-        "--proxy-python",
-        default=str(repo_root / ".aether-deps/proxy-venv/bin/python"),
-        help="Python with NumPy and Open3D for ground-truth ray sampling",
-    )
-    parser.add_argument("--adapter-stride", type=int, default=6)
-    parser.add_argument("--max-frames", type=int)
-    parser.add_argument("--pixel-stride", type=int, default=8)
-    parser.add_argument("--frame-stride", type=int, default=1)
+    parser.add_argument("--frame-stride", type=int, default=10)
+    parser.add_argument("--pixel-stride", type=int, default=4)
     parser.add_argument("--max-samples", type=int, default=500_000)
     parser.add_argument("--max-per-scene", type=int, default=100_000)
     parser.add_argument("--bootstrap", type=int, default=2000)
-    parser.add_argument("--bootstrap-seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     try:
         split_path = args.split.resolve()
         split, split_bytes = load_split(split_path)
+        data_root = args.data_root.resolve()
         output_root = args.output_root.resolve()
         output_root.mkdir(parents=True, exist_ok=True)
-        data_root = args.data_root.resolve()
-
-        stage_results: dict = {}
+        results: dict = {}
         if args.stage in ("prepare", "all"):
-            stage_results["prepare"] = prepare(
+            results["prepare"] = prepare(
                 repo_root=repo_root,
                 data_root=data_root,
                 output_root=output_root,
                 split=split,
-                ffmpeg=args.ffmpeg,
-                proxy_python=args.proxy_python,
-                adapter_stride=args.adapter_stride,
-                maximum_frames=args.max_frames,
-                pixel_stride=args.pixel_stride,
                 frame_stride=args.frame_stride,
+                pixel_stride=args.pixel_stride,
                 maximum_samples=args.max_samples,
             )
-
-        fitted_model = output_root / "calibration/fitted-model.json"
+        fitted = output_root / "calibration/fitted-model.json"
         if args.stage in ("fit", "all"):
-            fitted_model = fit(
+            fitted = fit(
                 repo_root=repo_root,
                 output_root=output_root,
                 split_path=split_path,
                 split=split,
                 max_per_scene=args.max_per_scene,
             )
-            stage_results["fit"] = {
-                "model": str(fitted_model.resolve()),
-                "modelSha256": sha256_file(fitted_model),
-            }
-
+            results["fit"] = {"model": str(fitted.resolve()), "modelSha256": sha256_file(fitted)}
         if args.stage in ("evaluate", "all"):
-            if not fitted_model.is_file():
+            if not fitted.is_file():
                 raise ValueError("held-out evaluation requires calibration/fitted-model.json")
-            model_payload = json.loads(fitted_model.read_text())
-            split_sha = hashlib.sha256(split_bytes).hexdigest()
-            if model_payload.get("splitSha256") != split_sha:
-                raise ValueError("held-out evaluation refuses a fitted model from another split")
-            stage_results["evaluate"] = evaluate(
+            model_payload = json.loads(fitted.read_text())
+            if model_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
+                raise ValueError("held-out evaluation refuses a model fitted on another split")
+            results["evaluate"] = evaluate(
                 repo_root=repo_root,
                 output_root=output_root,
                 split=split,
-                fitted_model=fitted_model,
+                fitted_model=fitted,
                 bootstrap=args.bootstrap,
-                bootstrap_seed=args.bootstrap_seed,
+                seed=args.seed,
             )
-
-        study_ledger = {
+        ledger = {
             "schemaVersion": 1,
             "study": "metric-uncertainty-v1",
+            "evidenceSource": "CA-1M onboard ARKit LiDAR vs FARO rendered GT depth",
             "stage": args.stage,
             "splitId": split["id"],
+            "splitRevision": split.get("revision"),
             "splitSha256": hashlib.sha256(split_bytes).hexdigest(),
             "dataRoot": str(data_root),
             "outputRoot": str(output_root),
-            "results": stage_results,
+            "results": results,
         }
         ledger_path = output_root / "study-ledger.json"
-        ledger_path.write_text(json.dumps(study_ledger, indent=2, sort_keys=True) + "\n")
+        ledger_path.write_text(json.dumps(ledger, indent=2, sort_keys=True) + "\n")
         print(json.dumps({"ok": True, "ledger": str(ledger_path.resolve())}, sort_keys=True))
         return 0
     except (OSError, ValueError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:

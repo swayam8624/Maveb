@@ -34,42 +34,44 @@ class MetricUncertaintyPublicStudyTests(unittest.TestCase):
             source = root / "source.jsonl"
             output = root / "annotated.jsonl"
             source.write_text('{"scene":"s","sampleId":"1","signedErrorMetres":0.01}\n')
-            count = study.annotate_method(source, output, "u1-intact-confidence")
+            count = study.annotate_method(source, output, "u2-ca1m-intact-confidence")
             self.assertEqual(count, 1)
             row = json.loads(output.read_text())
             self.assertEqual(row["scene"], "s")
-            self.assertEqual(row["method"], "u1-intact-confidence")
+            self.assertEqual(row["method"], "u2-ca1m-intact-confidence")
 
-    def test_load_split_rejects_unfrozen_or_leaky_split(self):
+    def test_load_split_requires_frozen_ca1m_source_and_isolation(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "split.json"
-            path.write_text(
-                json.dumps(
-                    {
-                        "schemaVersion": 1,
-                        "frozen": False,
-                        "calibrationScenes": ["a", "b", "c"],
-                        "heldOutScenes": ["d", "e", "f", "g", "h"],
-                        "sceneMetadata": {},
-                    }
-                )
-            )
-            with self.assertRaisesRegex(ValueError, "frozen"):
-                study.load_split(path)
+            payload = {
+                "schemaVersion": 1,
+                "frozen": True,
+                "source": {"dataset": "CA-1M / Cubify Anything"},
+                "calibrationScenes": ["a", "b", "c"],
+                "heldOutScenes": ["d", "e", "f", "g", "h"],
+                "sceneMetadata": {},
+            }
+            path.write_text(json.dumps(payload))
+            loaded, _ = study.load_split(path)
+            self.assertEqual(loaded["source"]["dataset"], "CA-1M / Cubify Anything")
 
-            path.write_text(
-                json.dumps(
-                    {
-                        "schemaVersion": 1,
-                        "frozen": True,
-                        "calibrationScenes": ["a", "b", "c"],
-                        "heldOutScenes": ["c", "e", "f", "g", "h"],
-                        "sceneMetadata": {},
-                    }
-                )
-            )
+            payload["heldOutScenes"][0] = "c"
+            path.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "isolation"):
                 study.load_split(path)
+
+            payload["heldOutScenes"][0] = "d"
+            payload["source"]["dataset"] = "ARKitScenes raw"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "CA-1M"):
+                study.load_split(path)
+
+    def test_archive_path_uses_ca1m_split_and_video_id(self):
+        entry = {"ca1mSplit": "val", "videoId": "45662921"}
+        self.assertEqual(
+            study.archive_path(Path("/data"), entry),
+            Path("/data/ca1m-val-45662921.tar"),
+        )
 
 
 if __name__ == "__main__":

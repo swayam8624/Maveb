@@ -1,59 +1,65 @@
 {
   "schemaVersion": 1,
   "id": "metric-uncertainty-public-split-v1",
-  "status": "frozen-before-u1-acquisition",
+  "status": "frozen-ca1m-laser-ground-truth-before-acquisition",
   "frozen": true,
+  "revision": 2,
+  "refreeze": {
+    "performedBeforeAnyPublicSceneDownloadOrMetricInspection": true,
+    "reason": "Revision 1 used ARKitScenes 3DOD meshes as reference geometry. Before acquiring any selected scene or inspecting any outcome, the study was upgraded to CA-1M captures that provide FARO laser-scanner registered GT depth and poses. This makes the sensor-error target independent of the onboard ARKit depth being calibrated.",
+    "previousRevision": 1
+  },
   "source": {
-    "dataset": "ARKitScenes raw",
-    "splitCsv": "raw/raw_train_val_splits.csv",
-    "repository": "apple/ARKitScenes",
+    "dataset": "CA-1M / Cubify Anything",
+    "repository": "apple/ml-cubifyanything",
+    "ca1mTrainIndex": "data/train.txt",
+    "ca1mValidationIndex": "data/val.txt",
+    "arkitVisitMetadata": "apple/ARKitScenes raw/raw_train_val_splits.csv",
     "selectionDate": "2026-08-19",
-    "selectionPolicy": "Three Training-fold calibration videos and five Validation-fold held-out videos, each from a distinct visit_id within its evidence group. The existing 47333462 engineering scene remains smoke-only.",
-    "requiredAssets": [
-      "mesh",
-      "confidence",
-      "lowres_depth",
-      "lowres_wide.traj",
-      "lowres_wide",
-      "lowres_wide_intrinsics"
-    ]
+    "groundTruth": "Per-frame FARO laser-scanner rendered depth registered to the capture camera",
+    "observedDepth": "Per-frame onboard ARKit LiDAR depth",
+    "selectionPolicy": "Choose three CA-1M train captures and five CA-1M val captures that also appear in ARKitScenes metadata with distinct visit IDs. Freeze membership before downloading any selected tar or inspecting any metric outcome."
   },
   "smokeScenes": [
     "arkitscenes-47333462"
   ],
   "calibrationScenes": [
-    "arkitscenes-40777060",
-    "arkitscenes-40809740",
-    "arkitscenes-40958733"
+    "ca1m-42444499",
+    "ca1m-42444511",
+    "ca1m-42444574"
   ],
   "heldOutScenes": [
-    "arkitscenes-41069021",
-    "arkitscenes-41069042",
-    "arkitscenes-41125696",
-    "arkitscenes-41142278",
-    "arkitscenes-41159503"
+    "ca1m-45662921",
+    "ca1m-45261179",
+    "ca1m-47115543",
+    "ca1m-45261143",
+    "ca1m-45261615"
   ],
   "sceneMetadata": {
-    "arkitscenes-40777060": {"videoId": "40777060", "visitId": "369709", "fold": "Training", "role": "calibration"},
-    "arkitscenes-40809740": {"videoId": "40809740", "visitId": "376508", "fold": "Training", "role": "calibration"},
-    "arkitscenes-40958733": {"videoId": "40958733", "visitId": "379801", "fold": "Training", "role": "calibration"},
-    "arkitscenes-41069021": {"videoId": "41069021", "visitId": "381658", "fold": "Validation", "role": "held-out"},
-    "arkitscenes-41069042": {"videoId": "41069042", "visitId": "381649", "fold": "Validation", "role": "held-out"},
-    "arkitscenes-41125696": {"videoId": "41125696", "visitId": "382321", "fold": "Validation", "role": "held-out"},
-    "arkitscenes-41142278": {"videoId": "41142278", "visitId": "384651", "fold": "Validation", "role": "held-out"},
-    "arkitscenes-41159503": {"videoId": "41159503", "visitId": "381893", "fold": "Validation", "role": "held-out"}
+    "ca1m-42444499": {"videoId": "42444499", "visitId": "421065", "ca1mSplit": "train", "arkitFold": "Training", "role": "calibration"},
+    "ca1m-42444511": {"videoId": "42444511", "visitId": "421063", "ca1mSplit": "train", "arkitFold": "Training", "role": "calibration"},
+    "ca1m-42444574": {"videoId": "42444574", "visitId": "421062", "ca1mSplit": "train", "arkitFold": "Training", "role": "calibration"},
+    "ca1m-45662921": {"videoId": "45662921", "visitId": "468646", "ca1mSplit": "val", "arkitFold": "Validation", "role": "held-out"},
+    "ca1m-45261179": {"videoId": "45261179", "visitId": "466802", "ca1mSplit": "val", "arkitFold": "Validation", "role": "held-out"},
+    "ca1m-47115543": {"videoId": "47115543", "visitId": "470655", "ca1mSplit": "val", "arkitFold": "Validation", "role": "held-out"},
+    "ca1m-45261143": {"videoId": "45261143", "visitId": "466801", "ca1mSplit": "val", "arkitFold": "Validation", "role": "held-out"},
+    "ca1m-45261615": {"videoId": "45261615", "visitId": "467293", "ca1mSplit": "val", "arkitFold": "Validation", "role": "held-out"}
   },
   "rules": {
     "minimumCalibrationScenes": 3,
     "minimumHeldOutScenes": 5,
     "noSceneOverlap": true,
-    "noVisitOverlapWithinEvidenceGroup": true,
-    "calibrationFold": "Training",
-    "heldOutFold": "Validation",
+    "noVisitOverlap": true,
+    "calibrationCa1mSplit": "train",
+    "heldOutCa1mSplit": "val",
+    "calibrationArkitFold": "Training",
+    "heldOutArkitFold": "Validation",
+    "faroGroundTruthRequired": true,
     "populateBeforeFitting": true,
+    "freezeBeforeAcquisition": true,
     "freezeBeforeHeldOutEvaluation": true,
-    "smokeScenesMayNotServeAsSoleEvidence": true,
-    "selectionRule": "Scene membership is frozen before download, fitting, or held-out metric inspection. Failed or difficult selected scenes remain in the evidence ledger and may not be silently replaced."
+    "smokeScenesMayNotServeAsEvidence": true,
+    "selectionRule": "Selected scenes remain in the ledger even if difficult, missing frames, poorly calibrated, or negative. Replacement requires a new explicit split revision and invalidates any previously inspected outcome."
   },
-  "note": "This split was selected from Apple's official raw_train_val_splits.csv before U1 fitting. It is intentionally small enough for an initial rigorous study while separating coefficient fitting from held-out evaluation at both video and dataset-fold level."
+  "note": "Revision 2 is the first evidence-eligible split. Revision 1 was superseded before any selected public scene was downloaded or evaluated because its reference mesh was not independent enough for LiDAR error calibration."
 }
