@@ -3,9 +3,9 @@
 
 Gate order is enforced:
   prepare-calibration  sample only the three train scenes with ARKitScenes sidecars
-  fit                  fit calibration coefficients and freeze hashes
-  prepare-held-out     sample held-out scenes only after a fitted model exists
-  evaluate             evaluate intact/constant/shuffled confidence without retuning
+  fit                  historical single-Gaussian U1a fit; retained for audit only
+  prepare-held-out     requires the frozen, credible Student-t(3) U1b calibration artifact
+  evaluate             evaluates intact/constant/shuffled confidence without retuning
 
 ARKitScenes raw confidence is the research signal. Raw lowres_depth is used only as an orientation
 witness so the ordinal confidence map can be aligned to CA-1M without interpolation or guesswork.
@@ -21,12 +21,28 @@ import subprocess
 import sys
 
 
+ROBUST_MODEL_FILENAME = "fitted-model-student-t3.json"
+GAUSSIAN_PREDECESSOR_FILENAME = "fitted-model.json"
+ROBUST_MODEL_ID = "metric-uncertainty-v1-student-t3"
+ROBUST_STATUS = "fitted-robust-calibration-only-not-held-out-validated"
+ROBUST_DF = 3.0
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def git_head(repo_root: Path) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
 
 
 def run(command: list[str], *, cwd: Path) -> None:
@@ -75,6 +91,73 @@ def scene_paths(output_root: Path, scene: str) -> dict[str, Path]:
     }
 
 
+def robust_model_path(output_root: Path) -> Path:
+    return output_root / "calibration" / ROBUST_MODEL_FILENAME
+
+
+def gaussian_predecessor_path(output_root: Path) -> Path:
+    return output_root / "calibration" / GAUSSIAN_PREDECESSOR_FILENAME
+
+
+def validate_robust_model(
+    output_root: Path,
+    split: dict,
+    split_bytes: bytes,
+) -> tuple[Path, dict]:
+    fitted = robust_model_path(output_root)
+    if not fitted.is_file():
+        raise ValueError(
+            f"held-out study requires frozen robust calibration/{ROBUST_MODEL_FILENAME}"
+        )
+    payload = json.loads(fitted.read_text())
+    expected_split_sha = hashlib.sha256(split_bytes).hexdigest()
+    if payload.get("modelId") != ROBUST_MODEL_ID or payload.get("status") != ROBUST_STATUS:
+        raise ValueError("held-out study refuses a non-U1b robust model")
+    if payload.get("splitSha256") != expected_split_sha:
+        raise ValueError("held-out study refuses a robust model from another split hash")
+    if int(payload.get("splitRevision", -1)) != int(split.get("revision", -2)):
+        raise ValueError("held-out study refuses a robust model from another split revision")
+
+    likelihood = payload.get("likelihood", {})
+    if likelihood.get("family") != "Student-t":
+        raise ValueError("held-out study requires Student-t robust calibration")
+    if float(likelihood.get("degreesOfFreedom", math_nan())) != ROBUST_DF:
+        raise ValueError("held-out study requires frozen Student-t nu=3")
+    if likelihood.get("degreesOfFreedomFitted") is not False:
+        raise ValueError("held-out study requires fixed, not fitted, Student-t degrees of freedom")
+    if likelihood.get("sampleFiltering") != "none":
+        raise ValueError("held-out study refuses target-dependent calibration filtering")
+    if likelihood.get("sigmaInterpretation") != "standard deviation":
+        raise ValueError("held-out study requires sigma to retain standard-deviation semantics")
+
+    flags = payload.get("boundaryFlags", {})
+    for key in (
+        "depthNoiseFloorAtUpperBound",
+        "depthNoiseQuadraticAtUpperBound",
+        "sensorConfidencePenaltyAtUpperBound",
+    ):
+        if flags.get(key) is not False:
+            raise ValueError(f"held-out study refuses boundary-saturated robust model: {key}")
+
+    calibration_input = output_root / "calibration" / "observations.jsonl"
+    if not calibration_input.is_file():
+        raise ValueError("robust-model validation requires calibration/observations.jsonl")
+    if payload.get("inputSha256") != sha256_file(calibration_input):
+        raise ValueError("calibration input changed after robust model freeze")
+
+    predecessor = gaussian_predecessor_path(output_root)
+    predecessor_record = payload.get("gaussianPredecessor", {})
+    if not predecessor.is_file():
+        raise ValueError("robust-model provenance requires the rejected Gaussian predecessor")
+    if predecessor_record.get("sha256") != sha256_file(predecessor):
+        raise ValueError("Gaussian predecessor hash no longer matches robust-model provenance")
+    return fitted, payload
+
+
+def math_nan() -> float:
+    return float("nan")
+
+
 def concatenate_jsonl(inputs: list[Path], output: Path) -> int:
     count = 0
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -95,7 +178,9 @@ def concatenate_jsonl(inputs: list[Path], output: Path) -> int:
 def annotate_method(input_path: Path, output_path: Path, method: str) -> int:
     count = 0
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with input_path.open("r", encoding="utf-8") as source, output_path.open("w", encoding="utf-8") as destination:
+    with input_path.open("r", encoding="utf-8") as source, output_path.open(
+        "w", encoding="utf-8"
+    ) as destination:
         for line_number, raw in enumerate(source, start=1):
             if not raw.strip():
                 continue
@@ -200,17 +285,23 @@ def prepare_scenes(
             }
         )
     ledger = output_root / ledger_name
-    ledger.write_text(json.dumps({"schemaVersion": 2, "scenes": prepared}, indent=2, sort_keys=True) + "\n")
+    ledger.write_text(
+        json.dumps({"schemaVersion": 2, "scenes": prepared}, indent=2, sort_keys=True) + "\n"
+    )
     return prepared
 
 
-def fit(*, repo_root: Path, output_root: Path, split_path: Path, split: dict, max_per_scene: int) -> Path:
+def fit(
+    *, repo_root: Path, output_root: Path, split_path: Path, split: dict, max_per_scene: int
+) -> Path:
+    """Retain the original Gaussian U1a fit for reproducibility; it does not unlock U2."""
+
     calibration_raw = output_root / "calibration/observations.jsonl"
     concatenate_jsonl(
         [scene_paths(output_root, scene)["samples"] for scene in split["calibrationScenes"]],
         calibration_raw,
     )
-    fitted = output_root / "calibration/fitted-model.json"
+    fitted = gaussian_predecessor_path(output_root)
     fitter = repo_root / "benchmarks/scripts/fit_metric_uncertainty.py"
     run(
         [
@@ -228,15 +319,30 @@ def fit(*, repo_root: Path, output_root: Path, split_path: Path, split: dict, ma
     )
     payload = json.loads(fitted.read_text())
     if payload.get("status") != "fitted-calibration-only-not-held-out-validated":
-        raise ValueError("fitter did not produce a calibration-only model")
+        raise ValueError("Gaussian U1a fitter did not produce its historical calibration artifact")
     if payload.get("splitSha256") != sha256_file(split_path):
-        raise ValueError("fitted model split hash does not match the frozen public split")
+        raise ValueError("Gaussian U1a model split hash does not match the frozen public split")
     return fitted
 
 
 def evaluate(
-    *, repo_root: Path, output_root: Path, split: dict, fitted_model: Path, bootstrap: int, seed: int
+    *,
+    repo_root: Path,
+    output_root: Path,
+    split: dict,
+    fitted_model: Path,
+    degrees_of_freedom: float,
+    bootstrap: int,
+    seed: int,
 ) -> dict:
+    held_prepare_ledger = output_root / "held-out-prepare-ledger.json"
+    if not held_prepare_ledger.is_file():
+        raise ValueError("held-out evaluation requires held-out-prepare-ledger.json")
+    prepared = json.loads(held_prepare_ledger.read_text()).get("scenes", [])
+    prepared_scenes = {str(record.get("scene")) for record in prepared}
+    if prepared_scenes != set(split["heldOutScenes"]):
+        raise ValueError("held-out preparation ledger does not contain exactly the frozen scenes")
+
     held_raw = output_root / "held-out/observations.jsonl"
     concatenate_jsonl(
         [scene_paths(output_root, scene)["samples"] for scene in split["heldOutScenes"]], held_raw
@@ -244,7 +350,10 @@ def evaluate(
     controls = repo_root / "benchmarks/scripts/uncertainty_controls.py"
     predictor = repo_root / "benchmarks/scripts/geometric_uncertainty.py"
     metrics = repo_root / "benchmarks/scripts/uncertainty_metrics.py"
+    comparison = repo_root / "benchmarks/scripts/compare_uncertainty_controls.py"
     reports = {}
+    model_sha_before = sha256_file(fitted_model)
+
     for mode, method in (
         ("intact", "u2-ca1m-intact-confidence"),
         ("constant", "u2-ca1m-constant-confidence"),
@@ -257,18 +366,53 @@ def evaluate(
         report = root / "calibration-report.json"
         markdown = root / "calibration-report.md"
         run(
-            [sys.executable, str(controls), str(held_raw), "--output", str(controlled), "--mode", mode,
-             "--seed", str(seed), "--constant", "0.5"], cwd=repo_root
+            [
+                sys.executable,
+                str(controls),
+                str(held_raw),
+                "--output",
+                str(controlled),
+                "--mode",
+                mode,
+                "--seed",
+                str(seed),
+                "--constant",
+                "0.5",
+            ],
+            cwd=repo_root,
         )
         annotate_method(controlled, annotated, method)
         run(
-            [sys.executable, str(predictor), str(annotated), "--output", str(predictions),
-             "--config", str(fitted_model)], cwd=repo_root
+            [
+                sys.executable,
+                str(predictor),
+                str(annotated),
+                "--output",
+                str(predictions),
+                "--config",
+                str(fitted_model),
+            ],
+            cwd=repo_root,
         )
         run(
-            [sys.executable, str(metrics), str(predictions), "--output", str(report), "--markdown",
-             str(markdown), "--group-by", "method,scene", "--bootstrap", str(bootstrap),
-             "--bootstrap-seed", str(seed)], cwd=repo_root
+            [
+                sys.executable,
+                str(metrics),
+                str(predictions),
+                "--output",
+                str(report),
+                "--markdown",
+                str(markdown),
+                "--group-by",
+                "method,scene",
+                "--bootstrap",
+                str(bootstrap),
+                "--bootstrap-seed",
+                str(seed),
+                "--student-t-df",
+                str(degrees_of_freedom),
+            ],
+            cwd=repo_root,
         )
         reports[mode] = {
             "method": method,
@@ -276,18 +420,51 @@ def evaluate(
             "report": str(report.resolve()),
             "reportSha256": sha256_file(report),
         }
-    return reports
+
+    paired_report = output_root / "held-out/paired-control-comparison.json"
+    run(
+        [
+            sys.executable,
+            str(comparison),
+            "--intact",
+            reports["intact"]["report"],
+            "--constant",
+            reports["constant"]["report"],
+            "--shuffled",
+            reports["shuffled"]["report"],
+            "--output",
+            str(paired_report),
+            "--bootstrap",
+            str(bootstrap),
+            "--seed",
+            str(seed),
+        ],
+        cwd=repo_root,
+    )
+    model_sha_after = sha256_file(fitted_model)
+    if model_sha_before != model_sha_after:
+        raise ValueError("robust calibration model changed during held-out evaluation")
+    return {
+        "modelSha256": model_sha_before,
+        "studentTDegreesOfFreedom": degrees_of_freedom,
+        "controls": reports,
+        "pairedControlComparison": str(paired_report.resolve()),
+        "pairedControlComparisonSha256": sha256_file(paired_report),
+    }
 
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--stage", choices=("prepare-calibration", "fit", "prepare-held-out", "evaluate"), required=True
+        "--stage",
+        choices=("prepare-calibration", "fit", "prepare-held-out", "evaluate"),
+        required=True,
     )
     parser.add_argument(
-        "--split", type=Path,
-        default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json"
+        "--split",
+        type=Path,
+        default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json",
     )
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--confidence-root", type=Path)
@@ -314,14 +491,15 @@ def main() -> int:
                 raise ValueError(f"{args.stage} requires --confidence-root")
             sidecar_root = args.confidence_root.resolve()
             if args.stage == "prepare-held-out":
-                fitted = output_root / "calibration/fitted-model.json"
-                if not fitted.is_file():
-                    raise ValueError("held-out preparation requires a frozen calibration model")
-                model_payload = json.loads(fitted.read_text())
-                if model_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
-                    raise ValueError("held-out preparation refuses a model from another split revision")
+                fitted, model_payload = validate_robust_model(output_root, split, split_bytes)
                 scenes = split["heldOutScenes"]
                 ledger_name = "held-out-prepare-ledger.json"
+                results["robustModel"] = {
+                    "path": str(fitted.resolve()),
+                    "sha256": sha256_file(fitted),
+                    "modelId": model_payload["modelId"],
+                    "studentTDegreesOfFreedom": model_payload["likelihood"]["degreesOfFreedom"],
+                }
             else:
                 scenes = split["calibrationScenes"]
                 ledger_name = "calibration-prepare-ledger.json"
@@ -341,31 +519,39 @@ def main() -> int:
 
         if args.stage == "fit":
             fitted = fit(
-                repo_root=repo_root, output_root=output_root, split_path=split_path,
-                split=split, max_per_scene=args.max_per_scene
+                repo_root=repo_root,
+                output_root=output_root,
+                split_path=split_path,
+                split=split,
+                max_per_scene=args.max_per_scene,
             )
-            results["fit"] = {"model": str(fitted.resolve()), "modelSha256": sha256_file(fitted)}
+            results["fit"] = {
+                "historicalGaussianModel": str(fitted.resolve()),
+                "modelSha256": sha256_file(fitted),
+                "unlocksHeldOut": False,
+            }
 
         if args.stage == "evaluate":
-            fitted = output_root / "calibration/fitted-model.json"
-            if not fitted.is_file():
-                raise ValueError("held-out evaluation requires calibration/fitted-model.json")
-            model_payload = json.loads(fitted.read_text())
-            if model_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
-                raise ValueError("held-out evaluation refuses a model fitted on another split")
+            fitted, model_payload = validate_robust_model(output_root, split, split_bytes)
             results["evaluate"] = evaluate(
-                repo_root=repo_root, output_root=output_root, split=split,
-                fitted_model=fitted, bootstrap=args.bootstrap, seed=args.seed
+                repo_root=repo_root,
+                output_root=output_root,
+                split=split,
+                fitted_model=fitted,
+                degrees_of_freedom=float(model_payload["likelihood"]["degreesOfFreedom"]),
+                bootstrap=args.bootstrap,
+                seed=args.seed,
             )
 
         ledger = {
-            "schemaVersion": 3,
+            "schemaVersion": 4,
             "study": "metric-uncertainty-v1",
             "evidenceSource": "CA-1M ARKit LiDAR vs FARO GT + ARKitScenes confidence; raw depth is orientation witness only",
             "stage": args.stage,
             "splitId": split["id"],
             "splitRevision": split.get("revision"),
             "splitSha256": hashlib.sha256(split_bytes).hexdigest(),
+            "codeGitSha": git_head(repo_root),
             "dataRoot": str(data_root),
             "outputRoot": str(output_root),
             "results": results,
