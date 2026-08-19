@@ -1,92 +1,80 @@
-# Maveb Research Protocol: Metric Geometric Uncertainty v1.2
+# Maveb Research Protocol: Metric Geometric Uncertainty v1.3
 
-- Status: preregistered before valid public metric sampling
+- Status: calibration amendment frozen before any held-out sidecar acquisition or U2 sampling
 - Branch family: `agent/metric-uncertainty-*`
 - Primary representation under study: metric geometry + 3D Gaussian Splatting
 - Primary question: **Can calibrated geometric uncertainty from heterogeneous consumer sensors improve sparse-view metric reconstruction without hiding geometry errors behind rendering quality?**
-- Public evidence revision: **CA-1M/FARO ground truth + ARKitScenes raw confidence**
+- Public evidence: **CA-1M/FARO ground truth + ARKitScenes raw confidence**
 
 ## 1. Research posture
 
-Maveb already contains enough rendering and reconstruction machinery to ask a serious question. This
-track freezes unrelated feature expansion. Editor polish, new PBR features, relighting, cinematic
-tooling, semantics, and unrelated glTF work are not research progress unless an experiment below
-requires them.
+Maveb freezes unrelated feature expansion for this track. The study asks whether observable sensing
+signals can be converted into metric uncertainty that is calibrated on disjoint data, survives causal
+negative controls, and later improves sparse reconstruction geometry. Null and negative outcomes are
+valid results.
 
-The study does not ask whether depth or confidence can be inserted into a reconstruction pipeline.
-It asks whether observable sensing/registration signals can be converted into a metric uncertainty
-that is calibrated on disjoint data, survives causal negative controls, and improves geometry under
-sparse or corrupted observations. Negative and null results remain valid outcomes.
+Pixels are measurement samples. **Scene is the paper-level unit of evidence.**
 
-## 2. Public evidence source corrections before valid sampling
+## 2. Public evidence source history
 
-The initial protocol proposed ARKitScenes mobile reconstruction meshes as the public reference. No
-selected public scene was downloaded, fitted, or evaluated under that plan. Before outcome
-inspection, the reference was upgraded to CA-1M because its per-frame FARO laser-scanner rendered
-depth is independent of the onboard LiDAR observation being calibrated.
+The initial public plan used ARKitScenes mobile meshes as reference. Before selected-scene metric
+sampling, this was rejected because the reference was not independent enough from the mobile sensor
+family. Public truth was upgraded to CA-1M, whose FARO laser-scanner rendered depth is independently
+registered to the capture camera.
 
-The selected CA-1M archives were then acquired. Inspection of the first calibration archive revealed
-that the released tar contains ARKit depth, FARO GT depth, their separate intrinsics, and the
-registered pose, but **does not contain a confidence member**. No valid metric sample or fitted model
-existed at that point. The protocol was therefore corrected again without changing scene membership:
-confidence comes from the original ARKitScenes raw `confidence` asset for the identical video ID.
-Apple documents that asset as synchronized with low-resolution depth, 256x192 UInt8 PNG, with levels
-0=low, 1=medium, 2=high.
+After the selected CA-1M calibration archives were acquired, inspection of the first tar showed that
+the released archive contains ARKit depth, FARO GT depth and their intrinsics, but no confidence
+member. Before any valid metric sample existed, confidence was therefore sourced from the original
+ARKitScenes raw `confidence` asset for the identical video IDs.
 
-Public U1/U2 therefore uses:
+A second pre-outcome correction was required when CA-1M depth and raw confidence were found to use
+different image orientations. ARKitScenes raw `lowres_depth` is therefore used **only as an
+orientation witness**: for each joined frame the discrete image transform that best matches CA-1M
+ARKit depth is selected, then the identical transform is applied to confidence. The witness is not a
+ground-truth target, not a fitted variable, and never replaces FARO depth.
 
-- **observation:** CA-1M onboard ARKit LiDAR depth, 256x192 UInt16 millimetres;
-- **sensor signal:** ARKitScenes raw confidence PNG, UInt8 levels 0/1/2;
-- **depth geometry:** CA-1M ARKit-depth intrinsic matrix;
-- **independent target:** CA-1M FARO rendered GT depth, 512x384 UInt16 millimetres;
-- **target geometry:** CA-1M GT-depth intrinsic matrix;
-- **pose provenance:** CA-1M registered camera pose in laser-scanner space.
+The evidence-eligible split is `benchmarks/experiments/metric-uncertainty-public-split-v1.json`,
+revision 4. Scene membership has remained unchanged since revision 2.
 
-CA-1M integer timestamps are interpreted in nanoseconds. ARKitScenes confidence files use
-`{video_id}_{timestamp_seconds}.png`. Confidence is joined by nearest same-video timestamp under the
-frozen 20 ms tolerance; the raw 0/1/2 category and actual join delta are preserved in every sample.
-The v1 scalar hypothesis uses `c_sensor = raw_level / 2`, but raw categories remain available for
-future categorical ablation.
+## 3. Frozen public split
 
-GT pixels with value zero are unregistered and excluded. ARKit and GT depth pixels are matched by
-calibrated camera ray using their released intrinsics; a fixed 2x resize is forbidden. The old
-ARKitScenes mesh sampler remains an engineering smoke/orientation oracle only and cannot satisfy U1
-or U2 evidence gates.
+Calibration, distinct visits:
 
-## 3. Research questions
+- `ca1m-42444499` — visit 421065
+- `ca1m-42444511` — visit 421063
+- `ca1m-42444574` — visit 421062
 
-### RQ1 — Calibration
-Can observable quantities available before reconstruction predict metric depth/geometry error?
+Held-out, distinct visits:
 
-### RQ2 — Sparse-view geometry
-Does calibrated inverse-variance weighting improve accuracy, completeness, F-score and Chamfer over
-uniform depth and naive confidence weighting?
+- `ca1m-45662921` — visit 468646
+- `ca1m-45261179` — visit 466802
+- `ca1m-47115543` — visit 470655
+- `ca1m-45261143` — visit 466801
+- `ca1m-45261615` — visit 467293
 
-### RQ3 — Robustness
-How does any advantage change under view sparsity, depth dropout, pose noise and cross-sensor
-misalignment?
+Selected scenes cannot be silently replaced because they are difficult or unfavorable. Replacement
+requires a new explicit split revision and invalidates any already inspected held-out outcome.
 
-### RQ4 — Geometry/rendering tradeoff
-Can geometry improve without an unacceptable regression in novel-view quality, convergence cost or
-memory?
+## 4. Public observation construction
 
-### RQ5 — Transfer
-Do coefficients fitted on public calibration captures retain calibration/ranking ability on disjoint
-public captures and later on paired Sony+iPad scenes?
+For every sampled frame:
 
-## 4. Hypotheses
+1. CA-1M supplies onboard ARKit LiDAR depth and independent FARO rendered GT depth.
+2. ARKitScenes raw supplies confidence levels 0/1/2 and raw low-resolution depth.
+3. CA-1M nanosecond timestamp is joined to the nearest same-video ARKitScenes timestamp under a
+   frozen 20 ms tolerance; actual delta is recorded.
+4. Raw low-resolution depth selects one of the eight discrete image symmetries by lowest valid-depth
+   disagreement with CA-1M ARKit depth; that transform is applied to confidence.
+5. ARKit and FARO pixels are matched by camera ray using their separate released intrinsics; fixed
+   2x resizing is forbidden.
+6. Invalid ARKit depth, out-of-bounds mapped rays and zero/unregistered FARO depth are excluded.
+7. Raw confidence level and normalized `c_sensor = raw_level / 2` are both preserved.
 
-- **H1:** predicted metric sigma is positively associated with absolute held-out error.
-- **H2:** calibrated inverse-variance weighting improves sparse-view geometry over naive confidence.
-- **H3:** benefit is largest at 4/8/12 views and declines with dense RGB coverage.
-- **H4:** within-scene confidence shuffling and controlled alignment corruption reduce the benefit;
-  otherwise the claimed signal lacks causal evidence.
-- **H5:** geometry improvement does not exceed a 3% relative LPIPS regression unless reported as an
-  explicit Pareto tradeoff.
+No target-dependent residual filter is applied.
 
-## 5. Uncertainty model v1
+## 5. Uncertainty model
 
-For an observation at metric depth `z`:
+For metric depth `z`:
 
 ```text
 sigma_sensor = (a + b z^2) * (1 + k (1 - c_sensor))
@@ -96,7 +84,7 @@ sigma_align_position = e_align_position
 sigma_align_rotation = z * tan(e_align_rotation)
 ```
 
-The v1 independence hypothesis is:
+Independent components combine in quadrature:
 
 ```text
 sigma_total^2 = sigma_sensor^2
@@ -106,101 +94,149 @@ sigma_total^2 = sigma_sensor^2
               + sigma_align_rotation^2
 ```
 
-Only after calibration may a reconstruction ablation use:
+Only `a`, `b`, and `k` are fitted on public U1. Pose/alignment terms remain frozen until paired data
+can identify them. Reconstruction weighting remains gated until U2:
 
 ```text
 w = clamp((sigma_reference / sigma_total)^2, w_min, w_max)
 ```
 
-Public U1 fits **only** `a`, `b`, and `k`. Its registered public frames do not identify Maveb's future
-Sony↔iPad alignment term, and fitting those parameters here would create unearned degrees of freedom.
-Pose/alignment parameters remain frozen until a paired-sensor experiment can identify them.
+## 6. U1a — original single-Gaussian calibration result
 
-## 6. Frozen public split
+U1a used the preregistered scene-balanced Gaussian negative log likelihood on the deterministic
+calibration sample set:
 
-The evidence-eligible split is `benchmarks/experiments/metric-uncertainty-public-split-v1.json`,
-revision 3. **Scene membership is unchanged from revision 2.** Revision 3 only corrects the confidence
-source after the acquired CA-1M tar was empirically found not to contain confidence. At the time of
-this correction there were zero valid metric samples, no fitted coefficients, and no held-out
-outcome.
+- `ca1m-42444499`: 94,706 samples;
+- `ca1m-42444511`: deterministic 100,000 of 142,176;
+- `ca1m-42444574`: deterministic 100,000 of 218,811;
+- total fitted samples: 294,706;
+- stable SHA-256 ranking per scene, seed 42;
+- six coordinate rounds;
+- 48 golden-section iterations per coordinate;
+- parameter bounds: `a ∈ [1e-5, 0.10]`, `b ∈ [0, 0.05]`, `k ∈ [0, 20]`.
 
-Calibration, CA-1M train / ARKitScenes Training metadata, distinct visits:
+U1a is **retained as a failed calibration model**, not overwritten. Its fit pushed both geometric
+noise coefficients to their exact upper bounds (`a≈0.10 m`, `b≈0.05 m/m²`) and put a large fraction
+of observations at the fixed `maximumSigmaMetres=0.25` cap.
 
-- `ca1m-42444499` — visit 421065
-- `ca1m-42444511` — visit 421063
-- `ca1m-42444574` — visit 421062
+Calibration-only diagnostic evidence showed why:
 
-Held-out, CA-1M val / ARKitScenes Validation metadata, distinct visits:
+- median absolute error ≈ 8 mm;
+- p95 absolute error ≈ 87 mm;
+- p99 absolute error ≈ 661 mm;
+- RMSE ≈ 191 mm;
+- only ≈2.2% of samples exceed 25 cm, but rare errors extend past 1 m;
+- raw confidence is strongly ordered in empirical error: level 0 median ≈98 mm, level 1 ≈27 mm,
+  level 2 ≈8 mm.
 
-- `ca1m-45662921` — visit 468646
-- `ca1m-45261179` — visit 466802
-- `ca1m-47115543` — visit 470655
-- `ca1m-45261143` — visit 466801
-- `ca1m-45261615` — visit 467293
+This distribution is incompatible with a single Gaussian scale model: rare catastrophic residuals
+force ordinary measurements to be assigned unrealistically large sigma. U1a therefore does **not**
+authorize U2 or production weighting.
 
-The previously wired `arkitscenes-47333462` remains smoke-only. Selected evidence scenes cannot be
-silently replaced because they are difficult, sparse, partially invalid, or unfavorable. A
-replacement requires a new explicit split revision and invalidates outcomes already inspected.
+## 7. U1b amendment — fixed Student-t(3) calibration
 
-## 7. Methods and negative controls
+Because the failure was identified using calibration data only and no held-out confidence/depth
+sidecar has been acquired or sampled, the protocol is amended before U2.
 
-| ID | Method | Purpose |
-|---|---|---|
-| B0 | RGB/SfM-only | no metric prior |
-| B1 | naive metric depth | existing sensor-confidence × pose-confidence weighting |
-| B2 | uniform metric depth | accepted depth with equal weight |
-| U1 | sensor uncertainty | calibrated public sensor/depth terms |
-| U2 | no sensor confidence | replace confidence by a constant |
-| U3 | shuffled confidence | preserve each scene histogram but break sample association |
-| U4 | full metric uncertainty | later includes identified pose/alignment terms |
+U1b changes **only the residual likelihood** from Gaussian to a fixed Student-t distribution with
+`ν=3`. The choice is frozen before U2 and `ν` is not fitted.
 
-A confidence-aware claim is unsupported if U1/U4 is indistinguishable from the within-scene shuffled
-control.
+All other U1 choices remain exactly unchanged:
 
-## 8. Public U1/U2 procedure
+- same frozen scenes and visits;
+- same 294,706 deterministic selected samples;
+- same sample seed 42;
+- same `a`, `b`, `k` model and parameter bounds;
+- same six coordinate rounds and 48 golden-section iterations;
+- same 0.25 m maximum predicted sigma;
+- no sample trimming, clipping by residual, RANSAC, or target-dependent rejection.
 
-The orchestration has no `all` shortcut. The legal order is
-`prepare-calibration -> fit -> prepare-held-out -> evaluate`.
+For `ν>2`, Student-t likelihood scale is parameterized so `sigma_total` remains the predictive
+standard deviation:
 
-1. Validate frozen video membership against Apple's CA-1M train/val indices and ARKitScenes raw split
-   CSV.
-2. Acquire only the three **Training** confidence sidecars first; held-out confidence remains
-   untouched until the calibration model exists.
-3. For each sampled CA-1M frame, convert its nanosecond timestamp to seconds and join the nearest
-   same-video ARKitScenes confidence PNG within 20 ms. Record the actual delta; unmatched frames are
-   skipped, never imputed.
-4. For every accepted ARKit-depth pixel, map its calibrated camera ray into FARO GT depth using the
-   separate source/target intrinsics.
-5. Exclude invalid ARKit depth, out-of-bounds mapped rays and zero/unregistered FARO GT depth.
-6. Emit signed error `e = z_arkit - z_faro`, raw confidence level, normalized confidence and all
-   observable model inputs.
-7. Fit only sensor terms on the three calibration captures with scene-balanced Gaussian NLL.
-8. Freeze model config, calibration input hash, split hash and code revision.
-9. Only then acquire/sample the five held-out Validation confidence sidecars.
-10. Run the frozen model once on those five captures and evaluate intact, constant and deterministic
-    within-scene shuffled confidence.
-11. Report every selected scene and write failure analysis before any fusion weighting is enabled.
+```text
+student_t_scale = sigma_total * sqrt((nu - 2) / nu)
+```
 
-Pixels are measurement samples; **scene is the paper-level unit of evidence**.
+Thus downstream inverse-variance weighting retains the original meaning if U2 later validates it.
 
-## 9. Calibration metrics
+U1b passes the calibration gate only if:
+
+1. `a` and `b` do not both remain pinned to their upper search bounds;
+2. the fitted model materially improves scene-balanced Student-t NLL over the initial config;
+3. confidence is not silently credited merely because low-confidence points are heavy-tailed;
+4. per-scene diagnostics are reported before U2;
+5. the fitted U1b config, calibration input hash, split hash and code revision are frozen.
+
+Failure of U1b is a valid negative result and blocks U2 intervention claims until the measurement
+model is reformulated explicitly.
+
+## 8. Research questions and hypotheses
+
+### RQ1 — Calibration
+Can observable quantities available before reconstruction predict metric error on disjoint scenes?
+
+### RQ2 — Sparse-view geometry
+Does validated inverse-variance weighting improve accuracy, completeness, F-score and Chamfer over
+uniform depth and naive confidence weighting?
+
+### RQ3 — Robustness
+How does any advantage change under view sparsity, depth dropout, pose noise and cross-sensor
+misalignment?
+
+### RQ4 — Geometry/rendering tradeoff
+Can geometry improve without an unacceptable novel-view regression?
+
+### RQ5 — Transfer
+Do public coefficients retain calibration/ranking ability on disjoint public captures and later on
+paired Sony+iPad scenes?
+
+Hypotheses:
+
+- **H1:** predicted sigma is positively associated with absolute held-out error.
+- **H2:** calibrated inverse-variance weighting improves sparse-view geometry over naive confidence.
+- **H3:** benefit is largest at 4/8/12 views and declines with dense RGB coverage.
+- **H4:** within-scene confidence shuffling and controlled alignment corruption reduce the benefit.
+- **H5:** geometry improvement does not exceed a 3% relative LPIPS regression unless reported as a
+  Pareto tradeoff.
+
+## 9. U2 held-out procedure
+
+U2 remains locked until U1b passes and its model hash is frozen. The legal order is:
+
+```text
+prepare-calibration -> Gaussian U1a diagnostic -> Student-t U1b -> freeze -> prepare-held-out -> evaluate
+```
+
+Only after U1b freeze may the five Validation confidence + orientation-witness sidecars be acquired.
+U2 then evaluates the frozen model once on all five scenes with:
+
+- intact confidence;
+- constant confidence;
+- deterministic within-scene shuffled confidence.
+
+No coefficient, likelihood choice, confidence normalization, timestamp tolerance, image transform,
+or scene membership may change after held-out outcomes are inspected.
+
+## 10. U2 calibration metrics
 
 Report per scene and aggregate:
 
-- RMSE;
-- Gaussian negative log likelihood;
-- equal-count-bin calibration error;
-- empirical 1-sigma and 2-sigma coverage;
-- RMS predicted sigma (sharpness);
-- Pearson correlation of predicted sigma with absolute error;
-- calibration curves/bins;
-- deterministic scene-bootstrap intervals;
-- confidence timestamp join coverage and maximum/quantile join delta.
+- MAE, RMSE and robust error quantiles;
+- Student-t(3) NLL for the amended model;
+- Gaussian NLL as a descriptive legacy metric only;
+- empirical coverage and sharpness;
+- Pearson sigma↔|error| correlation;
+- equal-count calibration curves/bins;
+- raw confidence-level error strata;
+- timestamp join coverage/deltas;
+- orientation-witness transform counts/disagreement;
+- deterministic paired bootstrap over scenes.
 
-A huge sigma that merely achieves coverage is not a successful model; sharpness and NLL prevent that
-failure from being hidden.
+A large sigma that merely achieves coverage is not success. Ranking, sharpness, held-out likelihood,
+and negative controls must agree.
 
-## 10. Geometry stress matrix (U3)
+## 11. Geometry stress matrix (U3)
 
 Only after U2:
 
@@ -211,12 +247,12 @@ Only after U2:
 - confidence: intact, constant, shuffled;
 - stochastic seeds: 11, 23, 42.
 
-Dense CPU TSDF is the first intervention target. Sparse CPU and Metal remain downstream replication
-backends, not independent research contributions.
+Dense CPU TSDF is the first intervention target. Sparse CPU and Metal are downstream replication
+backends, not independent contributions.
 
-## 11. Gaussian gate (U4)
+## 12. Gaussian gate (U4)
 
-Only after the geometry effect is understood, isolate these one at a time:
+Only after the geometry effect is understood, isolate one at a time:
 
 1. uncertainty-aware initialization;
 2. uncertainty-weighted optimization;
@@ -224,74 +260,60 @@ Only after the geometry effect is understood, isolate these one at a time:
 4. uncertainty-aware densification;
 5. geometric regularization.
 
-Every experiment uses the same Gaussian optimizer and training budget except for the named
-intervention. A combined “everything on” result without component ablations is not accepted.
+Rendering metrics: PSNR, SSIM, LPIPS. Geometry metrics: accuracy, completeness, Chamfer, F-score,
+normal error. System metrics: wall time, peak memory and representation counts.
 
-Rendering metrics are PSNR, SSIM and LPIPS; geometry metrics include accuracy, completeness, Chamfer,
-F-score and normal error; system metrics include wall time, peak memory and Gaussian/TSDF counts.
+## 13. Paired Sony+iPad extension
 
-## 12. Paired Sony+iPad extension
+After public calibration, preregister at least eight static scene classes spanning texture-rich and
+texture-poor planes, thin structures, fine geometry, reflective surfaces, mixed depth, repeated
+texture and heavy occlusion. Raw files, timestamps, calibration identity and Sim(3) residuals are
+immutable evidence. Deliberate translation/rotation perturbations are mandatory controls.
 
-After public sensor calibration, capture at least eight preregistered static scene classes spanning
-texture-rich planes, texture-poor walls, thin structures, fine geometry, glossy/reflective surfaces,
-mixed depth, repeated texture and occlusion-heavy geometry.
+## 14. Statistical protocol
 
-Raw files, timestamps, calibration identity and Sim(3) residuals are immutable evidence. The key
-extension is whether cross-sensor alignment residual predicts downstream metric error. Deliberate
-translation/rotation perturbations are mandatory causal controls.
+- scene is the paper-level comparison unit;
+- raw per-sample errors are retained for calibration diagnostics;
+- comparisons are paired within scene;
+- deterministic bootstrap over scenes uses recorded seed;
+- every preregistered scene is reported, including failures;
+- no tuning after held-out outcomes are inspected.
 
-## 13. Statistical protocol
-
-- scene, not pixel, is the unit for paper-level comparisons;
-- keep raw per-sample errors for calibration analysis;
-- compute per-scene summaries;
-- pair method comparisons within scene;
-- use deterministic bootstrap over scenes with recorded seed;
-- report every preregistered scene, including failures;
-- do not tune after held-out results are inspected.
-
-## 14. Positive-claim gate
+## 15. Positive-claim gate
 
 A positive headline reconstruction claim requires all of:
 
-- at least 10% median relative Chamfer improvement of U4 over B1 at 8 views;
+- at least 10% median relative Chamfer improvement over naive confidence at 8 views;
 - paired 95% scene-bootstrap interval excluding zero;
-- shuffled confidence materially worse than the intact/full model;
-- no more than 3% relative LPIPS regression, unless explicitly framed as a Pareto tradeoff;
+- shuffled confidence materially worse than intact uncertainty;
+- no more than 3% relative LPIPS regression unless framed explicitly as a Pareto tradeoff;
 - all preregistered scenes reported.
 
-Threshold changes require a new protocol version committed **before** the corresponding held-out
-experiment. Null/negative results remain publishable research outcomes and never authorize quiet
-threshold changes.
+Null and negative results never authorize quiet threshold changes.
 
-## 15. Reproducibility contract
+## 16. Reproducibility contract
 
-Every evidence artifact records Maveb git SHA, split revision/hash, CA-1M archive hash, ARKitScenes
-confidence manifest hash, confidence join tolerance/deltas, scene, method/ablation, sampling
-parameters, perturbations, seed, exact argv, fitted-model hash and raw/report hashes. Bulk licensed
-data remains external; compact derived numerical evidence and provenance may be committed when
-licensing permits.
+Every evidence artifact records code SHA, split revision/hash, CA-1M archive hash, ARKitScenes
+confidence and lowres-depth witness manifests, timestamp tolerance/deltas, orientation transforms,
+scene, method, sampling parameters, seed, exact argv, fitted-model hash and report/raw hashes.
 
-## 16. Literature/novelty rule
+## 17. Literature/novelty rule
 
-The contribution is not “depth-guided GS”, “sparse-view GS”, or “uncertainty-aware GS”; those are
-established method classes. Maveb's narrower test is **externally measurable metric sensing and
-registration uncertainty that is calibrated before intervention and validated causally on disjoint
-scenes**. `docs/research/LITERATURE_POSITIONING.md` is the novelty ledger and must be refreshed before
-U3 and again before U4.
+The contribution is not “depth-guided GS”, “sparse-view GS”, or “uncertainty-aware GS”. The narrower
+claim under test is **externally measurable metric sensing/registration uncertainty, calibrated before
+intervention and validated causally on disjoint scenes**. The literature ledger must be refreshed
+before U3 and again before U4.
 
-## 17. Implementation gates
+## 18. Implementation gates
 
-- **U0 — measurement:** predictor, evaluator, bootstrap, controls, provenance, synthetic end-to-end
-  fixture.
-- **U1 — calibration:** independent CA-1M/FARO errors plus ARKitScenes raw confidence from three
-  frozen calibration captures; fit sensor terms only and freeze coefficients/hashes.
-- **U2 — held-out:** five frozen CA-1M validation captures with separately acquired confidence, no
-  retuning, intact/constant/shuffled controls, calibration curves and failure analysis.
-- **U3 — fusion:** opt-in inverse-variance dense CPU TSDF ablation with B1/B2 preserved; full stress
-  matrix before sparse/Metal ports.
+- **U0 — measurement:** predictor, evaluator, provenance, controls and synthetic fixtures.
+- **U1a — Gaussian calibration:** completed and recorded as a failed heavy-tail model.
+- **U1b — robust calibration:** fixed Student-t(3), same samples/terms/bounds, no trimming; must pass
+  before U2 is unlocked.
+- **U2 — held-out:** five frozen validation captures, no retuning, intact/constant/shuffled controls.
+- **U3 — fusion:** opt-in dense CPU inverse-variance ablation with naive/uniform baselines.
 - **U4 — Gaussian:** isolated initialization/optimization/densification/pruning/regularization
   ablations plus geometry/rendering Pareto analysis.
 
-The project is successful when this protocol can become the methods and experiments sections of a
-defensible paper, including the result if the central hypothesis is false.
+The project is successful when this protocol can become defensible methods and experiments sections,
+including a publishable negative result if the central hypothesis is false.
