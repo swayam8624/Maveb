@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import sys
 import unittest
 
 
@@ -8,6 +9,7 @@ MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "ca1m_uncertaint
 SPEC = importlib.util.spec_from_file_location("ca1m_uncertainty_samples", MODULE_PATH)
 sampler = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
+sys.modules[SPEC.name] = sampler
 SPEC.loader.exec_module(sampler)
 
 
