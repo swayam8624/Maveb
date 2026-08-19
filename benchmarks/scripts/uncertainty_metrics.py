@@ -302,7 +302,8 @@ def render_markdown(groups: Sequence[dict]) -> str:
         "ECE is the count-weighted absolute gap between predicted RMS sigma and empirical "
         "RMSE in equal-count sigma bins. Student-t NLL is the primary proper score when a "
         "Student-t calibration model is supplied; Gaussian NLL is retained as a legacy diagnostic. "
-        "Scene-level summaries, not pooled pixels, are the unit of evidence for research claims."
+        "When scene is a grouping field, pixel-level bootstrap is deliberately suppressed: paired "
+        "scene bootstrap is performed by compare_uncertainty_controls.py."
     )
     lines.append("")
     return "\n".join(lines)
@@ -328,11 +329,13 @@ def main() -> int:
     input_bytes = args.input.read_bytes()
     samples = parse_jsonl(input_bytes.decode("utf-8").splitlines())
     group_fields = tuple(field.strip() for field in args.group_by.split(",") if field.strip())
+    suppress_pixel_bootstrap = "scene" in group_fields and args.bootstrap > 0
+    effective_bootstrap = 0 if suppress_pixel_bootstrap else args.bootstrap
     groups = grouped_evaluation(
         samples,
         group_fields=group_fields,
         bin_count=args.bins,
-        bootstrap_replicates=args.bootstrap,
+        bootstrap_replicates=effective_bootstrap,
         bootstrap_seed=args.bootstrap_seed,
         student_t_df=args.student_t_df,
     )
@@ -340,8 +343,10 @@ def main() -> int:
         "schemaVersion": 2,
         "inputSha256": hashlib.sha256(input_bytes).hexdigest(),
         "binCount": args.bins,
-        "bootstrapReplicates": args.bootstrap,
+        "bootstrapReplicatesRequested": args.bootstrap,
+        "bootstrapReplicates": effective_bootstrap,
         "bootstrapSeed": args.bootstrap_seed,
+        "pixelBootstrapSuppressedForSceneEvidence": suppress_pixel_bootstrap,
         "groupFields": list(group_fields),
         "studentTDegreesOfFreedom": args.student_t_df,
         "primaryProperScore": "studentTNll" if args.student_t_df is not None else "gaussianNll",
