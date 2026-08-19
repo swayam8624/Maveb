@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Run Maveb's frozen public metric-uncertainty study.
 
-The runner enforces the research gate order rather than providing an `all` shortcut:
-  prepare-calibration  Sample only the three CA-1M train scenes, joining ARKitScenes confidence.
-  fit                  Fit sensor-only coefficients on calibration observations and freeze hashes.
-  prepare-held-out     Sample only the five frozen held-out scenes after a fitted model exists.
-  evaluate             Evaluate intact/constant/shuffled confidence without retuning.
+Gate order is enforced:
+  prepare-calibration  sample only the three train scenes with ARKitScenes sidecars
+  fit                  fit calibration coefficients and freeze hashes
+  prepare-held-out     sample held-out scenes only after a fitted model exists
+  evaluate             evaluate intact/constant/shuffled confidence without retuning
 
-The runner never downloads data and never modifies the frozen split.
+ARKitScenes raw confidence is the research signal. Raw lowres_depth is used only as an orientation
+witness so the ordinal confidence map can be aligned to CA-1M without interpolation or guesswork.
 """
 
 from __future__ import annotations
@@ -53,8 +54,16 @@ def archive_path(data_root: Path, entry: dict) -> Path:
     return data_root / f"ca1m-{entry['ca1mSplit']}-{entry['videoId']}.tar"
 
 
-def confidence_directory(confidence_root: Path, entry: dict) -> Path:
-    return confidence_root / "raw" / str(entry["arkitFold"]) / str(entry["videoId"]) / "confidence"
+def sidecar_directory(sidecar_root: Path, entry: dict, asset: str) -> Path:
+    return sidecar_root / "raw" / str(entry["arkitFold"]) / str(entry["videoId"]) / asset
+
+
+def confidence_directory(sidecar_root: Path, entry: dict) -> Path:
+    return sidecar_directory(sidecar_root, entry, "confidence")
+
+
+def lowres_depth_directory(sidecar_root: Path, entry: dict) -> Path:
+    return sidecar_directory(sidecar_root, entry, "lowres_depth")
 
 
 def scene_paths(output_root: Path, scene: str) -> dict[str, Path]:
@@ -86,9 +95,7 @@ def concatenate_jsonl(inputs: list[Path], output: Path) -> int:
 def annotate_method(input_path: Path, output_path: Path, method: str) -> int:
     count = 0
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with input_path.open("r", encoding="utf-8") as source, output_path.open(
-        "w", encoding="utf-8"
-    ) as destination:
+    with input_path.open("r", encoding="utf-8") as source, output_path.open("w", encoding="utf-8") as destination:
         for line_number, raw in enumerate(source, start=1):
             if not raw.strip():
                 continue
@@ -108,7 +115,7 @@ def prepare_scenes(
     *,
     repo_root: Path,
     data_root: Path,
-    confidence_root: Path,
+    sidecar_root: Path,
     output_root: Path,
     split: dict,
     scenes: list[str],
@@ -116,18 +123,21 @@ def prepare_scenes(
     frame_stride: int,
     pixel_stride: int,
     maximum_samples: int,
-    confidence_max_delta_ms: float,
+    sidecar_max_delta_ms: float,
 ) -> list[dict]:
     sampler = repo_root / "benchmarks/scripts/ca1m_uncertainty_samples.py"
     prepared = []
     for scene in scenes:
         entry = split["sceneMetadata"][scene]
         archive = archive_path(data_root, entry)
-        confidence = confidence_directory(confidence_root, entry)
+        confidence = confidence_directory(sidecar_root, entry)
+        witness = lowres_depth_directory(sidecar_root, entry)
         if not archive.is_file():
             raise ValueError(f"missing frozen CA-1M archive for {scene}: {archive}")
         if not confidence.is_dir():
             raise ValueError(f"missing ARKitScenes confidence directory for {scene}: {confidence}")
+        if not witness.is_dir():
+            raise ValueError(f"missing ARKitScenes lowres_depth witness for {scene}: {witness}")
         paths = scene_paths(output_root, scene)
         run(
             [
@@ -136,6 +146,8 @@ def prepare_scenes(
                 str(archive),
                 "--confidence-root",
                 str(confidence),
+                "--lowres-depth-root",
+                str(witness),
                 "--scene",
                 scene,
                 "--video-id",
@@ -149,7 +161,7 @@ def prepare_scenes(
                 "--max-samples",
                 str(maximum_samples),
                 "--confidence-max-delta-ms",
-                str(confidence_max_delta_ms),
+                str(sidecar_max_delta_ms),
             ],
             cwd=repo_root,
         )
@@ -165,34 +177,34 @@ def prepare_scenes(
                 "archive": str(archive.resolve()),
                 "archiveSha256": meta["archiveSha256"],
                 "confidenceRoot": str(confidence.resolve()),
+                "lowresDepthRoot": str(witness.resolve()),
                 "confidenceManifestSha256": meta["confidenceManifestSha256"],
+                "orientationWitnessManifestSha256": meta["orientationWitnessManifestSha256"],
+                "sidecarTransformCounts": meta["sidecarTransformCounts"],
+                "maximumOrientationWitnessMedianAbsErrorMillimetres": meta[
+                    "maximumOrientationWitnessMedianAbsErrorMillimetres"
+                ],
                 "samples": str(paths["samples"].resolve()),
                 "sampleSha256": meta["outputSha256"],
                 "emittedSamples": meta["emittedSamples"],
                 "completeFrames": meta["completeFrames"],
                 "selectedFrames": meta["selectedFrames"],
-                "matchedConfidenceFrames": meta["matchedConfidenceFrames"],
-                "skippedFramesNoConfidence": meta["skippedFramesNoConfidence"],
+                "matchedSidecarFrames": meta["matchedSidecarFrames"],
+                "skippedFramesNoSidecar": meta["skippedFramesNoSidecar"],
                 "maximumObservedConfidenceDeltaMilliseconds": meta[
                     "maximumObservedConfidenceDeltaMilliseconds"
+                ],
+                "maximumObservedOrientationWitnessDeltaMilliseconds": meta[
+                    "maximumObservedOrientationWitnessDeltaMilliseconds"
                 ],
             }
         )
     ledger = output_root / ledger_name
-    ledger.write_text(
-        json.dumps({"schemaVersion": 1, "scenes": prepared}, indent=2, sort_keys=True) + "\n"
-    )
+    ledger.write_text(json.dumps({"schemaVersion": 2, "scenes": prepared}, indent=2, sort_keys=True) + "\n")
     return prepared
 
 
-def fit(
-    *,
-    repo_root: Path,
-    output_root: Path,
-    split_path: Path,
-    split: dict,
-    max_per_scene: int,
-) -> Path:
+def fit(*, repo_root: Path, output_root: Path, split_path: Path, split: dict, max_per_scene: int) -> Path:
     calibration_raw = output_root / "calibration/observations.jsonl"
     concatenate_jsonl(
         [scene_paths(output_root, scene)["samples"] for scene in split["calibrationScenes"]],
@@ -223,18 +235,11 @@ def fit(
 
 
 def evaluate(
-    *,
-    repo_root: Path,
-    output_root: Path,
-    split: dict,
-    fitted_model: Path,
-    bootstrap: int,
-    seed: int,
+    *, repo_root: Path, output_root: Path, split: dict, fitted_model: Path, bootstrap: int, seed: int
 ) -> dict:
     held_raw = output_root / "held-out/observations.jsonl"
     concatenate_jsonl(
-        [scene_paths(output_root, scene)["samples"] for scene in split["heldOutScenes"]],
-        held_raw,
+        [scene_paths(output_root, scene)["samples"] for scene in split["heldOutScenes"]], held_raw
     )
     controls = repo_root / "benchmarks/scripts/uncertainty_controls.py"
     predictor = repo_root / "benchmarks/scripts/geometric_uncertainty.py"
@@ -252,51 +257,18 @@ def evaluate(
         report = root / "calibration-report.json"
         markdown = root / "calibration-report.md"
         run(
-            [
-                sys.executable,
-                str(controls),
-                str(held_raw),
-                "--output",
-                str(controlled),
-                "--mode",
-                mode,
-                "--seed",
-                str(seed),
-                "--constant",
-                "0.5",
-            ],
-            cwd=repo_root,
+            [sys.executable, str(controls), str(held_raw), "--output", str(controlled), "--mode", mode,
+             "--seed", str(seed), "--constant", "0.5"], cwd=repo_root
         )
         annotate_method(controlled, annotated, method)
         run(
-            [
-                sys.executable,
-                str(predictor),
-                str(annotated),
-                "--output",
-                str(predictions),
-                "--config",
-                str(fitted_model),
-            ],
-            cwd=repo_root,
+            [sys.executable, str(predictor), str(annotated), "--output", str(predictions),
+             "--config", str(fitted_model)], cwd=repo_root
         )
         run(
-            [
-                sys.executable,
-                str(metrics),
-                str(predictions),
-                "--output",
-                str(report),
-                "--markdown",
-                str(markdown),
-                "--group-by",
-                "method,scene",
-                "--bootstrap",
-                str(bootstrap),
-                "--bootstrap-seed",
-                str(seed),
-            ],
-            cwd=repo_root,
+            [sys.executable, str(metrics), str(predictions), "--output", str(report), "--markdown",
+             str(markdown), "--group-by", "method,scene", "--bootstrap", str(bootstrap),
+             "--bootstrap-seed", str(seed)], cwd=repo_root
         )
         reports[mode] = {
             "method": method,
@@ -311,14 +283,11 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--stage",
-        choices=("prepare-calibration", "fit", "prepare-held-out", "evaluate"),
-        required=True,
+        "--stage", choices=("prepare-calibration", "fit", "prepare-held-out", "evaluate"), required=True
     )
     parser.add_argument(
-        "--split",
-        type=Path,
-        default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json",
+        "--split", type=Path,
+        default=repo_root / "benchmarks/experiments/metric-uncertainty-public-split-v1.json"
     )
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--confidence-root", type=Path)
@@ -343,7 +312,7 @@ def main() -> int:
         if args.stage in ("prepare-calibration", "prepare-held-out"):
             if args.confidence_root is None:
                 raise ValueError(f"{args.stage} requires --confidence-root")
-            confidence_root = args.confidence_root.resolve()
+            sidecar_root = args.confidence_root.resolve()
             if args.stage == "prepare-held-out":
                 fitted = output_root / "calibration/fitted-model.json"
                 if not fitted.is_file():
@@ -359,7 +328,7 @@ def main() -> int:
             results[args.stage] = prepare_scenes(
                 repo_root=repo_root,
                 data_root=data_root,
-                confidence_root=confidence_root,
+                sidecar_root=sidecar_root,
                 output_root=output_root,
                 split=split,
                 scenes=scenes,
@@ -367,16 +336,13 @@ def main() -> int:
                 frame_stride=args.frame_stride,
                 pixel_stride=args.pixel_stride,
                 maximum_samples=args.max_samples,
-                confidence_max_delta_ms=args.confidence_max_delta_ms,
+                sidecar_max_delta_ms=args.confidence_max_delta_ms,
             )
 
         if args.stage == "fit":
             fitted = fit(
-                repo_root=repo_root,
-                output_root=output_root,
-                split_path=split_path,
-                split=split,
-                max_per_scene=args.max_per_scene,
+                repo_root=repo_root, output_root=output_root, split_path=split_path,
+                split=split, max_per_scene=args.max_per_scene
             )
             results["fit"] = {"model": str(fitted.resolve()), "modelSha256": sha256_file(fitted)}
 
@@ -388,18 +354,14 @@ def main() -> int:
             if model_payload.get("splitSha256") != hashlib.sha256(split_bytes).hexdigest():
                 raise ValueError("held-out evaluation refuses a model fitted on another split")
             results["evaluate"] = evaluate(
-                repo_root=repo_root,
-                output_root=output_root,
-                split=split,
-                fitted_model=fitted,
-                bootstrap=args.bootstrap,
-                seed=args.seed,
+                repo_root=repo_root, output_root=output_root, split=split,
+                fitted_model=fitted, bootstrap=args.bootstrap, seed=args.seed
             )
 
         ledger = {
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "study": "metric-uncertainty-v1",
-            "evidenceSource": "CA-1M ARKit LiDAR vs FARO GT depth + ARKitScenes raw confidence",
+            "evidenceSource": "CA-1M ARKit LiDAR vs FARO GT + ARKitScenes confidence; raw depth is orientation witness only",
             "stage": args.stage,
             "splitId": split["id"],
             "splitRevision": split.get("revision"),
