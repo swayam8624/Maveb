@@ -9,7 +9,7 @@
   "sourceOutcome": {
     "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
     "u3bStatus": "completed-confirmatory-gate-not-passed",
-    "u3bMedianCandidateVsNaiveRelativeChamferImprovement": -0.00033,
+    "u3bMedianCandidateVsNaiveRelativeChamferImprovement": -0.0003320066665436959,
     "u3bCandidateBetterSceneCount": 2
   },
   "scenes": [
@@ -83,11 +83,11 @@
   },
   "crossSceneAnalysis": {
     "u3bCandidateVsNaiveImprovementValues": {
-      "ca1m-48458481": -0.18118,
-      "ca1m-48018737": -0.00058,
-      "ca1m-45261587": -0.00033,
-      "ca1m-42897538": 0.20908,
-      "ca1m-48018375": 0.01653
+      "ca1m-48458481": -0.18118202472731315,
+      "ca1m-48018737": -0.0005759194893888629,
+      "ca1m-45261587": -0.0003320066665436959,
+      "ca1m-42897538": 0.20908232789514566,
+      "ca1m-48018375": 0.016528611507687516
     },
     "descriptiveOnly": true,
     "report": [
