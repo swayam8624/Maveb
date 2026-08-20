@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m venv .venv-ci
-          .venv-ci/bin/python -m pip install --disable-pip-version-check numpy pillow
+          .venv-ci/bin/python -m pip install --disable-pip-version-check numpy pillow scipy
           echo "$PWD/.venv-ci/bin" >> "$GITHUB_PATH"
       - name: MavebBench unit tests
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
