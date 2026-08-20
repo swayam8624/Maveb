@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "study": "metric-uncertainty-v1",
   "stage": "U1b-robust-calibration-freeze",
-  "status": "frozen-before-held-out-sidecar-acquisition",
+  "status": "frozen-before-held-out-sampling-sidecar-acquisition-time-uncertain",
   "fitCodeGitSha": "6d3b1ab2ac82cf7257c196d72aed07826b684e8a",
   "preU2EvaluationCodeGitSha": "c8b0bcc52b47efb723d992740c83b79aceaee761",
   "preU2TestStateGitSha": "6e21de37805676bbff12eb164a2aeb7f39a6d01c",
@@ -76,5 +76,10 @@
     "pairedSceneBootstrapSeed": 42,
     "differenceConvention": "intact minus control"
   },
-  "note": "This compact evidence manifest was committed after U1b calibration and before any ARKitScenes Validation confidence/lowres_depth sidecar was acquired or sampled. Evaluation/statistical code and its tests were frozen before held-out exposure."
+  "provenanceCorrectionAfterU2": {
+    "observation": "The held-out acquisition ledger later reported alreadyPresent=true for all five Validation confidence/lowres_depth directories. In acquire_arkitscenes_confidence.py, alreadyPresent is computed before execute_download, so the sidecar files existed locally before the explicit U2 acquisition command.",
+    "consequence": "The earlier claim that Validation sidecars were physically unacquired at U1b freeze is withdrawn. The stronger supported claim is that U1b coefficients, analysis code, scene IDs, and thresholds were frozen before any recorded held-out sampling/evaluation outcome. Local filesystem birth-time audit is required to narrow sidecar acquisition timing.",
+    "doesNotEstablish": "alreadyPresent does not establish that held-out sidecars, FARO errors, or U2 metrics were inspected before U1b freeze; it only establishes prior local asset presence."
+  },
+  "note": "This manifest freezes the U1b model and pre-U2 analysis plan before recorded held-out sampling/evaluation. The original stronger wording about physical sidecar acquisition timing was corrected after the U2 acquisition ledger revealed pre-existing Validation asset directories."
 }
