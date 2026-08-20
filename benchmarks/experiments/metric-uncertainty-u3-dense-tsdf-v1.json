@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u3-dense-tsdf-v1",
+  "study": "metric-uncertainty-v1",
+  "stage": "U3-dense-cpu-geometry",
+  "status": "preregistered-before-real-u3-geometry-outcomes",
+  "frozen": true,
+  "sourceSplit": {
+    "id": "metric-uncertainty-public-split-v1",
+    "revision": 4,
+    "sha256": "03bac386d32568c26af0d727b8555ac5a92dda22fd92740ffa281f2cc9fbdd10"
+  },
+  "frozenUncertaintyModel": {
+    "id": "metric-uncertainty-v1-student-t3",
+    "sha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "depthNoiseFloorMetres": 0.010634156727771725,
+    "depthNoiseQuadraticMetresPerMetreSquared": 0.004398048551220112,
+    "sensorConfidencePenalty": 5.990146384791633,
+    "minimumSigmaMetres": 0.001,
+    "maximumSigmaMetres": 0.25,
+    "referenceSigmaMetres": 0.01,
+    "minimumPrecisionWeight": 0.01,
+    "maximumPrecisionWeight": 1.0,
+    "poseTranslationFloorMetres": 0.001,
+    "poseTranslationScaleMetres": 0.02
+  },
+  "evaluationScenes": [
+    "ca1m-45662921",
+    "ca1m-45261179",
+    "ca1m-47115543",
+    "ca1m-45261143",
+    "ca1m-45261615"
+  ],
+  "dataRoles": {
+    "observation": "CA-1M onboard ARKit LiDAR depth",
+    "sensorConfidence": "ARKitScenes raw confidence aligned with the frozen orientation-witness procedure",
+    "cameraPose": "CA-1M FARO-registered released frame pose after explicit coordinate-convention validation",
+    "referenceGeometry": "CA-1M FARO rendered depth back-projected with released FARO intrinsics and registered poses",
+    "orientationWitnessOnly": "ARKitScenes raw lowres_depth; never a reconstruction target"
+  },
+  "methods": [
+    {
+      "id": "uniform",
+      "weight": "1 for every admitted depth sample"
+    },
+    {
+      "id": "naive-confidence",
+      "weight": "normalized ARKit confidence level (0, 128/255, 1)"
+    },
+    {
+      "id": "calibrated-depth-only",
+      "weight": "frozen inverse variance with sensorConfidencePenalty forced to 0; all other U1b coefficients unchanged",
+      "role": "ablation for depth dependence without confidence"
+    },
+    {
+      "id": "calibrated-inverse-variance",
+      "weight": "frozen U1b inverse variance"
+    },
+    {
+      "id": "calibrated-shuffled-confidence",
+      "weight": "frozen U1b inverse variance after deterministic within-scene confidence permutation",
+      "seed": 42,
+      "role": "causal confidence control"
+    }
+  ],
+  "primaryComparison": {
+    "viewCount": 8,
+    "depthDropoutFraction": 0.0,
+    "poseTranslationPerturbationMetres": 0.0,
+    "poseRotationPerturbationDegrees": 0.0,
+    "comparison": "calibrated-inverse-variance versus naive-confidence",
+    "primaryMetric": "chamferMeanMetres",
+    "secondaryMetrics": [
+      "accuracyMeanMetres",
+      "completenessMeanMetres",
+      "fScore",
+      "elapsedMilliseconds",
+      "peakResidentBytes",
+      "vertices",
+      "triangles"
+    ],
+    "paperEvidenceUnit": "scene",
+    "pairedSceneBootstrapReplicates": 2000,
+    "pairedSceneBootstrapSeed": 42,
+    "positiveGeometryGate": {
+      "minimumMedianRelativeChamferImprovement": 0.10,
+      "paired95IntervalForRelativeChamferImprovementMustExcludeZero": true,
+      "calibratedShuffledConfidenceMustBeMateriallyWorse": true
+    }
+  },
+  "frameSelection": {
+    "policy": "deterministic temporal quantiles over complete CA-1M frames after structural validity checks, without using FARO error or confidence values",
+    "viewCounts": [4, 8, 12, 24],
+    "ties": "lower original frame index"
+  },
+  "volume": {
+    "implementation": "dense CPU TSDF reference path",
+    "bounds": "one shared robust automatic bound per scene/view selection, reused unchanged across methods",
+    "boundsConfidenceFloor": 0.0,
+    "maximumAxisVoxels": 96,
+    "minimumVoxelSizeMetres": 0.02,
+    "paddingMetres": 0.12,
+    "truncation": "max(4 * voxelSizeMetres, 0.04)",
+    "maximumWeight": 100.0,
+    "reason": "same projection/truncation/meshing for every method; only sample weights may differ"
+  },
+  "referenceSampling": {
+    "source": "FARO GT depth from all structurally valid frames in the frozen scene",
+    "zeroDepthInvalid": true,
+    "maximumReferencePoints": 200000,
+    "downsampling": "stable SHA-256 rank over scene/frame/pixel identity",
+    "fScoreThresholdMetres": 0.05
+  },
+  "stressTests": {
+    "viewCountSweep": [4, 8, 12, 24],
+    "depthDropoutFractions": [0.0, 0.25, 0.5, 0.75],
+    "depthDropout": "deterministic per-sample SHA-256 mask with seed 42, identical mask across methods",
+    "poseTranslationPerturbationMetres": [0.0, 0.01, 0.025],
+    "poseRotationPerturbationDegrees": [0.0, 0.5, 1.0],
+    "perturbation": "deterministic scene/frame directions from seed 42, identical across methods",
+    "executionOrder": "primary 8-view clean comparison first; stress grids only after primary outputs are frozen"
+  },
+  "fairnessConstraints": [
+    "No method may change frame selection, reference points, volume bounds, voxel size, truncation distance, or mesh extraction.",
+    "No method may remove samples based on FARO residuals.",
+    "The frozen U1b coefficients may not be retuned on U3 scenes.",
+    "The shuffled control preserves each scene's exact confidence distribution.",
+    "If CA-1M pose semantics fail coordinate-convention validation, U3 stops for an adapter correction before any geometry comparison is interpreted."
+  ],
+  "claimPolicy": "U2 establishes uncertainty prediction, not reconstruction improvement. U3 may claim geometry improvement only if the preregistered primary gate passes; otherwise report the null/negative geometry result without altering U1b."
+}
