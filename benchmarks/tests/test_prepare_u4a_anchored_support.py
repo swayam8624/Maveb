@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 import numpy as np
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "prepare_u4a_anchored_support.py"
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+SCRIPT = SCRIPTS / "prepare_u4a_anchored_support.py"
 spec = importlib.util.spec_from_file_location("prepare_u4a_anchored_support", SCRIPT)
 module = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
