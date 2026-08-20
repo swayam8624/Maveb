@@ -19,7 +19,10 @@ spec.loader.exec_module(module)
 class U3bPosePreflightTests(unittest.TestCase):
     def test_frozen_rule_accepts_five_of_five_without_legacy_minimum(self):
         validation = {
+            "requestedPairCount": 16,
             "pairCount": 5,
+            "cameraToWorldSupportedPairCount": 16,
+            "inverseSupportedPairCount": 5,
             "cameraToWorldBetterPairCount": 5,
             "cameraToWorldMedianOfPairMedianErrorsMetres": 0.0012,
             "inverseMedianOfPairMedianErrorsMetres": 0.5,
@@ -28,7 +31,10 @@ class U3bPosePreflightTests(unittest.TestCase):
 
     def test_frozen_rule_requires_majority(self):
         validation = {
+            "requestedPairCount": 16,
             "pairCount": 5,
+            "cameraToWorldSupportedPairCount": 16,
+            "inverseSupportedPairCount": 5,
             "cameraToWorldBetterPairCount": 2,
             "cameraToWorldMedianOfPairMedianErrorsMetres": 0.0012,
             "inverseMedianOfPairMedianErrorsMetres": 0.5,
@@ -37,10 +43,40 @@ class U3bPosePreflightTests(unittest.TestCase):
 
     def test_frozen_rule_requires_lower_scene_median(self):
         validation = {
+            "requestedPairCount": 16,
             "pairCount": 5,
+            "cameraToWorldSupportedPairCount": 16,
+            "inverseSupportedPairCount": 5,
             "cameraToWorldBetterPairCount": 5,
             "cameraToWorldMedianOfPairMedianErrorsMetres": 0.6,
             "inverseMedianOfPairMedianErrorsMetres": 0.5,
+        }
+        self.assertFalse(module.frozen_pose_rule(validation))
+
+    def test_zero_inverse_support_passes_only_with_all_frozen_direct_pairs(self):
+        validation = {
+            "requestedPairCount": 16,
+            "pairCount": 0,
+            "cameraToWorldSupportedPairCount": 16,
+            "inverseSupportedPairCount": 0,
+            "cameraToWorldBetterPairCount": 0,
+            "cameraToWorldMedianOfPairMedianErrorsMetres": 0.0007,
+            "inverseMedianOfPairMedianErrorsMetres": None,
+        }
+        self.assertTrue(module.frozen_pose_rule(validation))
+
+        validation["cameraToWorldSupportedPairCount"] = 15
+        self.assertFalse(module.frozen_pose_rule(validation))
+
+    def test_inverse_none_with_nonzero_support_fails(self):
+        validation = {
+            "requestedPairCount": 16,
+            "pairCount": 1,
+            "cameraToWorldSupportedPairCount": 16,
+            "inverseSupportedPairCount": 1,
+            "cameraToWorldBetterPairCount": 1,
+            "cameraToWorldMedianOfPairMedianErrorsMetres": 0.0007,
+            "inverseMedianOfPairMedianErrorsMetres": None,
         }
         self.assertFalse(module.frozen_pose_rule(validation))
 
