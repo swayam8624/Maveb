@@ -3,13 +3,16 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import sys
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "audit_u2_orientation_sensitivity.py"
+SCRIPTS_DIR = MODULE_PATH.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 SPEC = importlib.util.spec_from_file_location("audit_u2_orientation_sensitivity", MODULE_PATH)
 audit = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
-import sys
 sys.modules[SPEC.name] = audit
 SPEC.loader.exec_module(audit)
 
