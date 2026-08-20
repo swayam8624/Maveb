@@ -112,6 +112,50 @@ def compact_geometry_metrics(report: dict, fuse: dict) -> dict:
     }
 
 
+def load_runtime_replay_snapshot(path: Path | None) -> tuple[dict[tuple[str, str], dict], str | None]:
+    if path is None:
+        return {}, None
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    snapshot = json.loads(path.read_text())
+    if snapshot.get("study") != STUDY_ID:
+        raise ValueError("runtime recovery snapshot study mismatch")
+    if snapshot.get("status") != "frozen-pre-fix-partial-reveal":
+        raise ValueError("runtime recovery snapshot is not frozen pre-fix evidence")
+    if int(snapshot.get("completedMethodCount", -1)) != 16:
+        raise ValueError("runtime recovery snapshot must contain exactly 16 completed methods")
+    expectations: dict[tuple[str, str], dict] = {}
+    for record in snapshot.get("completed", []):
+        key = (str(record["scene"]), str(record["method"]))
+        if key in expectations:
+            raise ValueError(f"duplicate runtime replay expectation: {key}")
+        expectations[key] = record
+    if len(expectations) != 16:
+        raise ValueError("runtime recovery snapshot completed list must contain exactly 16 methods")
+    return expectations, sha256_file(path)
+
+
+def verify_runtime_replay(
+    expected: dict,
+    *,
+    scene: str,
+    method: str,
+    mesh_sha256: str,
+    metrics: dict,
+) -> None:
+    if mesh_sha256 != expected["meshSha256"]:
+        raise RuntimeError(
+            f"runtime recovery mesh mismatch for {scene} {method}: "
+            f"{mesh_sha256} != {expected['meshSha256']}"
+        )
+    if abs(metrics["chamferMeanMetres"] - float(expected["chamferMeanMetres"])) > 1e-12:
+        raise RuntimeError(f"runtime recovery Chamfer mismatch for {scene} {method}")
+    if abs(metrics["fScore"] - float(expected["fScoreAt5cm"])) > 1e-12:
+        raise RuntimeError(f"runtime recovery F-score mismatch for {scene} {method}")
+    if metrics["vertices"] != int(expected["vertices"]) or metrics["triangles"] != int(expected["triangles"]):
+        raise RuntimeError(f"runtime recovery topology-count mismatch for {scene} {method}")
+
+
 def validate_inputs(args: argparse.Namespace) -> tuple[dict, dict]:
     for path in (args.study, args.model, args.pose_preflight, args.acquisition_ledger, args.adapter):
         if not path.is_file():
@@ -224,6 +268,16 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
     if final_path.exists():
         raise ValueError("primary-result.json already exists; frozen U3b outcome will not be overwritten")
 
+    replay_expectations, replay_snapshot_sha256 = load_runtime_replay_snapshot(
+        args.runtime_recovery_snapshot
+    )
+    existing_meshes = list(args.output_root.glob("scenes/*/primary/*/mesh.ply"))
+    if existing_meshes and not replay_expectations:
+        raise ValueError(
+            "partial U3b primary artifacts already exist; a frozen runtime recovery snapshot is required"
+        )
+    replay_verified = 0
+
     repo = Path(__file__).resolve().parents[2]
     geometry_script = repo / "benchmarks/scripts/evaluate_geometry.py"
     scene_results: dict[str, dict] = {}
@@ -255,6 +309,13 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
                 ],
                 label=f"fuse {scene} {method}",
             )
+            mesh_sha256 = sha256_file(mesh)
+            replay_expected = replay_expectations.get((scene, method))
+            if replay_expected is not None and mesh_sha256 != replay_expected["meshSha256"]:
+                raise RuntimeError(
+                    f"runtime recovery mesh mismatch for {scene} {method}: "
+                    f"{mesh_sha256} != {replay_expected['meshSha256']}"
+                )
             (method_dir / "fusion.json").write_text(json.dumps(fuse, indent=2, sort_keys=True) + "\n")
             geometry = run_json(
                 [
@@ -274,12 +335,36 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
                 label=f"geometry {scene} {method}",
             )
             (method_dir / "geometry.json").write_text(json.dumps(geometry, indent=2, sort_keys=True) + "\n")
+            metrics = compact_geometry_metrics(geometry, fuse)
+            if replay_expected is not None:
+                verify_runtime_replay(
+                    replay_expected,
+                    scene=scene,
+                    method=method,
+                    mesh_sha256=mesh_sha256,
+                    metrics=metrics,
+                )
+                replay_verified += 1
+                if replay_verified == len(replay_expectations):
+                    print(
+                        json.dumps(
+                            {
+                                "u3bRuntimeRecovery": {
+                                    "status": "pre-failure-replay-verified",
+                                    "methods": replay_verified,
+                                    "snapshotSha256": replay_snapshot_sha256,
+                                }
+                            }
+                        ),
+                        file=sys.stderr,
+                        flush=True,
+                    )
             method_results[method] = {
                 "engineManifestRole": manifest_role,
                 "engineMode": engine_mode,
                 "engineManifestSha256": sha256_file(manifest),
-                "metrics": compact_geometry_metrics(geometry, fuse),
-                "meshSha256": sha256_file(mesh),
+                "metrics": metrics,
+                "meshSha256": mesh_sha256,
                 "fusion": fuse,
                 "geometry": geometry,
             }
@@ -289,8 +374,8 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
                         "u3bPrimaryMetric": {
                             "scene": scene,
                             "method": method,
-                            "chamferMeanMetres": method_results[method]["metrics"]["chamferMeanMetres"],
-                            "fScore": method_results[method]["metrics"]["fScore"],
+                            "chamferMeanMetres": metrics["chamferMeanMetres"],
+                            "fScore": metrics["fScore"],
                         }
                     }
                 ),
@@ -303,6 +388,11 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
             "relativeManifestSha256": sha256_file(relative_manifest),
             "methods": method_results,
         }
+
+    if replay_expectations and replay_verified != len(replay_expectations):
+        raise RuntimeError(
+            f"runtime recovery replay verified {replay_verified} methods, expected {len(replay_expectations)}"
+        )
 
     improvements = []
     shuffled_degradations = []
@@ -368,6 +458,14 @@ def evaluate(args: argparse.Namespace, study: dict) -> dict:
             "passed": passed,
         },
     }
+    if replay_snapshot_sha256 is not None:
+        result["runtimeRecovery"] = {
+            "status": "pre-failure-replay-verified",
+            "snapshotSha256": replay_snapshot_sha256,
+            "verifiedMethodCount": replay_verified,
+            "requireExactMeshSha256": True,
+            "metricTolerance": 1e-12,
+        }
     temporary = final_path.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     temporary.replace(final_path)
@@ -397,6 +495,11 @@ def main() -> int:
         "--fuse-tool",
         type=Path,
         default=Path("build/ci/tools/maveb-u3-fuse/maveb-u3-fuse"),
+    )
+    parser.add_argument(
+        "--runtime-recovery-snapshot",
+        type=Path,
+        help="frozen pre-fix partial-reveal snapshot; required when primary meshes already exist",
     )
     args = parser.parse_args()
 
