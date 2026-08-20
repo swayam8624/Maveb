@@ -180,7 +180,8 @@ std::vector<std::byte> readBytes(const std::filesystem::path& path, std::size_t 
         throw std::runtime_error("unexpected file size: " + path.string());
     std::vector<std::byte> bytes(expectedBytes);
     std::ifstream stream(path, std::ios::binary);
-    if (!stream.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size())))
+    if (!stream.read(reinterpret_cast<char*>(bytes.data()),
+                     static_cast<std::streamsize>(bytes.size())))
         throw std::runtime_error("unable to read: " + path.string());
     return bytes;
 }
@@ -253,12 +254,17 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
         uncertainty.depthNoiseFloorMetres = numberField(uncertaintyObject, "depthNoiseFloorMetres");
         uncertainty.depthNoiseQuadraticMetresPerMetreSquared =
             numberField(uncertaintyObject, "depthNoiseQuadraticMetresPerMetreSquared");
-        uncertainty.sensorConfidencePenalty = numberField(uncertaintyObject, "sensorConfidencePenalty");
-        uncertainty.poseTranslationFloorMetres = numberField(uncertaintyObject, "poseTranslationFloorMetres");
-        uncertainty.poseTranslationScaleMetres = numberField(uncertaintyObject, "poseTranslationScaleMetres");
+        uncertainty.sensorConfidencePenalty =
+            numberField(uncertaintyObject, "sensorConfidencePenalty");
+        uncertainty.poseTranslationFloorMetres =
+            numberField(uncertaintyObject, "poseTranslationFloorMetres");
+        uncertainty.poseTranslationScaleMetres =
+            numberField(uncertaintyObject, "poseTranslationScaleMetres");
         uncertainty.referenceSigmaMetres = numberField(uncertaintyObject, "referenceSigmaMetres");
-        uncertainty.minimumPrecisionWeight = numberField(uncertaintyObject, "minimumPrecisionWeight");
-        uncertainty.maximumPrecisionWeight = numberField(uncertaintyObject, "maximumPrecisionWeight");
+        uncertainty.minimumPrecisionWeight =
+            numberField(uncertaintyObject, "minimumPrecisionWeight");
+        uncertainty.maximumPrecisionWeight =
+            numberField(uncertaintyObject, "maximumPrecisionWeight");
         if (options->mode == "calibrated-depth-only")
             uncertainty.sensorConfidencePenalty = 0.0;
 
@@ -292,7 +298,8 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
             frame.translation = numberArray<3>(frameObject, "poseTranslationMetres");
             frame.depthPath = root / stringField(frameObject, "depthPath");
             frame.confidencePath = root / stringField(frameObject, "confidencePath");
-            frame.shuffledConfidencePath = root / stringField(frameObject, "shuffledConfidencePath");
+            frame.shuffledConfidencePath =
+                root / stringField(frameObject, "shuffledConfidencePath");
             frames.push_back(std::move(frame));
         }
 
@@ -360,13 +367,12 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
         const auto resident = peakResidentBytes();
 
         if (options->json) {
-            std::cout << "{\"ok\":true,\"scene\":\"" << jsonEscape(scene)
-                      << "\",\"method\":\"" << jsonEscape(options->mode)
-                      << "\",\"frames\":" << volume->integratedFrames()
+            std::cout << "{\"ok\":true,\"scene\":\"" << jsonEscape(scene) << "\",\"method\":\""
+                      << jsonEscape(options->mode) << "\",\"frames\":" << volume->integratedFrames()
                       << ",\"vertices\":" << vertices << ",\"triangles\":" << triangles
                       << ",\"elapsedMilliseconds\":" << elapsed
-                      << ",\"peakResidentBytes\":" << resident
-                      << ",\"output\":\"" << jsonEscape(options->output.string()) << "\"}\n";
+                      << ",\"peakResidentBytes\":" << resident << ",\"output\":\""
+                      << jsonEscape(options->output.string()) << "\"}\n";
         } else {
             std::cout << "U3 " << options->mode << ": " << vertices << " vertices, " << triangles
                       << " triangles, " << elapsed << " ms\n";

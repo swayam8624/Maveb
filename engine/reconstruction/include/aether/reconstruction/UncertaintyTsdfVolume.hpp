@@ -44,11 +44,11 @@ struct UncertaintyTsdfConfig final {
 };
 
 /// Deterministic scalar oracle used by the U3 implementation and its tests.
-Result<TsdfFusionWeight>
-predictTsdfFusionWeight(double observedDepthMetres, double sensorConfidence,
-                        const PoseEstimate& pose, double focalLengthPixels,
-                        TsdfFusionWeighting weighting,
-                        const MetricUncertaintyFusionConfig& config);
+Result<TsdfFusionWeight> predictTsdfFusionWeight(double observedDepthMetres,
+                                                 double sensorConfidence, const PoseEstimate& pose,
+                                                 double focalLengthPixels,
+                                                 TsdfFusionWeighting weighting,
+                                                 const MetricUncertaintyFusionConfig& config);
 
 /// Research-only dense CPU fusion path. It duplicates the reference projection/update loop so the
 /// weighting intervention is isolated, then delegates mesh extraction to DenseTsdfVolume's existing

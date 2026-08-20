@@ -29,8 +29,8 @@ struct FrameFixture final {
 
     [[nodiscard]] aether::reconstruction::DepthObservation observation() const {
         return aether::reconstruction::DepthObservation{
-            *packet.depthMetres,
-            &*packet.depthConfidence,
+            *packet.depthMetres,      // NOLINT(bugprone-unchecked-optional-access)
+            &*packet.depthConfidence, // NOLINT(bugprone-unchecked-optional-access)
             1.0,
             0.0,
             "u3-oracle",
@@ -103,11 +103,7 @@ aether::reconstruction::MetricUncertaintyFusionConfig frozenU1bConfig() {
 
 aether::reconstruction::PoseEstimate oraclePose() {
     return aether::reconstruction::PoseEstimate{
-        aether::capture::RigidPose{},
-        1.0,
-        0,
-        0.0,
-        true,
+        aether::capture::RigidPose{}, 1.0, 0, 0.0, true,
     };
 }
 
@@ -203,8 +199,8 @@ void testCalibratedFusionRejectsConflictingLowConfidenceDepth() {
     auto target = makeVolume(aether::reconstruction::TsdfFusionWeighting::uniform);
     auto uniform = makeVolume(aether::reconstruction::TsdfFusionWeighting::uniform);
     auto naive = makeVolume(aether::reconstruction::TsdfFusionWeighting::naiveConfidence);
-    auto calibrated = makeVolume(
-        aether::reconstruction::TsdfFusionWeighting::calibratedInverseVariance);
+    auto calibrated =
+        makeVolume(aether::reconstruction::TsdfFusionWeighting::calibratedInverseVariance);
     expect(target.has_value() && uniform.has_value() && naive.has_value() && calibrated.has_value(),
            "All U3 oracle weighting modes create successfully");
     if (!target || !uniform || !naive || !calibrated)
@@ -235,7 +231,7 @@ void testCalibratedFusionRejectsConflictingLowConfidenceDepth() {
 
 } // namespace
 
-int main() {
+int main() { // NOLINT(bugprone-exception-escape)
     testFrozenWeightOrdering();
     testNaiveModeMatchesReferenceDenseTsdf();
     testCalibratedFusionRejectsConflictingLowConfidenceDepth();

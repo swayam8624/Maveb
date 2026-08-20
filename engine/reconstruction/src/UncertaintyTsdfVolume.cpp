@@ -24,8 +24,7 @@ Vec3 scale(const Vec3& value, double factor) {
 }
 
 Vec3 cross(const Vec3& a, const Vec3& b) {
-    return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
-            a[0] * b[1] - a[1] * b[0]};
+    return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
 }
 
 Vec3 rotate(const std::array<double, 4>& quaternion, const Vec3& value) {
@@ -50,16 +49,11 @@ bool finitePose(const capture::RigidPose& pose) {
 
 bool validUncertaintyConfig(const MetricUncertaintyFusionConfig& config) {
     const std::array values{
-        config.minimumSigmaMetres,
-        config.maximumSigmaMetres,
-        config.depthNoiseFloorMetres,
-        config.depthNoiseQuadraticMetresPerMetreSquared,
-        config.sensorConfidencePenalty,
-        config.poseTranslationFloorMetres,
-        config.poseTranslationScaleMetres,
-        config.referenceSigmaMetres,
-        config.minimumPrecisionWeight,
-        config.maximumPrecisionWeight,
+        config.minimumSigmaMetres,         config.maximumSigmaMetres,
+        config.depthNoiseFloorMetres,      config.depthNoiseQuadraticMetresPerMetreSquared,
+        config.sensorConfidencePenalty,    config.poseTranslationFloorMetres,
+        config.poseTranslationScaleMetres, config.referenceSigmaMetres,
+        config.minimumPrecisionWeight,     config.maximumPrecisionWeight,
     };
     if (!std::ranges::all_of(values, [](double value) { return std::isfinite(value); }))
         return false;
@@ -147,11 +141,11 @@ std::array<float, 3> readColor(const capture::CapturePacket& packet, std::uint32
 
 } // namespace
 
-Result<TsdfFusionWeight>
-predictTsdfFusionWeight(double observedDepthMetres, double sensorConfidence,
-                        const PoseEstimate& pose, double focalLengthPixels,
-                        TsdfFusionWeighting weighting,
-                        const MetricUncertaintyFusionConfig& config) {
+Result<TsdfFusionWeight> predictTsdfFusionWeight(double observedDepthMetres,
+                                                 double sensorConfidence, const PoseEstimate& pose,
+                                                 double focalLengthPixels,
+                                                 TsdfFusionWeighting weighting,
+                                                 const MetricUncertaintyFusionConfig& config) {
     if (!std::isfinite(observedDepthMetres) || observedDepthMetres <= 0.0 ||
         !std::isfinite(sensorConfidence) || sensorConfidence < 0.0 || sensorConfidence > 1.0 ||
         !std::isfinite(pose.confidence) || pose.confidence < 0.0 || pose.confidence > 1.0 ||
@@ -179,31 +173,26 @@ predictTsdfFusionWeight(double observedDepthMetres, double sensorConfidence,
 
     const auto baseSensorSigma =
         config.depthNoiseFloorMetres +
-        config.depthNoiseQuadraticMetresPerMetreSquared * observedDepthMetres *
-            observedDepthMetres;
+        config.depthNoiseQuadraticMetresPerMetreSquared * observedDepthMetres * observedDepthMetres;
     const auto sensorSigma =
         baseSensorSigma * (1.0 + config.sensorConfidencePenalty * (1.0 - sensorConfidence));
-    const auto poseTranslationSigma =
-        config.poseTranslationFloorMetres +
-        config.poseTranslationScaleMetres * (1.0 - pose.confidence);
+    const auto poseTranslationSigma = config.poseTranslationFloorMetres +
+                                      config.poseTranslationScaleMetres * (1.0 - pose.confidence);
     const auto reprojectionSigma =
         observedDepthMetres * pose.reprojectionErrorPixels / focalLengthPixels;
-    const auto variance = sensorSigma * sensorSigma +
-                          poseTranslationSigma * poseTranslationSigma +
+    const auto variance = sensorSigma * sensorSigma + poseTranslationSigma * poseTranslationSigma +
                           reprojectionSigma * reprojectionSigma;
-    result.predictedSigmaMetres = std::clamp(std::sqrt(variance), config.minimumSigmaMetres,
-                                             config.maximumSigmaMetres);
-    const auto rawPrecision =
-        (config.referenceSigmaMetres / result.predictedSigmaMetres) *
-        (config.referenceSigmaMetres / result.predictedSigmaMetres);
-    result.precisionWeight = std::clamp(rawPrecision, config.minimumPrecisionWeight,
-                                        config.maximumPrecisionWeight);
+    result.predictedSigmaMetres =
+        std::clamp(std::sqrt(variance), config.minimumSigmaMetres, config.maximumSigmaMetres);
+    const auto rawPrecision = (config.referenceSigmaMetres / result.predictedSigmaMetres) *
+                              (config.referenceSigmaMetres / result.predictedSigmaMetres);
+    result.precisionWeight =
+        std::clamp(rawPrecision, config.minimumPrecisionWeight, config.maximumPrecisionWeight);
     result.sampleWeight = pose.confidence <= 0.0 ? 0.0 : result.precisionWeight;
     return result;
 }
 
-UncertaintyTsdfVolume::UncertaintyTsdfVolume(UncertaintyTsdfConfig config)
-    : config_(std::move(config)) {
+UncertaintyTsdfVolume::UncertaintyTsdfVolume(UncertaintyTsdfConfig config) : config_(config) {
     const auto& dimensions = config_.volume.dimensions;
     const auto count = static_cast<std::size_t>(dimensions[0]) * dimensions[1] * dimensions[2];
     voxels_.resize(count);
@@ -216,8 +205,9 @@ Result<UncertaintyTsdfVolume> UncertaintyTsdfVolume::create(UncertaintyTsdfConfi
             return std::unexpected(validatedVolume.error());
     }
     if (!validUncertaintyConfig(config.uncertainty))
-        return fail(ErrorCode::invalidArgument, "Metric uncertainty fusion configuration is invalid");
-    return UncertaintyTsdfVolume(std::move(config));
+        return fail(ErrorCode::invalidArgument,
+                    "Metric uncertainty fusion configuration is invalid");
+    return UncertaintyTsdfVolume(config);
 }
 
 std::size_t UncertaintyTsdfVolume::index(std::uint32_t x, std::uint32_t y,
@@ -299,9 +289,9 @@ Result<void> UncertaintyTsdfVolume::integrate(const capture::CapturePacket& pack
                     continue;
                 const auto normalizedDistance =
                     std::clamp(signedDistance / volume.truncationDistanceMetres, -1.0, 1.0);
-                auto fusionWeight = predictTsdfFusionWeight(
-                    observedDepth, confidence, pose, focalLengthPixels, config_.weighting,
-                    config_.uncertainty);
+                auto fusionWeight =
+                    predictTsdfFusionWeight(observedDepth, confidence, pose, focalLengthPixels,
+                                            config_.weighting, config_.uncertainty);
                 if (!fusionWeight)
                     return std::unexpected(fusionWeight.error());
                 const auto sampleWeight = fusionWeight->sampleWeight;
