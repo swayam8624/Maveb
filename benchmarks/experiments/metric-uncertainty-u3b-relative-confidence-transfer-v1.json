@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "study": "metric-uncertainty-v1",
+  "stage": "U3b-confirmatory-relative-confidence-TSDF",
+  "status": "preregistered-before-confirmatory-asset-acquisition",
+  "frozen": true,
+  "parentEvidence": {
+    "u3v1PrimaryResultSha256": "87487781e2950a57c6ee23459a27e6975e7e3f0aa48b09e6c32eaa9d3db36c0f",
+    "u3v1WeightSaturationAuditSha256": "ec46e4aa24d8f7fbfa3063f7955dbbec5317e8c76e812c2969277a068248a926",
+    "interpretation": "U3 v1 remains a frozen negative geometry result; U3b is a new confirmatory study generated from the post-hoc transfer-function diagnosis and does not revise U3 v1."
+  },
+  "confirmatorySplit": {
+    "path": "benchmarks/experiments/metric-uncertainty-u3b-confirmatory-split-v1.json",
+    "sha256": "f7269b595bafe5e50d975b3026a958b1a4b0ef2bcc695f4494d161f8aa285e56",
+    "selectionStatus": "frozen-before-confirmatory-asset-acquisition",
+    "videos": [
+      {"videoId": "48458481", "visitId": "483953"},
+      {"videoId": "48018737", "visitId": "483618"},
+      {"videoId": "45261587", "visitId": "468073"},
+      {"videoId": "42897538", "visitId": "422826"},
+      {"videoId": "48018375", "visitId": "483312"}
+    ]
+  },
+  "frozenPredictiveModel": {
+    "id": "metric-uncertainty-v1-student-t3",
+    "sha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "depthNoiseFloorMetres": 0.010634156727771725,
+    "depthNoiseQuadraticMetresPerMetreSquared": 0.004398048551220112,
+    "sensorConfidencePenalty": 5.990146384791633,
+    "studentTDegreesOfFreedom": 3,
+    "rule": "U1b coefficients and likelihood remain immutable; U3b changes only the deterministic uncertainty-to-fusion transfer."
+  },
+  "hypothesis": {
+    "primary": "The held-out U1b confidence signal improves sparse 8-view dense CPU TSDF geometry when transferred as relative confidence precision rather than clipped absolute inverse variance.",
+    "mechanism": "U3 v1 exposed that most samples are high confidence, where full and depth-only predictions coincide, while much of the low/medium confidence tail is compressed by the absolute 0.01 precision floor. U3b removes the absolute precision scale and tests only the confidence-conditioned precision ratio on new untouched rooms."
+  },
+  "confidenceMapping": {
+    "rawArkitScenesLevels": [0, 1, 2],
+    "u8Representation": [0, 128, 255],
+    "normalized": "c = confidenceU8 / 255",
+    "noLearnedRemapping": true
+  },
+  "primaryTransfer": {
+    "id": "relative-confidence-precision",
+    "sensorSigmaDepthOnly": "sigma0(d) = a + b*d^2",
+    "sensorSigmaFull": "sigma(d,c) = (a + b*d^2) * (1 + k*(1-c))",
+    "weight": "w_rel(d,c) = (sigma0(d) / sigma(d,c))^2 = 1 / (1 + k*(1-c))^2",
+    "properties": [
+      "high confidence c=1 has weight exactly 1",
+      "medium and low confidence are downweighted only by the frozen U1b confidence penalty",
+      "the absolute depth-noise scale cancels algebraically",
+      "no referenceSigmaMetres is used",
+      "no minimum precision floor is used",
+      "no scene-level or frame-level renormalization is used",
+      "the only numerical clamp permitted is [0,1] after the closed-form calculation to guard floating-point roundoff"
+    ],
+    "frozenExpectedWeights": {
+      "confidenceU8_0": 0.02046678201442662,
+      "confidenceU8_128": 0.06286883962848758,
+      "confidenceU8_255": 1.0
+    }
+  },
+  "methods": [
+    {
+      "id": "uniform",
+      "weight": "1 for every admitted depth sample",
+      "role": "no-confidence baseline and algebraic depth-only control for the relative transfer"
+    },
+    {
+      "id": "naive-confidence",
+      "weight": "c = confidenceU8 / 255",
+      "role": "primary baseline"
+    },
+    {
+      "id": "u3v1-absolute-inverse-variance",
+      "weight": "the frozen U3 v1 absolute inverse-variance mapping, unchanged",
+      "role": "legacy secondary reference only; cannot rescue or revise the U3 v1 primary result"
+    },
+    {
+      "id": "relative-confidence-precision",
+      "weight": "1 / (1 + k*(1-c))^2 using frozen U1b k",
+      "role": "U3b primary candidate"
+    },
+    {
+      "id": "relative-confidence-shuffled",
+      "weight": "relative-confidence-precision after deterministic within-scene confidence permutation",
+      "seed": 42,
+      "permutation": "flatten the selected 8-view confidence sequence in temporal/pixel row-major order; rank destination indices by SplitMix64(seed XOR linearIndex), stable ascending; assign the original confidence sequence to ranked destinations",
+      "role": "causal association control preserving each scene's exact confidence distribution"
+    }
+  ],
+  "primaryComparison": {
+    "viewCount": 8,
+    "depthDropoutFraction": 0.0,
+    "poseTranslationPerturbationMetres": 0.0,
+    "poseRotationPerturbationDegrees": 0.0,
+    "candidate": "relative-confidence-precision",
+    "baseline": "naive-confidence",
+    "primaryMetric": "chamferMeanMetres",
+    "secondaryMetrics": [
+      "accuracyMeanMetres",
+      "completenessMeanMetres",
+      "fScore",
+      "elapsedMilliseconds",
+      "peakResidentBytes",
+      "vertices",
+      "triangles"
+    ],
+    "paperEvidenceUnit": "scene",
+    "pairedSceneBootstrapReplicates": 2000,
+    "pairedSceneBootstrapSeed": 42,
+    "bootstrapStatistic": "median scene-level relative Chamfer improvement, (baseline - candidate) / baseline; percentile 95% interval",
+    "positiveConfirmatoryGate": {
+      "minimumMedianRelativeChamferImprovement": 0.10,
+      "paired95IntervalLowerBoundMustExceedZero": true,
+      "candidateMustBeatNaiveInAtLeastScenes": 4,
+      "shuffledControl": {
+        "relativeDegradation": "(shuffled - intact) / intact",
+        "shuffledMustBeWorseInAtLeastScenes": 4,
+        "paired95IntervalLowerBoundMustExceedZero": true
+      }
+    },
+    "decisionRule": "All gate clauses must pass. Failure of any clause is a negative/null U3b confirmatory result."
+  },
+  "dataRoles": {
+    "observation": "CA-1M onboard ARKit LiDAR depth",
+    "sensorConfidence": "ARKitScenes raw confidence for the exact video ID, joined by nearest timestamp within 20 ms",
+    "orientationWitnessOnly": "ARKitScenes raw lowres_depth, used only to identify the exact no-interpolation dihedral orientation transform",
+    "cameraPose": "CA-1M FARO-registered released camera-to-world pose after the same pose-convention preflight used in U3 v1",
+    "referenceGeometry": "CA-1M FARO depth back-projected into registered scanner coordinates; never used to choose weights, frames, or transfer parameters"
+  },
+  "sidecarAssociation": {
+    "timestampConversion": "CA-1M integer nanoseconds / 1e9",
+    "maximumJoinDeltaMilliseconds": 20.0,
+    "orientationTransforms": [
+      "identity",
+      "rot90-cw",
+      "rot180",
+      "rot90-ccw",
+      "flip-lr",
+      "flip-ud",
+      "transpose",
+      "transverse"
+    ],
+    "orientationSelection": "choose the transform minimizing median absolute difference between transformed ARKitScenes raw lowres_depth and CA-1M wide/depth over valid overlapping pixels",
+    "minimumOrientationWitnessPixels": 256,
+    "orientationAcceptance": "best median <=25 mm OR best <=75% of second-best; no interpolation",
+    "lowresDepthNeverEntersModelOrReference": true
+  },
+  "frameSelection": {
+    "policy": "deterministic temporal quantiles over complete structurally valid CA-1M frames, independent of confidence and FARO residuals",
+    "viewCount": 8,
+    "formula": "for j in [0,7], select nearest index to j*(N-1)/7; exact half-index ties choose the lower original frame index"
+  },
+  "posePreflight": {
+    "cameraConvention": "+X right, +Y down, +Z forward",
+    "method": "cross-project FARO depth between deterministic adjacent-frame pairs under released camera-to-world and inverse interpretations",
+    "passRule": "released interpretation must have lower scene median cross-projection depth disagreement and win a majority of comparable adjacent-frame pairs in every confirmatory scene",
+    "failurePolicy": "if any scene fails, stop before reconstruction and record an adapter/preflight failure; do not change the scene set"
+  },
+  "volumeAndReference": {
+    "implementation": "dense CPU TSDF research path using the same projection, truncation and meshing implementation as U3 v1",
+    "boundsPixelStride": 8,
+    "boundsLowerQuantile": 0.005,
+    "boundsUpperQuantile": 0.995,
+    "maximumAxisVoxels": 96,
+    "minimumVoxelSizeMetres": 0.02,
+    "paddingMetres": 0.12,
+    "truncation": "max(4 * voxelSizeMetres, 0.04)",
+    "maximumAccumulatedWeight": 100.0,
+    "referenceSourcePixelStride": 16,
+    "maximumReferencePoints": 200000,
+    "referenceDownsampling": "stable SHA-256 rank over scene/frame/pixel identity after fixed stride; retain lexicographically lowest digests",
+    "fScoreThresholdMetres": 0.05,
+    "fairness": "Within a scene all methods reuse identical frames, poses, depth, confidence locations, volume bounds, voxel size, truncation, FARO reference and mesh extraction. Only the per-sample fusion weight differs."
+  },
+  "executionOrder": [
+    "1. Commit this protocol and the confirmatory split before downloading any selected confirmatory CA-1M archive or ARKitScenes confidence/lowres_depth sidecar.",
+    "2. Acquire exactly the five frozen confirmatory CA-1M validation archives and exactly their ARKitScenes confidence + lowres_depth sidecars; record acquisition ledger and hashes.",
+    "3. Run the frozen pose-convention preflight on all five scenes. If any scene fails, stop before reconstruction.",
+    "4. Prepare exact 8-view manifests, shared volume bounds, deterministic shuffled confidence, and FARO reference clouds without producing reconstruction metrics.",
+    "5. Optionally run weight-distribution diagnostics on prepared inputs only; diagnostics may not change this protocol, weights, scenes or thresholds.",
+    "6. Execute all five methods once on every scene in fixed order: uniform, naive-confidence, u3v1-absolute-inverse-variance, relative-confidence-precision, relative-confidence-shuffled.",
+    "7. Evaluate each mesh against the frozen FARO reference with no alignment and write one immutable primary-result artifact.",
+    "8. Compute the 2,000-replicate paired scene bootstrap once. Do not refit U1b or alter the transfer after seeing any confirmatory geometry outcome."
+  ],
+  "claimPolicy": {
+    "ifPassed": "May claim that the frozen U1b confidence signal, transferred as relative confidence precision, improves 8-view dense CPU TSDF metric geometry over naive ARKit confidence on this untouched five-room confirmatory set. The claim remains scoped to this representation, sensor/data regime and sample size.",
+    "ifFailed": "Report U3b as negative/null. Do not tune the equation on these five exposed confirmatory rooms. Any further transfer redesign requires another prospectively frozen untouched evaluation set.",
+    "u3v1Status": "Always remains negative regardless of U3b outcome.",
+    "u4Gate": "Do not use Gaussian rendering quality to override a failed dense-geometry confirmatory result."
+  }
+}
