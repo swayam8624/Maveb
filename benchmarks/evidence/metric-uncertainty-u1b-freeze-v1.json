@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "study": "metric-uncertainty-v1",
   "stage": "U1b-robust-calibration-freeze",
-  "status": "frozen-before-held-out-sampling-sidecar-acquisition-time-uncertain",
+  "status": "frozen-before-held-out-sidecar-acquisition-and-sampling",
   "fitCodeGitSha": "6d3b1ab2ac82cf7257c196d72aed07826b684e8a",
   "preU2EvaluationCodeGitSha": "c8b0bcc52b47efb723d992740c83b79aceaee761",
   "preU2TestStateGitSha": "6e21de37805676bbff12eb164a2aeb7f39a6d01c",
@@ -60,7 +60,11 @@
     "ca1m-45261615"
   ],
   "heldOutAnalysisPlan": {
-    "controls": ["intact", "constant-0.5", "shuffled-within-scene-seed-42"],
+    "controls": [
+      "intact",
+      "constant-0.5",
+      "shuffled-within-scene-seed-42"
+    ],
     "primaryProperScore": "Student-t(3) NLL",
     "legacyDiagnostic": "Gaussian NLL",
     "calibrationMetrics": [
@@ -76,10 +80,15 @@
     "pairedSceneBootstrapSeed": 42,
     "differenceConvention": "intact minus control"
   },
-  "provenanceCorrectionAfterU2": {
-    "observation": "The held-out acquisition ledger later reported alreadyPresent=true for all five Validation confidence/lowres_depth directories. In acquire_arkitscenes_confidence.py, alreadyPresent is computed before execute_download, so the sidecar files existed locally before the explicit U2 acquisition command.",
-    "consequence": "The earlier claim that Validation sidecars were physically unacquired at U1b freeze is withdrawn. The stronger supported claim is that U1b coefficients, analysis code, scene IDs, and thresholds were frozen before any recorded held-out sampling/evaluation outcome. Local filesystem birth-time audit is required to narrow sidecar acquisition timing.",
-    "doesNotEstablish": "alreadyPresent does not establish that held-out sidecars, FARO errors, or U2 metrics were inspected before U1b freeze; it only establishes prior local asset presence."
+  "heldOutAcquisitionProvenance": {
+    "auditBasis": "macOS stat output from the local research machine after U2",
+    "frozenModelBirthLocal": "2026-08-20T02:02:32+05:30",
+    "heldOutLocalAcquisitionWindow": {
+      "earliestVideoRootOrZipBirth": "2026-08-20T02:13:40+05:30",
+      "latestVideoRootOrZipWrite": "2026-08-20T02:15:06+05:30"
+    },
+    "interpretation": "The U1b model existed for more than ten minutes before the first held-out Validation video root/zip was created locally. Extracted confidence/lowres_depth directory timestamps inherited 2021 archive metadata and are not used as local acquisition times.",
+    "resolution": "The earlier alreadyPresent=true ledger ambiguity is resolved: held-out sidecars were acquired after U1b freeze and before U2 sampling."
   },
-  "note": "This manifest freezes the U1b model and pre-U2 analysis plan before recorded held-out sampling/evaluation. The original stronger wording about physical sidecar acquisition timing was corrected after the U2 acquisition ledger revealed pre-existing Validation asset directories."
+  "note": "U1b coefficients, scene IDs, thresholds, controls and statistical analysis were frozen before held-out Validation sidecar acquisition and sampling. Filesystem provenance was audited after U2 because archive extraction preserved upstream 2021 timestamps inside the extracted directories."
 }
