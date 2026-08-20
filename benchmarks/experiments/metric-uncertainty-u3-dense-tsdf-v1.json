@@ -60,6 +60,7 @@
       "id": "calibrated-shuffled-confidence",
       "weight": "frozen U1b inverse variance after deterministic within-scene confidence permutation",
       "seed": 42,
+      "permutation": "flatten selected-frame confidence in temporal/pixel row-major order; rank destination indices by SplitMix64(seed XOR linearIndex); stable ascending rank; assign original confidence sequence to ranked destinations",
       "role": "causal confidence control"
     }
   ],
@@ -82,30 +83,37 @@
     "paperEvidenceUnit": "scene",
     "pairedSceneBootstrapReplicates": 2000,
     "pairedSceneBootstrapSeed": 42,
+    "bootstrapStatistic": "median scene-level relative Chamfer improvement, (baseline - candidate) / baseline; percentile 95% interval",
     "positiveGeometryGate": {
       "minimumMedianRelativeChamferImprovement": 0.10,
       "paired95IntervalForRelativeChamferImprovementMustExcludeZero": true,
-      "calibratedShuffledConfidenceMustBeMateriallyWorse": true
+      "calibratedShuffledConfidenceMustBeMateriallyWorse": {
+        "minimumWorseSceneCount": 4,
+        "paired95IntervalForMedianRelativeDegradationMustExcludeZero": true,
+        "relativeDegradation": "(shuffled - intact) / intact"
+      }
     }
   },
   "frameSelection": {
     "policy": "deterministic temporal quantiles over complete CA-1M frames after structural validity checks, without using FARO error or confidence values",
-    "formula": "for K views among N complete frames, select the nearest integer index to i*(N-1)/(K-1) for i=0..K-1; exact half-index ties choose the lower original frame index",
     "viewCounts": [4, 8, 12, 24],
+    "formula": "for j in [0,K-1], select nearest index to j*(N-1)/(K-1); exact half-index ties choose lower original frame index",
     "ties": "lower original frame index"
   },
-  "poseConventionPreflight": {
-    "requiredBeforeGeometry": true,
-    "releasedInterpretation": "gt/RT is camera-to-world in FARO laser-scanner coordinates",
+  "posePreflight": {
     "cameraConvention": "+X right, +Y down, +Z forward",
     "validation": "cross-project FARO depth between deterministic adjacent-frame pairs under both released camera-to-world and inverse interpretations",
     "passRule": "released interpretation must have lower scene median cross-projection depth disagreement and win a majority of comparable adjacent-frame pairs in every evaluation scene",
-    "script": "benchmarks/scripts/ca1m_u3_pose_preflight.py"
+    "script": "benchmarks/scripts/ca1m_u3_pose_preflight.py",
+    "manifestGateCorrection": "benchmarks/scripts/apply_u3_pose_manifest_gate.py preserves the original measurements while removing an accidental unregistered minimum-pair threshold"
   },
   "volume": {
     "implementation": "dense CPU TSDF reference path",
     "bounds": "one shared robust automatic bound per scene/view selection, reused unchanged across methods",
     "boundsConfidenceFloor": 0.0,
+    "boundsPixelStride": 8,
+    "boundsLowerQuantile": 0.005,
+    "boundsUpperQuantile": 0.995,
     "maximumAxisVoxels": 96,
     "minimumVoxelSizeMetres": 0.02,
     "paddingMetres": 0.12,
@@ -116,8 +124,10 @@
   "referenceSampling": {
     "source": "FARO GT depth from all structurally valid frames in the frozen scene",
     "zeroDepthInvalid": true,
+    "sourcePixelStride": 16,
+    "sourcePixelOrigin": "stride/2 in x and y, matching Maveb bounds sampling convention",
     "maximumReferencePoints": 200000,
-    "downsampling": "stable SHA-256 rank over scene/frame/pixel identity",
+    "downsampling": "after the fixed sourcePixelStride prefilter, stable SHA-256 rank over scene/frame/pixel identity; retain the lexicographically lowest digests",
     "fScoreThresholdMetres": 0.05
   },
   "stressTests": {
