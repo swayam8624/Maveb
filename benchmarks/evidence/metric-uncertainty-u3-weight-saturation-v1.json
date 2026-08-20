@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-v1",
+  "stage": "U3-post-hoc-weight-saturation",
+  "status": "diagnostic-only-frozen-after-negative-u3-primary",
+  "primaryResultSha256": "87487781e2950a57c6ee23459a27e6975e7e3f0aa48b09e6c32eaa9d3db36c0f",
+  "auditArtifactSha256": "ec46e4aa24d8f7fbfa3063f7955dbbec5317e8c76e812c2969277a068248a926",
+  "frozenU1bModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "validPreparedSamples": 1966080,
+  "aggregate": {
+    "fractionAtMinimumPrecisionWeight": 0.10021820068359374,
+    "medianPrecisionWeight": 0.19327749943794978,
+    "p10PrecisionWeight": 0.01,
+    "p90PrecisionWeight": 0.4752746505064328,
+    "fractionExactlyEqualToCalibratedDepthOnly": 0.8883041381835938,
+    "meanAbsolutePrecisionWeightDifferenceFromDepthOnly": 0.015806363478043484,
+    "medianAbsolutePrecisionWeightDifferenceFromDepthOnly": 0.0
+  },
+  "confidenceComposition": {
+    "lowU8_0": {
+      "fractionOfSamples": 0.05500081380208333,
+      "fractionAtMinimumPrecisionWeight": 0.9879688540356588,
+      "medianPrecisionWeight": 0.01
+    },
+    "mediumU8_128": {
+      "fractionOfSamples": 0.06832478841145834,
+      "fractionAtMinimumPrecisionWeight": 0.561273561027901,
+      "medianPrecisionWeight": 0.01
+    },
+    "highU8_255": {
+      "fractionOfSamples": 0.8766743977864583,
+      "fractionAtMinimumPrecisionWeight": 0.00858952014722571,
+      "medianPrecisionWeight": 0.2286449937415342,
+      "fractionExactlyEqualToDepthOnly": 1.0
+    }
+  },
+  "depthSaturation": {
+    "1-2m": {
+      "lowFloorFraction": 1.0,
+      "mediumFloorFraction": 0.1402829781105991,
+      "highFloorFraction": 0.0
+    },
+    "2-3m": {
+      "lowFloorFraction": 1.0,
+      "mediumFloorFraction": 1.0,
+      "highFloorFraction": 0.0
+    },
+    "3-5m": {
+      "lowFloorFraction": 1.0,
+      "mediumFloorFraction": 1.0,
+      "highFloorFraction": 0.10726411790678908
+    },
+    "5-20m": {
+      "lowFloorFraction": 1.0,
+      "mediumFloorFraction": 1.0,
+      "highFloorFraction": 1.0
+    }
+  },
+  "interpretation": "U3 v1's negative geometry result is consistent with weak effective confidence leverage at the fusion decision point: 87.67% of samples are high confidence and therefore exactly match the depth-only prediction, while much of the low/medium tail is collapsed by the absolute minimum precision floor. This post-hoc finding motivates U3b but does not revise the frozen U3 v1 result.",
+  "claimBoundary": "Diagnostic mechanism evidence only. It cannot convert U3 v1 into a positive geometry result and cannot be used to tune on the five exposed U3 v1 rooms."
+}
