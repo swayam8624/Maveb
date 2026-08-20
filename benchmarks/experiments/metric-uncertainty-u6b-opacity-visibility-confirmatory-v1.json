@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "stage": "U6b-confirmatory-uncertainty-modulated-gaussian-visibility",
+  "status": "preregistered-before-confirmatory-asset-acquisition",
+  "frozen": true,
+  "claimType": "prospective confirmatory test on untouched validation rooms",
+  "parentEvidence": {
+    "u1bModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+    "u5cAuditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409",
+    "u6aResultSha256": "2a57d202399f8f763e3e1dde205965fa7f6baba5fa6a1bd13adf5ac80eb2fa9a",
+    "u6aEvidenceCommit": "f041dde64bccd471530494e7af27b33c44c588e5",
+    "interpretation": "U6a is the first downstream intervention that was directionally better than both baseline and shuffled in four of five exposed rooms, but its descriptive interval crossed zero. U6b prospectively tests the exact frozen visibility mechanism on untouched rooms."
+  },
+  "confirmatorySplit": {
+    "path": "benchmarks/experiments/metric-uncertainty-u6b-confirmatory-split-v1.json",
+    "sha256": "d22366afd77d3407e53d5152d313522d559ee57e9ec995d96102c299dc55f5ff",
+    "selectionStatus": "frozen-before-confirmatory-asset-acquisition",
+    "videos": [
+      {"videoId": "42898811", "visitId": "434650"},
+      {"videoId": "45261121", "visitId": "466628"},
+      {"videoId": "47895341", "visitId": "472297"},
+      {"videoId": "47332915", "visitId": "469249"},
+      {"videoId": "47331971", "visitId": "470821"}
+    ]
+  },
+  "hypothesis": {
+    "primary": "The frozen externally calibrated confidence signal improves held-out FARO metric depth correctness when mapped to Gaussian visibility rather than covariance, while Gaussian centers/covariance remain fixed.",
+    "causalAssociation": "The intact calibrated-opacity method must outperform a shuffled-confidence opacity control that preserves the exact scene confidence distribution.",
+    "mechanism": "U5c showed that uncertainty-enlarged covariance created foreground leakage. U6a indicated that reducing uncertain splat visibility can suppress incorrect frontmost splats without deleting primitives or expanding geometry."
+  },
+  "frozenPredictiveModel": {
+    "id": "metric-uncertainty-v1-student-t3",
+    "sha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "a": 0.010634156727771725,
+    "b": 0.004398048551220112,
+    "k": 5.990146384791633,
+    "sigma0": "a+b*z^2",
+    "sigma": "sigma0*(1+k*(1-c))",
+    "confidenceNormalization": "c=confidenceU8/255",
+    "noRefitAllowed": true
+  },
+  "dataRoles": {
+    "observation": "CA-1M onboard ARKit wide/depth in metres",
+    "sensorConfidence": "ARKitScenes raw confidence joined by nearest timestamp within 20 ms",
+    "orientationWitnessOnly": "ARKitScenes raw lowres_depth used only for the frozen no-interpolation dihedral orientation selection",
+    "cameraPose": "CA-1M FARO-registered released camera-to-world pose",
+    "reference": "CA-1M FARO gt/depth on target views; never used for source-frame selection, confidence mapping, covariance, opacity, or target selection"
+  },
+  "sidecarAssociation": {
+    "timestampConversion": "CA-1M integer nanoseconds / 1e9",
+    "maximumJoinDeltaMilliseconds": 20.0,
+    "orientationTransforms": ["identity", "rot90-cw", "rot180", "rot90-ccw", "flip-lr", "flip-ud", "transpose", "transverse"],
+    "orientationSelection": "choose transform minimizing median absolute difference between transformed ARKitScenes lowres_depth and CA-1M wide/depth over valid overlap",
+    "minimumOrientationWitnessPixels": 256,
+    "orientationAcceptance": "best median <=25 mm OR best <=75% of second-best; no interpolation",
+    "lowresDepthNeverEntersModelOrReference": true
+  },
+  "sourceFrameSelection": {
+    "policy": "inherit U3b deterministic temporal quantiles over complete structurally valid CA-1M frames, independent of confidence and FARO residuals",
+    "viewCount": 8,
+    "formula": "for j in [0,7], select nearest index to j*(N-1)/7; exact half-index ties choose the lower original frame index"
+  },
+  "sourceGaussianSampling": {
+    "pixelStride": 4,
+    "pixelIndices": "x=0,4,8,... and y=0,4,8,...",
+    "validDepth": "finite and within the same prepared source minimum/maximum depth bounds used by the U3b adapter",
+    "pixelStandardDeviation": "pixelStride/sqrt(12)",
+    "center": "metric back-projection of onboard depth transformed by released camera-to-world pose",
+    "covariance": {
+      "allMethods": "exact U5a depth-only covariance using sigma0=a+b*z^2",
+      "cameraBackprojection": "p=[(u-cx)z/fx,(v-cy)z/fy,z]",
+      "propagation": "J diag(sigma_u^2,sigma_v^2,sigma0^2) J^T then rotate to world coordinates",
+      "encoding": "same deterministic eigendecomposition/right-handed quaternion convention as U5a"
+    },
+    "primitivePreservation": "all valid sampled observations become one Gaussian in all three methods; method primitive counts and all non-opacity numeric PLY fields must match row-for-row"
+  },
+  "methods": [
+    {
+      "id": "depth-only-fixed-opacity",
+      "role": "primary reference control",
+      "opacity": 0.99,
+      "covariance": "depth-only covariance"
+    },
+    {
+      "id": "calibrated-relative-precision-opacity",
+      "role": "confirmatory candidate",
+      "opacity": "0.99/[1+k*(1-c_intact)]^2",
+      "covariance": "identical depth-only covariance"
+    },
+    {
+      "id": "shuffled-relative-precision-opacity",
+      "role": "causal association control",
+      "opacity": "0.99/[1+k*(1-c_shuffled)]^2",
+      "covariance": "identical depth-only covariance",
+      "shuffleSeed": 42,
+      "permutation": "flatten selected 8-view confidence stream in temporal/pixel row-major order; rank destination indices by SplitMix64(seed XOR linearIndex), stable ascending; assign original confidence values to ranked destinations"
+    }
+  ],
+  "opacityReference": {
+    "baseOpacity": 0.99,
+    "confidenceU8_0": 0.020261082889362996,
+    "confidenceU8_128": 0.06239403876971809,
+    "confidenceU8_255": 0.99,
+    "noExponentFloorClippingOrAdditionalConstant": true
+  },
+  "targetViewSelection": {
+    "completeFrameDefinition": "timestamp has CA-1M wide/depth, gt/depth, gt/depth/k, and gt/RT",
+    "exclude": "all eight frozen source timestamps",
+    "ordering": "ascending timestamp over remaining complete frames",
+    "count": 8,
+    "indexRule": "for i in 0..7 choose floor((2*i+1)*N/16) from N eligible frames; require N>=8 and eight unique indices",
+    "noReplacement": true,
+    "faroTarget": "CA-1M gt/depth",
+    "targetIntrinsics": "gt/depth/k",
+    "targetPose": "gt/RT FARO-registered camera pose"
+  },
+  "renderer": {
+    "implementation": "Maveb gaussian::ReferenceRasterizer CPU correctness oracle",
+    "authorizedBinarySha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+    "nearPlaneMetres": 0.05,
+    "farPlaneMetres": 20.0,
+    "depthDefinition": "first front-to-back Gaussian whose local alpha survives the existing 1/255 cutoff",
+    "rendererChangesAllowed": false
+  },
+  "evaluation": {
+    "paperEvidenceUnit": "scene",
+    "perTargetPrimary": "fraction of all FARO-valid pixels with finite rendered depth and absolute depth error <=0.05m",
+    "scenePrimary": "arithmetic mean of per-target primary over the eight frozen target views",
+    "secondary": [
+      "within10cm fraction of FARO-valid pixels",
+      "coverage fraction over FARO-valid pixels",
+      "overlap absolute depth error mean/median/p95"
+    ],
+    "pairedSceneBootstrapReplicates": 2000,
+    "pairedSceneBootstrapSeed": 42,
+    "bootstrapStatistic": "median scene-level absolute primary-score difference",
+    "intervalConvention": "nearest-index p2.5/p97.5, half ties lower",
+    "positiveConfirmatoryGate": {
+      "candidateVsBaseline": {
+        "minimumMedianAbsolutePrimaryGain": 0.002,
+        "candidateMustBeatBaselineInAtLeastScenes": 4,
+        "paired95IntervalLowerBoundMustExceedZero": true
+      },
+      "candidateVsShuffled": {
+        "minimumMedianAbsolutePrimaryGain": 0.002,
+        "candidateMustBeatShuffledInAtLeastScenes": 4,
+        "paired95IntervalLowerBoundMustExceedZero": true
+      },
+      "coverageGuard": {
+        "minimumMedianCandidateToBaselineCoverageRatio": 0.95,
+        "minimumPerSceneCandidateToBaselineCoverageRatio": 0.85
+      },
+      "overlapErrorGuard": {
+        "candidateMeanAbsoluteDepthErrorMustNotExceedBaselineInAtLeastScenes": 4
+      },
+      "effectFloorRationale": "0.002 is a prospectively frozen 0.20 percentage-point minimum chosen after U6a to reject numerically trivial gains while remaining below the U6a exploratory median gain of approximately 0.397 percentage points. It is not changed after U6b asset exposure."
+    },
+    "decisionRule": "All confirmatory gate clauses must pass. Failure of any clause is a negative/null U6b confirmatory result."
+  },
+  "executionOrder": [
+    "1. Commit this protocol and exact split before downloading any selected U6b CA-1M archive or ARKitScenes confidence/lowres_depth sidecar.",
+    "2. Create a read-only acquisition plan ledger proving selected U6b assets were absent before acquisition; if any selected asset was already present from unrelated prior work, record it explicitly and do not silently substitute a room.",
+    "3. Acquire exactly the five frozen CA-1M validation archives and corresponding ARKitScenes confidence + lowres_depth sidecars with hashes.",
+    "4. Run the inherited U3b pose-convention and sidecar-orientation preflights. Any failed scene stops the study before representation outcomes; no room replacement.",
+    "5. Prepare exactly eight source views, depth-only Gaussian geometry, intact/shuffled opacity assets, and eight held-out FARO target manifests without rendering.",
+    "6. Freeze preparation hashes and renderer authorization before the first U6b render.",
+    "7. Render all three methods in fixed order for five scenes and eight targets: 120 total confirmatory renders. Do not reuse any U6a/U5a room output because U6b rooms are untouched.",
+    "8. Write one immutable result, verify all render hashes, compute the frozen paired scene bootstrap once, and apply every gate clause without modification."
+  ],
+  "claimPolicy": {
+    "ifPassed": "May claim that, on this untouched five-room confirmatory set, the frozen externally calibrated confidence association improves held-out FARO metric depth correctness when mapped to Gaussian visibility with fixed geometry/covariance, relative to both fixed opacity and a distribution-preserving shuffled association control. Scope the claim to this sensor/data/representation regime and sample size.",
+    "ifFailed": "Report U6b as negative/null. Do not tune opacity exponent, base opacity, floor, clipping, alpha cutoff, covariance, source/target frame selection, or gate thresholds on these five exposed confirmatory rooms. Any further redesign requires another prospectively frozen untouched set.",
+    "u6aStatus": "Always remains exploratory regardless of U6b outcome.",
+    "priorNegativeResults": "U3/U3b scalar TSDF weighting, U4a support gating, and U5a covariance enlargement remain negative and are not revised by U6b."
+  },
+  "claimBoundary": "This protocol is frozen before acquisition of the exact U6b room assets. No U6b geometry/render metric outcome has been observed."
+}

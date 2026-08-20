@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u6a-opacity-visibility-v1",
+  "stage": "U6a-preparation-evidence",
+  "status": "frozen-before-u6a-render-or-metric-outcomes",
+  "sourceCommit": "89243ad1b5ee94a16af0b94ef0b4b2d6445b7acc",
+  "protocolSha256": "4d4cd37a7b58073fa4dda209b2432d599247032cfca42ba562d5502b89398039",
+  "preparationSha256": "c3898a409d7d09d023cd5422ea057c80928381960f4d4d56c11f53326eb07c82",
+  "preparationLogSha256": "c47dac6c023340423987ccb38d23363b58485c2033ee8599621d6cca40367365",
+  "parentEvidence": {
+    "u5aPreparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+    "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+    "u5cAuditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409"
+  },
+  "executionBoundary": {
+    "sceneCount": 5,
+    "newGaussianPlyCount": 10,
+    "primitiveCountPerScenePerMethod": 24576,
+    "renderedDepthFileCount": 0,
+    "u6aMetricsProduced": false,
+    "onlyOpacityChangedFromBaseline": true
+  },
+  "opacityProbabilityReference": {
+    "confidenceU8_0": 0.020261082889362996,
+    "confidenceU8_128": 0.06239403876971809,
+    "confidenceU8_255": 0.99
+  },
+  "scenes": {
+    "ca1m-48458481": {
+      "baselineGaussianSha256": "2d09a9605b2124b87e7633b355f388fed37a339032d9b20556d9d528850b9de8",
+      "targetManifestSha256": "c07d0992304791621dcf389928d83000bdc32a0c19dcecf0318f76bed2c38c0a",
+      "calibrated": {
+        "gaussianSha256": "6ea4be0f0dada4f5aa1f28a491d8ea13e6102ff7f9510a6f0bf692d9aa2b9a44",
+        "confidenceHistogram": {"0": 769, "128": 1245, "255": 22562}
+      },
+      "shuffled": {
+        "gaussianSha256": "21f9bda2c475a711a54d632f3c241920e103b8c81f4c5b081f134ce43ca39629",
+        "confidenceHistogram": {"0": 767, "128": 1144, "255": 22665}
+      }
+    },
+    "ca1m-48018737": {
+      "baselineGaussianSha256": "d300417d619d3114fdb80b61a87f8cee051c5bd904083fcd3da6cb0d4fee198f",
+      "targetManifestSha256": "2caa325cc3ad1ef6c41572346f99cd712a4f35e9a246d82ed8fda8f4799cb5b4",
+      "calibrated": {
+        "gaussianSha256": "492868ea604f56c6a4b0165017f51ea9f41403778f9023ed5384832c8b99fc02",
+        "confidenceHistogram": {"0": 66, "128": 1113, "255": 23397}
+      },
+      "shuffled": {
+        "gaussianSha256": "f5f6543b59fec6892e0c226c496e2bedc3dfc9092e327c1dbcb29d702f49385f",
+        "confidenceHistogram": {"0": 52, "128": 1006, "255": 23518}
+      }
+    },
+    "ca1m-45261587": {
+      "baselineGaussianSha256": "45ec771fc38c098bcd473dbf7956d382cfdcfea7648c75bd2c59552bf4f6b3fb",
+      "targetManifestSha256": "e19f3ac8d3038a79cd5fbb9fa4535221a5ef1b6920223b0842590131e0d4d733",
+      "calibrated": {
+        "gaussianSha256": "db4921793618a862ef69fe2e2a7b44a83af9aba0a411cd27830cdd01d78acb49",
+        "confidenceHistogram": {"0": 259, "128": 995, "255": 23322}
+      },
+      "shuffled": {
+        "gaussianSha256": "fa1cf118245dd9f35ebc6d2d38e425ead4dca5c780fc9c2c005558059a854e06",
+        "confidenceHistogram": {"0": 260, "128": 924, "255": 23392}
+      }
+    },
+    "ca1m-42897538": {
+      "baselineGaussianSha256": "0b780462cd1b755dbfad02d3ad24200005bebf37135e6ffbb8fc000b9efa160f",
+      "targetManifestSha256": "f52dff054e155292866aa2a092a50b955a625af203254138a684fab2f03831a1",
+      "calibrated": {
+        "gaussianSha256": "c0e4a2aef9d5217d3b65c304f1d8adb0b4b3da5d3a225d1e1814ad6125ddef58",
+        "confidenceHistogram": {"0": 4042, "128": 1320, "255": 19214}
+      },
+      "shuffled": {
+        "gaussianSha256": "2f55f94b04aea16db13573f623ab0e8132f85547dd12489077660d067dec6b15",
+        "confidenceHistogram": {"0": 4027, "128": 1270, "255": 19279}
+      }
+    },
+    "ca1m-48018375": {
+      "baselineGaussianSha256": "18fcad719b4a5517d9e1678f85c387f1131b1677f71455155f84b17c10c8ebb8",
+      "targetManifestSha256": "34f603f56ac310715b64f54261755de2c8d70a15b2bec1c00c8290a4574ff7f4",
+      "calibrated": {
+        "gaussianSha256": "94b898adbbb7f85558179c1572f258ef2ee9482d93ef8bb99b6b9bcddd5df50f",
+        "confidenceHistogram": {"0": 1007, "128": 2479, "255": 21090}
+      },
+      "shuffled": {
+        "gaussianSha256": "78eac27378bf52c86e37a9cb35245b7ed8b18b6478ced969bb82af8d1a462531",
+        "confidenceHistogram": {"0": 1005, "128": 2368, "255": 21203}
+      }
+    }
+  },
+  "claimBoundary": "This file freezes U6a asset preparation only. No U6a render or metric outcome existed when these hashes were recorded. U6a remains exploratory on already-exposed rooms."
+}

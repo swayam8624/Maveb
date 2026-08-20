@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u5a-evaluation-clarification-v1",
+  "study": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "status": "frozen-before-u5a-gaussian-assets-or-outcomes",
+  "frozen": true,
+  "rendererDepthRangeMetres": {
+    "near": 0.05,
+    "far": 20.0,
+    "rationale": "match the frozen metric-depth range used throughout the U3 dense CPU reconstruction path"
+  },
+  "metricConventions": {
+    "faroValidPixel": "finite gt/depth value > 0",
+    "renderedValidPixel": "finite rendered depth value",
+    "overlapPixel": "FARO-valid and rendered-valid",
+    "coverageFraction": "overlapPixelCount / faroValidPixelCount",
+    "absoluteDepthError": "abs(renderedDepth - faroDepth) on overlap pixels",
+    "p95": "nearest-rank over sorted finite values with ties resolved to the lower index, identical to U3c nearest_tie_lower",
+    "within5cmFractionOfFaroValid": "count(overlap and absoluteDepthError <= 0.05) / faroValidPixelCount",
+    "within10cmFractionOfFaroValid": "count(overlap and absoluteDepthError <= 0.10) / faroValidPixelCount",
+    "sceneAggregation": "arithmetic mean of each per-target-view scalar over the eight frozen target views",
+    "scenePrimary": "mean within5cmFractionOfFaroValid"
+  },
+  "descriptiveComparison": {
+    "candidateVsDepthOnly": "candidate scenePrimary - depthOnly scenePrimary",
+    "shuffledDegradation": "candidate scenePrimary - shuffled scenePrimary",
+    "pairedSceneBootstrap": "2000 replicates with Python random.Random(42), median of five scene differences, nearest-tie-lower 2.5/97.5 percentiles"
+  },
+  "outcomeExposureAtFreeze": {
+    "u5aGaussianAssetsCreated": false,
+    "u5aTargetViewsSelectedOrEvaluated": false,
+    "u5aRenderedDepthCreated": false,
+    "u5aMetricOutcomesObserved": false
+  }
+}

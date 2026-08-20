@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "stage": "U5a-preparation-evidence",
+  "status": "frozen-before-any-u5a-render-or-metric-outcome",
+  "claimType": "pre-outcome preparation provenance only; no U5a rendered depth or metric is contained in this artifact",
+  "sourceCommit": "9b1b209f6c865caca4101663f0f80c1dcac1e439",
+  "preparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+  "preparationLogSha256": "5f4ec5bd998b97e6b70323682826edc154ef94ff37222458007dc0d0857860c2",
+  "protocolSha256": "d083660e3290e7592cf572b1b215a62e44365e4fb42786dbef6b6731fc309cae",
+  "targetCameraClarificationSha256": "1d454d0fde2447679d9295a3f30f3a91b5a801a291588e12e4726bd522710252",
+  "evaluationClarificationSha256": "69d6740e7a347019fba5f2e881a63a9c67bdea8a42d134331dad7fe9ee004e38",
+  "parentEvidence": {
+    "acquisitionLedgerSha256": "3675d61e89599a36641e8d4ddb0dd28ce9722030af3b4672b70c401973695f73",
+    "u3bPreparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3",
+    "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+    "u3cSummarySha256": "652b2df1ae3811f23252af4469089ab4a2bd56ca12cdbea8e864b3d149505110",
+    "u4aGeometryResultSha256": "e9c12349c08ab6d90f57cc02f61c367ad8a33ed54a38879aba8258684ff0cd49"
+  },
+  "preparationBoundary": {
+    "sceneCount": 5,
+    "methodsPerScene": 3,
+    "gaussianAssetCount": 15,
+    "targetManifestCount": 5,
+    "heldOutFaroTargetCount": 40,
+    "sourceViewsPerScene": 8,
+    "targetViewsPerScene": 8,
+    "sourceTargetOverlapPerScene": 0,
+    "sampledObservationCountPerScene": 24576,
+    "totalPrimitivesPerMethodAcrossScenes": 122880,
+    "allMethodsPreserveIdenticalPrimitiveCountsWithinScene": true,
+    "renderedDepthFileCount": 0,
+    "u5aResultExists": false,
+    "noRenderedDepthProduced": true,
+    "noU5aMetricsProduced": true
+  },
+  "scenes": [
+    {
+      "scene": "ca1m-48458481",
+      "sampledObservationCount": 24576,
+      "sourceTargetOverlap": 0,
+      "methods": {
+        "depth-only-covariance": "2d09a9605b2124b87e7633b355f388fed37a339032d9b20556d9d528850b9de8",
+        "calibrated-covariance": "56e3c66292582a766299288181e37407d6496b9b537e434991f41f1657c6a12b",
+        "shuffled-calibrated-covariance": "8f16a0f9ced92f34ea460eecb9702b07adce66604717e81449380ea6c5c28551"
+      },
+      "targetManifestSha256": "c07d0992304791621dcf389928d83000bdc32a0c19dcecf0318f76bed2c38c0a",
+      "targetTimestampsNanoseconds": [111506890652708, 111510189343125, 111513587995000, 111516986647958, 111520185380916, 111523584035208, 111526982690208, 111530281384291]
+    },
+    {
+      "scene": "ca1m-48018737",
+      "sampledObservationCount": 24576,
+      "sourceTargetOverlap": 0,
+      "methods": {
+        "depth-only-covariance": "d300417d619d3114fdb80b61a87f8cee051c5bd904083fcd3da6cb0d4fee198f",
+        "calibrated-covariance": "81809f5ca67928120b8003703ebd4770de3e9b6cd8a4a7f6c0dd029fe5b09fb1",
+        "shuffled-calibrated-covariance": "7c0e1e9ef92663b1c4e6b9b3114bbf2da93b8d1b4d6b2c870b8c065bcc0d62d5"
+      },
+      "targetManifestSha256": "2caa325cc3ad1ef6c41572346f99cd712a4f35e9a246d82ed8fda8f4799cb5b4",
+      "targetTimestampsNanoseconds": [3474508638375, 3478307097083, 3482205515208, 3486003973625, 3489702472166, 3493700848875, 3497599265958, 3501397723166]
+    },
+    {
+      "scene": "ca1m-45261587",
+      "sampledObservationCount": 24576,
+      "sourceTargetOverlap": 0,
+      "methods": {
+        "depth-only-covariance": "45ec771fc38c098bcd473dbf7956d382cfdcfea7648c75bd2c59552bf4f6b3fb",
+        "calibrated-covariance": "92abd858a165455f53d79e596dc88cf327690ce36ec5460406bc2ac01cd17f43",
+        "shuffled-calibrated-covariance": "95724f686ff150cd8cc1188c5c049532415402fd40f80be3908612f70f4daf2c"
+      },
+      "targetManifestSha256": "e19f3ac8d3038a79cd5fbb9fa4535221a5ef1b6920223b0842590131e0d4d733",
+      "targetTimestampsNanoseconds": [78105079497541, 78113376055500, 78121289439041, 78129186162208, 78136982926500, 78144879648375, 78152776370541, 78162688921166]
+    },
+    {
+      "scene": "ca1m-42897538",
+      "sampledObservationCount": 24576,
+      "sourceTargetOverlap": 0,
+      "methods": {
+        "depth-only-covariance": "0b780462cd1b755dbfad02d3ad24200005bebf37135e6ffbb8fc000b9efa160f",
+        "calibrated-covariance": "0273a9efbea0803feed04d5c18036f963eb7cda99b710534d39b0f855668f3a9",
+        "shuffled-calibrated-covariance": "3588ccbb321f902aa98670e513bad56e4e9d633a50e28e8b7b3ef3782428023b"
+      },
+      "targetManifestSha256": "f52dff054e155292866aa2a092a50b955a625af203254138a684fab2f03831a1",
+      "targetTimestampsNanoseconds": [275498818184625, 275512512569958, 275527123244914, 275539118323625, 275551913073125, 275564507903125, 275576519637375, 275589114465750]
+    },
+    {
+      "scene": "ca1m-48018375",
+      "sampledObservationCount": 24576,
+      "sourceTargetOverlap": 0,
+      "methods": {
+        "depth-only-covariance": "18fcad719b4a5517d9e1678f85c387f1131b1677f71455155f84b17c10c8ebb8",
+        "calibrated-covariance": "68b5e1652c3faf8b32c723efb689bc46bdde67b9ade8524dd5af63cc9d79c252",
+        "shuffled-calibrated-covariance": "08f211239a61e419418060f8a157c98bc7a1bc8b0b03eb0fd3c4be2d87c238c2"
+      },
+      "targetManifestSha256": "34f603f56ac310715b64f54261755de2c8d70a15b2bec1c00c8290a4574ff7f4",
+      "targetTimestampsNanoseconds": [390062226535958, 390074121621541, 390086016703875, 390097911783333, 390109723563708, 390122518269125, 390134413344291, 390146308416250]
+    }
+  ],
+  "claimBoundary": "This artifact freezes the first U5a prepared Gaussian assets and disjoint FARO target set before any U5a render or metric. It contains no efficacy evidence. U5a remains exploratory because the room identities were already exposed in U3b/U3c/U4a."
+}
