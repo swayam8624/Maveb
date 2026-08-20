@@ -1,4 +1,5 @@
 #include <aether/capture/CapturePacket.hpp>
+#include <aether/core/Error.hpp>
 #include <aether/mesh/PlyExporter.hpp>
 #include <aether/reconstruction/ReconstructionContracts.hpp>
 #include <aether/reconstruction/UncertaintyTsdfVolume.hpp>
@@ -304,6 +305,7 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
         }
 
         const auto started = std::chrono::steady_clock::now();
+        std::size_t zeroUpdateFramesSkipped = 0;
         for (const auto& frame : frames) {
             const auto pixelCount = static_cast<std::size_t>(frame.width) * frame.height;
             auto depthBytes = readBytes(frame.depthPath, pixelCount * sizeof(float));
@@ -345,9 +347,19 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
             DepthObservation depth{*packet.depthMetres, &*packet.depthConfidence, 1.0, 0.0,
                                    "ca1m-u3-frozen"};
             auto integrated = volume->integrate(packet, pose, depth);
-            if (!integrated)
-                throw std::runtime_error(integrated.error().describe());
+            if (!integrated) {
+                const auto& error = integrated.error();
+                if (error.code == aether::ErrorCode::invalidArgument &&
+                    error.message == "Depth frame did not observe any voxel in the configured volume") {
+                    ++zeroUpdateFramesSkipped;
+                    continue;
+                }
+                throw std::runtime_error(error.describe());
+            }
         }
+
+        if (volume->integratedFrames() == 0)
+            throw std::runtime_error("U3 scene produced no updating frames");
 
         auto mesh = volume->extractMesh();
         if (!mesh)
@@ -368,14 +380,17 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
 
         if (options->json) {
             std::cout << "{\"ok\":true,\"scene\":\"" << jsonEscape(scene) << "\",\"method\":\""
-                      << jsonEscape(options->mode) << "\",\"frames\":" << volume->integratedFrames()
+                      << jsonEscape(options->mode) << "\",\"requestedFrames\":" << frames.size()
+                      << ",\"frames\":" << volume->integratedFrames()
+                      << ",\"zeroUpdateFramesSkipped\":" << zeroUpdateFramesSkipped
                       << ",\"vertices\":" << vertices << ",\"triangles\":" << triangles
                       << ",\"elapsedMilliseconds\":" << elapsed
                       << ",\"peakResidentBytes\":" << resident << ",\"output\":\""
                       << jsonEscape(options->output.string()) << "\"}\n";
         } else {
             std::cout << "U3 " << options->mode << ": " << vertices << " vertices, " << triangles
-                      << " triangles, " << elapsed << " ms\n";
+                      << " triangles, " << elapsed << " ms, " << zeroUpdateFramesSkipped
+                      << " zero-update frames skipped\n";
         }
         return 0;
     } catch (const std::exception& error) {
