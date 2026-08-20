@@ -187,12 +187,14 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
                 ++finiteDepth;
 
         if (options->json) {
-            std::cout << "{\"ok\":true,\"gaussians\":" << asset->gaussians.size()
-                      << ",\"targetIndex\":" << options->targetIndex << ",\"width\":"
-                      << camera.width << ",\"height\":" << camera.height
-                      << ",\"finiteDepthPixels\":" << finiteDepth << ",\"output\":\""
-                      << jsonEscape(std::filesystem::absolute(options->outputPath).string())
-                      << "\"}\n";
+            std::cout << "{\"ok\":true,\"gaussians\":" << asset->gaussians.size();
+            std::cout << ",\"targetIndex\":" << options->targetIndex;
+            std::cout << ",\"width\":" << camera.width;
+            std::cout << ",\"height\":" << camera.height;
+            std::cout << ",\"finiteDepthPixels\":" << finiteDepth;
+            std::cout << ",\"output\":\""
+                      << jsonEscape(std::filesystem::absolute(options->outputPath).string());
+            std::cout << "\"}\n";
         }
         return 0;
     } catch (const std::exception& exception) {
