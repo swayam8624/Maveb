@@ -22,6 +22,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Install MavebBench Python dependencies
+        run: python3 -m pip install --disable-pip-version-check numpy pillow
       - name: MavebBench unit tests
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
 
