@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -13,6 +12,9 @@ from pathlib import Path
 
 STUDY_ID = "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1"
 EXPECTED_SPLIT_SHA256 = "d22366afd77d3407e53d5152d313522d559ee57e9ec995d96102c299dc55f5ff"
+EXPECTED_METADATA_SHA256 = "bc855db7fa6666dcab7997434949fd8d89027d3b9c3fdbda8a30896e80d0742b"
+EXPECTED_ARKIT_METADATA_BLOB_SHA = "2b347453aff47f4bb1dc79c71a8ed9e25e2bb5f3"
+EXPECTED_CA1M_VAL_BLOB_SHA = "5b155412995a07a1413f1539b0f0eda95d20959c"
 EXPECTED_VIDEOS = [
     ("42898811", "434650"),
     ("45261121", "466628"),
@@ -34,27 +36,48 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def load_raw_index(path: Path) -> dict[str, tuple[str, str]]:
-    result: dict[str, tuple[str, str]] = {}
-    with path.open(newline="", encoding="utf-8") as stream:
-        reader = csv.DictReader(stream)
-        required = {"video_id", "visit_id", "fold"}
-        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
-            raise ValueError("ARKitScenes raw split CSV lacks video_id/visit_id/fold")
-        for row in reader:
-            video = str(row["video_id"]).strip()
-            if video:
-                result[video] = (str(row["visit_id"]).strip(), str(row["fold"]).strip())
-    return result
+def validate_metadata_evidence(path: Path) -> dict:
+    if not path.is_file():
+        raise FileNotFoundError("U6b public metadata evidence is missing")
+    if sha256_file(path) != EXPECTED_METADATA_SHA256:
+        raise ValueError("U6b public metadata evidence SHA differs")
+    payload = json.loads(path.read_text())
+    if (
+        payload.get("study") != STUDY_ID
+        or payload.get("status") != "frozen-before-confirmatory-asset-acquisition"
+        or payload.get("assetAcquisitionPerformed") is not False
+    ):
+        raise ValueError("U6b public metadata evidence boundary differs")
+    selected = [
+        (str(item["videoId"]), str(item["visitId"]), str(item["fold"]))
+        for item in payload.get("selectedValidationRows", [])
+    ]
+    expected = [(video, visit, "Validation") for video, visit in EXPECTED_VIDEOS]
+    if selected != expected:
+        raise ValueError("U6b public metadata selected rows differ")
+    sources = payload.get("publicSources", {})
+    arkit = sources.get("arkitScenesRawSplit", {})
+    ca1m = sources.get("ca1mValidationList", {})
+    if arkit.get("gitBlobSha") != EXPECTED_ARKIT_METADATA_BLOB_SHA:
+        raise ValueError("U6b ARKitScenes metadata blob SHA differs")
+    if ca1m.get("gitBlobSha") != EXPECTED_CA1M_VAL_BLOB_SHA:
+        raise ValueError("U6b CA-1M validation metadata blob SHA differs")
+    binding = payload.get("selectionBinding", {})
+    if binding.get("splitSha256") != EXPECTED_SPLIT_SHA256:
+        raise ValueError("U6b public metadata does not bind the frozen split")
+    return payload
 
 
-def validate_frozen_inputs(split_path: Path, protocol_path: Path) -> tuple[dict, dict]:
+def validate_frozen_inputs(
+    split_path: Path, protocol_path: Path, metadata_path: Path
+) -> tuple[dict, dict, dict]:
     if not split_path.is_file() or not protocol_path.is_file():
         raise FileNotFoundError("U6b frozen split/protocol is missing")
     if sha256_file(split_path) != EXPECTED_SPLIT_SHA256:
         raise ValueError("U6b split SHA differs from the frozen selection")
     split = json.loads(split_path.read_text())
     protocol = json.loads(protocol_path.read_text())
+    metadata = validate_metadata_evidence(metadata_path)
     if split.get("study") != STUDY_ID:
         raise ValueError("U6b split study id differs")
     if split.get("selectionStatus") != "frozen-before-confirmatory-asset-acquisition":
@@ -82,7 +105,7 @@ def validate_frozen_inputs(split_path: Path, protocol_path: Path) -> tuple[dict,
     ]
     if protocol_pairs != EXPECTED_VIDEOS:
         raise ValueError("U6b protocol scene membership/order differs")
-    return split, protocol
+    return split, protocol, metadata
 
 
 def file_birth_time(path: Path) -> str | None:
@@ -131,28 +154,22 @@ def asset_state(ca1m_root: Path, arkit_root: Path, video: str, visit: str) -> di
 
 
 def build_plan(
-    *, split_path: Path, protocol_path: Path, ca1m_root: Path, arkit_root: Path
+    *,
+    split_path: Path,
+    protocol_path: Path,
+    metadata_path: Path,
+    ca1m_root: Path,
+    arkit_root: Path,
 ) -> dict:
-    split, _ = validate_frozen_inputs(split_path, protocol_path)
-    raw_csv = arkit_root / "raw" / "raw_train_val_splits.csv"
-    if not raw_csv.is_file():
-        raise FileNotFoundError(f"ARKitScenes raw split CSV missing: {raw_csv}")
-    raw_index = load_raw_index(raw_csv)
-    entries: list[dict] = []
-    for item in split["confirmatoryVideos"]:
-        video = str(item["videoId"])
-        visit = str(item["visitId"])
-        found = raw_index.get(video)
-        expected = (visit, "Validation")
-        if found != expected:
-            raise ValueError(
-                f"ARKitScenes metadata mismatch for {video}: expected {expected}, found {found}"
-            )
-        entries.append(asset_state(ca1m_root, arkit_root, video, visit))
+    split, _, metadata = validate_frozen_inputs(split_path, protocol_path, metadata_path)
+    entries = [
+        asset_state(ca1m_root, arkit_root, str(item["videoId"]), str(item["visitId"]))
+        for item in split["confirmatoryVideos"]
+    ]
     contaminated = [entry["videoId"] for entry in entries if entry["preexisting"]]
     clean = not contaminated
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "study": STUDY_ID,
         "stage": "U6b-confirmatory-acquisition-plan",
         "createdAtUtc": utc_now(),
@@ -162,12 +179,18 @@ def build_plan(
         "datasetMutationPerformed": False,
         "splitSha256": sha256_file(split_path),
         "protocolSha256": sha256_file(protocol_path),
-        "arkitRawSplitSha256": sha256_file(raw_csv),
+        "publicMetadataEvidenceSha256": sha256_file(metadata_path),
+        "arkitRawSplitGitBlobSha": metadata["publicSources"]["arkitScenesRawSplit"]["gitBlobSha"],
+        "ca1mValidationListGitBlobSha": metadata["publicSources"]["ca1mValidationList"]["gitBlobSha"],
+        "localArkitMetadataCsvRequired": False,
         "ca1mRoot": str(ca1m_root.resolve()),
         "arkitRoot": str(arkit_root.resolve()),
         "preexistingVideoIds": contaminated,
         "entries": entries,
-        "failurePolicy": "Any preexisting selected U6b asset blocks confirmatory acquisition. Do not replace a room or delete evidence to manufacture a clean boundary.",
+        "failurePolicy": (
+            "Any preexisting selected U6b asset blocks confirmatory acquisition. "
+            "Do not replace a room or delete evidence to manufacture a clean boundary."
+        ),
     }
 
 
@@ -175,6 +198,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, required=True)
+    parser.add_argument("--metadata-evidence", type=Path, required=True)
     parser.add_argument("--ca1m-root", type=Path, required=True)
     parser.add_argument("--arkit-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -184,6 +208,7 @@ def main() -> int:
     plan = build_plan(
         split_path=args.split,
         protocol_path=args.protocol,
+        metadata_path=args.metadata_evidence,
         ca1m_root=args.ca1m_root,
         arkit_root=args.arkit_root,
     )
