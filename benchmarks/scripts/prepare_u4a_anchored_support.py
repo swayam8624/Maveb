@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 from pathlib import Path
 
@@ -106,8 +105,11 @@ def support_sigma_arrays(observations: dict[str, np.ndarray], penalty: float) ->
 
 def shuffled_observations(manifest_path: Path, protocol: dict, scratch_manifest: Path) -> dict[str, np.ndarray]:
     payload = json.loads(manifest_path.read_text())
+    source_root = manifest_path.parent
     for frame in payload["frames"]:
-        frame["confidencePath"] = frame["shuffledConfidencePath"]
+        frame["depthPath"] = str((source_root / frame["depthPath"]).resolve())
+        frame["confidencePath"] = str((source_root / frame["shuffledConfidencePath"]).resolve())
+        frame["shuffledConfidencePath"] = frame["confidencePath"]
     scratch_manifest.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     try:
         _, observations = scene_observations(scratch_manifest, u3c_protocol_shim(protocol))
