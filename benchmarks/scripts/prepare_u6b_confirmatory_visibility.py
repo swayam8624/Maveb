@@ -148,7 +148,7 @@ def source_records(preflight_scene: dict) -> list[dict]:
 
 
 def confidence_histogram(values: np.ndarray) -> dict[str, int]:
-    counts = Counter(int(value) for value in np.asarray(values, dtype=np.uint8).tolist())
+    counts = Counter(int(value) for value in np.asarray(values, dtype=np.uint8).reshape(-1).tolist())
     return {str(key): int(counts.get(key, 0)) for key in (0, 128, 255)}
 
 
@@ -310,6 +310,13 @@ def main() -> int:
                 )
 
         shuffled_full = shuffled_confidence(full_confidence_arrays, 42)
+        full_intact_stream = np.concatenate([array.reshape(-1) for array in full_confidence_arrays])
+        full_shuffled_stream = np.concatenate([array.reshape(-1) for array in shuffled_full])
+        full_intact_histogram = confidence_histogram(full_intact_stream)
+        full_shuffled_histogram = confidence_histogram(full_shuffled_stream)
+        if full_intact_histogram != full_shuffled_histogram:
+            raise ValueError(f"U6b full confidence distribution changed under shuffle for {scene}")
+
         positions_chunks: list[np.ndarray] = []
         log_scale_chunks: list[np.ndarray] = []
         quaternion_chunks: list[np.ndarray] = []
@@ -361,7 +368,8 @@ def main() -> int:
                     "orientationTransform": payload["orientationTransform"],
                     "confidenceJoinDeltaMilliseconds": payload["confidenceJoinDeltaMilliseconds"],
                     "sampledPrimitiveCount": int(z.size),
-                    "intactConfidenceHistogram": confidence_histogram(intact),
+                    "intactPrimitiveConfidenceHistogram": confidence_histogram(intact),
+                    "shuffledPrimitiveConfidenceHistogram": confidence_histogram(shuffled),
                 }
             )
 
@@ -378,8 +386,6 @@ def main() -> int:
             and shuffled_stream.shape == (primitive_count,)
         ):
             raise ValueError(f"U6b primitive/confidence alignment failed for {scene}")
-        if sorted(intact_stream.tolist()) != sorted(shuffled_stream.tolist()):
-            raise ValueError(f"U6b shuffled confidence distribution changed for {scene}")
 
         baseline_path = scene_root / METHODS[0] / "gaussians.ply"
         write_gaussian_ply(
@@ -416,7 +422,8 @@ def main() -> int:
                 "gaussianPath": str(candidate_path.resolve()),
                 "gaussianSha256": sha256_file(candidate_path),
                 "primitiveCount": primitive_count,
-                "confidenceHistogram": confidence_histogram(intact_stream),
+                "fullConfidenceHistogram": full_intact_histogram,
+                "primitiveConfidenceHistogram": confidence_histogram(intact_stream),
                 "opacityProbabilityMin": float(np.min(candidate_prob)),
                 "opacityProbabilityMedian": float(np.median(candidate_prob)),
                 "opacityProbabilityMax": float(np.max(candidate_prob)),
@@ -426,16 +433,16 @@ def main() -> int:
                 "gaussianPath": str(shuffled_path.resolve()),
                 "gaussianSha256": sha256_file(shuffled_path),
                 "primitiveCount": primitive_count,
-                "confidenceHistogram": confidence_histogram(shuffled_stream),
+                "fullConfidenceHistogram": full_shuffled_histogram,
+                "primitiveConfidenceHistogram": confidence_histogram(shuffled_stream),
                 "opacityProbabilityMin": float(np.min(shuffled_prob)),
                 "opacityProbabilityMedian": float(np.median(shuffled_prob)),
                 "opacityProbabilityMax": float(np.max(shuffled_prob)),
                 "onlyOpacityChangedFromBaseline": True,
                 "shuffleSeed": 42,
+                "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
             },
         }
-        if method_records[METHODS[1]]["confidenceHistogram"] != method_records[METHODS[2]]["confidenceHistogram"]:
-            raise ValueError(f"U6b candidate/shuffled confidence histograms differ for {scene}")
 
         target_manifest, target_timestamps = write_target_manifest(
             archive_path=archive_path,
@@ -453,6 +460,7 @@ def main() -> int:
                 "sourceCount": SOURCE_COUNT,
                 "sourceRecords": source_records_out,
                 "primitiveCount": primitive_count,
+                "fullConfidenceHistogramPreservedByShuffle": full_intact_histogram == full_shuffled_histogram,
                 "methods": method_records,
                 "targetManifestPath": str(target_manifest.resolve()),
                 "targetManifestSha256": sha256_file(target_manifest),
@@ -468,7 +476,9 @@ def main() -> int:
                         "scene": scene,
                         "primitives": primitive_count,
                         "targets": target_timestamps,
-                        "confidenceHistogram": method_records[METHODS[1]]["confidenceHistogram"],
+                        "fullConfidenceHistogram": full_intact_histogram,
+                        "candidatePrimitiveHistogram": method_records[METHODS[1]]["primitiveConfidenceHistogram"],
+                        "shuffledPrimitiveHistogram": method_records[METHODS[2]]["primitiveConfidenceHistogram"],
                     }
                 },
                 sort_keys=True,
@@ -489,6 +499,7 @@ def main() -> int:
         "sourceDepthRangeMetres": [MIN_DEPTH_METRES, MAX_DEPTH_METRES],
         "baseOpacity": base_opacity,
         "sensorConfidencePenalty": k,
+        "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
         "scenes": scene_records,
         "noRenderedDepthProduced": True,
         "noU6bMetricsProduced": True,
