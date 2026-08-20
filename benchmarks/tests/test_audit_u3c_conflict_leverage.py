@@ -37,7 +37,7 @@ class U3cConflictLeverageTests(unittest.TestCase):
         sigmas = np.asarray(
             [
                 [1.0, 2.0, 3.0, np.nan],
-                [3.0, 2.0, 1.0, np.nan],
+                [1.0, 2.0, 3.0, np.nan],
             ],
             dtype=np.float64,
         )
