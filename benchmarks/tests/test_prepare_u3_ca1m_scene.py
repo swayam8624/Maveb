@@ -7,7 +7,10 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "benchmarks" / "scripts" / "prepare_u3_ca1m_scene.py"
+SCRIPTS = ROOT / "benchmarks" / "scripts"
+SCRIPT = SCRIPTS / "prepare_u3_ca1m_scene.py"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 SPEC = importlib.util.spec_from_file_location("prepare_u3_ca1m_scene", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 prepare = importlib.util.module_from_spec(SPEC)
