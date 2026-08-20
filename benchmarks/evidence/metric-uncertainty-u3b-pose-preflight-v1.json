@@ -63,7 +63,7 @@
       "inverseSupportedPairCount": 1,
       "mutuallyComparablePairCount": 1,
       "cameraToWorldWinsAmongComparable": 1,
-      "cameraToWorldMedianMetres": 0.0008461058011236198,
+      "cameraToWorldMedianMetres": 0.0008461548414143705,
       "inverseMedianMetres": 1.8456630210981908,
       "passed": true,
       "primaryEightViewTimestampsNanoseconds": [275492837302832, 275506515029000, 275524524311166, 275538218692748, 275552812703958, 275567123495791, 275580817872833, 275595511835458]
@@ -77,8 +77,8 @@
       "inverseSupportedPairCount": 6,
       "mutuallyComparablePairCount": 6,
       "cameraToWorldWinsAmongComparable": 6,
-      "cameraToWorldMedianMetres": 0.0008697127770041947,
-      "inverseMedianMetres": 0.29413420902829875,
+      "cameraToWorldMedianMetres": 0.0008696097691037741,
+      "inverseMedianMetres": 0.29413441650860966,
       "passed": true,
       "primaryEightViewTimestampsNanoseconds": [390056212352541, 390069823397666, 390083417778750, 390097012155458, 390110623191500, 390125117193166, 390138711563916, 390152322590458]
     }
