@@ -79,6 +79,11 @@ if(AETHER_BUILD_TESTS)
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
+
+    add_executable(AetherUncertaintyTsdfTests tests/UncertaintyTsdfTests.cpp)
+    target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(AetherUncertaintyTsdfTests)
+    add_test(NAME AetherUncertaintyTsdfTests COMMAND AetherUncertaintyTsdfTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
