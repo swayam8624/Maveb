@@ -1,0 +1,42 @@
+{
+  "candidateUniverse": "intersection of official CA-1M val.txt and ARKitScenes raw Validation videos",
+  "confirmatoryVideos": [
+    {
+      "rankSha256": "0005f029d2efb3a12cd4a718127d15d27765e57a04c343228ffe1fb008503a10",
+      "videoId": "48458481",
+      "visitId": "483953"
+    },
+    {
+      "rankSha256": "00331159c39e858b6901fee52376bdf06b8d6b7894fb15504dd517ab0544355e",
+      "videoId": "48018737",
+      "visitId": "483618"
+    },
+    {
+      "rankSha256": "0081dcb351a65536f0529ca8bc2a5b77f69d561058b0a9f548ca0f1fba6218cc",
+      "videoId": "45261587",
+      "visitId": "468073"
+    },
+    {
+      "rankSha256": "094234cffc8adf826ab4152c3836867396a126643b5741b58a907b91d12c0320",
+      "videoId": "42897538",
+      "visitId": "422826"
+    },
+    {
+      "rankSha256": "0da9f6bc9d956785d9b1c2dc9a2b46638ca7cefac2257d9191f6240068af3585",
+      "videoId": "48018375",
+      "visitId": "483312"
+    }
+  ],
+  "exposedU3v1VideosExcluded": [
+    "45261143",
+    "45261179",
+    "45261615",
+    "45662921",
+    "47115543"
+  ],
+  "ranking": "ascending SHA256('maveb-u3b-confirmatory-v1:' + videoId)",
+  "schemaVersion": 1,
+  "selectionStatus": "frozen-before-confirmatory-asset-acquisition",
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "visitConstraint": "all selected visitId values distinct"
+}
