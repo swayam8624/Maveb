@@ -350,7 +350,8 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
             if (!integrated) {
                 const auto& error = integrated.error();
                 if (error.code == aether::ErrorCode::invalidArgument &&
-                    error.message == "Depth frame did not observe any voxel in the configured volume") {
+                    error.message ==
+                        "Depth frame did not observe any voxel in the configured volume") {
                     ++zeroUpdateFramesSkipped;
                     continue;
                 }
