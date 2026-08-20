@@ -41,38 +41,53 @@
     "backgroundWrong": "rendered depth > FARO depth + 0.05m",
     "depthTieToleranceMetres": 1e-6
   },
+  "pairwiseConvention": {
+    "orientation": "challenger minus reference",
+    "candidateVsDepthOnly": "challenger=calibrated-covariance, reference=depth-only-covariance",
+    "shuffledVsDepthOnly": "challenger=shuffled-calibrated-covariance, reference=depth-only-covariance",
+    "candidateVsShuffled": "challenger=calibrated-covariance, reference=shuffled-calibrated-covariance",
+    "challengerOnly": "challenger finite and reference non-finite on a FARO-valid pixel",
+    "referenceOnly": "reference finite and challenger non-finite on a FARO-valid pixel",
+    "bothFinite": "both renders finite on a FARO-valid pixel",
+    "challengerCloser": "both finite and abs(challenger-FARO)+1e-6 < abs(reference-FARO)",
+    "referenceCloser": "both finite and abs(reference-FARO)+1e-6 < abs(challenger-FARO)",
+    "correctToWrong": "both finite, reference within 0.05m and challenger outside 0.05m",
+    "wrongToCorrect": "both finite, challenger within 0.05m and reference outside 0.05m"
+  },
   "perTargetMetrics": [
     "FARO-valid pixel count",
-    "candidate-only coverage fraction: candidate finite and depth-only non-finite",
-    "depth-only-only coverage fraction: depth-only finite and candidate non-finite",
-    "both-finite fraction",
-    "candidate-only within-5cm fraction of FARO-valid pixels",
-    "candidate-only foreground-wrong fraction of FARO-valid pixels",
-    "candidate-only background-wrong fraction of FARO-valid pixels",
-    "among candidate-only pixels: foreground-wrong share, background-wrong share, within-5cm share",
-    "among both-finite pixels: fraction candidate depth is closer than depth-only by absolute FARO error",
-    "among both-finite pixels: fraction depth-only is closer than candidate",
-    "depth-only-correct candidate-wrong fraction of FARO-valid pixels",
-    "candidate-correct depth-only-wrong fraction of FARO-valid pixels",
-    "median candidate-minus-depth-only rendered depth on both-finite pixels",
-    "median candidate-minus-depth-only absolute FARO error on both-finite pixels",
-    "repeat the same pairwise metrics for shuffled-vs-depth-only and calibrated-vs-shuffled where applicable"
+    "challenger-only coverage fraction of FARO-valid pixels",
+    "reference-only coverage fraction of FARO-valid pixels",
+    "both-finite fraction of FARO-valid pixels",
+    "challenger-only within-5cm fraction of FARO-valid pixels",
+    "challenger-only foreground-wrong fraction of FARO-valid pixels",
+    "challenger-only background-wrong fraction of FARO-valid pixels",
+    "among challenger-only pixels: foreground-wrong share, background-wrong share, within-5cm share",
+    "among both-finite pixels: challenger-closer fraction and reference-closer fraction",
+    "reference-correct challenger-wrong fraction of FARO-valid pixels",
+    "challenger-correct reference-wrong fraction of FARO-valid pixels",
+    "median challenger-minus-reference rendered depth on both-finite pixels",
+    "median challenger-minus-reference absolute FARO error on both-finite pixels"
   ],
   "sceneAggregation": {
-    "rule": "arithmetic mean across the same eight frozen target views for view-normalized fractions; pooled pixel counts are also reported separately",
+    "fractionRule": "arithmetic mean across the same eight frozen target views",
+    "medianShiftRule": "arithmetic mean across defined per-target medians; undefined only if no target view has a defined median",
+    "pooledCounts": "raw pixel counts are summed across the eight target views and reported separately",
     "sceneIsEvidenceUnit": true
   },
   "crossSceneDescriptive": {
-    "primaryMechanismReadout": "median across scenes of candidate-only foreground-wrong share among candidate-only pixels",
+    "primaryMechanismReadout": "median across scenes of candidate-vs-depth-only challenger-only foreground-wrong share among challenger-only pixels",
     "secondary": [
       "median candidate-only coverage fraction",
       "median depth-only-correct candidate-wrong fraction",
       "median candidate-correct depth-only-wrong fraction",
       "median both-finite candidate-minus-depth-only absolute error shift",
-      "same foreground-leakage readout for shuffled covariance"
+      "same foreground-leakage readout for shuffled-vs-depth-only",
+      "candidate-vs-shuffled pairwise mechanism readouts"
     ],
     "bootstrapReplicates": 2000,
     "bootstrapSeed": 42,
+    "percentileConvention": "nearest-rank on sorted bootstrap values with exact half-index ties resolved to the lower index, matching U3c/U5a",
     "descriptiveOnly": true
   },
   "interpretation": {
