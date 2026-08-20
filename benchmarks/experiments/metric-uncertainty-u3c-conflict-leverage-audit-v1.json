@@ -67,6 +67,12 @@
     ],
     "keyOpportunityCategory": "conflict-mixed-confidence"
   },
+  "summaryConventions": {
+    "median": "ordinary median over defined values",
+    "p95": "nearest-rank sample quantile using nearest index with half ties resolved to the lower index",
+    "spearmanRanks": "average ranks for ties; Pearson correlation of ranks; missing observations omitted within each voxel",
+    "undefined": "reported as null and accompanied by a defined-count field where applicable"
+  },
   "sceneSummaries": {
     "required": [
       "surfaceActiveVoxelCount",
@@ -96,6 +102,12 @@
       "Spearman correlation across five scenes between U3b improvement and medianUncertaintyResidualSpearman"
     ],
     "warning": "n=5 and outcomes are already exposed; correlations are hypothesis-generating only"
+  },
+  "artifacts": {
+    "summary": "u3c-conflict-leverage-v1/summary.json",
+    "sceneVoxelMetrics": "u3c-conflict-leverage-v1/scenes/<scene>/voxel-mechanism.npz",
+    "sceneSummary": "u3c-conflict-leverage-v1/scenes/<scene>/summary.json",
+    "overwritePolicy": "refuse if summary.json already exists"
   },
   "interpretationRules": {
     "lowOpportunity": "If conflict-mixed-confidence voxels are rare and fusion leverage is usually much less than 0.25 voxel, conclude TSDF weighting has little mechanical opportunity to move geometry in this setup.",
