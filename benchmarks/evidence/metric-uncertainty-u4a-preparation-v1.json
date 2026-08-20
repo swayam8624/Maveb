@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u4a-anchored-support-v1",
+  "stage": "U4a-exploratory-support-topology-intervention-preparation",
+  "status": "prepared-no-u4a-geometry-outcomes",
+  "claimType": "exploratory mechanism/representation study on already-exposed U3b scenes; not confirmatory efficacy evidence",
+  "protocolSha256": "c2edc6bcf81b7e2e3b1fb2b7a5ba6a32f1025ab17c95c4efdaa18a7fa4cb793b",
+  "preparationSha256": "01a505be16f9f89b533f6ac45f300ba86cb0ab18417e2792d97569050d87fd90",
+  "preparationLogSha256": "68551b9abbcd185b225df1efd435c62cff11577c1b704c70c730976d1f2f73ca",
+  "parentEvidence": {
+    "u3cSummarySha256": "652b2df1ae3811f23252af4469089ab4a2bd56ca12cdbea8e864b3d149505110",
+    "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+    "u3bPreparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3"
+  },
+  "noGeometryOutcomesProduced": true,
+  "meshCountAfterPreparation": 0,
+  "scenes": {
+    "ca1m-48458481": {
+      "depthOnlyAnchorObservationFraction": 0.8302714029947916,
+      "depthOnlyFinalAdmittedObservationFraction": 0.8627827962239584,
+      "calibratedAnchorObservationFraction": 0.7993494669596354,
+      "calibratedFinalAdmittedObservationFraction": 0.8435897827148438,
+      "shuffledAnchorObservationFraction": 0.7646687825520834,
+      "shuffledFinalAdmittedObservationFraction": 0.8495152791341146
+    },
+    "ca1m-48018737": {
+      "depthOnlyAnchorObservationFraction": 0.42448170979817706,
+      "depthOnlyFinalAdmittedObservationFraction": 0.4450836181640625,
+      "calibratedAnchorObservationFraction": 0.40131886800130206,
+      "calibratedFinalAdmittedObservationFraction": 0.43313852945963544,
+      "shuffledAnchorObservationFraction": 0.40649668375651044,
+      "shuffledFinalAdmittedObservationFraction": 0.4404449462890625
+    },
+    "ca1m-45261587": {
+      "depthOnlyAnchorObservationFraction": 0.8901418050130209,
+      "depthOnlyFinalAdmittedObservationFraction": 0.9081598917643229,
+      "calibratedAnchorObservationFraction": 0.8454920450846354,
+      "calibratedFinalAdmittedObservationFraction": 0.8830159505208334,
+      "shuffledAnchorObservationFraction": 0.8463516235351562,
+      "shuffledFinalAdmittedObservationFraction": 0.9011611938476562
+    },
+    "ca1m-42897538": {
+      "depthOnlyAnchorObservationFraction": 0.9385350545247396,
+      "depthOnlyFinalAdmittedObservationFraction": 0.9421005249023438,
+      "calibratedAnchorObservationFraction": 0.7627944946289062,
+      "calibratedFinalAdmittedObservationFraction": 0.7755533854166666,
+      "shuffledAnchorObservationFraction": 0.7408243815104166,
+      "shuffledFinalAdmittedObservationFraction": 0.8891805013020834
+    },
+    "ca1m-48018375": {
+      "depthOnlyAnchorObservationFraction": 0.7826461791992188,
+      "depthOnlyFinalAdmittedObservationFraction": 0.8113657633463541,
+      "calibratedAnchorObservationFraction": 0.6702550252278646,
+      "calibratedFinalAdmittedObservationFraction": 0.7151514689127604,
+      "shuffledAnchorObservationFraction": 0.6740392049153646,
+      "shuffledFinalAdmittedObservationFraction": 0.7730000813802084
+    }
+  },
+  "interpretation": "U4a preparation has genuine support/admission leverage before geometry evaluation. Calibrated support is materially more selective than depth-only in multiple rooms, especially ca1m-42897538 and ca1m-48018375, while shuffled support restores a substantial fraction of suppressed observations in those rooms. This justifies an exploratory geometry reveal without claiming confirmatory efficacy.",
+  "claimBoundary": "All five scenes are already exposed. U4a can only motivate a separately frozen untouched U4b study; it cannot establish a positive efficacy claim."
+}
