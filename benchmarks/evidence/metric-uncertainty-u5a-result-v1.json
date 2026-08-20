@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "stage": "U5a-exploratory-heldout-depth-evidence",
+  "status": "frozen-after-first-complete-exploratory-reveal",
+  "claimType": "exploratory representation study on already-exposed U3b rooms with previously unused deterministic target frames; not confirmatory efficacy evidence",
+  "sourceCommit": "db37075efede98551fc840cab4909c6a3b2a8006",
+  "resultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+  "revealLogSha256": "df78b84491870362b01c9e3635c57fce31715d71752ed4c22b11cb4b619ea37c",
+  "preparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "protocolSha256": "d083660e3290e7592cf572b1b215a62e44365e4fb42786dbef6b6731fc309cae",
+  "targetClarificationSha256": "1d454d0fde2447679d9295a3f30f3a91b5a801a291588e12e4726bd522710252",
+  "evaluationClarificationSha256": "69d6740e7a347019fba5f2e881a63a9c67bdea8a42d134331dad7fe9ee004e38",
+  "executionIntegrity": {
+    "renderCount": 120,
+    "allRenderShasVerifiedAgainstResult": true,
+    "verifiedRenderCount": 120,
+    "resultNonOverwriteGuardPassed": true,
+    "preparationUnchangedAfterReveal": true
+  },
+  "scenes": {
+    "ca1m-48458481": {
+      "depthOnlyWithin5cm": 0.12765,
+      "calibratedWithin5cm": 0.00706,
+      "shuffledWithin5cm": 0.01195,
+      "candidateMinusDepthOnlyPercentagePoints": -12.059,
+      "candidateMinusShuffledPercentagePoints": -0.489,
+      "depthOnlyCoverage": 0.99982,
+      "calibratedCoverage": 1.0,
+      "shuffledCoverage": 1.0,
+      "depthOnlyMaeMetres": 1.228786,
+      "calibratedMaeMetres": 1.439356,
+      "shuffledMaeMetres": 1.440304
+    },
+    "ca1m-48018737": {
+      "depthOnlyWithin5cm": 0.50997,
+      "calibratedWithin5cm": 0.37802,
+      "shuffledWithin5cm": 0.42796,
+      "candidateMinusDepthOnlyPercentagePoints": -13.195,
+      "candidateMinusShuffledPercentagePoints": -4.994,
+      "depthOnlyCoverage": 0.56070,
+      "calibratedCoverage": 0.63958,
+      "shuffledCoverage": 0.64849,
+      "depthOnlyMaeMetres": 0.034848,
+      "calibratedMaeMetres": 0.503616,
+      "shuffledMaeMetres": 0.262797
+    },
+    "ca1m-45261587": {
+      "depthOnlyWithin5cm": 0.30382,
+      "calibratedWithin5cm": 0.13961,
+      "shuffledWithin5cm": 0.12156,
+      "candidateMinusDepthOnlyPercentagePoints": -16.420,
+      "candidateMinusShuffledPercentagePoints": 1.806,
+      "depthOnlyCoverage": 0.47366,
+      "calibratedCoverage": 0.72034,
+      "shuffledCoverage": 0.85365,
+      "depthOnlyMaeMetres": 0.166325,
+      "calibratedMaeMetres": 0.716745,
+      "shuffledMaeMetres": 0.848156
+    },
+    "ca1m-42897538": {
+      "depthOnlyWithin5cm": 0.21923,
+      "calibratedWithin5cm": 0.12931,
+      "shuffledWithin5cm": 0.07691,
+      "candidateMinusDepthOnlyPercentagePoints": -8.991,
+      "candidateMinusShuffledPercentagePoints": 5.241,
+      "depthOnlyCoverage": 0.62654,
+      "calibratedCoverage": 0.85214,
+      "shuffledCoverage": 0.87866,
+      "depthOnlyMaeMetres": 0.688581,
+      "calibratedMaeMetres": 1.385169,
+      "shuffledMaeMetres": 1.411657
+    },
+    "ca1m-48018375": {
+      "depthOnlyWithin5cm": 0.05663,
+      "calibratedWithin5cm": 0.00775,
+      "shuffledWithin5cm": 0.00195,
+      "candidateMinusDepthOnlyPercentagePoints": -4.888,
+      "candidateMinusShuffledPercentagePoints": 0.580,
+      "depthOnlyCoverage": 0.77001,
+      "calibratedCoverage": 0.91141,
+      "shuffledCoverage": 0.94571,
+      "depthOnlyMaeMetres": 1.002379,
+      "calibratedMaeMetres": 1.370889,
+      "shuffledMaeMetres": 1.393866
+    }
+  },
+  "descriptiveComparison": {
+    "candidateMinusDepthOnly": {
+      "sceneValues": [-0.12059243472999975, -0.13194899487790657, -0.1642047145194697, -0.08991462647148957, -0.048881298189274495],
+      "median": -0.12059243472999975,
+      "lower95": -0.1642047145194697,
+      "upper95": -0.048881298189274495,
+      "candidateBetterSceneCount": 0
+    },
+    "candidateMinusShuffled": {
+      "sceneValues": [-0.004889574488026891, -0.04994056422799947, 0.018058048139320465, 0.05240571007790805, 0.0057967461595689745],
+      "median": 0.0057967461595689745,
+      "lower95": -0.04994056422799947,
+      "upper95": 0.05240571007790805,
+      "candidateBetterSceneCount": 3
+    },
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "interpretation": {
+    "mechanisticOutcome": "not promising for the exact frozen covariance rule",
+    "reason": "calibrated covariance loses to depth-only covariance in all five exposed rooms and substantially increases held-out depth error despite often increasing coverage; shuffled association is not consistently worse than intact calibration",
+    "u5bForThisExactRule": false,
+    "noPostHocSigmaClippingOrRetuningOnTheseRooms": true
+  },
+  "claimBoundary": "U5a is exploratory only. The exact frozen rule does not justify an untouched U5b efficacy study. U1b/U2 predictive uncertainty remains valid; U3/U3b/U4a remain negative; U5a shows that directly enlarging Gaussian covariance with the frozen calibrated sigma increases footprint/coverage but does not preserve metric held-out depth accuracy."
+}
