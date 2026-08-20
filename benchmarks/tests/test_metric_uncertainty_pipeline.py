@@ -64,8 +64,10 @@ class MetricUncertaintyPipelineTests(unittest.TestCase):
             )
             self.assertEqual(evaluator.returncode, 0, evaluator.stderr)
             payload = json.loads(report.read_text())
-            self.assertEqual(payload["schemaVersion"], 1)
-            self.assertEqual(payload["bootstrapReplicates"], 16)
+            self.assertEqual(payload["schemaVersion"], 2)
+            self.assertEqual(payload["bootstrapReplicatesRequested"], 16)
+            self.assertEqual(payload["bootstrapReplicates"], 0)
+            self.assertTrue(payload["pixelBootstrapSuppressedForSceneEvidence"])
             self.assertEqual(len(payload["groups"]), 2)
             self.assertEqual(
                 payload["inputSha256"], hashlib.sha256(predictions.read_bytes()).hexdigest()
