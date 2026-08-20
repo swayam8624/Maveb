@@ -44,12 +44,14 @@
     "anchorPass": {
       "fusionWeight": 1.0,
       "geometry": "same TSDF signed-distance/truncation/projection rules as the existing dense CPU oracle",
+      "gridSamples": "oracle sample locations are exactly originMetres + [x,y,z] * voxelSizeMetres, matching UncertaintyTsdfVolume",
       "purpose": "construct a support field only; anchor-pass geometry is diagnostic and is not the U4a candidate output"
     },
     "supportQuery": {
       "surfacePoint": "world-space point obtained by back-projecting the observed depth pixel and applying the frozen camera-to-world pose",
-      "lookup": "nearest dense voxel containing the predicted surface point",
-      "anchorRequired": "anchor voxel accumulated weight > 0",
+      "lookup": "nearest dense oracle grid sample to the predicted surface point",
+      "lookupIndex": "round((surfacePoint-originMetres)/voxelSizeMetres) independently per axis with C++ llround half-away-from-zero semantics; reject indices outside the frozen volume",
+      "anchorRequired": "anchor grid sample accumulated weight > 0",
       "anchorSurfaceBand": "abs(anchor normalized TSDF) <= 0.25",
       "surfaceBandRationale": "same quarter-truncation normalized surface neighborhood frozen in U3c; no FARO outcome is used to choose it"
     },
