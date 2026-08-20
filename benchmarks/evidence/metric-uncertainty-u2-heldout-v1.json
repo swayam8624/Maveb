@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-v1",
+  "stage": "U2-held-out-calibration",
+  "status": "positive-held-out-result-pending-posthoc-orientation-sensitivity",
+  "splitId": "metric-uncertainty-public-split-v1",
+  "splitRevision": 4,
+  "splitSha256": "03bac386d32568c26af0d727b8555ac5a92dda22fd92740ffa281f2cc9fbdd10",
+  "robustModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "calibrationInputSha256": "9b225e2398aa9f116c27b9f9cd3f3916dca83d82e8a3bae5818673b059698067",
+  "heldOutObservationSha256": "58fdf84ecf60b2e8214efafb2b6614fe392c69343438346c4d6fd5fa15b76072",
+  "heldOutSamples": {
+    "ca1m-45261143": 186111,
+    "ca1m-45261179": 68782,
+    "ca1m-45261615": 153656,
+    "ca1m-45662921": 304749,
+    "ca1m-47115543": 178466,
+    "total": 891764
+  },
+  "primaryComparison": {
+    "differenceConvention": "intact minus control",
+    "evidenceUnit": "scene",
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "intactVsShuffled": {
+      "studentTNll": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.14368414742251745,
+        "medianDifference": -0.11842401134452896,
+        "lower95": -0.18399923217756742,
+        "upper95": -0.10336906266746748
+      },
+      "expectedCalibrationErrorMetres": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.08645011899665109,
+        "lower95": -0.15681743223478245,
+        "upper95": -0.04060272906323092
+      },
+      "pearsonSigmaAbsoluteError": {
+        "direction": "higher",
+        "intactBetterSceneCount": 5,
+        "meanDifference": 0.277227495646578,
+        "lower95": 0.2599765336075401,
+        "upper95": 0.2944784576856158
+      }
+    },
+    "intactVsConstant": {
+      "studentTNll": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.34377667651763766,
+        "medianDifference": -0.4149738292180003,
+        "lower95": -0.45999563561745915,
+        "upper95": -0.20696668237419796
+      },
+      "expectedCalibrationErrorMetres": {
+        "direction": "lower",
+        "intactBetterSceneCount": 2,
+        "meanDifference": -0.012556057629031775,
+        "lower95": -0.055993030160020885,
+        "upper95": 0.018336732984680432
+      },
+      "pearsonSigmaAbsoluteError": {
+        "direction": "higher",
+        "intactBetterSceneCount": 5,
+        "meanDifference": 0.18907470367011417,
+        "lower95": 0.17006801283828052,
+        "upper95": 0.2096690934739681
+      }
+    }
+  },
+  "perSceneIntactStudentTNll": {
+    "ca1m-45261143": -1.642638,
+    "ca1m-45261179": -2.277692,
+    "ca1m-45261615": -2.053664,
+    "ca1m-45662921": -1.380972,
+    "ca1m-47115543": -1.525450
+  },
+  "perSceneIntactPearsonSigmaAbsoluteError": {
+    "ca1m-45261143": 0.3445,
+    "ca1m-45261179": 0.3885,
+    "ca1m-45261615": 0.3535,
+    "ca1m-45662921": 0.4056,
+    "ca1m-47115543": 0.3734
+  },
+  "orientationWitnessAuditFlag": {
+    "reason": "three held-out captures contain sampled frames whose worst per-frame raw-depth orientation-witness median disagreement exceeds the 51 mm maximum observed during calibration",
+    "calibrationMaximumMedianAbsErrorMillimetres": 51.0,
+    "heldOutMaximumMedianAbsErrorMillimetres": {
+      "ca1m-45261143": 553.0,
+      "ca1m-45261179": 16.0,
+      "ca1m-45261615": 23.0,
+      "ca1m-45662921": 317.0,
+      "ca1m-47115543": 1314.0
+    },
+    "interpretation": "Primary U2 result is frozen and unchanged. Any exclusion/stratification by orientation-witness disagreement is post-hoc sensitivity analysis only and may not replace the primary result."
+  },
+  "artifactHashes": {
+    "intactReportSha256": "03cf3a96238bfd52e6c1dfce6a25105ff2afbc00beb56c181268a1e4b2e9ab24",
+    "constantReportSha256": "0b6590747b6f9bc698c7e661bd8eb2a692c401b4215fed22e4088d5f5bf15802",
+    "shuffledReportSha256": "6898a2a3fab81dce7974a7f5f4a60bc9bc4e2604a2180995e6c4c2d8487d59f3",
+    "pairedControlComparisonSha256": "7c69875cff5a5c89d099d5fd1afedeb1c9d8cf33a4b946dbe369c3d3d36baff1"
+  },
+  "claim": "Frozen U1b confidence-aware uncertainty generalizes to all five held-out scenes under the preregistered primary Student-t(3) proper score and causal shuffled-confidence control. This supports proceeding to post-hoc failure analysis and, if that audit does not reveal a data-association artifact, U3 reconstruction intervention."
+}
