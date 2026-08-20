@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 import sys
 import tempfile
@@ -14,19 +13,31 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from plan_u6b_confirmatory_acquisition import (  # noqa: E402
+    EXPECTED_ARKIT_METADATA_BLOB_SHA,
+    EXPECTED_CA1M_VAL_BLOB_SHA,
+    EXPECTED_METADATA_SHA256,
     EXPECTED_VIDEOS,
     asset_state,
-    load_raw_index,
+    build_plan,
+    sha256_file,
     validate_frozen_inputs,
+    validate_metadata_evidence,
 )
 
 
 class U6bAcquisitionPlanTests(unittest.TestCase):
-    def test_repository_split_and_protocol_are_bound(self) -> None:
+    def _repo_paths(self) -> tuple[Path, Path, Path]:
         root = Path(__file__).resolve().parents[2]
-        split, protocol = validate_frozen_inputs(
+        return (
             root / "benchmarks/experiments/metric-uncertainty-u6b-confirmatory-split-v1.json",
             root / "benchmarks/experiments/metric-uncertainty-u6b-opacity-visibility-confirmatory-v1.json",
+            root / "benchmarks/evidence/metric-uncertainty-u6b-public-metadata-v1.json",
+        )
+
+    def test_repository_split_protocol_and_metadata_are_bound(self) -> None:
+        split_path, protocol_path, metadata_path = self._repo_paths()
+        split, protocol, metadata = validate_frozen_inputs(
+            split_path, protocol_path, metadata_path
         )
         split_pairs = [
             (str(item["videoId"]), str(item["visitId"]))
@@ -38,6 +49,24 @@ class U6bAcquisitionPlanTests(unittest.TestCase):
             for item in protocol["confirmatorySplit"]["videos"]
         ]
         self.assertEqual(protocol_pairs, EXPECTED_VIDEOS)
+        metadata_pairs = [
+            (str(item["videoId"]), str(item["visitId"]))
+            for item in metadata["selectedValidationRows"]
+        ]
+        self.assertEqual(metadata_pairs, EXPECTED_VIDEOS)
+        self.assertEqual(sha256_file(metadata_path), EXPECTED_METADATA_SHA256)
+
+    def test_metadata_evidence_binds_upstream_blob_identities(self) -> None:
+        _, _, metadata_path = self._repo_paths()
+        metadata = validate_metadata_evidence(metadata_path)
+        self.assertEqual(
+            metadata["publicSources"]["arkitScenesRawSplit"]["gitBlobSha"],
+            EXPECTED_ARKIT_METADATA_BLOB_SHA,
+        )
+        self.assertEqual(
+            metadata["publicSources"]["ca1mValidationList"]["gitBlobSha"],
+            EXPECTED_CA1M_VAL_BLOB_SHA,
+        )
 
     def test_asset_state_is_clean_when_selected_assets_are_absent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -69,15 +98,21 @@ class U6bAcquisitionPlanTests(unittest.TestCase):
             self.assertTrue(state["preexisting"])
             self.assertEqual(state["confidencePngCount"], 1)
 
-    def test_raw_index_preserves_visit_and_fold(self) -> None:
+    def test_build_plan_does_not_require_local_metadata_csv(self) -> None:
+        split_path, protocol_path, metadata_path = self._repo_paths()
         with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "raw_train_val_splits.csv"
-            with path.open("w", newline="", encoding="utf-8") as stream:
-                writer = csv.DictWriter(stream, fieldnames=["video_id", "visit_id", "fold"])
-                writer.writeheader()
-                writer.writerow({"video_id": "42898811", "visit_id": "434650", "fold": "Validation"})
-            index = load_raw_index(path)
-            self.assertEqual(index["42898811"], ("434650", "Validation"))
+            root = Path(temporary)
+            plan = build_plan(
+                split_path=split_path,
+                protocol_path=protocol_path,
+                metadata_path=metadata_path,
+                ca1m_root=root / "ca1m",
+                arkit_root=root / "arkit",
+            )
+            self.assertTrue(plan["canExecuteAcquisition"])
+            self.assertFalse(plan["localArkitMetadataCsvRequired"])
+            self.assertEqual(plan["preexistingVideoIds"], [])
+            self.assertEqual(len(plan["entries"]), 5)
 
 
 if __name__ == "__main__":
