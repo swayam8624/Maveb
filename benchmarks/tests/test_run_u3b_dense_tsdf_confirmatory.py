@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -43,6 +44,87 @@ class RunU3bConfirmatoryTests(unittest.TestCase):
     def test_percentile_uses_nearest_tie_lower(self):
         self.assertEqual(module.percentile_nearest([0.0, 1.0, 2.0], 0.25), 0.0)
         self.assertEqual(module.percentile_nearest([0.0, 1.0, 2.0], 0.75), 1.0)
+
+    def test_runtime_replay_exact_match_passes(self):
+        expected = {
+            "meshSha256": "abc",
+            "chamferMeanMetres": 0.123,
+            "fScoreAt5cm": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        metrics = {
+            "chamferMeanMetres": 0.123,
+            "fScore": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        module.verify_runtime_replay(
+            expected,
+            scene="ca1m-test",
+            method="uniform",
+            mesh_sha256="abc",
+            metrics=metrics,
+        )
+
+    def test_runtime_replay_mesh_change_fails(self):
+        expected = {
+            "meshSha256": "abc",
+            "chamferMeanMetres": 0.123,
+            "fScoreAt5cm": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        metrics = {
+            "chamferMeanMetres": 0.123,
+            "fScore": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        with self.assertRaises(RuntimeError):
+            module.verify_runtime_replay(
+                expected,
+                scene="ca1m-test",
+                method="uniform",
+                mesh_sha256="different",
+                metrics=metrics,
+            )
+
+    def test_runtime_replay_metric_change_fails(self):
+        expected = {
+            "meshSha256": "abc",
+            "chamferMeanMetres": 0.123,
+            "fScoreAt5cm": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        metrics = {
+            "chamferMeanMetres": 0.124,
+            "fScore": 0.456,
+            "vertices": 10,
+            "triangles": 20,
+        }
+        with self.assertRaises(RuntimeError):
+            module.verify_runtime_replay(
+                expected,
+                scene="ca1m-test",
+                method="uniform",
+                mesh_sha256="abc",
+                metrics=metrics,
+            )
+
+    def test_runtime_snapshot_requires_exactly_sixteen_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "snapshot.json"
+            payload = {
+                "study": module.STUDY_ID,
+                "status": "frozen-pre-fix-partial-reveal",
+                "completedMethodCount": 15,
+                "completed": [],
+            }
+            path.write_text(json.dumps(payload))
+            with self.assertRaises(ValueError):
+                module.load_runtime_replay_snapshot(path)
 
 
 if __name__ == "__main__":
