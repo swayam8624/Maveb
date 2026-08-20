@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "stage": "U3b-confirmatory-runtime-recovery",
+  "status": "frozen-after-runtime-failure-before-recovery",
+  "failure": {
+    "scene": "ca1m-42897538",
+    "method": "naive-confidence",
+    "engineFrameContext": "3",
+    "error": "Depth frame did not observe any voxel in the configured volume [3]",
+    "primaryResultExisted": false,
+    "completedMethodCountBeforeFailure": 16,
+    "completedBoundary": "all five methods for ca1m-48458481, ca1m-48018737, ca1m-45261587, then uniform for ca1m-42897538"
+  },
+  "diagnosis": {
+    "cause": "UncertaintyTsdfVolume reports updates==0 as a fatal no-observation error. In naive-confidence mode, geometrically admissible samples with confidence 0 have frozen sample weight 0, so a valid frame can be a mathematical no-op yet trigger the same error.",
+    "scientificParametersChanged": false,
+    "frozenWeightingChanged": false,
+    "sceneSelectionChanged": false,
+    "viewSelectionChanged": false,
+    "volumeOrReferenceChanged": false
+  },
+  "recovery": {
+    "step1": "Before rebuilding the fuse tool, snapshot every completed pre-failure mesh SHA-256 and geometry metric from the existing partial reveal.",
+    "step2": "Change only maveb-u3-fuse multi-frame error handling so the exact zero-update integration error is treated as a skipped no-op frame; report skipped frame count explicitly. UncertaintyTsdfVolume weighting and TSDF update math remain unchanged.",
+    "step3": "Rebuild and rerun the complete frozen 25-method sequence with no protocol changes.",
+    "step4": "For all 16 methods completed before the failure, require the rerun mesh SHA-256 to equal the pre-fix snapshot exactly. Any mismatch invalidates runtime recovery and stops interpretation.",
+    "step5": "Only after replay equality passes may primary-result.json be interpreted and frozen as U3b evidence."
+  },
+  "claimBoundary": "The 16 pre-failure outcomes are already exposed and may not motivate any parameter, threshold, scene, frame, or method change. Runtime recovery is admissible only as a mechanical no-op/error-handling repair with exact replay equality on those outputs."
+}
