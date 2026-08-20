@@ -21,69 +21,134 @@
   },
   "scenes": {
     "ca1m-48458481": {
-      "depthOnlyWithin5cm": 0.12765,
-      "calibratedWithin5cm": 0.00706,
-      "shuffledWithin5cm": 0.01195,
-      "candidateMinusDepthOnlyPercentagePoints": -12.059,
-      "candidateMinusShuffledPercentagePoints": -0.489,
-      "depthOnlyCoverage": 0.99982,
-      "calibratedCoverage": 1.0,
-      "shuffledCoverage": 1.0,
-      "depthOnlyMaeMetres": 1.228786,
-      "calibratedMaeMetres": 1.439356,
-      "shuffledMaeMetres": 1.440304
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.12765336329834734,
+        "within10cmFractionOfFaroValidMean": 0.14257679732768924,
+        "coverageFractionMean": 0.9998164653817521,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.228786159125065,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.0947549268603325,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.0409326255321503
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.0070609285683475844,
+        "within10cmFractionOfFaroValidMean": 0.007559832530627343,
+        "coverageFractionMean": 1.0,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4393564640511138,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.28078094124794,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.2478647977113724
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.011950503056374476,
+        "within10cmFractionOfFaroValidMean": 0.011950503056374476,
+        "coverageFractionMean": 1.0,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.440304147785235,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2836471647024155,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.2516832500696182
+      }
     },
     "ca1m-48018737": {
-      "depthOnlyWithin5cm": 0.50997,
-      "calibratedWithin5cm": 0.37802,
-      "shuffledWithin5cm": 0.42796,
-      "candidateMinusDepthOnlyPercentagePoints": -13.195,
-      "candidateMinusShuffledPercentagePoints": -4.994,
-      "depthOnlyCoverage": 0.56070,
-      "calibratedCoverage": 0.63958,
-      "shuffledCoverage": 0.64849,
-      "depthOnlyMaeMetres": 0.034848,
-      "calibratedMaeMetres": 0.503616,
-      "shuffledMaeMetres": 0.262797
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.5099713641468355,
+        "within10cmFractionOfFaroValidMean": 0.5303310154131865,
+        "coverageFractionMean": 0.5606992801048234,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.034847864420404856,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.01694713532924652,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.09510257840156555
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.37802236926892896,
+        "within10cmFractionOfFaroValidMean": 0.40056133949099904,
+        "coverageFractionMean": 0.6395763035668454,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.5036155177087555,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.43159186467528343,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.0838944390416145
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.42796293349692843,
+        "within10cmFractionOfFaroValidMean": 0.4512935871350898,
+        "coverageFractionMean": 0.6484886464694066,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.26279719039040444,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.13651427129904428,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.8158895075321198
+      }
     },
     "ca1m-45261587": {
-      "depthOnlyWithin5cm": 0.30382,
-      "calibratedWithin5cm": 0.13961,
-      "shuffledWithin5cm": 0.12156,
-      "candidateMinusDepthOnlyPercentagePoints": -16.420,
-      "candidateMinusShuffledPercentagePoints": 1.806,
-      "depthOnlyCoverage": 0.47366,
-      "calibratedCoverage": 0.72034,
-      "shuffledCoverage": 0.85365,
-      "depthOnlyMaeMetres": 0.166325,
-      "calibratedMaeMetres": 0.716745,
-      "shuffledMaeMetres": 0.848156
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.30381904159961126,
+        "within10cmFractionOfFaroValidMean": 0.3447340590910253,
+        "coverageFractionMean": 0.4736584678741101,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.1663253930154708,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.1623970940709114,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.44621576368808746
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.13961432708014157,
+        "within10cmFractionOfFaroValidMean": 0.16368260226279147,
+        "coverageFractionMean": 0.7203358872070921,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.7167447646687253,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.7914123572409153,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.214593768119812
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.1215562789408211,
+        "within10cmFractionOfFaroValidMean": 0.13513600351489508,
+        "coverageFractionMean": 0.8536535715253322,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.8481564619794861,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.9179043769836426,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.2408118918538094
+      }
     },
     "ca1m-42897538": {
-      "depthOnlyWithin5cm": 0.21923,
-      "calibratedWithin5cm": 0.12931,
-      "shuffledWithin5cm": 0.07691,
-      "candidateMinusDepthOnlyPercentagePoints": -8.991,
-      "candidateMinusShuffledPercentagePoints": 5.241,
-      "depthOnlyCoverage": 0.62654,
-      "calibratedCoverage": 0.85214,
-      "shuffledCoverage": 0.87866,
-      "depthOnlyMaeMetres": 0.688581,
-      "calibratedMaeMetres": 1.385169,
-      "shuffledMaeMetres": 1.411657
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.2192256015442358,
+        "within10cmFractionOfFaroValidMean": 0.2519355040303896,
+        "coverageFractionMean": 0.6265416707260815,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.6885806545903462,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.564257949590683,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.6937462538480759
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.12931097507274622,
+        "within10cmFractionOfFaroValidMean": 0.15666613515599637,
+        "coverageFractionMean": 0.8521388392781266,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3851689888983898,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1527885422110558,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 3.1301462948322296
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.07690526499483817,
+        "within10cmFractionOfFaroValidMean": 0.118825148588522,
+        "coverageFractionMean": 0.8786568057355771,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4116573804163377,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1696701049804688,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.9715347439050674
+      }
     },
     "ca1m-48018375": {
-      "depthOnlyWithin5cm": 0.05663,
-      "calibratedWithin5cm": 0.00775,
-      "shuffledWithin5cm": 0.00195,
-      "candidateMinusDepthOnlyPercentagePoints": -4.888,
-      "candidateMinusShuffledPercentagePoints": 0.580,
-      "depthOnlyCoverage": 0.77001,
-      "calibratedCoverage": 0.91141,
-      "shuffledCoverage": 0.94571,
-      "depthOnlyMaeMetres": 1.002379,
-      "calibratedMaeMetres": 1.370889,
-      "shuffledMaeMetres": 1.393866
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.056632437973173425,
+        "within10cmFractionOfFaroValidMean": 0.06498687706917076,
+        "coverageFractionMean": 0.7700122485033787,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.0023789327059154,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.8802995011210442,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.166870728135109
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.007751139783898929,
+        "within10cmFractionOfFaroValidMean": 0.012153798486863253,
+        "coverageFractionMean": 0.9114131124131541,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.370889130077063,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2609395384788513,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.7168856263160706
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.001954393624329954,
+        "within10cmFractionOfFaroValidMean": 0.0030022717999034975,
+        "coverageFractionMean": 0.9457146535976036,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3938657510605563,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2696166187524796,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.7014617323875427
+      }
     }
   },
   "descriptiveComparison": {
