@@ -56,8 +56,8 @@
       "the only numerical clamp permitted is [0,1] after the closed-form calculation to guard floating-point roundoff"
     ],
     "frozenExpectedWeights": {
-      "confidenceU8_0": 0.02046678201442662,
-      "confidenceU8_128": 0.06286883962848758,
+      "confidenceU8_0": 0.020465740292285855,
+      "confidenceU8_128": 0.06302428158557383,
       "confidenceU8_255": 1.0
     }
   },
