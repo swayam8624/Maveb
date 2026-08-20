@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import sys
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "ca1m_u3b_pose_preflight.py"
+SCRIPTS_DIR = Path(__file__).resolve().parents[1] / "scripts"
+SCRIPT = SCRIPTS_DIR / "ca1m_u3b_pose_preflight.py"
+sys.path.insert(0, str(SCRIPTS_DIR))
 spec = importlib.util.spec_from_file_location("ca1m_u3b_pose_preflight", SCRIPT)
 module = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
