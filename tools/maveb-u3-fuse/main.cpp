@@ -271,7 +271,7 @@ int main(int argc, char** argv) { // NOLINT(bugprone-exception-escape)
             throw std::runtime_error(volume.error().describe());
 
         simdjson::dom::array frameObjects;
-        if (document["frames"].get_array().get(frameObjects) || frameObjects.empty())
+        if (document["frames"].get_array().get(frameObjects) || frameObjects.size() == 0)
             throw std::runtime_error("U3 scene has no frames");
         std::vector<FrameSpec> frames;
         frames.reserve(frameObjects.size());
