@@ -26,7 +26,16 @@ constexpr std::uint32_t height = 8;
 
 struct FrameFixture final {
     aether::capture::CapturePacket packet;
-    aether::reconstruction::DepthObservation observation;
+
+    [[nodiscard]] aether::reconstruction::DepthObservation observation() const {
+        return aether::reconstruction::DepthObservation{
+            *packet.depthMetres,
+            &*packet.depthConfidence,
+            1.0,
+            0.0,
+            "u3-oracle",
+        };
+    }
 };
 
 FrameFixture makeFrame(std::uint64_t frameId, float depthMetres, std::uint8_t confidence) {
@@ -62,15 +71,7 @@ FrameFixture makeFrame(std::uint64_t frameId, float depthMetres, std::uint8_t co
         width,
     };
     packet.cameraToWorld = aether::capture::RigidPose{};
-
-    auto observation = aether::reconstruction::DepthObservation{
-        *packet.depthMetres,
-        &*packet.depthConfidence,
-        1.0,
-        0.0,
-        "u3-oracle",
-    };
-    return FrameFixture{std::move(packet), observation};
+    return FrameFixture{std::move(packet)};
 }
 
 aether::reconstruction::DenseTsdfConfig volumeConfig() {
@@ -157,11 +158,13 @@ void testNaiveModeMatchesReferenceDenseTsdf() {
 
     auto reliable = makeFrame(1, 1.0F, 255);
     auto conflict = makeFrame(2, 1.2F, 128);
+    const auto reliableObservation = reliable.observation();
+    const auto conflictObservation = conflict.observation();
     const auto pose = oraclePose();
-    expect(reference->integrate(reliable.packet, pose, reliable.observation).has_value() &&
-               research->integrate(reliable.packet, pose, reliable.observation).has_value() &&
-               reference->integrate(conflict.packet, pose, conflict.observation).has_value() &&
-               research->integrate(conflict.packet, pose, conflict.observation).has_value(),
+    expect(reference->integrate(reliable.packet, pose, reliableObservation).has_value() &&
+               research->integrate(reliable.packet, pose, reliableObservation).has_value() &&
+               reference->integrate(conflict.packet, pose, conflictObservation).has_value() &&
+               research->integrate(conflict.packet, pose, conflictObservation).has_value(),
            "Reference and U3 naive paths integrate the same oracle frames");
 
     const auto& baseline = reference->voxels();
@@ -186,6 +189,8 @@ void testCalibratedFusionRejectsConflictingLowConfidenceDepth() {
     const auto pose = oraclePose();
     auto reliable = makeFrame(1, 1.0F, 255);
     auto conflict = makeFrame(2, 1.2F, 128);
+    const auto reliableObservation = reliable.observation();
+    const auto conflictObservation = conflict.observation();
 
     const auto makeVolume = [&](aether::reconstruction::TsdfFusionWeighting weighting) {
         aether::reconstruction::UncertaintyTsdfConfig config;
@@ -205,11 +210,11 @@ void testCalibratedFusionRejectsConflictingLowConfidenceDepth() {
     if (!target || !uniform || !naive || !calibrated)
         return;
 
-    expect(target->integrate(reliable.packet, pose, reliable.observation).has_value(),
+    expect(target->integrate(reliable.packet, pose, reliableObservation).has_value(),
            "Reliable-only target integrates");
     for (auto* volume : {&*uniform, &*naive, &*calibrated}) {
-        expect(volume->integrate(reliable.packet, pose, reliable.observation).has_value() &&
-                   volume->integrate(conflict.packet, pose, conflict.observation).has_value(),
+        expect(volume->integrate(reliable.packet, pose, reliableObservation).has_value() &&
+                   volume->integrate(conflict.packet, pose, conflictObservation).has_value(),
                "Two-frame U3 oracle integration succeeds");
     }
 
