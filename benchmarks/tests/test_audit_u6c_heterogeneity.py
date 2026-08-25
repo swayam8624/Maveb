@@ -79,10 +79,14 @@ class U6cHeterogeneityAuditTests(unittest.TestCase):
         self.assertFalse(payload["parentAllGateClausesPassed"])
         self.assertEqual(payload["sceneCount"], 5)
         self.assertAlmostEqual(
-            payload["heterogeneity"]["candidateMinusBaselineMaximum"], 0.10
+            payload["heterogeneity"]["candidateMinusBaselineMaximum"],
+            0.10,
+            places=12,
         )
         self.assertAlmostEqual(
-            payload["heterogeneity"]["candidateMinusBaselineMinimum"], -0.001
+            payload["heterogeneity"]["candidateMinusBaselineMinimum"],
+            -0.001,
+            places=12,
         )
         self.assertEqual(
             payload["heterogeneity"]["rankingByCandidateMinusBaseline"][0]["scene"],
@@ -92,6 +96,8 @@ class U6cHeterogeneityAuditTests(unittest.TestCase):
         self.assertFalse(integrity["rerendered"])
         self.assertFalse(integrity["confirmatoryGateRecomputed"])
         self.assertFalse(integrity["transferRuleFitOrTuned"])
+        self.assertFalse(integrity["sceneObjectKeyOrderTreatedAsSemanticallyMeaningful"])
+        self.assertEqual(integrity["canonicalOutputSceneOrder"], module.EXPECTED_SCENES)
 
     def test_target_level_counts_use_only_frozen_target_records(self) -> None:
         result = fixture_result()
@@ -103,6 +109,42 @@ class U6cHeterogeneityAuditTests(unittest.TestCase):
         payload = module.summarize_result(result)
         first = payload["scenes"][0]["targetLevelPrimary"]
         self.assertEqual(first["candidateBetterThanBaselineTargetCount"], 7)
+
+    def test_reordered_parent_scene_objects_are_accepted_and_output_is_canonical(self) -> None:
+        result = fixture_result()
+        result["scenes"] = dict(reversed(list(result["scenes"].items())))
+        gate = result["confirmatoryGate"]["perScene"]
+        result["confirmatoryGate"]["perScene"] = dict(reversed(list(gate.items())))
+        payload = module.summarize_result(result)
+        self.assertEqual(
+            [record["scene"] for record in payload["scenes"]],
+            module.EXPECTED_SCENES,
+        )
+
+    def test_missing_parent_scene_is_rejected(self) -> None:
+        result = fixture_result()
+        result["scenes"].pop(module.EXPECTED_SCENES[-1])
+        with self.assertRaisesRegex(ValueError, "parent-result scene membership changed"):
+            module.summarize_result(result)
+
+    def test_extra_parent_scene_is_rejected(self) -> None:
+        result = fixture_result()
+        result["scenes"]["ca1m-unregistered-room"] = result["scenes"][
+            module.EXPECTED_SCENES[0]
+        ]
+        with self.assertRaisesRegex(ValueError, "parent-result scene membership changed"):
+            module.summarize_result(result)
+
+    def test_frozen_gate_scene_membership_must_match_parent(self) -> None:
+        result = fixture_result()
+        gate = result["confirmatoryGate"]["perScene"]
+        gate.pop(module.EXPECTED_SCENES[-1])
+        gate["ca1m-unregistered-room"] = {
+            "candidateMinusBaseline": 0.0,
+            "candidateMinusShuffled": 0.0,
+        }
+        with self.assertRaisesRegex(ValueError, "frozen-gate scene membership changed"):
+            module.summarize_result(result)
 
     def test_rejects_parent_that_was_not_negative_null(self) -> None:
         result = fixture_result()
