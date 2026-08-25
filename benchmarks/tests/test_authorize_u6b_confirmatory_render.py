@@ -40,6 +40,9 @@ class U6bRenderAuthorizationTests(unittest.TestCase):
             "acquisitionLedgerSha256": module.ACQUISITION_SHA256,
             "acquisitionEvidenceSha256": "e" * 64,
             "acquisitionEvidenceStage": module.ACQUISITION_EVIDENCE_STAGE,
+            "inputPreflightSha256": module.PREFLIGHT_SHA256,
+            "inputPreflightEvidenceSha256": "p" * 64,
+            "inputPreflightEvidenceStage": module.PREFLIGHT_EVIDENCE_STAGE,
             "noRenderedDepthProduced": True,
             "noU6bMetricsProduced": True,
             "methods": list(module.METHODS),
@@ -101,6 +104,30 @@ class U6bRenderAuthorizationTests(unittest.TestCase):
             payload["acquisitionEvidenceStage"] = "wrong-stage"
             path.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "acquisition-evidence stage mismatch"):
+                module.validate_preparation(path)
+
+    def test_preparation_requires_original_preflight_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preparation.json"
+            payload = self.minimal_preparation()
+            payload["inputPreflightSha256"] = "wrong"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "preflight SHA mismatch"):
+                module.validate_preparation(path)
+
+    def test_preparation_requires_public_preflight_evidence_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preparation.json"
+            payload = self.minimal_preparation()
+            del payload["inputPreflightEvidenceSha256"]
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "preflight-evidence SHA"):
+                module.validate_preparation(path)
+
+            payload = self.minimal_preparation()
+            payload["inputPreflightEvidenceStage"] = "wrong-stage"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "preflight-evidence stage mismatch"):
                 module.validate_preparation(path)
 
 
