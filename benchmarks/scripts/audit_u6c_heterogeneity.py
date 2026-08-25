@@ -60,6 +60,17 @@ def method_summary(scene_payload: dict, method: str) -> dict:
     return summary
 
 
+def require_exact_scene_membership(records: dict, *, label: str) -> None:
+    actual = set(records)
+    expected = set(EXPECTED_SCENES)
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        raise ValueError(
+            f"U6c {label} scene membership changed; missing={missing}, extra={extra}"
+        )
+
+
 def scene_audit(scene: str, scene_payload: dict, frozen_gate_scene: dict) -> dict:
     baseline = method_summary(scene_payload, BASELINE)
     candidate = method_summary(scene_payload, CANDIDATE)
@@ -177,8 +188,10 @@ def summarize_result(result: dict) -> dict:
     if not isinstance(frozen_per_scene, dict):
         raise ValueError("U6c parent result is missing frozen per-scene gate records")
     result_scenes = result.get("scenes")
-    if not isinstance(result_scenes, dict) or list(result_scenes) != EXPECTED_SCENES:
-        raise ValueError("U6c parent result scene order changed")
+    if not isinstance(result_scenes, dict):
+        raise ValueError("U6c parent result is missing scene records")
+    require_exact_scene_membership(result_scenes, label="parent-result")
+    require_exact_scene_membership(frozen_per_scene, label="frozen-gate")
 
     scene_records = [
         scene_audit(scene, result_scenes[scene], frozen_per_scene[scene])
@@ -248,10 +261,13 @@ def summarize_result(result: dict) -> dict:
             "bootstrapRecomputed": False,
             "transferRuleFitOrTuned": False,
             "roomsDroppedReplacedOrReweighted": False,
+            "sceneObjectKeyOrderTreatedAsSemanticallyMeaningful": False,
+            "canonicalOutputSceneOrder": list(EXPECTED_SCENES),
         },
-        "claimBoundary": (
-            "This audit is descriptive and post hoc. It explains heterogeneity in the already-sealed "
-            "negative/null U6b result and cannot change that decision or justify tuning on these rooms."
+        "interpretationBoundary": (
+            "This audit is descriptive and post-hoc. It may characterize scene-level heterogeneity "
+            "in the already sealed U6b negative/null result, but it cannot rescue the failed gate, "
+            "justify retuning on these five rooms, or support a new confirmatory efficacy claim."
         ),
     }
 
@@ -264,27 +280,24 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.output.exists():
-        raise ValueError("U6c audit output already exists; it will not be overwritten")
+        raise ValueError("U6c output already exists; descriptive audit will not be overwritten")
     if not args.protocol.is_file() or not args.u6b_result.is_file():
-        raise FileNotFoundError("U6c protocol or parent U6b result is missing")
-
+        raise FileNotFoundError("U6c protocol or U6b result is missing")
     protocol = json.loads(args.protocol.read_text())
     if protocol.get("id") != STUDY_ID or protocol.get("frozen") is not True:
-        raise ValueError("U6c protocol is not the frozen post-hoc audit scope")
-    if protocol.get("parentResultSha256") != PARENT_RESULT_SHA256:
+        raise ValueError("U6c protocol is not the frozen heterogeneity audit")
+    if protocol.get("parentEvidence", {}).get("u6bResultSha256") != PARENT_RESULT_SHA256:
         raise ValueError("U6c protocol parent result SHA changed")
-    actual_result_sha = sha256_file(args.u6b_result)
-    if actual_result_sha != PARENT_RESULT_SHA256:
-        raise ValueError("U6c parent U6b result SHA mismatch")
+    if sha256_file(args.u6b_result) != PARENT_RESULT_SHA256:
+        raise ValueError("U6c U6b result SHA mismatch")
 
     result = json.loads(args.u6b_result.read_text())
     payload = summarize_result(result)
     payload["protocolSha256"] = sha256_file(args.protocol)
-    payload["parentResultSha256"] = actual_result_sha
-
+    payload["parentResultSha256"] = PARENT_RESULT_SHA256
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    print(json.dumps(payload, sort_keys=True))
+    print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
 
