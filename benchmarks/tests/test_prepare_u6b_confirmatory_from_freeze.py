@@ -21,7 +21,7 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
 
-class U6bFrozenAcquisitionPreparationBridgeTests(unittest.TestCase):
+class U6bFrozenPreparationBridgeTests(unittest.TestCase):
     def evidence(self) -> dict:
         return {
             "schemaVersion": 1,
@@ -48,6 +48,74 @@ class U6bFrozenAcquisitionPreparationBridgeTests(unittest.TestCase):
             ],
         }
 
+    def preflight_evidence(self) -> dict:
+        return {
+            "schemaVersion": 1,
+            "study": MODULE.base.STUDY_ID,
+            "stage": MODULE.PREFLIGHT_FREEZE_STAGE,
+            "status": "passed",
+            "protocolSha256": MODULE.base.PROTOCOL_SHA256,
+            "acquisitionLedgerSha256": MODULE.base.ACQUISITION_SHA256,
+            "inputPreflightSha256": MODULE.base.PREFLIGHT_SHA256,
+            "inputPreflightLogSha256": MODULE.base.PREFLIGHT_SHA256,
+            "allScenesPassed": True,
+            "noRepresentationOutcomeProduced": True,
+            "u6bPlyCountAfterPreflight": 0,
+            "u6bRenderedDepthCountAfterPreflight": 0,
+            "scenes": [
+                {
+                    "videoId": video,
+                    "visitId": str(index),
+                    "completeFrames": 100,
+                    "posePassed": True,
+                    "cameraToWorldSupportedPairCount": 16,
+                    "inverseSupportedPairCount": 2,
+                    "mutuallyComparablePairCount": 2,
+                    "cameraToWorldWinsAmongComparable": 2,
+                    "cameraToWorldMedianOfSupportedPairMediansMetres": 0.001,
+                    "inverseMedianOfSupportedPairMediansMetres": 0.3,
+                    "orientationPassed": True,
+                    "acceptedSourceCount": 8,
+                    "maximumBestOrientationMedianAbsErrorMillimetres": 10.0,
+                    "dominantAcceptedTransform": "identity",
+                }
+                for index, video in enumerate(MODULE.base.EXPECTED_VIDEOS)
+            ],
+        }
+
+    def runtime_scene(self, *, video: str | None = None, visit: str = "0") -> dict:
+        video = video or MODULE.base.EXPECTED_VIDEOS[0]
+        sources = [
+            {
+                "sourceIndex": index,
+                "sidecarMatched": True,
+                "orientationAccepted": True,
+                "confidenceLevelsAndShapeValid": True,
+                "bestOrientation": {
+                    "transform": "identity",
+                    "medianAbsErrorMillimetres": 10.0,
+                },
+            }
+            for index in range(8)
+        ]
+        return {
+            "videoId": video,
+            "visitId": visit,
+            "completeFrames": 100,
+            "poseConventionValidation": {
+                "passed": True,
+                "cameraToWorldSupportedPairCount": 16,
+                "inverseSupportedPairCount": 2,
+                "mutuallyComparablePairCount": 2,
+                "cameraToWorldWinsAmongComparable": 2,
+                "cameraToWorldMedianOfSupportedPairMediansMetres": 0.001,
+                "inverseMedianOfSupportedPairMediansMetres": 0.3,
+            },
+            "primaryEightViewSelection": sources,
+            "orientationPreflightPassed": True,
+            "scenePassed": True,
+        }
+
     def test_frozen_evidence_binds_original_runtime_ledger(self) -> None:
         payload = self.evidence()
         with tempfile.TemporaryDirectory() as directory:
@@ -63,6 +131,19 @@ class U6bFrozenAcquisitionPreparationBridgeTests(unittest.TestCase):
             path.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "runtime ledger"):
                 MODULE.validate_acquisition_evidence(path)
+
+    def test_frozen_preflight_evidence_binds_original_runtime_preflight(self) -> None:
+        payload = self.preflight_evidence()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preflight.json"
+            path.write_text(json.dumps(payload))
+            loaded = MODULE.validate_preflight_evidence(path)
+            self.assertEqual(loaded["inputPreflightSha256"], MODULE.base.PREFLIGHT_SHA256)
+
+            payload["inputPreflightSha256"] = "wrong"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "runtime preflight"):
+                MODULE.validate_preflight_evidence(path)
 
     def test_local_assets_are_resolved_and_hash_verified(self) -> None:
         payload = self.evidence()
@@ -106,20 +187,34 @@ class U6bFrozenAcquisitionPreparationBridgeTests(unittest.TestCase):
             )
             self.assertTrue(Path(runtime["entries"][0]["ca1mArchive"]).is_file())
 
-    def test_preparation_is_rebound_to_original_ledger_and_keeps_evidence_sha(self) -> None:
-        evidence = self.evidence()
+    def test_reconstructed_scene_must_match_frozen_summary(self) -> None:
+        runtime = self.runtime_scene()
+        frozen = self.preflight_evidence()["scenes"][0]
+        MODULE.verify_reconstructed_scene(runtime, frozen)
+
+        frozen["maximumBestOrientationMedianAbsErrorMillimetres"] = 11.0
+        with self.assertRaisesRegex(ValueError, "maximum orientation median"):
+            MODULE.verify_reconstructed_scene(runtime, frozen)
+
+    def test_preparation_rebinds_both_original_runtime_artifacts(self) -> None:
+        acquisition = self.evidence()
+        preflight_evidence = self.preflight_evidence()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            evidence_path = root / "acquisition-evidence.json"
-            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
-            evidence_sha = MODULE.base.sha256_file(evidence_path)
+            acquisition_path = root / "acquisition-evidence.json"
+            acquisition_path.write_text(json.dumps(acquisition, sort_keys=True) + "\n")
+            acquisition_sha = MODULE.base.sha256_file(acquisition_path)
+            preflight_path = root / "preflight-evidence.json"
+            preflight_path.write_text(json.dumps(preflight_evidence, sort_keys=True) + "\n")
+            preflight_sha = MODULE.base.sha256_file(preflight_path)
             preparation_path = root / "preparation.json"
             preparation_path.write_text(
                 json.dumps(
                     {
                         "study": MODULE.base.STUDY_ID,
                         "status": "prepared-no-u6b-render-or-metric-outcomes",
-                        "acquisitionLedgerSha256": evidence_sha,
+                        "acquisitionLedgerSha256": acquisition_sha,
+                        "inputPreflightSha256": preflight_sha,
                         "noRenderedDepthProduced": True,
                         "noU6bMetricsProduced": True,
                     }
@@ -127,15 +222,18 @@ class U6bFrozenAcquisitionPreparationBridgeTests(unittest.TestCase):
             )
             MODULE.finalize_preparation_provenance(
                 preparation_path,
-                acquisition_evidence_path=evidence_path,
-                acquisition_evidence=evidence,
+                acquisition_evidence_path=acquisition_path,
+                acquisition_evidence=acquisition,
+                preflight_evidence_path=preflight_path,
+                preflight_evidence=preflight_evidence,
             )
             prepared = json.loads(preparation_path.read_text())
             self.assertEqual(
-                prepared["acquisitionLedgerSha256"],
-                MODULE.base.ACQUISITION_SHA256,
+                prepared["acquisitionLedgerSha256"], MODULE.base.ACQUISITION_SHA256
             )
-            self.assertEqual(prepared["acquisitionEvidenceSha256"], evidence_sha)
+            self.assertEqual(prepared["acquisitionEvidenceSha256"], acquisition_sha)
+            self.assertEqual(prepared["inputPreflightSha256"], MODULE.base.PREFLIGHT_SHA256)
+            self.assertEqual(prepared["inputPreflightEvidenceSha256"], preflight_sha)
             self.assertTrue(prepared["noRenderedDepthProduced"])
             self.assertTrue(prepared["noU6bMetricsProduced"])
 
