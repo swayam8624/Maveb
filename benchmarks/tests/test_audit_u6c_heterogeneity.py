@@ -78,8 +78,12 @@ class U6cHeterogeneityAuditTests(unittest.TestCase):
         self.assertEqual(payload["study"], module.STUDY_ID)
         self.assertFalse(payload["parentAllGateClausesPassed"])
         self.assertEqual(payload["sceneCount"], 5)
-        self.assertEqual(payload["heterogeneity"]["candidateMinusBaselineMaximum"], 0.10)
-        self.assertEqual(payload["heterogeneity"]["candidateMinusBaselineMinimum"], -0.001)
+        self.assertAlmostEqual(
+            payload["heterogeneity"]["candidateMinusBaselineMaximum"], 0.10
+        )
+        self.assertAlmostEqual(
+            payload["heterogeneity"]["candidateMinusBaselineMinimum"], -0.001
+        )
         self.assertEqual(
             payload["heterogeneity"]["rankingByCandidateMinusBaseline"][0]["scene"],
             module.EXPECTED_SCENES[4],
