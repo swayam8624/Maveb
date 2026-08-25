@@ -87,12 +87,14 @@ Expected maintained tools for this track:
 - `build/debug/tools/aether-keyframes/aether-keyframes`
 - `build/debug/tools/aether-reconstruct/aether-reconstruct`
 - `build/debug/tools/aether-fuse/aether-fuse`
-- `build/debug/tools/aether-proxy/aether-proxy`
+- `.aether-deps/bin/aether-proxy` after `tools/bootstrap-reconstruction.zsh` installs the pinned Python 3.12/Open3D environment
 - `build/debug/tools/aether-export-glb/aether-export-glb`
 - `build/debug/tools/aether-pack/aether-pack`
 - `build/debug/tools/aether-inspect/aether-inspect`
 - `build/debug/tools/maveb-align-sensors/maveb-align-sensors`
 - `build/debug/apps/AetherStudio/AetherStudio.app`
+
+`aether-proxy` is a Python console script from `tools/aether-proxy/pyproject.toml`, not a CMake-built executable. Its maintained pinned installation is created by `tools/bootstrap-reconstruction.zsh` under `.aether-deps/bin/`.
 
 Record tool versions and the exact Maveb commit in the evidence manifest; do not infer them later.
 
