@@ -37,6 +37,9 @@ class U6bRenderAuthorizationTests(unittest.TestCase):
             "study": module.STUDY_ID,
             "status": "prepared-no-u6b-render-or-metric-outcomes",
             "protocolSha256": module.PROTOCOL_SHA256,
+            "acquisitionLedgerSha256": module.ACQUISITION_SHA256,
+            "acquisitionEvidenceSha256": "e" * 64,
+            "acquisitionEvidenceStage": module.ACQUISITION_EVIDENCE_STAGE,
             "noRenderedDepthProduced": True,
             "noU6bMetricsProduced": True,
             "methods": list(module.METHODS),
@@ -74,6 +77,30 @@ class U6bRenderAuthorizationTests(unittest.TestCase):
             payload["scenes"] = list(reversed(payload["scenes"]))
             path.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "scene order changed"):
+                module.validate_preparation(path)
+
+    def test_preparation_requires_original_acquisition_ledger_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preparation.json"
+            payload = self.minimal_preparation()
+            payload["acquisitionLedgerSha256"] = "wrong"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "acquisition-ledger SHA mismatch"):
+                module.validate_preparation(path)
+
+    def test_preparation_requires_public_acquisition_evidence_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "preparation.json"
+            payload = self.minimal_preparation()
+            del payload["acquisitionEvidenceSha256"]
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "acquisition-evidence SHA"):
+                module.validate_preparation(path)
+
+            payload = self.minimal_preparation()
+            payload["acquisitionEvidenceStage"] = "wrong-stage"
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "acquisition-evidence stage mismatch"):
                 module.validate_preparation(path)
 
 
