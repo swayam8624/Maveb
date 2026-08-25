@@ -12,6 +12,8 @@ from run_u5a_gaussian_depth import sha256_file
 
 STUDY_ID = "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1"
 PROTOCOL_SHA256 = "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3"
+ACQUISITION_SHA256 = "b0ce48a6c3cbf0ab8a037b5df7db80753aac0063ffba733d63ac5bf0b76ee5a9"
+ACQUISITION_EVIDENCE_STAGE = "U6b-confirmatory-asset-acquisition-freeze"
 RENDER_TOOL_SHA256 = "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d"
 EXPECTED_SCENES = [
     "ca1m-42898811",
@@ -37,6 +39,13 @@ def validate_preparation(path: Path) -> dict:
         raise ValueError("U6b authorization requires prepared-no-outcome status")
     if prep.get("protocolSha256") != PROTOCOL_SHA256:
         raise ValueError("U6b authorization preparation protocol SHA mismatch")
+    if prep.get("acquisitionLedgerSha256") != ACQUISITION_SHA256:
+        raise ValueError("U6b authorization preparation acquisition-ledger SHA mismatch")
+    acquisition_evidence_sha = prep.get("acquisitionEvidenceSha256")
+    if not isinstance(acquisition_evidence_sha, str) or len(acquisition_evidence_sha) != 64:
+        raise ValueError("U6b authorization preparation acquisition-evidence SHA missing or malformed")
+    if prep.get("acquisitionEvidenceStage") != ACQUISITION_EVIDENCE_STAGE:
+        raise ValueError("U6b authorization preparation acquisition-evidence stage mismatch")
     if prep.get("noRenderedDepthProduced") is not True or prep.get("noU6bMetricsProduced") is not True:
         raise ValueError("U6b preparation crossed the outcome boundary")
     if prep.get("methods") != METHODS:
@@ -144,6 +153,9 @@ def main() -> int:
         "stage": "U6b-confirmatory-render-authorization",
         "status": "authorized-after-frozen-preparation-before-render",
         "protocolSha256": PROTOCOL_SHA256,
+        "acquisitionLedgerSha256": ACQUISITION_SHA256,
+        "acquisitionEvidenceSha256": prep["acquisitionEvidenceSha256"],
+        "acquisitionEvidenceStage": prep["acquisitionEvidenceStage"],
         "preparationSha256": sha256_file(args.preparation),
         "renderToolSha256": RENDER_TOOL_SHA256,
         "methods": METHODS,
