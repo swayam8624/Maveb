@@ -286,7 +286,7 @@ def main() -> int:
     protocol = json.loads(args.protocol.read_text())
     if protocol.get("id") != STUDY_ID or protocol.get("frozen") is not True:
         raise ValueError("U6c protocol is not the frozen heterogeneity audit")
-    if protocol.get("parentEvidence", {}).get("u6bResultSha256") != PARENT_RESULT_SHA256:
+    if protocol.get("parentResultSha256") != PARENT_RESULT_SHA256:
         raise ValueError("U6c protocol parent result SHA changed")
     if sha256_file(args.u6b_result) != PARENT_RESULT_SHA256:
         raise ValueError("U6c U6b result SHA mismatch")
