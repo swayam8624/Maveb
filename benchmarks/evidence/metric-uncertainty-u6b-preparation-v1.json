@@ -1,0 +1,1087 @@
+{
+  "acquisitionEvidenceSha256": "18e29d1a8db83d4bda1cdfdec734592c29be3bb3010cc2e27a75441108e602e9",
+  "acquisitionEvidenceStage": "U6b-confirmatory-asset-acquisition-freeze",
+  "acquisitionLedgerSha256": "b0ce48a6c3cbf0ab8a037b5df7db80753aac0063ffba733d63ac5bf0b76ee5a9",
+  "assetResolution": "deterministic local roots; all five CA-1M archives and ten ARKitScenes ZIPs reverified against the frozen acquisition evidence before preparation",
+  "baseOpacity": 0.99,
+  "inputPreflightEvidenceSha256": "1bfcb7ef6e9901bf26b5f36e76112de187f65367910711226f9b63b12ec57eec",
+  "inputPreflightEvidenceStage": "U6b-confirmatory-pose-and-orientation-preflight-freeze",
+  "inputPreflightSha256": "64fe0e95b0b2667b0141c6f3ec435116b725724e9b68b1be21cf05b225a39190",
+  "methods": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "noRenderedDepthProduced": true,
+  "noU6bMetricsProduced": true,
+  "pixelStride": 4,
+  "preflightResolution": "detailed runtime preflight deterministically reconstructed from the frozen assets and verified scene-by-scene against the committed pose/orientation summary freeze",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "scenes": [
+    {
+      "fullConfidenceHistogramPreservedByShuffle": true,
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 17291,
+            "128": 31925,
+            "255": 344000
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/calibrated-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "60d8d412ad3129068b2dcf54eea50abdc842ab0b7a25e6eb6d8107caf93e3d6a",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 1024,
+            "128": 2096,
+            "255": 21456
+          },
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/depth-only-fixed-opacity/gaussians.ply",
+          "gaussianSha256": "79b0a96bb1e44416d328362b370ccca811df04850c7d5321f16d5c41e43abd8b",
+          "geometryCovarianceRole": "frozen-depth-only-covariance",
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.99,
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 17291,
+            "128": 31925,
+            "255": 344000
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/shuffled-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "0ba1e7b6d16e32ddb97b97b53dd93a27dd7a02214079b84491c098ba1a1356d0",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 1118,
+            "128": 2041,
+            "255": 21417
+          },
+          "primitiveCount": 24576,
+          "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+          "shuffleSeed": 42
+        }
+      },
+      "noRenderedDepthProduced": true,
+      "noU6bMetricsProduced": true,
+      "primitiveCount": 24576,
+      "scene": "ca1m-42898811",
+      "sourceCount": 8,
+      "sourceRecords": [
+        {
+          "confidenceJoinDeltaMilliseconds": 0.20466698333621025,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 138,
+            "128": 165,
+            "255": 2769
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 144,
+            "128": 263,
+            "255": 2665
+          },
+          "sourceIndex": 0,
+          "timestampNanoseconds": 167471869795333
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.008416012860834599,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 342,
+            "128": 398,
+            "255": 2332
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 153,
+            "128": 247,
+            "255": 2672
+          },
+          "sourceIndex": 1,
+          "timestampNanoseconds": 167473769008416
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.07712500519119203,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 119,
+            "128": 358,
+            "255": 2595
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 128,
+            "128": 250,
+            "255": 2694
+          },
+          "sourceIndex": 2,
+          "timestampNanoseconds": 167475584922875
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.13629099703393877,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 55,
+            "128": 317,
+            "255": 2700
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 131,
+            "128": 256,
+            "255": 2685
+          },
+          "sourceIndex": 3,
+          "timestampNanoseconds": 167477484136291
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.3911660169251263,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 59,
+            "128": 226,
+            "255": 2787
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 145,
+            "128": 239,
+            "255": 2688
+          },
+          "sourceIndex": 4,
+          "timestampNanoseconds": 167479283391166
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.39579198346473277,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 15,
+            "128": 100,
+            "255": 2957
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 143,
+            "128": 260,
+            "255": 2669
+          },
+          "sourceIndex": 5,
+          "timestampNanoseconds": 167481182604208
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.43112499406561255,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 168,
+            "128": 159,
+            "255": 2745
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 137,
+            "128": 275,
+            "255": 2660
+          },
+          "sourceIndex": 6,
+          "timestampNanoseconds": 167483681568875
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.21783399279229343,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 128,
+            "128": 373,
+            "255": 2571
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 137,
+            "128": 251,
+            "255": 2684
+          },
+          "sourceIndex": 7,
+          "timestampNanoseconds": 167485580782166
+        }
+      ],
+      "targetManifestPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/targets.json",
+      "targetManifestSha256": "588aacae72a1d0f9d0f4652ecf3856c33335160b48f8defa2ed8fc6c257f84c8",
+      "targetTimestampsNanoseconds": [
+        167472669463875,
+        167474385419958,
+        167475984757416,
+        167477584094916,
+        167479183432416,
+        167480782770041,
+        167483081817166,
+        167484781113208
+      ],
+      "videoId": "42898811",
+      "visitId": "434650"
+    },
+    {
+      "fullConfidenceHistogramPreservedByShuffle": true,
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 13630,
+            "128": 31645,
+            "255": 347941
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/calibrated-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "60928c7d5fde1aec1756be0409aefff01ae1c6ba2360192e74b06645464d2a8f",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 881,
+            "128": 1991,
+            "255": 21704
+          },
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/depth-only-fixed-opacity/gaussians.ply",
+          "gaussianSha256": "60c67ca32578be7cd0f86d9dfe89853cb634049677994d6094015990ebf4096c",
+          "geometryCovarianceRole": "frozen-depth-only-covariance",
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.99,
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 13630,
+            "128": 31645,
+            "255": 347941
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/shuffled-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "74875597a3d8404d0d16b866b1cfe68f046396c4b3e52e9d80dd38155b037a9a",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 836,
+            "128": 2002,
+            "255": 21738
+          },
+          "primitiveCount": 24576,
+          "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+          "shuffleSeed": 42
+        }
+      },
+      "noRenderedDepthProduced": true,
+      "noU6bMetricsProduced": true,
+      "primitiveCount": 24576,
+      "scene": "ca1m-45261121",
+      "sourceCount": 8,
+      "sourceRecords": [
+        {
+          "confidenceJoinDeltaMilliseconds": 0.10187499992753146,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 180,
+            "128": 139,
+            "255": 2753
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 90,
+            "128": 226,
+            "255": 2756
+          },
+          "sourceIndex": 0,
+          "timestampNanoseconds": 3415142898125
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.21699999979318818,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 177,
+            "128": 352,
+            "255": 2543
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 109,
+            "128": 257,
+            "255": 2706
+          },
+          "sourceIndex": 1,
+          "timestampNanoseconds": 3424039217000
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2368330001445429,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 109,
+            "128": 375,
+            "255": 2588
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 114,
+            "128": 251,
+            "255": 2707
+          },
+          "sourceIndex": 2,
+          "timestampNanoseconds": 3432852236833
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.4446250000000873,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 261,
+            "128": 357,
+            "255": 2454
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 105,
+            "128": 267,
+            "255": 2700
+          },
+          "sourceIndex": 3,
+          "timestampNanoseconds": 3441748555375
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.08520900018993416,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 111,
+            "255": 2961
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 110,
+            "128": 230,
+            "255": 2732
+          },
+          "sourceIndex": 4,
+          "timestampNanoseconds": 3450544914791
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.23116600004868815,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 153,
+            "128": 407,
+            "255": 2512
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 99,
+            "128": 258,
+            "255": 2715
+          },
+          "sourceIndex": 5,
+          "timestampNanoseconds": 3459441231166
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2484579999872949,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 1,
+            "128": 234,
+            "255": 2837
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 95,
+            "128": 253,
+            "255": 2724
+          },
+          "sourceIndex": 6,
+          "timestampNanoseconds": 3468254248458
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.43583399974522763,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 16,
+            "255": 3056
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 114,
+            "128": 260,
+            "255": 2698
+          },
+          "sourceIndex": 7,
+          "timestampNanoseconds": 3477150564166
+        }
+      ],
+      "targetManifestPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/targets.json",
+      "targetManifestSha256": "05f9d4c8b5a2c3310986a1a3c88bd05a4500e24eec536540d5ebd4c7d3fa9ffa",
+      "targetTimestampsNanoseconds": [
+        3419041284875,
+        3426738100375,
+        3434551533833,
+        3442348307333,
+        3449945163083,
+        3457741934958,
+        3465538705916,
+        3473252178583
+      ],
+      "videoId": "45261121",
+      "visitId": "466628"
+    },
+    {
+      "fullConfidenceHistogramPreservedByShuffle": true,
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 9325,
+            "128": 21349,
+            "255": 362542
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/calibrated-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "f649397448f5a7cd4ad79ba5eadac1f5cb1d58b7c05ecd2b0097e65145d078ea",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 639,
+            "128": 1407,
+            "255": 22530
+          },
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/depth-only-fixed-opacity/gaussians.ply",
+          "gaussianSha256": "e178c78af05ec614c24fa14ff456c52885077af896cd390ad4245ac049f81de8",
+          "geometryCovarianceRole": "frozen-depth-only-covariance",
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.99,
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 9325,
+            "128": 21349,
+            "255": 362542
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/shuffled-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "0fd463453a4396cd80d897e191d7aaf5833da6a62b3a2001e3d215cd59514747",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 592,
+            "128": 1390,
+            "255": 22594
+          },
+          "primitiveCount": 24576,
+          "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+          "shuffleSeed": 42
+        }
+      },
+      "noRenderedDepthProduced": true,
+      "noU6bMetricsProduced": true,
+      "primitiveCount": 24576,
+      "scene": "ca1m-47895341",
+      "sourceCount": 8,
+      "sourceRecords": [
+        {
+          "confidenceJoinDeltaMilliseconds": 0.07145899871829897,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 24,
+            "255": 3048
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 69,
+            "128": 179,
+            "255": 2824
+          },
+          "sourceIndex": 0,
+          "timestampNanoseconds": 96391295928541
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.23629199131391943,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 99,
+            "128": 258,
+            "255": 2715
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 77,
+            "128": 158,
+            "255": 2837
+          },
+          "sourceIndex": 1,
+          "timestampNanoseconds": 96400808763708
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.01983300899155438,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 32,
+            "128": 439,
+            "255": 2601
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 77,
+            "128": 170,
+            "255": 2825
+          },
+          "sourceIndex": 2,
+          "timestampNanoseconds": 96410105019833
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2341660001548007,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 100,
+            "128": 162,
+            "255": 2810
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 85,
+            "128": 161,
+            "255": 2826
+          },
+          "sourceIndex": 3,
+          "timestampNanoseconds": 96419501234166
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.48654100100975484,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 181,
+            "128": 134,
+            "255": 2757
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 61,
+            "128": 170,
+            "255": 2841
+          },
+          "sourceIndex": 4,
+          "timestampNanoseconds": 96428797486541
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.35770799149759114,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 194,
+            "128": 260,
+            "255": 2618
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 64,
+            "128": 181,
+            "255": 2827
+          },
+          "sourceIndex": 5,
+          "timestampNanoseconds": 96438210357708
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.3924999909941107,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 33,
+            "128": 102,
+            "255": 2937
+          },
+          "orientationTransform": "identity",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 87,
+            "128": 182,
+            "255": 2803
+          },
+          "sourceIndex": 6,
+          "timestampNanoseconds": 96447506607500
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.18433399964123964,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 28,
+            "255": 3044
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 72,
+            "128": 189,
+            "255": 2811
+          },
+          "sourceIndex": 7,
+          "timestampNanoseconds": 96456902815666
+        }
+      ],
+      "targetManifestPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/targets.json",
+      "targetManifestSha256": "1ac30f0eb89c7acc12ae3c11ff66ec221517c0fd678e75c617490d08b6608ec0",
+      "targetTimestampsNanoseconds": [
+        96395410937666,
+        96403707596291,
+        96411904295125,
+        96420100992250,
+        96428197728458,
+        96436411083208,
+        96444607776958,
+        96452804469375
+      ],
+      "videoId": "47895341",
+      "visitId": "472297"
+    },
+    {
+      "fullConfidenceHistogramPreservedByShuffle": true,
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 16589,
+            "128": 33388,
+            "255": 343239
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/calibrated-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "278b599b57dbed35aa94cd43ff313f80aef9933d98e9682bcb5562a80e6ddf85",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 1008,
+            "128": 2149,
+            "255": 21419
+          },
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/depth-only-fixed-opacity/gaussians.ply",
+          "gaussianSha256": "349e256530dcf207555ecc2e39018b192297a722f8db67296083cb5270dbf048",
+          "geometryCovarianceRole": "frozen-depth-only-covariance",
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.99,
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 16589,
+            "128": 33388,
+            "255": 343239
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/shuffled-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "1e9ca6d989e171e66391e4b79776daeeb07195d2bc2d80d0b213cf2f1f5d2ae1",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 1064,
+            "128": 2107,
+            "255": 21405
+          },
+          "primitiveCount": 24576,
+          "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+          "shuffleSeed": 42
+        }
+      },
+      "noRenderedDepthProduced": true,
+      "noU6bMetricsProduced": true,
+      "primitiveCount": 24576,
+      "scene": "ca1m-47332915",
+      "sourceCount": 8,
+      "sourceRecords": [
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2810829992085928,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 27,
+            "128": 214,
+            "255": 2831
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 124,
+            "128": 255,
+            "255": 2693
+          },
+          "sourceIndex": 0,
+          "timestampNanoseconds": 13472554281083
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.10258399925078265,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 211,
+            "255": 2861
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 129,
+            "128": 250,
+            "255": 2693
+          },
+          "sourceIndex": 1,
+          "timestampNanoseconds": 13485748897416
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.19520900059433188,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 31,
+            "255": 3041
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 129,
+            "128": 258,
+            "255": 2685
+          },
+          "sourceIndex": 2,
+          "timestampNanoseconds": 13499859804791
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.41724999937287066,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 103,
+            "128": 78,
+            "255": 2891
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 124,
+            "128": 261,
+            "255": 2687
+          },
+          "sourceIndex": 3,
+          "timestampNanoseconds": 13513054417250
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.028208000003360212,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 708,
+            "128": 1176,
+            "255": 1188
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 133,
+            "128": 267,
+            "255": 2672
+          },
+          "sourceIndex": 4,
+          "timestampNanoseconds": 13526249028208
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.29529100174841005,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 75,
+            "255": 2997
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 158,
+            "128": 261,
+            "255": 2653
+          },
+          "sourceIndex": 5,
+          "timestampNanoseconds": 13539460295291
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.09666700134403072,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 8,
+            "128": 243,
+            "255": 2821
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 142,
+            "128": 274,
+            "255": 2656
+          },
+          "sourceIndex": 6,
+          "timestampNanoseconds": 13552654903333
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.4898750012216624,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 162,
+            "128": 121,
+            "255": 2789
+          },
+          "orientationTransform": "rot180",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 125,
+            "128": 281,
+            "255": 2666
+          },
+          "sourceIndex": 7,
+          "timestampNanoseconds": 13565849510125
+        }
+      ],
+      "targetManifestPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/targets.json",
+      "targetManifestSha256": "f7975be6d49300cf6d3404cfe20dba668a627adb7ec7ed5629f6775922b2c5f3",
+      "targetTimestampsNanoseconds": [
+        13478351916416,
+        13489847224791,
+        13502358784666,
+        13513954050041,
+        13525349395333,
+        13536961316333,
+        13548556578166,
+        13560051879958
+      ],
+      "videoId": "47332915",
+      "visitId": "469249"
+    },
+    {
+      "fullConfidenceHistogramPreservedByShuffle": true,
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 60542,
+            "128": 18466,
+            "255": 314208
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/calibrated-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "6826787e198d7bcc2fdaefda24a6fa094a305ed563a14b2c286024d5614520ad",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 3819,
+            "128": 1151,
+            "255": 19606
+          },
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/depth-only-fixed-opacity/gaussians.ply",
+          "gaussianSha256": "dc70e0e6183a9f888a1f37bf236f138297676192b4d44c275f0668861d353bd8",
+          "geometryCovarianceRole": "frozen-depth-only-covariance",
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.99,
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "fullConfidenceHistogram": {
+            "0": 60542,
+            "128": 18466,
+            "255": 314208
+          },
+          "gaussianPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/shuffled-relative-precision-opacity/gaussians.ply",
+          "gaussianSha256": "e04f4a3e9286dedd2828e8a65257c5488c346f28e67c5fa2b47e659ddeded67a",
+          "onlyOpacityChangedFromBaseline": true,
+          "opacityProbabilityMax": 0.99,
+          "opacityProbabilityMedian": 0.99,
+          "opacityProbabilityMin": 0.020261082889362996,
+          "primitiveConfidenceHistogram": {
+            "0": 3709,
+            "128": 1168,
+            "255": 19699
+          },
+          "primitiveCount": 24576,
+          "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+          "shuffleSeed": 42
+        }
+      },
+      "noRenderedDepthProduced": true,
+      "noU6bMetricsProduced": true,
+      "primitiveCount": 24576,
+      "scene": "ca1m-47331971",
+      "sourceCount": 8,
+      "sourceRecords": [
+        {
+          "confidenceJoinDeltaMilliseconds": 0.15245901886373758,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 43,
+            "128": 35,
+            "255": 2994
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 465,
+            "128": 134,
+            "255": 2473
+          },
+          "sourceIndex": 0,
+          "timestampNanoseconds": 168972860847541
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.40183300734497607,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 131,
+            "128": 327,
+            "255": 2614
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 450,
+            "128": 134,
+            "255": 2488
+          },
+          "sourceIndex": 1,
+          "timestampNanoseconds": 168981357401833
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.0848339986987412,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 106,
+            "128": 181,
+            "255": 2785
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 481,
+            "128": 152,
+            "255": 2439
+          },
+          "sourceIndex": 2,
+          "timestampNanoseconds": 168989953915166
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.46941600157879293,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 120,
+            "128": 304,
+            "255": 2648
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 458,
+            "128": 150,
+            "255": 2464
+          },
+          "sourceIndex": 3,
+          "timestampNanoseconds": 168998450469416
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.35808401298709214,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 3072,
+            "128": 0,
+            "255": 0
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 473,
+            "128": 140,
+            "255": 2459
+          },
+          "sourceIndex": 4,
+          "timestampNanoseconds": 169007063641916
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.19433299894444644,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 345,
+            "128": 199,
+            "255": 2528
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 468,
+            "128": 175,
+            "255": 2429
+          },
+          "sourceIndex": 5,
+          "timestampNanoseconds": 169015560194333
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2953340008389205,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 0,
+            "128": 23,
+            "255": 3049
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 457,
+            "128": 137,
+            "255": 2478
+          },
+          "sourceIndex": 6,
+          "timestampNanoseconds": 169024156704666
+        },
+        {
+          "confidenceJoinDeltaMilliseconds": 0.2567080082371831,
+          "intactPrimitiveConfidenceHistogram": {
+            "0": 2,
+            "128": 82,
+            "255": 2988
+          },
+          "orientationTransform": "rot90-cw",
+          "sampledPrimitiveCount": 3072,
+          "shuffledPrimitiveConfidenceHistogram": {
+            "0": 457,
+            "128": 146,
+            "255": 2469
+          },
+          "sourceIndex": 7,
+          "timestampNanoseconds": 169032653256708
+        }
+      ],
+      "targetManifestPath": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/targets.json",
+      "targetManifestSha256": "1ffdc9eb2768fef11b873798effed0d75d31288f7e133ed6261312138f78cd2a",
+      "targetTimestampsNanoseconds": [
+        168976559347458,
+        168984056307333,
+        168991553267041,
+        168999050226666,
+        169006447225250,
+        169013960843333,
+        169021457800791,
+        169028954757833
+      ],
+      "videoId": "47331971",
+      "visitId": "470821"
+    }
+  ],
+  "schemaVersion": 1,
+  "sensorConfidencePenalty": 5.990146384791633,
+  "shuffleScope": "full oriented eight-view confidence stream before depth-valid Gaussian sampling",
+  "sourceDepthRangeMetres": [
+    0.05,
+    20.0
+  ],
+  "stage": "U6b-confirmatory-preparation",
+  "status": "prepared-no-u6b-render-or-metric-outcomes",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1"
+}

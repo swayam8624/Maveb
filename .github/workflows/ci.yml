@@ -22,6 +22,13 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Install MavebBench Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv-ci
+          .venv-ci/bin/python -m pip install --disable-pip-version-check numpy pillow scipy
+          echo "$PWD/.venv-ci/bin" >> "$GITHUB_PATH"
       - name: MavebBench unit tests
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
 

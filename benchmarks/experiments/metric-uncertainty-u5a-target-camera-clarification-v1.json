@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u5a-target-camera-clarification-v1",
+  "study": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "status": "frozen-before-u5a-gaussian-assets-or-outcomes",
+  "frozen": true,
+  "reason": "The parent protocol phrase 'target frame released CA-1M intrinsics' is ambiguous because CA-1M exposes separate onboard wide/depth and FARO gt/depth calibration. U5a evaluates rendered depth directly against gt/depth, so the render camera must use the matching gt/depth/k calibration.",
+  "clarification": {
+    "targetDepth": "gt/depth",
+    "targetIntrinsics": "gt/depth/k",
+    "targetPose": "gt/RT camera-to-world in FARO coordinates",
+    "sourceDepthAndIntrinsicsRemain": "wide/depth and wide/depth/k for Gaussian centers/covariance",
+    "noChangeToScenes": true,
+    "noChangeToSourceViews": true,
+    "noChangeToTargetSelectionAlgorithm": true,
+    "noChangeToMethods": true,
+    "noChangeToMetrics": true
+  },
+  "outcomeExposureAtFreeze": {
+    "u5aGaussianAssetsCreated": false,
+    "u5aTargetViewsSelectedOrEvaluated": false,
+    "u5aRenderedDepthCreated": false,
+    "u5aMetricOutcomesObserved": false
+  }
+}

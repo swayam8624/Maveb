@@ -2,6 +2,7 @@ add_library(AetherReconstruction STATIC
     src/ReconstructionInput.cpp
     src/SparseModelValidator.cpp
     src/DenseTsdfVolume.cpp
+    src/UncertaintyTsdfVolume.cpp
     src/ReferenceMarchingCubes.cpp
     src/SparseTsdfVolume.cpp
     src/IncrementalSparseTsdfMesher.cpp

@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "stage": "U5a-exploratory-heldout-depth-evidence",
+  "status": "frozen-after-first-complete-exploratory-reveal",
+  "claimType": "exploratory representation study on already-exposed U3b rooms with previously unused deterministic target frames; not confirmatory efficacy evidence",
+  "sourceCommit": "db37075efede98551fc840cab4909c6a3b2a8006",
+  "resultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+  "revealLogSha256": "df78b84491870362b01c9e3635c57fce31715d71752ed4c22b11cb4b619ea37c",
+  "preparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "protocolSha256": "d083660e3290e7592cf572b1b215a62e44365e4fb42786dbef6b6731fc309cae",
+  "targetClarificationSha256": "1d454d0fde2447679d9295a3f30f3a91b5a801a291588e12e4726bd522710252",
+  "evaluationClarificationSha256": "69d6740e7a347019fba5f2e881a63a9c67bdea8a42d134331dad7fe9ee004e38",
+  "executionIntegrity": {
+    "renderCount": 120,
+    "allRenderShasVerifiedAgainstResult": true,
+    "verifiedRenderCount": 120,
+    "resultNonOverwriteGuardPassed": true,
+    "preparationUnchangedAfterReveal": true
+  },
+  "scenes": {
+    "ca1m-48458481": {
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.12765336329834734,
+        "within10cmFractionOfFaroValidMean": 0.14257679732768924,
+        "coverageFractionMean": 0.9998164653817521,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.228786159125065,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.0947549268603325,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.0409326255321503
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.0070609285683475844,
+        "within10cmFractionOfFaroValidMean": 0.007559832530627343,
+        "coverageFractionMean": 1.0,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4393564640511138,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.28078094124794,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.2478647977113724
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.011950503056374476,
+        "within10cmFractionOfFaroValidMean": 0.011950503056374476,
+        "coverageFractionMean": 1.0,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.440304147785235,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2836471647024155,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.2516832500696182
+      }
+    },
+    "ca1m-48018737": {
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.5099713641468355,
+        "within10cmFractionOfFaroValidMean": 0.5303310154131865,
+        "coverageFractionMean": 0.5606992801048234,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.034847864420404856,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.01694713532924652,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.09510257840156555
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.37802236926892896,
+        "within10cmFractionOfFaroValidMean": 0.40056133949099904,
+        "coverageFractionMean": 0.6395763035668454,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.5036155177087555,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.43159186467528343,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.0838944390416145
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.42796293349692843,
+        "within10cmFractionOfFaroValidMean": 0.4512935871350898,
+        "coverageFractionMean": 0.6484886464694066,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.26279719039040444,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.13651427129904428,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.8158895075321198
+      }
+    },
+    "ca1m-45261587": {
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.30381904159961126,
+        "within10cmFractionOfFaroValidMean": 0.3447340590910253,
+        "coverageFractionMean": 0.4736584678741101,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.1663253930154708,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.1623970940709114,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 0.44621576368808746
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.13961432708014157,
+        "within10cmFractionOfFaroValidMean": 0.16368260226279147,
+        "coverageFractionMean": 0.7203358872070921,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.7167447646687253,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.7914123572409153,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.214593768119812
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.1215562789408211,
+        "within10cmFractionOfFaroValidMean": 0.13513600351489508,
+        "coverageFractionMean": 0.8536535715253322,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.8481564619794861,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.9179043769836426,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.2408118918538094
+      }
+    },
+    "ca1m-42897538": {
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.2192256015442358,
+        "within10cmFractionOfFaroValidMean": 0.2519355040303896,
+        "coverageFractionMean": 0.6265416707260815,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.6885806545903462,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.564257949590683,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 1.6937462538480759
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.12931097507274622,
+        "within10cmFractionOfFaroValidMean": 0.15666613515599637,
+        "coverageFractionMean": 0.8521388392781266,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3851689888983898,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1527885422110558,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 3.1301462948322296
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.07690526499483817,
+        "within10cmFractionOfFaroValidMean": 0.118825148588522,
+        "coverageFractionMean": 0.8786568057355771,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4116573804163377,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1696701049804688,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.9715347439050674
+      }
+    },
+    "ca1m-48018375": {
+      "depth-only-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.056632437973173425,
+        "within10cmFractionOfFaroValidMean": 0.06498687706917076,
+        "coverageFractionMean": 0.7700122485033787,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.0023789327059154,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.8802995011210442,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.166870728135109
+      },
+      "calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.007751139783898929,
+        "within10cmFractionOfFaroValidMean": 0.012153798486863253,
+        "coverageFractionMean": 0.9114131124131541,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.370889130077063,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2609395384788513,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.7168856263160706
+      },
+      "shuffled-calibrated-covariance": {
+        "primaryWithin5cmFractionOfFaroValid": 0.001954393624329954,
+        "within10cmFractionOfFaroValidMean": 0.0030022717999034975,
+        "coverageFractionMean": 0.9457146535976036,
+        "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3938657510605563,
+        "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.2696166187524796,
+        "absoluteDepthErrorP95MetresAcrossTargetP95": 2.7014617323875427
+      }
+    }
+  },
+  "descriptiveComparison": {
+    "candidateMinusDepthOnly": {
+      "sceneValues": [-0.12059243472999975, -0.13194899487790657, -0.1642047145194697, -0.08991462647148957, -0.048881298189274495],
+      "median": -0.12059243472999975,
+      "lower95": -0.1642047145194697,
+      "upper95": -0.048881298189274495,
+      "candidateBetterSceneCount": 0
+    },
+    "candidateMinusShuffled": {
+      "sceneValues": [-0.004889574488026891, -0.04994056422799947, 0.018058048139320465, 0.05240571007790805, 0.0057967461595689745],
+      "median": 0.0057967461595689745,
+      "lower95": -0.04994056422799947,
+      "upper95": 0.05240571007790805,
+      "candidateBetterSceneCount": 3
+    },
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "interpretation": {
+    "mechanisticOutcome": "not promising for the exact frozen covariance rule",
+    "reason": "calibrated covariance loses to depth-only covariance in all five exposed rooms and substantially increases held-out depth error despite often increasing coverage; shuffled association is not consistently worse than intact calibration",
+    "u5bForThisExactRule": false,
+    "noPostHocSigmaClippingOrRetuningOnTheseRooms": true
+  },
+  "claimBoundary": "U5a is exploratory only. The exact frozen rule does not justify an untouched U5b efficacy study. U1b/U2 predictive uncertainty remains valid; U3/U3b/U4a remain negative; U5a shows that directly enlarging Gaussian covariance with the frozen calibrated sigma increases footprint/coverage but does not preserve metric held-out depth accuracy."
+}

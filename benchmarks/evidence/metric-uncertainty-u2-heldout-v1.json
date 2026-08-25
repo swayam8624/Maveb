@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 2,
+  "study": "metric-uncertainty-v1",
+  "stage": "U2-held-out-calibration",
+  "status": "passed-held-out-and-posthoc-orientation-sensitivity",
+  "splitId": "metric-uncertainty-public-split-v1",
+  "splitRevision": 4,
+  "splitSha256": "03bac386d32568c26af0d727b8555ac5a92dda22fd92740ffa281f2cc9fbdd10",
+  "robustModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "calibrationInputSha256": "9b225e2398aa9f116c27b9f9cd3f3916dca83d82e8a3bae5818673b059698067",
+  "heldOutObservationSha256": "58fdf84ecf60b2e8214efafb2b6614fe392c69343438346c4d6fd5fa15b76072",
+  "heldOutSamples": {
+    "ca1m-45261143": 186111,
+    "ca1m-45261179": 68782,
+    "ca1m-45261615": 153656,
+    "ca1m-45662921": 304749,
+    "ca1m-47115543": 178466,
+    "total": 891764
+  },
+  "primaryComparison": {
+    "differenceConvention": "intact minus control",
+    "evidenceUnit": "scene",
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "intactVsShuffled": {
+      "studentTNll": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.14368414742251745,
+        "medianDifference": -0.11842401134452896,
+        "lower95": -0.18399923217756742,
+        "upper95": -0.10336906266746748
+      },
+      "expectedCalibrationErrorMetres": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.08645011899665109,
+        "lower95": -0.15681743223478245,
+        "upper95": -0.04060272906323092
+      },
+      "pearsonSigmaAbsoluteError": {
+        "direction": "higher",
+        "intactBetterSceneCount": 5,
+        "meanDifference": 0.277227495646578,
+        "lower95": 0.2599765336075401,
+        "upper95": 0.2944784576856158
+      }
+    },
+    "intactVsConstant": {
+      "studentTNll": {
+        "direction": "lower",
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.34377667651763766,
+        "medianDifference": -0.4149738292180003,
+        "lower95": -0.45999563561745915,
+        "upper95": -0.20696668237419796
+      },
+      "expectedCalibrationErrorMetres": {
+        "direction": "lower",
+        "intactBetterSceneCount": 2,
+        "meanDifference": -0.012556057629031775,
+        "lower95": -0.055993030160020885,
+        "upper95": 0.018336732984680432
+      },
+      "pearsonSigmaAbsoluteError": {
+        "direction": "higher",
+        "intactBetterSceneCount": 5,
+        "meanDifference": 0.18907470367011417,
+        "lower95": 0.17006801283828052,
+        "upper95": 0.2096690934739681
+      }
+    }
+  },
+  "postHocOrientationSensitivity": {
+    "status": "passed-not-driving-primary-effect",
+    "calibrationWitnessEnvelopeMillimetres": 51.0,
+    "strictIntersectionDefinition": "modal sidecar transform and orientation-witness median absolute depth disagreement <= 51 mm",
+    "strictIntersectionRetainedFrames": {
+      "ca1m-45261143": 65,
+      "ca1m-45261179": 28,
+      "ca1m-45261615": 52,
+      "ca1m-45662921": 113,
+      "ca1m-47115543": 68
+    },
+    "strictIntersectionRetainedSamples": {
+      "ca1m-45261143": 183065,
+      "ca1m-45261179": 68782,
+      "ca1m-45261615": 153656,
+      "ca1m-45662921": 302207,
+      "ca1m-47115543": 172979,
+      "total": 880689
+    },
+    "intactVsShuffled": {
+      "studentTNll": {
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.153646690360241,
+        "lower95": -0.20601881301382335,
+        "upper95": -0.10777515610432112
+      },
+      "expectedCalibrationErrorMetres": {
+        "intactBetterSceneCount": 5,
+        "meanDifference": -0.09068914608298709,
+        "lower95": -0.16922988712096826,
+        "upper95": -0.04042965194786775
+      },
+      "pearsonSigmaAbsoluteError": {
+        "intactBetterSceneCount": 5,
+        "meanDifference": 0.2993579854809529,
+        "lower95": 0.2715371879071988,
+        "upper95": 0.326181600558098
+      }
+    },
+    "interpretation": "Removing the rare non-modal/high-witness-disagreement frames makes the causal intact-vs-shuffled signal slightly stronger rather than weaker. The primary U2 result is therefore not explained by these sidecar-alignment outliers."
+  },
+  "heldOutAcquisitionProvenance": {
+    "frozenModelBirthLocal": "2026-08-20T02:02:32+05:30",
+    "earliestHeldOutVideoRootOrZipBirthLocal": "2026-08-20T02:13:40+05:30",
+    "latestHeldOutVideoRootOrZipWriteLocal": "2026-08-20T02:15:06+05:30",
+    "interpretation": "Filesystem audit resolves the alreadyPresent ambiguity: the robust model was frozen more than ten minutes before held-out sidecar acquisition."
+  },
+  "artifactHashes": {
+    "intactReportSha256": "03cf3a96238bfd52e6c1dfce6a25105ff2afbc00beb56c181268a1e4b2e9ab24",
+    "constantReportSha256": "0b6590747b6f9bc698c7e661bd8eb2a692c401b4215fed22e4088d5f5bf15802",
+    "shuffledReportSha256": "6898a2a3fab81dce7974a7f5f4a60bc9bc4e2604a2180995e6c4c2d8487d59f3",
+    "pairedControlComparisonSha256": "7c69875cff5a5c89d099d5fd1afedeb1c9d8cf33a4b946dbe369c3d3d36baff1"
+  },
+  "claim": "Frozen U1b confidence-aware uncertainty generalizes to all five held-out scenes under the preregistered Student-t(3) proper score and causal shuffled-confidence control. The result survives the post-hoc orientation-witness sensitivity and supports proceeding to the U3 dense-CPU reconstruction intervention."
+}

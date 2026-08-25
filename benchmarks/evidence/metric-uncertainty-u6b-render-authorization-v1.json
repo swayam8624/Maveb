@@ -1,0 +1,341 @@
+{
+  "acquisitionEvidenceSha256": "18e29d1a8db83d4bda1cdfdec734592c29be3bb3010cc2e27a75441108e602e9",
+  "acquisitionEvidenceStage": "U6b-confirmatory-asset-acquisition-freeze",
+  "acquisitionLedgerSha256": "b0ce48a6c3cbf0ab8a037b5df7db80753aac0063ffba733d63ac5bf0b76ee5a9",
+  "claimBoundary": "This artifact authorizes only the single frozen U6b confirmatory render reveal after preparation has been hashed and verified. It contains no rendered depth, FARO metric, bootstrap statistic, gate decision, or confirmatory outcome.",
+  "confirmatoryOutcomeObservedBeforeAuthorization": false,
+  "existingRenderedDepthCount": 0,
+  "faroTargetDepthCount": 40,
+  "gaussianPlyCount": 15,
+  "inputPreflightEvidenceSha256": "1bfcb7ef6e9901bf26b5f36e76112de187f65367910711226f9b63b12ec57eec",
+  "inputPreflightEvidenceStage": "U6b-confirmatory-pose-and-orientation-preflight-freeze",
+  "inputPreflightSha256": "64fe0e95b0b2667b0141c6f3ec435116b725724e9b68b1be21cf05b225a39190",
+  "methods": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "preparationSha256": "4df50fdda6a207a15254092b92bcabf5226cb19d7171e49a9ecc3a112b2cd768",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "sceneCount": 5,
+  "scenes": [
+    {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "60d8d412ad3129068b2dcf54eea50abdc842ab0b7a25e6eb6d8107caf93e3d6a",
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "79b0a96bb1e44416d328362b370ccca811df04850c7d5321f16d5c41e43abd8b",
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "0ba1e7b6d16e32ddb97b97b53dd93a27dd7a02214079b84491c098ba1a1356d0",
+          "primitiveCount": 24576
+        }
+      },
+      "primitiveCount": 24576,
+      "scene": "ca1m-42898811",
+      "targetManifestSha256": "588aacae72a1d0f9d0f4652ecf3856c33335160b48f8defa2ed8fc6c257f84c8",
+      "targets": [
+        {
+          "faroDepthSha256": "f6fa96b7e0b016098664d26be9d59db774504833278e05b1d7fd1b0e4aebaa4c",
+          "targetIndex": 0,
+          "timestampNanoseconds": 167472669463875
+        },
+        {
+          "faroDepthSha256": "d76bb2e48fb50a6b5d481054df4ad2caa1b1dca71316442744599d5268b94ec4",
+          "targetIndex": 1,
+          "timestampNanoseconds": 167474385419958
+        },
+        {
+          "faroDepthSha256": "20eb71908505d9ebbddc0f2f1f0248d7ec96dac4093531a64e9a6a380771ef06",
+          "targetIndex": 2,
+          "timestampNanoseconds": 167475984757416
+        },
+        {
+          "faroDepthSha256": "7e8da9d3f603bc83040a0a0b5db847cf4fcbb717c949fd1879334684104fde6a",
+          "targetIndex": 3,
+          "timestampNanoseconds": 167477584094916
+        },
+        {
+          "faroDepthSha256": "f2a57fcea62f9710d50f43b451a5ad6ef03436dd34f347d57b8d451139e3ccb4",
+          "targetIndex": 4,
+          "timestampNanoseconds": 167479183432416
+        },
+        {
+          "faroDepthSha256": "48316ff47675ca3e5ef6190b9c34c2eccf03ff41dc95e6b0b068c78e031c088e",
+          "targetIndex": 5,
+          "timestampNanoseconds": 167480782770041
+        },
+        {
+          "faroDepthSha256": "df41c693fe49884dab611874d64f4d916a3ea33fde89ab5813c3f6c6c0ade4a9",
+          "targetIndex": 6,
+          "timestampNanoseconds": 167483081817166
+        },
+        {
+          "faroDepthSha256": "002bbac91683b9cc9bb5d59367388a244259a013a140a5c3fea8c9490de6646f",
+          "targetIndex": 7,
+          "timestampNanoseconds": 167484781113208
+        }
+      ],
+      "visitId": "434650"
+    },
+    {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "60928c7d5fde1aec1756be0409aefff01ae1c6ba2360192e74b06645464d2a8f",
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "60c67ca32578be7cd0f86d9dfe89853cb634049677994d6094015990ebf4096c",
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "74875597a3d8404d0d16b866b1cfe68f046396c4b3e52e9d80dd38155b037a9a",
+          "primitiveCount": 24576
+        }
+      },
+      "primitiveCount": 24576,
+      "scene": "ca1m-45261121",
+      "targetManifestSha256": "05f9d4c8b5a2c3310986a1a3c88bd05a4500e24eec536540d5ebd4c7d3fa9ffa",
+      "targets": [
+        {
+          "faroDepthSha256": "ffad9c11f1efad8d0f13f8ed8b79cf5a890b8deb2459c4ea598b98b35fda3ac4",
+          "targetIndex": 0,
+          "timestampNanoseconds": 3419041284875
+        },
+        {
+          "faroDepthSha256": "f5973b30444f8c4d2c73e452437e8ecc7e2973ed95f794c735b1344006c2bc4b",
+          "targetIndex": 1,
+          "timestampNanoseconds": 3426738100375
+        },
+        {
+          "faroDepthSha256": "ced637c67865d88fe6b75f3039fee80481a63716bf070695447ef8cb85524791",
+          "targetIndex": 2,
+          "timestampNanoseconds": 3434551533833
+        },
+        {
+          "faroDepthSha256": "4c010e446bc54da5442f438890248e318072abb73496f1a4f5f68a82aa03325e",
+          "targetIndex": 3,
+          "timestampNanoseconds": 3442348307333
+        },
+        {
+          "faroDepthSha256": "943e2e665b1364e7fda9a1741b9000ddb7535c933385bbe6e958fb39ef0aa410",
+          "targetIndex": 4,
+          "timestampNanoseconds": 3449945163083
+        },
+        {
+          "faroDepthSha256": "6cc148871287adb8530a8f37e47ba9e1bf89de51a2dbf2c3dafccbe14d4d639c",
+          "targetIndex": 5,
+          "timestampNanoseconds": 3457741934958
+        },
+        {
+          "faroDepthSha256": "fb8ba6b2cb7c47e5c5f9b6297c6ccdf325d834a43729d91c3b7a8ee2b04c3879",
+          "targetIndex": 6,
+          "timestampNanoseconds": 3465538705916
+        },
+        {
+          "faroDepthSha256": "ada22ac54d1fa21a640f98ef8a8385cbc65943a509196913ea867d548a85ea87",
+          "targetIndex": 7,
+          "timestampNanoseconds": 3473252178583
+        }
+      ],
+      "visitId": "466628"
+    },
+    {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "f649397448f5a7cd4ad79ba5eadac1f5cb1d58b7c05ecd2b0097e65145d078ea",
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "e178c78af05ec614c24fa14ff456c52885077af896cd390ad4245ac049f81de8",
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "0fd463453a4396cd80d897e191d7aaf5833da6a62b3a2001e3d215cd59514747",
+          "primitiveCount": 24576
+        }
+      },
+      "primitiveCount": 24576,
+      "scene": "ca1m-47895341",
+      "targetManifestSha256": "1ac30f0eb89c7acc12ae3c11ff66ec221517c0fd678e75c617490d08b6608ec0",
+      "targets": [
+        {
+          "faroDepthSha256": "3cb505246ced09ceb83705a65f078e428989bda6361ca2d2237629cebce8c1b1",
+          "targetIndex": 0,
+          "timestampNanoseconds": 96395410937666
+        },
+        {
+          "faroDepthSha256": "899af10e36a09a9e643a0e22a8ccdb8793e868d0ad73899b1bfe095902c199fe",
+          "targetIndex": 1,
+          "timestampNanoseconds": 96403707596291
+        },
+        {
+          "faroDepthSha256": "589caef376f608f9726571482edeb6df9bb4e972f2c2cd45af5e50f0b3b7157b",
+          "targetIndex": 2,
+          "timestampNanoseconds": 96411904295125
+        },
+        {
+          "faroDepthSha256": "b190f14273b52d007cd848e57e708dc5de01eed9d45b8bc81a479ba327d4d89b",
+          "targetIndex": 3,
+          "timestampNanoseconds": 96420100992250
+        },
+        {
+          "faroDepthSha256": "368a180036df323e067129dd7e5aa273a4f6bf0123b39524a0f7d727dcc76741",
+          "targetIndex": 4,
+          "timestampNanoseconds": 96428197728458
+        },
+        {
+          "faroDepthSha256": "265e509cb958206e5fb74f74550f2fc5cccc79431971fc0dd7825c3e681851a6",
+          "targetIndex": 5,
+          "timestampNanoseconds": 96436411083208
+        },
+        {
+          "faroDepthSha256": "527abc1cc302f4dd4517a31f3d11fe4a2e6c735e71108f545bd3192ba7d3d9e6",
+          "targetIndex": 6,
+          "timestampNanoseconds": 96444607776958
+        },
+        {
+          "faroDepthSha256": "a4ad26329e2db01f3552b7a751c56d158ac72706778abb26cb9eab44310d6365",
+          "targetIndex": 7,
+          "timestampNanoseconds": 96452804469375
+        }
+      ],
+      "visitId": "472297"
+    },
+    {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "278b599b57dbed35aa94cd43ff313f80aef9933d98e9682bcb5562a80e6ddf85",
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "349e256530dcf207555ecc2e39018b192297a722f8db67296083cb5270dbf048",
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "1e9ca6d989e171e66391e4b79776daeeb07195d2bc2d80d0b213cf2f1f5d2ae1",
+          "primitiveCount": 24576
+        }
+      },
+      "primitiveCount": 24576,
+      "scene": "ca1m-47332915",
+      "targetManifestSha256": "f7975be6d49300cf6d3404cfe20dba668a627adb7ec7ed5629f6775922b2c5f3",
+      "targets": [
+        {
+          "faroDepthSha256": "591e21043b587fa7c77b916e3aba4aff30d7c9f17a13916ba41622b12f47b288",
+          "targetIndex": 0,
+          "timestampNanoseconds": 13478351916416
+        },
+        {
+          "faroDepthSha256": "b6dc5d55a1f891751549b923a509dcddc46159c1e7b90e3d6af7fb75babb3437",
+          "targetIndex": 1,
+          "timestampNanoseconds": 13489847224791
+        },
+        {
+          "faroDepthSha256": "48f8851b57a20939b3070d2f38b23654bf7b309734f7e65b30eff09125c8e20b",
+          "targetIndex": 2,
+          "timestampNanoseconds": 13502358784666
+        },
+        {
+          "faroDepthSha256": "a7cc50bb29ce4540c11197381345162e79b80b86f0e8e7ce24dd9ed7ed2b6e7d",
+          "targetIndex": 3,
+          "timestampNanoseconds": 13513954050041
+        },
+        {
+          "faroDepthSha256": "4184360ea19cad5ed779acb7b01dc3c9a3dc0af65eca9791b2599edc0483e700",
+          "targetIndex": 4,
+          "timestampNanoseconds": 13525349395333
+        },
+        {
+          "faroDepthSha256": "e68108f4985babb824c8704718e66d2f787a60cb6640548daba4494e91e3bd43",
+          "targetIndex": 5,
+          "timestampNanoseconds": 13536961316333
+        },
+        {
+          "faroDepthSha256": "eb400c4727956d5e18cc828815cd7c07b4672c772f002fd9e78ba147b047de4c",
+          "targetIndex": 6,
+          "timestampNanoseconds": 13548556578166
+        },
+        {
+          "faroDepthSha256": "eae48aa61f01ebfc00e20bcffac55b952c64420248f8ef9d4c94d1488d78ec43",
+          "targetIndex": 7,
+          "timestampNanoseconds": 13560051879958
+        }
+      ],
+      "visitId": "469249"
+    },
+    {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "6826787e198d7bcc2fdaefda24a6fa094a305ed563a14b2c286024d5614520ad",
+          "primitiveCount": 24576
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "dc70e0e6183a9f888a1f37bf236f138297676192b4d44c275f0668861d353bd8",
+          "primitiveCount": 24576
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "e04f4a3e9286dedd2828e8a65257c5488c346f28e67c5fa2b47e659ddeded67a",
+          "primitiveCount": 24576
+        }
+      },
+      "primitiveCount": 24576,
+      "scene": "ca1m-47331971",
+      "targetManifestSha256": "1ffdc9eb2768fef11b873798effed0d75d31288f7e133ed6261312138f78cd2a",
+      "targets": [
+        {
+          "faroDepthSha256": "a197eb9fff765ffad5365dc2e9d0fc68074e045d93f61a851bfcf8ffadecf740",
+          "targetIndex": 0,
+          "timestampNanoseconds": 168976559347458
+        },
+        {
+          "faroDepthSha256": "edbae178c477eacac2f835900334224bd91fbfd61d4f6fe75f69a9f4dcd2200d",
+          "targetIndex": 1,
+          "timestampNanoseconds": 168984056307333
+        },
+        {
+          "faroDepthSha256": "98563bfbbd85c8de176626b6372e702afe33c03810c40380115c9e4b963a4d97",
+          "targetIndex": 2,
+          "timestampNanoseconds": 168991553267041
+        },
+        {
+          "faroDepthSha256": "44ef194df19c25ba704e22b4e4c6f64ac0b238b21ae70edd7ea2375a2169f57d",
+          "targetIndex": 3,
+          "timestampNanoseconds": 168999050226666
+        },
+        {
+          "faroDepthSha256": "1b713ce86ac2a2378edb23593056d22120e67adff8099b11529316512feaef99",
+          "targetIndex": 4,
+          "timestampNanoseconds": 169006447225250
+        },
+        {
+          "faroDepthSha256": "399bfd40c7bda31c4c94124be1914f31e3d634bf19583f61743d9aed68ba8c06",
+          "targetIndex": 5,
+          "timestampNanoseconds": 169013960843333
+        },
+        {
+          "faroDepthSha256": "587ec3661a5b8d1273a5018e1034e6608bd5a732d40c5ffde37afe6f6735747b",
+          "targetIndex": 6,
+          "timestampNanoseconds": 169021457800791
+        },
+        {
+          "faroDepthSha256": "04695c8d1c7765f62d5104d49799a69d7d1cd964387ec5f008bf30543e3d1ceb",
+          "targetIndex": 7,
+          "timestampNanoseconds": 169028954757833
+        }
+      ],
+      "visitId": "470821"
+    }
+  ],
+  "schemaVersion": 1,
+  "stage": "U6b-confirmatory-render-authorization",
+  "status": "authorized-after-frozen-preparation-before-render",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "targetManifestCount": 5,
+  "targetViewsPerScene": 8,
+  "totalRenderCount": 120
+}

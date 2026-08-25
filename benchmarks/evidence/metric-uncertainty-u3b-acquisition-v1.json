@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "stage": "U3b-confirmatory-acquisition-evidence",
+  "status": "acquired-after-clean-preregistered-plan",
+  "confirmatorySplitSha256": "f7269b595bafe5e50d975b3026a958b1a4b0ef2bcc695f4494d161f8aa285e56",
+  "protocolSha256": "f42fb12bb855e660c3cf4d77e5dd4200b73136baa73981434b54c98b43e63a6d",
+  "cleanPlanFileSha256": "93020f832c5e22125a813ad863fe9cd329153eb289b8b6616e4cf7790e23db55",
+  "cleanPlanSelfSha256": "2b7d65cb3271b4e1d6684c82be81324fa88f5d1f67a0f32de8e377d3f87a5afb",
+  "acquisitionLedgerSha256": "3675d61e89599a36641e8d4ddb0dd28ce9722030af3b4672b70c401973695f73",
+  "frozenPredictiveModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "plannedAtUtc": "2026-08-20T05:40:59.029400+00:00",
+  "startedAtUtc": "2026-08-20T05:45:42.629933+00:00",
+  "completedAtUtc": "2026-08-20T05:50:50.290919+00:00",
+  "allConfirmatoryAssetsAbsentBeforePlan": true,
+  "provenanceNote": "All five selected CA-1M archives, .part files, confidence PNGs, lowres_depth PNGs and sidecar ZIPs were verified absent by the frozen plan before acquisition. Extracted ARKitScenes directory birth times reflect timestamps preserved from the source ZIP contents and are not used as acquisition-time evidence; the clean plan plus acquisition start/completion ordering is the provenance record.",
+  "entries": [
+    {
+      "videoId": "48458481",
+      "visitId": "483953",
+      "ca1mArchiveSha256": "bc2f470030c7616d8bbc5479b7f13e62861b03b242042a5a5de8cbf051a3958b",
+      "ca1mArchiveBytes": 216709120,
+      "ca1mArchiveMemberCount": 3767,
+      "confidencePngCount": 1707,
+      "lowresDepthPngCount": 1707
+    },
+    {
+      "videoId": "48018737",
+      "visitId": "483618",
+      "ca1mArchiveSha256": "d0160e457f8697b4ceb2a5c0b3e82b76c034a0eaa0ba8fdcbce8a3523c9ba930",
+      "ca1mArchiveBytes": 234045440,
+      "ca1mArchiveMemberCount": 4285,
+      "confidencePngCount": 2112,
+      "lowresDepthPngCount": 2112
+    },
+    {
+      "videoId": "45261587",
+      "visitId": "468073",
+      "ca1mArchiveSha256": "70b3194fbec6a6c8b49ea98bcca7a28c9d95ee77f0a2600b044d2e80d0cbe37f",
+      "ca1mArchiveBytes": 401438720,
+      "ca1mArchiveMemberCount": 8863,
+      "confidencePngCount": 4014,
+      "lowresDepthPngCount": 4014
+    },
+    {
+      "videoId": "42897538",
+      "visitId": "422826",
+      "ca1mArchiveSha256": "1dd346972b53469a79b64683cb0bfc780be6728c7c776e0c898548836f6ecc7a",
+      "ca1mArchiveBytes": 842158080,
+      "ca1mArchiveMemberCount": 13413,
+      "confidencePngCount": 6383,
+      "lowresDepthPngCount": 6383
+    },
+    {
+      "videoId": "48018375",
+      "visitId": "483312",
+      "ca1mArchiveSha256": "df6670c06c93b56575ed9dcc89418ad92bcbe2df4a52bc696ab0d6f9b09f48a2",
+      "ca1mArchiveBytes": 799057920,
+      "ca1mArchiveMemberCount": 13343,
+      "confidencePngCount": 6222,
+      "lowresDepthPngCount": 6222
+    }
+  ],
+  "nextGate": "Run the frozen U3b camera-to-world pose preflight on all five acquired scenes before preparing or evaluating any reconstruction."
+}

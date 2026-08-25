@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u5c-occlusion-audit-v1",
+  "stage": "U5c-post-hoc-gaussian-occlusion-mechanism-evidence",
+  "status": "frozen-after-first-complete-read-only-audit",
+  "claimType": "post-hoc mechanism audit on already-rendered U5a outputs; not confirmatory efficacy evidence",
+  "sourceCommit": "4cb46de740443e6feda7a1f8bde3415018288db3",
+  "auditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409",
+  "auditLogSha256": "de19438183794c7c516a43bee64798792ff44195289c9816eaf510c81c7132da",
+  "protocolSha256": "ed3f0c1d90626389d066e604aba95e6eeaad7ab58ba1d302a0cb16dca4f60472",
+  "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+  "executionIntegrity": {
+    "readOnlyAudit": true,
+    "rerenderingPerformed": false,
+    "sigmaRetuningPerformed": false,
+    "newRoomsUsed": false,
+    "u5aResultUnchangedAfterAudit": true,
+    "auditNonOverwriteGuardPassed": true
+  },
+  "crossScene": {
+    "candidateVsDepthOnlyAbsoluteErrorShiftMetres": {
+      "definedSceneCount": 5,
+      "sceneValues": [0.1822093427181244, 0.2254206339518229, 0.2910531759262085, 0.49420836567878723, 0.3532750904560089],
+      "median": 0.2910531759262085,
+      "lower95": 0.1822093427181244,
+      "upper95": 0.49420836567878723
+    },
+    "candidateVsDepthOnlyChallengerCorrectReferenceWrongFraction": {
+      "definedSceneCount": 5,
+      "sceneValues": [0.0, 0.00013889790099684868, 0.0014082940269810138, 0.001178700253001859, 0.0010117649218119081],
+      "median": 0.0010117649218119081,
+      "lower95": 0.0,
+      "upper95": 0.0014082940269810138
+    },
+    "candidateVsDepthOnlyChallengerOnlyCoverageFraction": {
+      "definedSceneCount": 5,
+      "sceneValues": [0.00018353461824799404, 0.07887702346202197, 0.246677419332982, 0.22559716855204517, 0.1414008639097755],
+      "median": 0.1414008639097755,
+      "lower95": 0.00018353461824799404,
+      "upper95": 0.246677419332982
+    },
+    "candidateVsDepthOnlyChallengerOnlyForegroundWrongShare": {
+      "definedSceneCount": 5,
+      "sceneValues": [1.0, 0.7879498743475839, 0.9419920256007208, 0.8405555370498362, 0.7246072824381911],
+      "median": 0.8405555370498362,
+      "lower95": 0.7246072824381911,
+      "upper95": 1.0
+    },
+    "candidateVsDepthOnlyReferenceCorrectChallengerWrongFraction": {
+      "definedSceneCount": 5,
+      "sceneValues": [0.12059243472999974, 0.13270201333425416, 0.169458255526018, 0.09750517936468664, 0.05548154263074761],
+      "median": 0.12059243472999974,
+      "lower95": 0.05548154263074761,
+      "upper95": 0.169458255526018
+    },
+    "candidateVsShuffledChallengerOnlyForegroundWrongShare": {
+      "definedSceneCount": 4,
+      "sceneValues": [0.762583795838132, 0.8667873825984357, 0.4630469656076914, 0.6693594694008855],
+      "median": 0.7159716326195087,
+      "lower95": 0.4630469656076914,
+      "upper95": 0.8667873825984357
+    },
+    "shuffledVsDepthOnlyChallengerOnlyForegroundWrongShare": {
+      "definedSceneCount": 5,
+      "sceneValues": [1.0, 0.6201221826654941, 0.9667310532047121, 0.8673006420719319, 0.7538867333067312],
+      "median": 0.8673006420719319,
+      "lower95": 0.6201221826654941,
+      "upper95": 1.0
+    },
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "interpretation": {
+    "mechanismSupported": "coverage-driven foreground occlusion leakage",
+    "primaryObservation": "Calibrated covariance adds substantial held-out-view support, but most newly covered pixels are too near relative to FARO and therefore foreground-wrong.",
+    "secondaryObservation": "The candidate also converts a meaningful fraction of depth-only-correct pixels into candidate-wrong pixels, while the reverse direction is negligible.",
+    "associationReadout": "Shuffled covariance is at least as foreground-leaky as intact calibrated covariance at the scene-median level, so covariance enlargement itself is the dominant failure mode; intact confidence placement only partially mitigates it.",
+    "nextRuleConstraint": "Do not enlarge Gaussian footprint directly as a monotonic function of predicted uncertainty. Any new exploratory representation rule should keep spatial footprint bounded and use uncertainty to modulate contribution/visibility or preserve competing hypotheses without promoting uncertain splats to frontmost occluders."
+  },
+  "claimBoundary": "U5c explains the frozen U5a failure mechanism but cannot rescue U5a or establish efficacy. U5b remains unopened. Any future representation rule must be frozen as a separate exploratory study before generating new outcomes."
+}

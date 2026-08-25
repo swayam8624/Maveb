@@ -1,0 +1,43 @@
+{
+  "id": "metric-uncertainty-u6c-heterogeneity-audit-v1",
+  "status": "post-hoc-mechanistic-audit-frozen-after-u6b",
+  "frozen": true,
+  "parentStudy": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "parentResultSha256": "c361fda74d005c3d76c2d33b83626e5ef4039ee9fbce177d0b42e42fc9a0a823",
+  "parentResultStatus": "completed-confirmatory-gate-not-passed",
+  "purpose": "Describe the already-observed scene dependence of the frozen U6b opacity result without rerendering, refitting, retuning, changing a gate, or creating a new efficacy claim.",
+  "scenes": [
+    "ca1m-42898811",
+    "ca1m-45261121",
+    "ca1m-47895341",
+    "ca1m-47332915",
+    "ca1m-47331971"
+  ],
+  "methodOrder": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "allowedInputs": [
+    "benchmarks/evidence/metric-uncertainty-u6b-result-v1.json"
+  ],
+  "allowedAnalyses": [
+    "copy the frozen scene-level primary deltas against baseline and shuffled controls",
+    "report per-scene coverage, mean absolute depth error, p95 depth error and within-10cm summary deltas already derivable from the frozen result",
+    "report target-level within-5cm win counts and descriptive median target deltas from the frozen target records",
+    "rank scenes descriptively by the already-frozen candidate-minus-baseline and candidate-minus-shuffled primary effects",
+    "report the descriptive range across the five frozen scene effects"
+  ],
+  "forbiddenAnalyses": [
+    "rerender any U6b target",
+    "read raw source assets to fit a new transfer rule",
+    "change opacity exponent, base opacity, floor, clipping, alpha cutoff or covariance",
+    "change source or target frame selection",
+    "recompute or replace the confirmatory gate",
+    "search thresholds or subgroups to recover a positive efficacy claim",
+    "drop, replace or reweight any U6b room",
+    "treat post-hoc descriptive patterns as confirmatory evidence"
+  ],
+  "output": "benchmarks/evidence/metric-uncertainty-u6c-heterogeneity-audit-v1.json",
+  "claimBoundary": "U6c is a read-only post-hoc explanation aid for the sealed negative/null U6b result. It cannot change the U6b decision or justify tuning on the exposed five-room set."
+}
