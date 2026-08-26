@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -52,11 +53,21 @@ std::string escapeJson(std::string_view value) {
     for (const char raw : value) {
         const auto character = static_cast<unsigned char>(raw);
         switch (character) {
-        case '"': result += "\\\""; break;
-        case '\\': result += "\\\\"; break;
-        case '\n': result += "\\n"; break;
-        case '\r': result += "\\r"; break;
-        case '\t': result += "\\t"; break;
+        case '"':
+            result += "\\\"";
+            break;
+        case '\\':
+            result += "\\\\";
+            break;
+        case '\n':
+            result += "\\n";
+            break;
+        case '\r':
+            result += "\\r";
+            break;
+        case '\t':
+            result += "\\t";
+            break;
         default:
             if (character < 0x20U) {
                 result += "\\u00";
@@ -79,11 +90,13 @@ int fail(std::string_view message, bool json, int code = 2) {
 }
 
 int usage() {
-    std::cout << "Usage: maveb-export-capture-rgb <capture.mavebcapture> --output <images-directory> [--json]\n\n"
-                 "Replays a versioned recorded capture, verifies its recorded plane hashes, and exports\n"
-                 "deterministic PNG RGB frames plus rgb-export.json provenance. Existing output paths\n"
-                 "are never overwritten. Native recorded pixel order is preserved; no orientation or\n"
-                 "mirroring transform is applied.\n";
+    std::cout
+        << "Usage: maveb-export-capture-rgb <capture.mavebcapture> --output <images-directory> "
+           "[--json]\n\n"
+           "Replays a versioned recorded capture, verifies its recorded plane hashes, and exports\n"
+           "deterministic PNG RGB frames plus rgb-export.json provenance. Existing output paths\n"
+           "are never overwritten. Native recorded pixel order is preserved; no orientation or\n"
+           "mirroring transform is applied.\n";
     return 0;
 }
 
@@ -125,7 +138,8 @@ std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
 
 std::string fileSha256(const std::filesystem::path& path) {
     aether::package::Sha256 hash;
-    std::array<std::byte, 1024 * 1024> buffer{};
+    constexpr std::size_t hashBufferBytes = static_cast<std::size_t>(1024) * 1024;
+    std::array<std::byte, hashBufferBytes> buffer{};
     std::ifstream stream(path, std::ios::binary);
     if (!stream)
         return {};
@@ -164,7 +178,8 @@ std::optional<DecodedImage> decodeColor(const aether::capture::CapturePacket& pa
     decoded.rgb.resize(static_cast<std::size_t>(decoded.width) * decoded.height * 3);
 
     for (std::uint32_t y = 0; y < decoded.height; ++y) {
-        const auto* sourceRow = first.buffer.data + static_cast<std::size_t>(y) * first.rowStrideBytes;
+        const auto* sourceRow =
+            first.buffer.data + static_cast<std::size_t>(y) * first.rowStrideBytes;
         auto* targetRow = decoded.rgb.data() + static_cast<std::size_t>(y) * decoded.width * 3;
         if (first.format == aether::capture::PixelFormat::rgb8) {
             std::copy_n(reinterpret_cast<const std::uint8_t*>(sourceRow),
@@ -195,12 +210,14 @@ std::optional<DecodedImage> decodeColor(const aether::capture::CapturePacket& pa
             return std::nullopt;
         }
         const auto& chroma = packet.colorPlanes[1];
-        if (!chroma.valid() || chroma.format != aether::capture::PixelFormat::yuv420BiPlanarVideoRange ||
+        if (!chroma.valid() ||
+            chroma.format != aether::capture::PixelFormat::yuv420BiPlanarVideoRange ||
             chroma.width * 2 != decoded.width || chroma.height * 2 != decoded.height) {
             error = "Recorded YUV chroma plane is invalid";
             return std::nullopt;
         }
-        const auto* chromaRow = chroma.buffer.data + static_cast<std::size_t>(y / 2) * chroma.rowStrideBytes;
+        const auto* chromaRow =
+            chroma.buffer.data + static_cast<std::size_t>(y / 2) * chroma.rowStrideBytes;
         for (std::uint32_t x = 0; x < decoded.width; ++x) {
             const auto luma = std::to_integer<std::uint8_t>(sourceRow[x]);
             const auto* chromaPixel = chromaRow + static_cast<std::size_t>(x / 2) * 2;
@@ -219,11 +236,11 @@ std::optional<DecodedImage> decodeColor(const aether::capture::CapturePacket& pa
 
 bool writePng(const std::filesystem::path& path, const DecodedImage& image) {
     auto colourSpace = CGColorSpaceCreateDeviceRGB();
-    auto provider = CGDataProviderCreateWithData(nullptr, image.rgb.data(), image.rgb.size(), nullptr);
-    auto cgImage = CGImageCreate(image.width, image.height, 8, 24,
-                                 static_cast<std::size_t>(image.width) * 3, colourSpace,
-                                 kCGImageAlphaNone, provider, nullptr, false,
-                                 kCGRenderingIntentDefault);
+    auto provider =
+        CGDataProviderCreateWithData(nullptr, image.rgb.data(), image.rgb.size(), nullptr);
+    auto cgImage = CGImageCreate(
+        image.width, image.height, 8, 24, static_cast<std::size_t>(image.width) * 3, colourSpace,
+        kCGImageAlphaNone, provider, nullptr, false, kCGRenderingIntentDefault);
     const auto pathString = path.string();
     auto url = CFURLCreateFromFileSystemRepresentation(
         nullptr, reinterpret_cast<const UInt8*>(pathString.data()),
@@ -262,20 +279,24 @@ bool writeManifest(const std::filesystem::path& path, std::string_view sourceId,
     stream << "{\n"
               "  \"schemaVersion\": 1,\n"
               "  \"generator\": \"maveb-export-capture-rgb\",\n"
-              "  \"sourceID\": \"" << escapeJson(sourceId) << "\",\n"
-              "  \"captureManifestSha256\": \"" << captureManifestSha256 << "\",\n"
+              "  \"sourceID\": \""
+           << escapeJson(sourceId)
+           << "\",\n"
+              "  \"captureManifestSha256\": \""
+           << captureManifestSha256
+           << "\",\n"
               "  \"pixelTransform\": \"none; native recorded pixel order preserved\",\n"
-              "  \"frameCount\": " << records.size() << ",\n"
+              "  \"frameCount\": "
+           << records.size()
+           << ",\n"
               "  \"images\": [\n";
     for (std::size_t index = 0; index < records.size(); ++index) {
         const auto& record = records[index];
         stream << "    {\"frameID\":" << record.frameId
                << ",\"presentationTimestampNs\":" << record.presentationTimestampNs
-               << ",\"hostTimestampNs\":" << record.hostTimestampNs
-               << ",\"file\":\"" << escapeJson(record.file)
-               << "\",\"sha256\":\"" << record.sha256
-               << "\",\"width\":" << record.width
-               << ",\"height\":" << record.height << "}"
+               << ",\"hostTimestampNs\":" << record.hostTimestampNs << ",\"file\":\""
+               << escapeJson(record.file) << "\",\"sha256\":\"" << record.sha256
+               << "\",\"width\":" << record.width << ",\"height\":" << record.height << "}"
                << (index + 1 == records.size() ? "\n" : ",\n");
     }
     stream << "  ]\n}\n";
@@ -284,7 +305,7 @@ bool writeManifest(const std::filesystem::path& path, std::string_view sourceId,
 
 } // namespace
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
     int parseExitCode = 0;
     const auto options = parseOptions(argc, argv, parseExitCode);
     if (!options)
@@ -328,12 +349,13 @@ int main(int argc, char** argv) {
         }
         const auto digest = fileSha256(outputPath);
         if (digest.empty()) {
-            pipelineError = "Unable to hash exported PNG for frame " + std::to_string(packet.frameId);
+            pipelineError =
+                "Unable to hash exported PNG for frame " + std::to_string(packet.frameId);
             return;
         }
         records.push_back(ImageRecord{packet.frameId, packet.presentationTimestampNs,
-                                      packet.hostTimestampNs, filename, digest,
-                                      decoded->width, decoded->height});
+                                      packet.hostTimestampNs, filename, digest, decoded->width,
+                                      decoded->height});
     });
 
     auto info = (*source)->start();
@@ -366,9 +388,8 @@ int main(int argc, char** argv) {
     }
 
     const auto captureManifestSha = fileSha256(options->capture / "manifest.json");
-    if (captureManifestSha.empty() ||
-        !writeManifest(temporary / "rgb-export.json", info->sourceId,
-                       captureManifestSha, records)) {
+    if (captureManifestSha.empty() || !writeManifest(temporary / "rgb-export.json", info->sourceId,
+                                                     captureManifestSha, records)) {
         cleanup();
         return fail("Unable to write RGB export provenance", options->json, 3);
     }
@@ -380,12 +401,22 @@ int main(int argc, char** argv) {
     }
 
     if (options->json)
-        std::cout << "{\"ok\":true,\"frames\":" << records.size()
-                  << ",\"output\":\"" << escapeJson(options->output.string())
-                  << "\",\"manifest\":\""
+        std::cout << "{\"ok\":true,\"frames\":" << records.size() << ",\"output\":\""
+                  << escapeJson(options->output.string()) << "\",\"manifest\":\""
                   << escapeJson((options->output / "rgb-export.json").string()) << "\"}\n";
     else
-        std::cout << "Exported " << records.size() << " recorded RGB frames to "
-                  << options->output << '\n';
+        std::cout << "Exported " << records.size() << " recorded RGB frames to " << options->output
+                  << '\n';
     return 0;
+}
+
+int main(int argc, char** argv) noexcept {
+    try {
+        return run(argc, argv);
+    } catch (const std::exception& error) {
+        std::cerr << "maveb-export-capture-rgb: unhandled failure: " << error.what() << '\n';
+    } catch (...) {
+        std::cerr << "maveb-export-capture-rgb: unhandled failure\n";
+    }
+    return 5;
 }
