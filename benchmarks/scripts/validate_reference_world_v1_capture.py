@@ -201,7 +201,16 @@ def run_fusion_dry_run(executable: Path, capture: Path) -> dict[str, Any]:
     voxel = finite(payload.get("voxelSizeMetres"), "aether-fuse voxelSizeMetres")
     truncation = finite(payload.get("truncationDistanceMetres"), "aether-fuse truncationDistanceMetres")
     require(voxel >= FUSION_VOXEL_METRES, "aether-fuse returned an invalid voxel size")
-    require(abs(truncation - FUSION_TRUNCATION_METRES) <= 1e-9, "aether-fuse truncation distance changed")
+    expected_truncation = max(4.0 * voxel, FUSION_TRUNCATION_METRES)
+    require(
+        math.isclose(
+            truncation,
+            expected_truncation,
+            rel_tol=1e-5,
+            abs_tol=1e-7,
+        ),
+        "aether-fuse truncation distance does not match automatic-bounds contract",
+    )
     payload["command"] = ["aether-fuse", "<frozen-reference.mavebcapture>", *arguments]
     return payload
 
@@ -425,7 +434,8 @@ def build_validation(
                 "sampleStridePixels": AUTO_BOUNDS_SAMPLE_STRIDE,
                 "paddingMetres": AUTO_BOUNDS_PADDING_METRES,
                 "minimumVoxelMetres": FUSION_VOXEL_METRES,
-                "truncationMetres": FUSION_TRUNCATION_METRES,
+                "minimumTruncationMetres": FUSION_TRUNCATION_METRES,
+                "effectiveTruncationRule": "max(4 * effectiveVoxelMetres, minimumTruncationMetres)",
             },
         },
         "integrity": {

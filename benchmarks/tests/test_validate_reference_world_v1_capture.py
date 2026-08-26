@@ -25,6 +25,8 @@ class ReferenceWorldCaptureValidationTests(unittest.TestCase):
         negative_depth: bool = False,
         illegal_confidence: bool = False,
         fusion_frames: int = 2,
+        fusion_voxel: float = 0.01,
+        fusion_truncation: float = 0.04,
     ) -> tuple[Path, Path, Path]:
         capture = root / "reference.mavebcapture"
         (capture / "depth").mkdir(parents=True)
@@ -106,8 +108,8 @@ class ReferenceWorldCaptureValidationTests(unittest.TestCase):
                     "sampledPoints": 16,
                     "origin": [-1.0, -1.0, -1.0],
                     "dimensions": [200, 180, 160],
-                    "voxelSizeMetres": 0.01,
-                    "truncationDistanceMetres": 0.04,
+                    "voxelSizeMetres": fusion_voxel,
+                    "truncationDistanceMetres": fusion_truncation,
                 }
             )
             + "\nJSON\n",
@@ -142,6 +144,39 @@ class ReferenceWorldCaptureValidationTests(unittest.TestCase):
             capture, acquisition, fuse = self.make_fixture(Path(temp), fusion_frames=1)
             with self.assertRaisesRegex(ValueError, "frame count differs"):
                 validation.build_validation(capture, acquisition, fuse, "a" * 40)
+    def test_auto_bounds_scaled_voxel_and_truncation_are_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            capture, acquisition, fuse = self.make_fixture(
+                Path(temp),
+                fusion_voxel=0.02,
+                fusion_truncation=0.08,
+            )
+            result = validation.build_validation(
+                capture, acquisition, fuse, "a" * 40
+            )
+            self.assertEqual(
+                result["fusionDryRun"]["voxelSizeMetres"],
+                0.02,
+            )
+            self.assertEqual(
+                result["fusionDryRun"]["truncationDistanceMetres"],
+                0.08,
+            )
+
+    def test_auto_bounds_inconsistent_truncation_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            capture, acquisition, fuse = self.make_fixture(
+                Path(temp),
+                fusion_voxel=0.02,
+                fusion_truncation=0.04,
+            )
+            with self.assertRaisesRegex(
+                ValueError,
+                "automatic-bounds contract",
+            ):
+                validation.build_validation(
+                    capture, acquisition, fuse, "a" * 40
+                )
 
 
 if __name__ == "__main__":
