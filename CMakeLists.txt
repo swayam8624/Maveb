@@ -85,7 +85,8 @@ if(AETHER_BUILD_TESTS)
 
     if(TARGET maveb-export-capture-rgb AND TARGET aether-capture)
         add_test(NAME MavebCaptureRgbExportContract
-            COMMAND "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-capture-rgb-export.zsh"
+            COMMAND /bin/zsh
+                "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-capture-rgb-export.zsh"
                 $<TARGET_FILE:maveb-export-capture-rgb>
                 $<TARGET_FILE:aether-capture>
                 "${PROJECT_BINARY_DIR}/tests/capture-rgb-export")
