@@ -56,6 +56,7 @@ if(AETHER_BUILD_TOOLS)
     if(APPLE)
         add_subdirectory(tools/aether-capture)
         add_subdirectory(tools/aether-keyframes)
+        add_subdirectory(tools/maveb-export-capture-rgb)
         add_subdirectory(tools/maveb-photogrammetry)
     endif()
 endif()
@@ -81,6 +82,14 @@ if(AETHER_BUILD_TESTS)
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
+
+    if(TARGET maveb-export-capture-rgb AND TARGET aether-capture)
+        add_test(NAME MavebCaptureRgbExportContract
+            COMMAND "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-capture-rgb-export.zsh"
+                $<TARGET_FILE:maveb-export-capture-rgb>
+                $<TARGET_FILE:aether-capture>
+                "${PROJECT_BINARY_DIR}/tests/capture-rgb-export")
+    endif()
 
     add_executable(AetherUncertaintyTsdfTests tests/UncertaintyTsdfTests.cpp)
     target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)
