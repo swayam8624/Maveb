@@ -94,7 +94,7 @@ if(AETHER_BUILD_TESTS)
                 "${PROJECT_BINARY_DIR}/tests/capture-rgb-export")
     endif()
 
-    if(TARGET maveb-build-canonical-scene AND TARGET aether-pack)
+    if(TARGET maveb-build-canonical-scene-tool AND TARGET aether-pack)
         add_test(NAME MavebCanonicalSceneBuilderContract
             COMMAND ${Python3_EXECUTABLE}
                 "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-canonical-scene-builder.py"
