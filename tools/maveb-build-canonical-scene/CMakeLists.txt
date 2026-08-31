@@ -2,11 +2,13 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(MAVEB_BUILD_CANONICAL_SCENE_SCRIPT
     "${CMAKE_CURRENT_SOURCE_DIR}/maveb-build-canonical-scene.py")
+set(MAVEB_BUILD_CANONICAL_SCENE_EXECUTABLE
+    "${CMAKE_CURRENT_BINARY_DIR}/maveb-build-canonical-scene")
 
-add_custom_target(maveb-build-canonical-scene ALL
+add_custom_target(maveb-build-canonical-scene-tool ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${MAVEB_BUILD_CANONICAL_SCENE_SCRIPT}"
-        "${CMAKE_CURRENT_BINARY_DIR}/maveb-build-canonical-scene"
-    COMMAND chmod +x "${CMAKE_CURRENT_BINARY_DIR}/maveb-build-canonical-scene"
-    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/maveb-build-canonical-scene"
+        "${MAVEB_BUILD_CANONICAL_SCENE_EXECUTABLE}"
+    COMMAND chmod +x "${MAVEB_BUILD_CANONICAL_SCENE_EXECUTABLE}"
+    BYPRODUCTS "${MAVEB_BUILD_CANONICAL_SCENE_EXECUTABLE}"
     VERBATIM)
