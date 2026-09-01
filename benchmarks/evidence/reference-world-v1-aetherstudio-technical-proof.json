@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "stage": "C1.7-aetherstudio-technical-proof",
+  "status": "technical-load-passed-visual-pending",
+  "sourceCommit": "a4605ea62ddecd93376088f8e4d954b0915bfb8f",
+  "ci": {
+    "workflowRun": 586,
+    "conclusion": "success"
+  },
+  "platform": {
+    "hostMacOS": "27.0",
+    "swiftCompilerTarget": "arm64-apple-macosx15.0",
+    "machOMinimumOS": "15.0"
+  },
+  "application": {
+    "binarySha256": "3d1c9a41fd54e46648ca2485449e0a24f836595d52028eda314f01a642c7abe3",
+    "exactBuildPath": "build/c1.7-studio-macos15/apps/AetherStudio/AetherStudio.app/Contents/MacOS/AetherStudio"
+  },
+  "package": {
+    "sha256": "116acb5c570bbd6b8971bfb5e898a1da2d2d385693773874abd11da8cfe71185",
+    "immutableAcrossStudioLoad": true
+  },
+  "project": {
+    "preLaunchSha256": "36e6c930074d3c0236c29ce7d61eb92c0d8f2efdb0289a17896f2a3bb667c8d2",
+    "postRunSha256": "b4fa7f98e47bfb6a901638469a86b631a9844686f641b2ac91dbce517d8b2227",
+    "mutableOperatorState": true,
+    "preLaunchBindingVerifiedToFrozenPackage": true,
+    "note": "The AetherStudio document may autosave UI/camera/operator state. It is not treated as an immutable release artifact."
+  },
+  "nativeLog": {
+    "sha256": "2b47dc772e9ea2be238ad8887787f986ea08bf60bd7282274f1d08b2a2e2e98c",
+    "rendererInitializationEvents": 2,
+    "sceneLoadSuccessEvents": 2,
+    "sceneLoadFailureEvents": 0,
+    "privacyRedactedPathArgument": true,
+    "successDetectionPolicy": "Match the AETHER scene-load-success event itself rather than its privacy-redacted filename argument."
+  },
+  "screenshot": {
+    "sha256": "918e7b8bce6c9f9607fe8a668160bce882469849c2ab3522cb0e42418f8ae86f",
+    "width": 3600,
+    "height": 2338,
+    "bytes": 3615758,
+    "externalPath": "/Users/swayamsingal/Datasets/MavebReferenceWorld/v1/derived/c1.7/aetherstudio-reference-world-v1-final-proof.png",
+    "visualAcceptance": "pending-review",
+    "note": "Technical evidence records the screenshot identity only. C1.7 is not visually accepted until the image itself is reviewed."
+  },
+  "warningsObserved": [
+    "SwiftUI runtime warning: Modifying state during view update",
+    "SF Symbols warning: cube.badge.plus unavailable"
+  ],
+  "truthBoundary": {
+    "technicalLoadPassed": true,
+    "visualAcceptancePassed": false,
+    "visualAcceptancePending": true,
+    "syntheticFallback": false,
+    "manualSceneAdjustment": false
+  }
+}
