@@ -53,9 +53,12 @@ if(AETHER_BUILD_TOOLS)
     add_subdirectory(tools/maveb-u3-fuse)
     add_subdirectory(tools/maveb-gaussian-depth)
     add_subdirectory(tools/maveb-align-sensors)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_subdirectory(tools/maveb-build-canonical-scene)
     if(APPLE)
         add_subdirectory(tools/aether-capture)
         add_subdirectory(tools/aether-keyframes)
+        add_subdirectory(tools/maveb-export-capture-rgb)
         add_subdirectory(tools/maveb-photogrammetry)
     endif()
 endif()
@@ -81,6 +84,33 @@ if(AETHER_BUILD_TESTS)
     include(CTest)
     enable_testing()
     add_subdirectory(tests)
+
+    if(TARGET maveb-export-capture-rgb AND TARGET aether-capture)
+        add_test(NAME MavebCaptureRgbExportContract
+            COMMAND /bin/zsh
+                "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-capture-rgb-export.zsh"
+                $<TARGET_FILE:maveb-export-capture-rgb>
+                $<TARGET_FILE:aether-capture>
+                "${PROJECT_BINARY_DIR}/tests/capture-rgb-export")
+    endif()
+
+    if(TARGET maveb-build-canonical-scene-tool AND TARGET aether-pack)
+        add_test(NAME MavebCanonicalSceneBuilderContract
+            COMMAND ${Python3_EXECUTABLE}
+                "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-canonical-scene-builder.py"
+                "${Python3_EXECUTABLE}"
+                "${PROJECT_SOURCE_DIR}/tools/maveb-build-canonical-scene/maveb-build-canonical-scene.py"
+                $<TARGET_FILE:aether-pack>
+                "${PROJECT_BINARY_DIR}/tests/canonical-scene-builder")
+    endif()
+
+    if(APPLE AND TARGET maveb-texture-bake)
+        add_test(NAME MavebTextureBakeSanitizationContract
+            COMMAND ${Python3_EXECUTABLE}
+                "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-texture-bake-sanitization.py"
+                $<TARGET_FILE:maveb-texture-bake>
+                "${PROJECT_BINARY_DIR}/tests/texture-bake-sanitization")
+    endif()
 
     add_executable(AetherUncertaintyTsdfTests tests/UncertaintyTsdfTests.cpp)
     target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)

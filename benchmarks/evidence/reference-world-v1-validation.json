@@ -1,0 +1,149 @@
+{
+  "acquisition": {
+    "contentSetSha256": "f833264b2eb7ca58efc7986e740ce3ece77a64e09b5f37e6ebc7ead5d8fb5747",
+    "evidencePath": "benchmarks/evidence/reference-world-v1-acquisition.json",
+    "evidenceSha256": "5e395fe6aec661ccc7dcfc3ed06d7c34ca4a5afd8671ed1e7393f80ee74319ed",
+    "frameCount": 307,
+    "manifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "mavebCommit": "b64a707ee7a0828dca54a9776206a270f3beb1c1",
+    "sourceID": "c75ec3b9-3d0f-476a-8b26-74739361cca6"
+  },
+  "cameraMotion": {
+    "axisExtentsMetres": [
+      0.56534628,
+      0.38089536999999996,
+      0.61724739
+    ],
+    "maximumConsecutiveStepMetres": 0.029664896774988084,
+    "pathLengthMetres": 3.5505003142650495,
+    "translationExtentMetres": 0.9196151584543869
+  },
+  "confidence": {
+    "atLeastMediumFraction": 0.9786975375992467,
+    "histogram": {
+      "0-low": 321447,
+      "1-medium": 1206062,
+      "2-high": 13562155
+    },
+    "illegalCodeCount": 0,
+    "legalCodes": [
+      0,
+      1,
+      2
+    ],
+    "perFrameAtLeastMediumFraction": {
+      "maximum": 0.9998982747395834,
+      "median": 0.9807535807291666,
+      "minimum": 0.93011474609375
+    },
+    "pixelCount": 15089664
+  },
+  "depth": {
+    "extremeAtOrAbove20mCount": 0,
+    "extremeAtOrAbove20mFractionOfPositive": 0.0,
+    "histogramPositiveDepth": {
+      "(0,0.10)": 0,
+      "[0.10,0.25)": 0,
+      "[0.25,0.50)": 544950,
+      "[0.50,1.0)": 5900238,
+      "[1.0,2.0)": 2925232,
+      "[2.0,4.0)": 5377968,
+      "[20.0,+inf)": 0,
+      "[4.0,8.0)": 341276,
+      "[8.0,20.0)": 0
+    },
+    "maximumPositiveMetres": 6.71484375,
+    "meanPositiveMetres": 1.543742442072797,
+    "minimumPositiveMetres": 0.361083984375,
+    "negativeFiniteCount": 0,
+    "nonFiniteCount": 0,
+    "perFramePositiveFraction": {
+      "maximum": 1.0,
+      "median": 1.0,
+      "minimum": 1.0
+    },
+    "pixelCount": 15089664,
+    "positiveFiniteCount": 15089664,
+    "positiveFiniteFraction": 1.0,
+    "sampledQuantiles": {
+      "count": 235776,
+      "p01Metres": 0.462890625,
+      "p10Metres": 0.55322265625,
+      "p50Metres": 1.7060546875,
+      "p90Metres": 2.728515625,
+      "p99Metres": 4.3984375,
+      "samplingRule": "every 64th positive finite depth sample independently within each frame"
+    },
+    "unit": "metres",
+    "zeroCount": 0
+  },
+  "fusionDryRun": {
+    "automaticBounds": true,
+    "command": [
+      "aether-fuse",
+      "<frozen-reference.mavebcapture>",
+      "--auto-bounds",
+      "--max-axis",
+      "256",
+      "--sample-stride",
+      "8",
+      "--padding",
+      "0.1",
+      "--voxel",
+      "0.01",
+      "--truncation",
+      "0.04",
+      "--dry-run",
+      "--json"
+    ],
+    "dimensions": [
+      256,
+      143,
+      184
+    ],
+    "dryRun": true,
+    "frames": 307,
+    "ok": true,
+    "origin": [
+      -4.52892,
+      -0.725076,
+      -2.2159
+    ],
+    "sampledPoints": 235776,
+    "truncationDistanceMetres": 0.0800803,
+    "voxelSizeMetres": 0.0200201
+  },
+  "integrity": {
+    "allConfidencePlanesRead": true,
+    "allDepthPlanesRead": true,
+    "confidenceCodesLegal": true,
+    "frozenAcquisitionManifestMatched": true,
+    "fusionMaintainedPathDryRunPassed": true,
+    "negativeMetricDepthAbsent": true,
+    "reconstructionIntegrated": false,
+    "syntheticFallbackUsed": false
+  },
+  "schemaVersion": 1,
+  "stage": "C1.2-capture-validation",
+  "status": "validated-geometry-usable",
+  "study": "reference-world-v1-capture-validation",
+  "validationCommit": "08122b250e958f1d170907da375369dfc72db006",
+  "validationPolicy": {
+    "aetherFuseAutoBounds": {
+      "effectiveTruncationRule": "max(4 * effectiveVoxelMetres, minimumTruncationMetres)",
+      "maximumAxisVoxels": 256,
+      "minimumTruncationMetres": 0.04,
+      "minimumVoxelMetres": 0.01,
+      "paddingMetres": 0.1,
+      "sampleStridePixels": 8
+    },
+    "maximumExtremeDepthFractionOfPositive": 0.001,
+    "maximumExtremeDepthMetres": 20.0,
+    "minimumCameraPathLengthMetres": 0.5,
+    "minimumCameraTranslationExtentMetres": 0.15,
+    "minimumGlobalConfidenceAtLeastMediumFraction": 0.2,
+    "minimumGlobalPositiveDepthFraction": 0.2,
+    "minimumPerFrameConfidenceAtLeastMediumFraction": 0.1,
+    "minimumPerFramePositiveDepthFraction": 0.1
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "determinism": {
+    "byteIdentical": true,
+    "repeatExecutionCount": 2,
+    "run1Sha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3",
+    "run1Triangles": 430365,
+    "run1Vertices": 223174,
+    "run2Sha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3",
+    "run2Triangles": 430365,
+    "run2Vertices": 223174
+  },
+  "fusion": {
+    "automaticBounds": true,
+    "effective": {
+      "dimensions": [
+        256,
+        143,
+        184
+      ],
+      "originMetres": [
+        -4.52892,
+        -0.725076,
+        -2.2159
+      ],
+      "truncationDistanceMetres": 0.0800803,
+      "voxelSizeMetres": 0.0200201
+    },
+    "mode": "maintained-recorded-metric-rgbd-tsdf",
+    "requested": {
+      "maximumAxisVoxels": 256,
+      "minimumTruncationMetres": 0.04,
+      "minimumVoxelMetres": 0.01,
+      "paddingMetres": 0.1,
+      "sampleStridePixels": 8
+    },
+    "tool": "aether-fuse",
+    "toolBinarySha256": "8ba59a7e26293a013067855ca2f9a887d91901603bfc1c3d5e13eef23e2bc351"
+  },
+  "input": {
+    "captureContentSetSha256": "f833264b2eb7ca58efc7986e740ce3ece77a64e09b5f37e6ebc7ead5d8fb5747",
+    "captureManifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "captureSourceID": "c75ec3b9-3d0f-476a-8b26-74739361cca6",
+    "captureStorage": "external",
+    "frameCount": 307,
+    "validationEvidencePath": "benchmarks/evidence/reference-world-v1-validation.json",
+    "validationEvidenceSha256": "18fcd075c33f80ca21a4670e5db6126944202008ee57d3c2c970d3a02da0d089"
+  },
+  "integrity": {
+    "manualGeometryAdjustmentUsed": false,
+    "reconstructionQualityUsedForTuning": false,
+    "syntheticFallbackUsed": false,
+    "usedFrozenC12AutoBoundsPolicy": true,
+    "usedFrozenCapture": true
+  },
+  "proxy": {
+    "format": "ply",
+    "integratedFrames": 307,
+    "logicalPath": "derived/c1.3/reference-proxy.ply",
+    "sha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3",
+    "sizeBytes": 11620788,
+    "storage": "external",
+    "triangles": 430365,
+    "vertices": 223174
+  },
+  "reconstructionCommit": "eb3510f13f28b1ff54e84f24ae13b13b1adfe1da",
+  "runtimeDiagnostics": {
+    "run1WallSeconds": 316.4179287919833,
+    "run2WallSeconds": 312.6422834160039
+  },
+  "schemaVersion": 1,
+  "stage": "C1.3-metric-proxy-reconstruction",
+  "status": "completed-deterministic-proxy",
+  "study": "reference-world-v1-metric-proxy-reconstruction"
+}
