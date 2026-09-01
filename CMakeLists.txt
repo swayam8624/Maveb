@@ -104,6 +104,14 @@ if(AETHER_BUILD_TESTS)
                 "${PROJECT_BINARY_DIR}/tests/canonical-scene-builder")
     endif()
 
+    if(APPLE AND TARGET maveb-texture-bake)
+        add_test(NAME MavebTextureBakeSanitizationContract
+            COMMAND ${Python3_EXECUTABLE}
+                "${PROJECT_SOURCE_DIR}/tests/fixtures/assert-texture-bake-sanitization.py"
+                $<TARGET_FILE:maveb-texture-bake>
+                "${PROJECT_BINARY_DIR}/tests/texture-bake-sanitization")
+    endif()
+
     add_executable(AetherUncertaintyTsdfTests tests/UncertaintyTsdfTests.cpp)
     target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)
     aether_configure_target(AetherUncertaintyTsdfTests)

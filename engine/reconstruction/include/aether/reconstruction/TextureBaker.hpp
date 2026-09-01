@@ -77,6 +77,9 @@ struct TextureBakeResult final {
 
 class TextureBaker final {
   public:
+    /// Squared cross-product magnitude below which a triangle is not stable enough for baking.
+    static constexpr float minimumTriangleCrossLengthSquared = 1.0e-8F;
+
     /// Input: one finite indexed metric triangle mesh and calibrated metric cameras with decoded
     /// linear-sRGB images. Mesh world coordinates and camera-to-world transforms must share units
     /// and axes. Input mesh instances or deformation are deliberately outside this boundary.
