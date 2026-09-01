@@ -1,0 +1,100 @@
+{
+  "canonicalAsset": {
+    "cameras": 140,
+    "gaussians": 619486,
+    "outputs": {
+      "baseGaussiansPlySha256": "466e87bb53db549d7213b78200b28900dbda86bcf69767f3c4832011c4fa5519",
+      "camerasJsonSha256": "79d0fbd37dcc321eeb18f8fb98e754927d5c5658cd77018055b618e31b3abaee",
+      "canonicalAssetJsonSha256": "c30ac1bd2ff9bbcd7d0253f4c608d1c286a775420a23da9db03b4c5eb39dd07e",
+      "canonicalGlbSha256": "c4f91288df58589cb51749017de4eec774bc7a8481b5f714673a56869b148f35",
+      "canonicalizationJsonSha256": "fd25b1ad898f4816406135f298ab6e9d08298ec43eaf91a74ff1cf632c69049a",
+      "metadataJsonSha256": "e386fd6abdaeb446453daa5f00f44a866ce05d94080d34352e6094e19582529b",
+      "proxyPlySha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3"
+    },
+    "repeatExecutionCount": 2,
+    "repeatsByteIdentical": true,
+    "shDegree": 3,
+    "sim3Scale": 0.05099110958794853,
+    "uniformConfidence": 0.9786975375992467
+  },
+  "input": {
+    "baseGaussiansSha256": "80cda92718248e243b63fc0f3715562f8694175bbc16ae7efceb6c5d9f35c438",
+    "cameraMatchesSha256": "b43a5cffeb96d45b2ff62181ea454b19defbcdfba208d95f91130930464b40fa",
+    "captureManifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "colmapCamerasTxtSha256": "de7cae86324896db935cb68d766c9d3090a6b72bddb35aee1b75b59da6468275",
+    "geometryEvidencePath": "benchmarks/evidence/reference-world-v1-proxy-reconstruction.json",
+    "geometryEvidenceSha256": "eeabaf96ba6f422d0ea7904cfb0bdaf7fb59db7d0ab7ea02fee8b31e21c9a995",
+    "metricCameraRigSha256": "55488c77995053088a6759361d811ae3cf8c1c603baef40a635259fdcfaf683e",
+    "metricProxySha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3",
+    "rgbExportManifestSha256": "c9feb160ad90d5ccb0ab568e7301af3c677811e642abfbefc40429a1f7578746"
+  },
+  "integrity": {
+    "canonicalProxyEqualsFrozenC13Proxy": true,
+    "manualGeometryAdjustmentUsed": false,
+    "manualImageAdjustmentUsed": false,
+    "manualSensorAlignmentUsed": false,
+    "sourceProxyModified": false,
+    "syntheticFallbackUsed": false,
+    "textureParametersChangedAfterSuccessfulOutput": false,
+    "unrelatedFixturePreserved": true
+  },
+  "packDryRun": {
+    "canonicalCameras": 140,
+    "canonicalImages": 1,
+    "canonicalMaterials": 2,
+    "canonicalTriangles": 305959,
+    "canonicalVertices": 917877,
+    "chunks": 7,
+    "repeatExecutionCount": 2,
+    "semanticResultsIdentical": true,
+    "sourceBytes": 261290169
+  },
+  "schemaVersion": 1,
+  "sourceCommit": "d663d40536d60a5b3919541c3b4554669526ae21",
+  "stage": "C1.5-canonical-asset-v1",
+  "status": "completed-deterministic-canonical-asset",
+  "study": "reference-world-v1-canonical-asset",
+  "textureBake": {
+    "configuration": {
+      "atlasSize": 8192,
+      "executionConfigSha256": "ea7f8f017e55698d6ae0d035be70469bb167e2560e64a2cf81850ba8169d2053",
+      "gutterPixels": 4,
+      "maximumAtlasPixels": 67108864,
+      "maximumCameras": 256,
+      "maximumCamerasPerTriangle": 4,
+      "maximumExposureGain": 4.0,
+      "maximumImageDimension": 1440,
+      "maximumSourcePixels": 268435456,
+      "maximumTriangles": 1000000,
+      "minimumFacingCosine": 0.05,
+      "relativeDepthTolerance": 0.0025,
+      "visibilityHeight": 512,
+      "visibilityWidth": 512
+    },
+    "historicalFailedAttemptA": {
+      "failure": "Texture source contains invalid geometry",
+      "preserved": true,
+      "stdoutResultFileSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "meshSanitization": {
+      "droppedDegenerateTriangles": 124406,
+      "minimumTriangleCrossLengthSquared": 1e-08,
+      "policy": "drop-only-texture-baker-degenerate-triangles",
+      "retainedTriangles": 305959,
+      "sourceTriangles": 430365,
+      "vertexPositionsModified": false
+    },
+    "output": {
+      "cameras": 140,
+      "coverage": 0.4988536536693573,
+      "glbBytes": 86680620,
+      "glbSha256": "c4f91288df58589cb51749017de4eec774bc7a8481b5f714673a56869b148f35",
+      "provenanceSha256": "a223e26011c1608886fabb73441fe4fdadd16f00927c3bdaa6ec938e8d33fdea",
+      "repeatExecutionCount": 2,
+      "repeatsByteIdentical": true,
+      "textureBytes": 38949032,
+      "texturedTexels": 3205204,
+      "triangles": 305959
+    }
+  }
+}
