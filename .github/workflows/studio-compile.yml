@@ -1,0 +1,16 @@
+name: AetherStudio Compile
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  studio-compile:
+    name: macOS Studio Compile
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Studio without requiring the optional Metal toolchain
+        run: cmake --preset debug -DAETHER_REQUIRE_METAL_TOOLCHAIN=OFF
+      - name: Compile AetherStudio
+        run: cmake --build --preset debug --target AetherStudio --parallel
