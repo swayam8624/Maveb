@@ -1,32 +1,61 @@
 #import "AetherViewportPerformance.h"
 
 #import <MetalKit/MetalKit.h>
+#import <objc/runtime.h>
 
 #include <algorithm>
 #include <cmath>
 
-@implementation AetherResponsiveViewportView {
-    CGFloat _renderScale;
-    NSInteger _configuredFramesPerSecond;
-    NSUInteger _interactionGeneration;
-    BOOL _interacting;
+namespace {
+char kConfiguredFpsKey;
+char kInteractionGenerationKey;
+char kInteractingKey;
+
+void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
+    Method originalMethod = class_getInstanceMethod(cls, original);
+    Method replacementMethod = class_getInstanceMethod(cls, replacement);
+    if (originalMethod && replacementMethod)
+        method_exchangeImplementations(originalMethod, replacementMethod);
+}
+} // namespace
+
+@interface AetherViewportView (AetherPerformance)
+- (void)aetherPerf_setPreferredFramesPerSecond:(NSInteger)value;
+- (void)aetherPerf_setScenePath:(NSString* _Nullable)scenePath;
+- (void)aetherPerf_setDynamicMeshPath:(NSString* _Nullable)dynamicMeshPath;
+- (void)aetherPerf_keyDown:(NSEvent*)event;
+- (void)aetherPerf_keyUp:(NSEvent*)event;
+- (void)aetherPerf_mouseDown:(NSEvent*)event;
+- (void)aetherPerf_mouseDragged:(NSEvent*)event;
+- (void)aetherPerf_rightMouseDragged:(NSEvent*)event;
+- (void)aetherPerf_scrollWheel:(NSEvent*)event;
+@end
+
+@implementation AetherResponsiveViewportView
+@end
+
+@implementation AetherViewportView (AetherPerformance)
+
++ (void)load {
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        Class cls = AetherViewportView.class;
+        swapInstanceMethods(cls, @selector(setPreferredFramesPerSecond:),
+                            @selector(aetherPerf_setPreferredFramesPerSecond:));
+        swapInstanceMethods(cls, @selector(setScenePath:), @selector(aetherPerf_setScenePath:));
+        swapInstanceMethods(cls, @selector(setDynamicMeshPath:),
+                            @selector(aetherPerf_setDynamicMeshPath:));
+        swapInstanceMethods(cls, @selector(keyDown:), @selector(aetherPerf_keyDown:));
+        swapInstanceMethods(cls, @selector(keyUp:), @selector(aetherPerf_keyUp:));
+        swapInstanceMethods(cls, @selector(mouseDown:), @selector(aetherPerf_mouseDown:));
+        swapInstanceMethods(cls, @selector(mouseDragged:), @selector(aetherPerf_mouseDragged:));
+        swapInstanceMethods(cls, @selector(rightMouseDragged:),
+                            @selector(aetherPerf_rightMouseDragged:));
+        swapInstanceMethods(cls, @selector(scrollWheel:), @selector(aetherPerf_scrollWheel:));
+    });
 }
 
-- (instancetype)initWithFrame:(NSRect)frameRect {
-    self = [super initWithFrame:frameRect];
-    if (self) {
-        _renderScale = 1.0;
-        _configuredFramesPerSecond = 60;
-        _interactionGeneration = 0;
-        _interacting = NO;
-        MTKView* metalView = [self aetherMetalView];
-        metalView.autoResizeDrawable = NO;
-        [self updateDrawableSize];
-    }
-    return self;
-}
-
-- (MTKView*)aetherMetalView {
+- (MTKView*)aetherPerf_metalView {
     for (NSView* child in self.subviews) {
         if ([child isKindOfClass:MTKView.class])
             return (MTKView*)child;
@@ -34,141 +63,163 @@
     return nil;
 }
 
-- (BOOL)isGaussianScene {
+- (NSInteger)aetherPerf_configuredFramesPerSecond {
+    NSNumber* value = objc_getAssociatedObject(self, &kConfiguredFpsKey);
+    return value ? value.integerValue : 60;
+}
+
+- (void)aetherPerf_storeConfiguredFramesPerSecond:(NSInteger)value {
+    objc_setAssociatedObject(self, &kConfiguredFpsKey, @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSUInteger)aetherPerf_interactionGeneration {
+    NSNumber* value = objc_getAssociatedObject(self, &kInteractionGenerationKey);
+    return value ? value.unsignedIntegerValue : 0;
+}
+
+- (NSUInteger)aetherPerf_advanceInteractionGeneration {
+    const NSUInteger generation = [self aetherPerf_interactionGeneration] + 1;
+    objc_setAssociatedObject(self, &kInteractionGenerationKey, @(generation),
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return generation;
+}
+
+- (BOOL)aetherPerf_isInteracting {
+    NSNumber* value = objc_getAssociatedObject(self, &kInteractingKey);
+    return value.boolValue;
+}
+
+- (void)aetherPerf_setInteracting:(BOOL)value {
+    objc_setAssociatedObject(self, &kInteractingKey, @(value), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (BOOL)aetherPerf_isGaussianScene {
     NSString* extension = self.scenePath.pathExtension.lowercaseString;
     return [extension isEqualToString:@"ply"] || [extension isEqualToString:@"aether"];
 }
 
-- (CGFloat)interactiveRenderScale {
-    // Gaussian compositing cost grows rapidly with viewport area/tile coverage. Keep
-    // interaction responsive, then immediately recover full-resolution presentation.
-    return [self isGaussianScene] ? 0.45 : 0.68;
+- (CGFloat)aetherPerf_interactiveScale {
+    // Gaussian projection still touches every splat, but tile generation/sorting/compositing
+    // scale strongly with viewport area. 0.45x means roughly 20% of full-resolution pixels.
+    return [self aetherPerf_isGaussianScene] ? 0.45 : 0.68;
 }
 
-- (void)updateDrawableSize {
-    MTKView* metalView = [self aetherMetalView];
+- (void)aetherPerf_applyDrawableScale:(CGFloat)scale {
+    MTKView* metalView = [self aetherPerf_metalView];
     if (!metalView)
         return;
 
-    NSSize backing = [self convertSizeToBacking:self.bounds.size];
+    const CGFloat clampedScale = std::clamp(scale, 0.35, 1.0);
+    const NSSize backing = [self convertSizeToBacking:self.bounds.size];
     if (backing.width <= 0.0 || backing.height <= 0.0)
         return;
 
-    const CGFloat width = std::max<CGFloat>(1.0, std::floor(backing.width * _renderScale));
-    const CGFloat height = std::max<CGFloat>(1.0, std::floor(backing.height * _renderScale));
+    metalView.autoResizeDrawable = clampedScale >= 0.999;
+    const CGFloat width = std::max<CGFloat>(1.0, std::floor(backing.width * clampedScale));
+    const CGFloat height = std::max<CGFloat>(1.0, std::floor(backing.height * clampedScale));
     const CGSize current = metalView.drawableSize;
     if (std::abs(current.width - width) > 1.0 || std::abs(current.height - height) > 1.0)
         metalView.drawableSize = CGSizeMake(width, height);
 }
 
-- (void)applyRenderScale:(CGFloat)scale {
-    _renderScale = std::clamp(scale, 0.35, 1.0);
-    [self updateDrawableSize];
+- (void)aetherPerf_beginInteraction {
+    [self aetherPerf_advanceInteractionGeneration];
+    [self aetherPerf_setInteracting:YES];
+    [self aetherPerf_applyDrawableScale:[self aetherPerf_interactiveScale]];
+    const NSInteger configured = [self aetherPerf_configuredFramesPerSecond];
+    [self aetherPerf_setPreferredFramesPerSecond:std::max<NSInteger>(configured, 60)];
 }
 
-- (void)layout {
-    [super layout];
-    [self updateDrawableSize];
+- (void)aetherPerf_restoreFullQuality {
+    [self aetherPerf_advanceInteractionGeneration];
+    [self aetherPerf_setInteracting:NO];
+    [self aetherPerf_applyDrawableScale:1.0];
+    [self aetherPerf_setPreferredFramesPerSecond:[self aetherPerf_configuredFramesPerSecond]];
 }
 
-- (void)viewDidMoveToWindow {
-    [super viewDidMoveToWindow];
-    [self updateDrawableSize];
+- (void)aetherPerf_finishInteractionIfGenerationMatches:(NSUInteger)generation {
+    if ([self aetherPerf_interactionGeneration] != generation)
+        return;
+    [self aetherPerf_setInteracting:NO];
+    [self aetherPerf_applyDrawableScale:1.0];
+    [self aetherPerf_setPreferredFramesPerSecond:[self aetherPerf_configuredFramesPerSecond]];
 }
 
-- (NSInteger)preferredFramesPerSecond {
-    return _configuredFramesPerSecond;
-}
-
-- (void)setPreferredFramesPerSecond:(NSInteger)value {
-    _configuredFramesPerSecond = std::clamp<NSInteger>(value, 1, 120);
-    NSInteger effective = _interacting ? std::max<NSInteger>(_configuredFramesPerSecond, 60)
-                                       : _configuredFramesPerSecond;
-    [super setPreferredFramesPerSecond:effective];
-}
-
-- (void)beginResponsiveInteraction {
-    ++_interactionGeneration;
-    _interacting = YES;
-    [self applyRenderScale:[self interactiveRenderScale]];
-    [super setPreferredFramesPerSecond:std::max<NSInteger>(_configuredFramesPerSecond, 60)];
-}
-
-- (void)restoreFullQuality {
-    ++_interactionGeneration;
-    _interacting = NO;
-    [self applyRenderScale:1.0];
-    [super setPreferredFramesPerSecond:_configuredFramesPerSecond];
-}
-
-- (void)scheduleFullQualityRestore:(NSTimeInterval)delay {
-    const NSUInteger generation = _interactionGeneration;
-    __weak AetherResponsiveViewportView* weakSelf = self;
+- (void)aetherPerf_scheduleRestore:(NSTimeInterval)delay {
+    const NSUInteger generation = [self aetherPerf_interactionGeneration];
+    __weak AetherViewportView* weakSelf = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-                       AetherResponsiveViewportView* strongSelf = weakSelf;
-                       if (!strongSelf || strongSelf->_interactionGeneration != generation)
-                           return;
-                       strongSelf->_interacting = NO;
-                       [strongSelf applyRenderScale:1.0];
-                       [super setPreferredFramesPerSecond:strongSelf->_configuredFramesPerSecond];
+                       AetherViewportView* strongSelf = weakSelf;
+                       if (strongSelf)
+                           [strongSelf aetherPerf_finishInteractionIfGenerationMatches:generation];
                    });
 }
 
-- (void)setScenePath:(NSString*)scenePath {
-    MTKView* metalView = [self aetherMetalView];
+- (void)aetherPerf_setPreferredFramesPerSecond:(NSInteger)value {
+    const NSInteger configured = std::clamp<NSInteger>(value, 1, 120);
+    [self aetherPerf_storeConfiguredFramesPerSecond:configured];
+    const NSInteger effective = [self aetherPerf_isInteracting]
+                                    ? std::max<NSInteger>(configured, 60)
+                                    : configured;
+    // Swizzling makes this selector point at the original implementation.
+    [self aetherPerf_setPreferredFramesPerSecond:effective];
+}
+
+- (void)aetherPerf_setScenePath:(NSString*)scenePath {
+    MTKView* metalView = [self aetherPerf_metalView];
     const BOOL wasPaused = metalView.paused;
     metalView.paused = YES;
-    [self restoreFullQuality];
-    [super setScenePath:scenePath];
+    [self aetherPerf_restoreFullQuality];
+    [self aetherPerf_setScenePath:scenePath];
     metalView.paused = wasPaused;
 }
 
-- (void)setDynamicMeshPath:(NSString*)dynamicMeshPath {
-    MTKView* metalView = [self aetherMetalView];
+- (void)aetherPerf_setDynamicMeshPath:(NSString*)dynamicMeshPath {
+    MTKView* metalView = [self aetherPerf_metalView];
     const BOOL wasPaused = metalView.paused;
     metalView.paused = YES;
-    [super setDynamicMeshPath:dynamicMeshPath];
+    [self aetherPerf_setDynamicMeshPath:dynamicMeshPath];
     metalView.paused = wasPaused;
 }
 
-- (void)keyDown:(NSEvent*)event {
+- (void)aetherPerf_keyDown:(NSEvent*)event {
     NSString* characters = event.charactersIgnoringModifiers.lowercaseString;
     if (characters.length > 0) {
         const unichar key = [characters characterAtIndex:0];
         if (key == 'w' || key == 'a' || key == 's' || key == 'd' || key == 'q' || key == 'e')
-            [self beginResponsiveInteraction];
+            [self aetherPerf_beginInteraction];
     }
-    [super keyDown:event];
+    [self aetherPerf_keyDown:event];
 }
 
-- (void)keyUp:(NSEvent*)event {
-    [super keyUp:event];
-    [self scheduleFullQualityRestore:0.10];
+- (void)aetherPerf_keyUp:(NSEvent*)event {
+    [self aetherPerf_keyUp:event];
+    [self aetherPerf_scheduleRestore:0.10];
 }
 
-- (void)mouseDown:(NSEvent*)event {
-    // Picking uses drawable-space coordinates, so perform the initial hit test at full quality.
-    [self restoreFullQuality];
-    [super mouseDown:event];
+- (void)aetherPerf_mouseDown:(NSEvent*)event {
+    // The existing picker assumes full drawable-space coordinates.
+    [self aetherPerf_restoreFullQuality];
+    [self aetherPerf_mouseDown:event];
 }
 
-- (void)mouseDragged:(NSEvent*)event {
-    [self beginResponsiveInteraction];
-    [super mouseDragged:event];
-    [self scheduleFullQualityRestore:0.14];
+- (void)aetherPerf_mouseDragged:(NSEvent*)event {
+    [self aetherPerf_beginInteraction];
+    [self aetherPerf_mouseDragged:event];
+    [self aetherPerf_scheduleRestore:0.14];
 }
 
-- (void)rightMouseDragged:(NSEvent*)event {
-    [self beginResponsiveInteraction];
-    [super rightMouseDragged:event];
-    [self scheduleFullQualityRestore:0.14];
+- (void)aetherPerf_rightMouseDragged:(NSEvent*)event {
+    [self aetherPerf_beginInteraction];
+    [self aetherPerf_rightMouseDragged:event];
+    [self aetherPerf_scheduleRestore:0.14];
 }
 
-- (void)scrollWheel:(NSEvent*)event {
-    [self beginResponsiveInteraction];
-    [super scrollWheel:event];
-    [self scheduleFullQualityRestore:0.16];
+- (void)aetherPerf_scrollWheel:(NSEvent*)event {
+    [self aetherPerf_beginInteraction];
+    [self aetherPerf_scrollWheel:event];
+    [self aetherPerf_scheduleRestore:0.16];
 }
 
 @end
