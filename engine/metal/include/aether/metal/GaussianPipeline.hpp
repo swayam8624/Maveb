@@ -23,6 +23,23 @@ struct GaussianPipelineStatistics final {
     std::uint32_t earlyTerminations{};
 };
 
+/// Keeps the current editor implementation from feeding multi-million-splat assets into every
+/// projection/sort/composite pass. The complete asset remains resident; only the live viewport
+/// workload is bounded. A proper spatial LOD hierarchy can replace this temporary stability gate.
+struct ResponsiveGaussianCount final {
+    static constexpr std::uint32_t viewportBudget = 180'000;
+    std::uint32_t loaded{};
+
+    ResponsiveGaussianCount& operator=(std::uint32_t value) noexcept {
+        loaded = value;
+        return *this;
+    }
+
+    [[nodiscard]] operator std::uint32_t() const noexcept {
+        return std::min(loaded, viewportBudget);
+    }
+};
+
 class GaussianPipeline final {
   public:
     /// Input: Metal 3 device, offline library, and an explicit tile-entry memory budget.
@@ -35,17 +52,6 @@ class GaussianPipeline final {
     /// Input: validated canonical Gaussian asset.
     /// Output: uploaded GPU representation with fixed shared CPU/MSL ABI.
     [[nodiscard]] Result<void> load(const gaussian::GaussianAsset& asset);
-
-    /// Sets a viewport-only upper bound on processed Gaussians. Zero means all loaded Gaussians.
-    /// This never mutates the source asset and exists to keep editor interaction responsive.
-    void setActiveGaussianLimit(std::uint32_t limit) noexcept {
-        activeGaussianLimit_ = limit;
-    }
-
-    [[nodiscard]] std::uint32_t activeGaussianCount() const noexcept {
-        return activeGaussianLimit_ == 0 ? gaussianCount_
-                                         : std::min(gaussianCount_, activeGaussianLimit_);
-    }
 
     /// Input: command buffer, calibrated camera, and writable color/depth/ID textures.
     /// Output: ordered compute work on the caller's command buffer.
@@ -68,8 +74,7 @@ class GaussianPipeline final {
 
     MetalPtr<MTL::Device> device_;
     std::uint32_t maximumTileEntries_{};
-    std::uint32_t gaussianCount_{};
-    std::uint32_t activeGaussianLimit_{};
+    ResponsiveGaussianCount gaussianCount_{};
     std::uint32_t rangeCapacity_{};
     MetalPtr<MTL::Buffer> gaussians_;
     MetalPtr<MTL::Buffer> projected_;
