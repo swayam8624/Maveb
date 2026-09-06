@@ -10,6 +10,7 @@ set(AETHER_STUDIO_SOURCES
     Sources/TrainingComparisonViewport.swift
     Bridge/AetherCaptureBridge.mm
     Bridge/AetherViewportBridge.mm
+    Bridge/AetherViewportPerformance.mm
 )
 
 add_executable(AetherStudio MACOSX_BUNDLE ${AETHER_STUDIO_SOURCES})
