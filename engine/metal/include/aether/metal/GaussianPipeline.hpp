@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -23,11 +24,17 @@ struct GaussianPipelineStatistics final {
     std::uint32_t earlyTerminations{};
 };
 
-/// Keeps the current editor implementation from feeding multi-million-splat assets into every
-/// projection/sort/composite pass. The complete asset remains resident; only the live viewport
-/// workload is bounded. A proper spatial LOD hierarchy can replace this temporary stability gate.
+/// Editor-only global viewport budget. It is intentionally atomic because input handling and
+/// Metal draw callbacks need to change/read the budget without rebuilding the loaded asset.
+/// The full Gaussian asset remains resident; this only bounds live projection/sort/composite work.
+inline std::atomic<std::uint32_t> responsiveGaussianViewportBudget{240'000};
+
+inline void setResponsiveGaussianViewportBudget(std::uint32_t budget) noexcept {
+    responsiveGaussianViewportBudget.store(std::clamp(budget, 25'000U, 500'000U),
+                                           std::memory_order_relaxed);
+}
+
 struct ResponsiveGaussianCount final {
-    static constexpr std::uint32_t viewportBudget = 180'000;
     std::uint32_t loaded{};
 
     ResponsiveGaussianCount& operator=(std::uint32_t value) noexcept {
@@ -36,7 +43,9 @@ struct ResponsiveGaussianCount final {
     }
 
     [[nodiscard]] operator std::uint32_t() const noexcept {
-        return std::min(loaded, viewportBudget);
+        const std::uint32_t budget =
+            responsiveGaussianViewportBudget.load(std::memory_order_relaxed);
+        return std::min(loaded, budget);
     }
 };
 
