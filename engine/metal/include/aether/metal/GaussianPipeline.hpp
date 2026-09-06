@@ -7,6 +7,7 @@
 
 #include <Metal/Metal.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -35,6 +36,17 @@ class GaussianPipeline final {
     /// Output: uploaded GPU representation with fixed shared CPU/MSL ABI.
     [[nodiscard]] Result<void> load(const gaussian::GaussianAsset& asset);
 
+    /// Sets a viewport-only upper bound on processed Gaussians. Zero means all loaded Gaussians.
+    /// This never mutates the source asset and exists to keep editor interaction responsive.
+    void setActiveGaussianLimit(std::uint32_t limit) noexcept {
+        activeGaussianLimit_ = limit;
+    }
+
+    [[nodiscard]] std::uint32_t activeGaussianCount() const noexcept {
+        return activeGaussianLimit_ == 0 ? gaussianCount_
+                                         : std::min(gaussianCount_, activeGaussianLimit_);
+    }
+
     /// Input: command buffer, calibrated camera, and writable color/depth/ID textures.
     /// Output: ordered compute work on the caller's command buffer.
     /// Task: render front-to-back splats and expose bounded overflow through counters.
@@ -57,6 +69,7 @@ class GaussianPipeline final {
     MetalPtr<MTL::Device> device_;
     std::uint32_t maximumTileEntries_{};
     std::uint32_t gaussianCount_{};
+    std::uint32_t activeGaussianLimit_{};
     std::uint32_t rangeCapacity_{};
     MetalPtr<MTL::Buffer> gaussians_;
     MetalPtr<MTL::Buffer> projected_;
