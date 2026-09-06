@@ -3,6 +3,8 @@
 #import <MetalKit/MetalKit.h>
 #import <objc/runtime.h>
 
+#include <aether/metal/GaussianPipeline.hpp>
+
 #include <algorithm>
 #include <cmath>
 
@@ -10,6 +12,10 @@ namespace {
 char kConfiguredFpsKey;
 char kInteractionGenerationKey;
 char kInteractingKey;
+
+constexpr std::uint32_t kInteractiveGaussianBudget = 80'000;
+constexpr std::uint32_t kSettledGaussianBudget = 240'000;
+constexpr NSInteger kInteractionFpsFloor = 45;
 
 void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
     Method originalMethod = class_getInstanceMethod(cls, original);
@@ -99,9 +105,9 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 }
 
 - (CGFloat)aetherPerf_interactiveScale {
-    // Gaussian projection still touches every splat, but tile generation/sorting/compositing
-    // scale strongly with viewport area. 0.45x means roughly 20% of full-resolution pixels.
-    return [self aetherPerf_isGaussianScene] ? 0.45 : 0.68;
+    // During navigation we care about latency, not final-pixel fidelity. 0.35x is only ~12% of
+    // full drawable pixels and is paired with an 80k Gaussian projection/sort budget.
+    return [self aetherPerf_isGaussianScene] ? 0.35 : 0.62;
 }
 
 - (void)aetherPerf_applyDrawableScale:(CGFloat)scale {
@@ -109,7 +115,7 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
     if (!metalView)
         return;
 
-    const CGFloat clampedScale = std::clamp(scale, 0.35, 1.0);
+    const CGFloat clampedScale = std::clamp(scale, 0.28, 1.0);
     const NSSize backing = [self convertSizeToBacking:self.bounds.size];
     if (backing.width <= 0.0 || backing.height <= 0.0)
         return;
@@ -125,14 +131,18 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 - (void)aetherPerf_beginInteraction {
     [self aetherPerf_advanceInteractionGeneration];
     [self aetherPerf_setInteracting:YES];
+    if ([self aetherPerf_isGaussianScene])
+        aether::metal::setResponsiveGaussianViewportBudget(kInteractiveGaussianBudget);
     [self aetherPerf_applyDrawableScale:[self aetherPerf_interactiveScale]];
     const NSInteger configured = [self aetherPerf_configuredFramesPerSecond];
-    [self aetherPerf_setPreferredFramesPerSecond:std::max<NSInteger>(configured, 60)];
+    [self aetherPerf_setPreferredFramesPerSecond:
+              std::max<NSInteger>(configured, kInteractionFpsFloor)];
 }
 
 - (void)aetherPerf_restoreFullQuality {
     [self aetherPerf_advanceInteractionGeneration];
     [self aetherPerf_setInteracting:NO];
+    aether::metal::setResponsiveGaussianViewportBudget(kSettledGaussianBudget);
     [self aetherPerf_applyDrawableScale:1.0];
     [self aetherPerf_setPreferredFramesPerSecond:[self aetherPerf_configuredFramesPerSecond]];
 }
@@ -141,6 +151,7 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
     if ([self aetherPerf_interactionGeneration] != generation)
         return;
     [self aetherPerf_setInteracting:NO];
+    aether::metal::setResponsiveGaussianViewportBudget(kSettledGaussianBudget);
     [self aetherPerf_applyDrawableScale:1.0];
     [self aetherPerf_setPreferredFramesPerSecond:[self aetherPerf_configuredFramesPerSecond]];
 }
@@ -159,9 +170,10 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 - (void)aetherPerf_setPreferredFramesPerSecond:(NSInteger)value {
     const NSInteger configured = std::clamp<NSInteger>(value, 1, 120);
     [self aetherPerf_storeConfiguredFramesPerSecond:configured];
-    const NSInteger effective = [self aetherPerf_isInteracting]
-                                    ? std::max<NSInteger>(configured, 60)
-                                    : configured;
+    const NSInteger effective =
+        [self aetherPerf_isInteracting]
+            ? std::max<NSInteger>(configured, kInteractionFpsFloor)
+            : configured;
     // Swizzling makes this selector point at the original implementation.
     [self aetherPerf_setPreferredFramesPerSecond:effective];
 }
@@ -195,7 +207,7 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 
 - (void)aetherPerf_keyUp:(NSEvent*)event {
     [self aetherPerf_keyUp:event];
-    [self aetherPerf_scheduleRestore:0.10];
+    [self aetherPerf_scheduleRestore:0.14];
 }
 
 - (void)aetherPerf_mouseDown:(NSEvent*)event {
@@ -207,19 +219,19 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 - (void)aetherPerf_mouseDragged:(NSEvent*)event {
     [self aetherPerf_beginInteraction];
     [self aetherPerf_mouseDragged:event];
-    [self aetherPerf_scheduleRestore:0.14];
+    [self aetherPerf_scheduleRestore:0.18];
 }
 
 - (void)aetherPerf_rightMouseDragged:(NSEvent*)event {
     [self aetherPerf_beginInteraction];
     [self aetherPerf_rightMouseDragged:event];
-    [self aetherPerf_scheduleRestore:0.14];
+    [self aetherPerf_scheduleRestore:0.18];
 }
 
 - (void)aetherPerf_scrollWheel:(NSEvent*)event {
     [self aetherPerf_beginInteraction];
     [self aetherPerf_scrollWheel:event];
-    [self aetherPerf_scheduleRestore:0.16];
+    [self aetherPerf_scheduleRestore:0.20];
 }
 
 @end
