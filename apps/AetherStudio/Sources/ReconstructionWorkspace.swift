@@ -10,6 +10,7 @@ private struct CaptureReport: Decodable {
         let medianSharpness: Double
         let exposureSpreadStops: Double
     }
+
     struct Issue: Decodable, Identifiable {
         var id: String { "\(code):\(path ?? message)" }
         let severity: String
@@ -17,6 +18,7 @@ private struct CaptureReport: Decodable {
         let message: String
         let path: String?
     }
+
     let valid: Bool
     let root: String
     let summary: Summary
@@ -96,6 +98,7 @@ private final class ReconstructionModel: ObservableObject {
             state = .failed("The signed reconstruction helper is missing from the app bundle.")
             return
         }
+
         let task = Process()
         let output = Pipe()
         task.executableURL = helper
@@ -110,6 +113,7 @@ private final class ReconstructionModel: ObservableObject {
         checkpoints = []
         completedStages = 0
         state = .running
+
         Task {
             do {
                 try task.run()
@@ -120,6 +124,7 @@ private final class ReconstructionModel: ObservableObject {
                 coverageReport = await readCoverageReport(from: outputURL)
                 checkpoints = await readCheckpoints(from: outputURL)
                 process = nil
+
                 if task.terminationReason == .uncaughtSignal || task.terminationStatus == 130 {
                     state = .cancelled
                 } else if task.terminationStatus == 0 {
@@ -183,7 +188,42 @@ private final class ReconstructionModel: ObservableObject {
         panel.canChooseFiles = true
         return panel.runModal() == .OK ? panel.url : nil
     }
+}
 
+private struct ReconstructionCard<Content: View>: View {
+    let content: Content
+    init(@ViewBuilder content: () -> Content) { self.content = content() }
+
+    var body: some View {
+        content
+            .padding(18)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            }
+    }
+}
+
+private struct MetricTile: View {
+    let label: String
+    let value: String
+    let symbol: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Label(label.uppercased(), systemImage: symbol)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.6)
+            Text(value)
+                .font(.headline.monospacedDigit())
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+    }
 }
 
 struct ReconstructionWorkspace: View {
@@ -194,51 +234,20 @@ struct ReconstructionWorkspace: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text("Local Reconstruction").font(.title2.bold())
-                Text("Validate real image content, then run pinned COLMAP and Brush as isolated, resumable processes. No capture data leaves this Mac.")
-                    .foregroundStyle(.secondary)
-
-                GroupBox("Inputs") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        pickerRow("Dataset", value: model.datasetURL?.path, action: model.chooseDataset)
-                        pickerRow("Job output", value: model.outputURL?.path, action: model.chooseOutput)
-                        pickerRow("COLMAP 3.13.0", value: model.colmapURL?.path, action: model.chooseCOLMAP)
-                        pickerRow("Brush 0.3.0", value: model.brushURL?.path, action: model.chooseBrush)
-                        pickerRow("AETHER Proxy 0.1", value: model.proxyURL?.path, action: model.chooseProxy)
-                    }.padding(6)
-                }
-
-                HStack {
-                    Button("Validate Capture", action: model.validate)
-                        .disabled(model.datasetURL == nil || model.state == .validating || model.state == .running)
-                    Button("Start / Resume Reconstruction", action: model.reconstruct)
-                        .buttonStyle(.borderedProminent)
-                        .disabled(model.state != .ready || model.outputURL == nil ||
-                                  model.colmapURL == nil || model.brushURL == nil || model.proxyURL == nil)
-                    if model.state == .running {
-                        ProgressView(value: Double(model.completedStages), total: 8)
-                            .frame(width: 120)
-                        Text("\(model.completedStages)/8 stages").font(.caption.monospacedDigit())
-                        Button("Cancel", role: .destructive, action: model.cancel)
-                    }
-                    Spacer()
-                    stateLabel
-                }
+            VStack(alignment: .leading, spacing: 20) {
+                hero
+                inputsCard
+                runCard
 
                 if let report = model.report { reportView(report) }
                 if let coverage = model.coverageReport { coverageView(coverage) }
                 if !model.checkpoints.isEmpty { checkpointComparison }
-                if !model.transcript.isEmpty {
-                    GroupBox("Process result") {
-                        Text(model.transcript).font(.caption.monospaced()).textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(6)
-                    }
-                }
+                if !model.transcript.isEmpty { processResult }
             }
-            .padding(22)
-            .frame(maxWidth: 980, alignment: .leading)
+            .padding(28)
+            .frame(maxWidth: 1040, alignment: .leading)
         }
+        .background(Color(nsColor: .windowBackgroundColor))
         .onChange(of: model.checkpoints) { _, checkpoints in
             guard !checkpoints.isEmpty else {
                 leftCheckpoint = nil
@@ -254,90 +263,289 @@ struct ReconstructionWorkspace: View {
         }
     }
 
-    private func pickerRow(_ label: String, value: String?, action: @escaping () -> Void) -> some View {
-        HStack {
-            Text(label).frame(width: 140, alignment: .leading)
-            Text(value ?? "Not selected").lineLimit(1).truncationMode(.middle).foregroundStyle(.secondary)
+    private var hero: some View {
+        HStack(alignment: .center, spacing: 18) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.11))
+                Image(systemName: "camera.metering.matrix")
+                    .font(.system(size: 30, weight: .light))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .frame(width: 76, height: 76)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Local Reconstruction")
+                    .font(.title2.weight(.semibold))
+                Text("Validate real image content, then run pinned COLMAP and Brush as isolated, resumable local processes.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: 650, alignment: .leading)
+                Label("Capture data stays on this Mac", systemImage: "lock.fill")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.green)
+            }
+
             Spacer()
+            stateBadge
+        }
+    }
+
+    private var inputsCard: some View {
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                sectionHeader("Inputs & tools", symbol: "folder.badge.gearshape")
+                pickerRow("Dataset", symbol: "photo.stack", value: model.datasetURL?.path,
+                          action: model.chooseDataset)
+                Divider()
+                pickerRow("Job output", symbol: "externaldrive", value: model.outputURL?.path,
+                          action: model.chooseOutput)
+                Divider()
+                pickerRow("COLMAP 3.13.0", symbol: "point.3.connected.trianglepath.dotted",
+                          value: model.colmapURL?.path, action: model.chooseCOLMAP)
+                pickerRow("Brush 0.3.0", symbol: "paintbrush", value: model.brushURL?.path,
+                          action: model.chooseBrush)
+                pickerRow("AETHER Proxy 0.1", symbol: "cube.transparent", value: model.proxyURL?.path,
+                          action: model.chooseProxy)
+            }
+        }
+    }
+
+    private var runCard: some View {
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                sectionHeader("Pipeline", symbol: "arrow.triangle.branch")
+
+                if model.state == .running {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Reconstruction in progress")
+                                .font(.callout.weight(.medium))
+                            Spacer()
+                            Text("\(model.completedStages)/8 stages")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        ProgressView(value: Double(model.completedStages), total: 8)
+                            .progressViewStyle(.linear)
+                    }
+                } else {
+                    Text("Validate the capture before starting. A valid report unlocks the resumable reconstruction path.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 10) {
+                    Button("Validate Capture", systemImage: "checkmark.shield", action: model.validate)
+                        .disabled(model.datasetURL == nil || model.state == .validating || model.state == .running)
+
+                    Button("Start / Resume", systemImage: "play.fill", action: model.reconstruct)
+                        .buttonStyle(.borderedProminent)
+                        .disabled(model.state != .ready || model.outputURL == nil ||
+                                  model.colmapURL == nil || model.brushURL == nil || model.proxyURL == nil)
+
+                    if model.state == .running {
+                        Button("Cancel", systemImage: "stop.fill", role: .destructive, action: model.cancel)
+                    }
+
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private func pickerRow(_ label: String, symbol: String, value: String?, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.primary.opacity(0.055))
+                Image(systemName: symbol)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 34, height: 34)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.callout.weight(.medium))
+                Text(value ?? "Not selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            Spacer(minLength: 12)
             Button("Choose…", action: action)
         }
     }
 
-    private var stateLabel: some View {
+    private var stateBadge: some View {
         Group {
             switch model.state {
-            case .idle: Label("Not validated", systemImage: "circle.dashed")
-            case .validating: ProgressView().controlSize(.small)
-            case .ready: Label("Ready", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-            case .running: Label("Running", systemImage: "gearshape.2.fill").foregroundStyle(.blue)
-            case .complete: Label("Complete", systemImage: "checkmark.seal.fill").foregroundStyle(.green)
-            case .cancelled: Label("Cancelled", systemImage: "stop.circle")
-            case .failed(let message): Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
+            case .idle:
+                statusPill("Not validated", symbol: "circle.dashed", color: .gray)
+            case .validating:
+                HStack(spacing: 7) {
+                    ProgressView().controlSize(.small)
+                    Text("Validating")
+                }
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(.thinMaterial, in: Capsule())
+            case .ready:
+                statusPill("Ready", symbol: "checkmark.circle.fill", color: .green)
+            case .running:
+                statusPill("Running", symbol: "gearshape.2.fill", color: .blue)
+            case .complete:
+                statusPill("Complete", symbol: "checkmark.seal.fill", color: .green)
+            case .cancelled:
+                statusPill("Cancelled", symbol: "stop.circle", color: .gray)
+            case .failed:
+                statusPill("Needs attention", symbol: "exclamationmark.triangle.fill", color: .red)
             }
-        }.font(.callout)
+        }
+    }
+
+    private func statusPill(_ text: String, symbol: String, color: Color) -> some View {
+        Label(text, systemImage: symbol)
+            .font(.caption.weight(.medium))
+            .foregroundStyle(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(color.opacity(0.10), in: Capsule())
+            .overlay { Capsule().stroke(color.opacity(0.18), lineWidth: 1) }
+    }
+
+    private func sectionHeader(_ title: String, symbol: String) -> some View {
+        Label(title.uppercased(), systemImage: symbol)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .tracking(0.7)
     }
 
     private func reportView(_ report: CaptureReport) -> some View {
-        GroupBox("Capture report") {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 24) {
-                    LabeledContent("Images", value: "\(report.summary.imageCount)")
-                    LabeledContent("Source", value: ByteCountFormatter.string(fromByteCount: Int64(report.summary.sourceBytes), countStyle: .file))
-                    LabeledContent("Working estimate", value: ByteCountFormatter.string(fromByteCount: Int64(report.summary.estimatedWorkingBytes), countStyle: .memory))
-                    LabeledContent("Exposure spread", value: String(format: "%.2f stops", report.summary.exposureSpreadStops))
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    sectionHeader("Capture report", symbol: "checklist")
+                    Spacer()
+                    statusPill(report.valid ? "Valid" : "Blocked",
+                               symbol: report.valid ? "checkmark.circle.fill" : "xmark.octagon.fill",
+                               color: report.valid ? .green : .red)
                 }
-                ForEach(report.issues) { issue in
-                    Label(issue.message, systemImage: issue.severity == "error" ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(issue.severity == "error" ? .red : .orange)
+
+                HStack(spacing: 10) {
+                    MetricTile(label: "Images", value: "\(report.summary.imageCount)", symbol: "photo.stack")
+                    MetricTile(label: "Source",
+                               value: ByteCountFormatter.string(fromByteCount: Int64(report.summary.sourceBytes), countStyle: .file),
+                               symbol: "internaldrive")
+                    MetricTile(label: "Working",
+                               value: ByteCountFormatter.string(fromByteCount: Int64(report.summary.estimatedWorkingBytes), countStyle: .memory),
+                               symbol: "memorychip")
+                    MetricTile(label: "Exposure",
+                               value: String(format: "%.2f EV", report.summary.exposureSpreadStops),
+                               symbol: "sun.max")
                 }
-                if report.issues.isEmpty { Label("No blocking errors or quality warnings", systemImage: "checkmark.circle") }
-            }.padding(6)
+
+                if report.issues.isEmpty {
+                    Label("No blocking errors or quality warnings", systemImage: "checkmark.circle")
+                        .font(.callout)
+                        .foregroundStyle(.green)
+                } else {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(report.issues) { issue in
+                            Label(issue.message,
+                                  systemImage: issue.severity == "error"
+                                  ? "xmark.octagon.fill"
+                                  : "exclamationmark.triangle.fill")
+                                .font(.callout)
+                                .foregroundStyle(issue.severity == "error" ? .red : .orange)
+                        }
+                    }
+                }
+            }
         }
     }
 
     private func coverageView(_ report: SparseCoverageReport) -> some View {
-        GroupBox("Sparse pose coverage") {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 24) {
-                    LabeledContent("Registered", value: "\(report.registeredImages)/\(report.inputImages)")
-                    LabeledContent("Registration", value: report.registrationRatio.formatted(.percent.precision(.fractionLength(1))))
-                    LabeledContent("Tracked points", value: report.trackedPoints.formatted())
-                    LabeledContent("Mean track", value: report.meanTrackLength.formatted(.number.precision(.fractionLength(1))))
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    sectionHeader("Sparse pose coverage", symbol: "point.3.filled.connected.trianglepath.dotted")
+                    Spacer()
+                    statusPill(report.passed ? "Passed" : "Blocked",
+                               symbol: report.passed ? "checkmark.circle.fill" : "xmark.octagon.fill",
+                               color: report.passed ? .green : .red)
                 }
-                HStack(spacing: 24) {
-                    LabeledContent("Connected images", value: "\(report.connectedImages)/\(report.registeredImages)")
-                    LabeledContent("Graph coverage", value: report.connectedImageRatio.formatted(.percent.precision(.fractionLength(1))))
-                    LabeledContent("Baseline", value: report.baselineDiagonal.formatted(.number.precision(.significantDigits(4))))
-                    LabeledContent("View diversity", value: report.maximumViewAngleDegrees.formatted(.number.precision(.fractionLength(1))) + "°")
+
+                HStack(spacing: 10) {
+                    MetricTile(label: "Registered",
+                               value: "\(report.registeredImages)/\(report.inputImages)",
+                               symbol: "camera.on.rectangle")
+                    MetricTile(label: "Registration",
+                               value: report.registrationRatio.formatted(.percent.precision(.fractionLength(1))),
+                               symbol: "percent")
+                    MetricTile(label: "Tracked Points",
+                               value: report.trackedPoints.formatted(), symbol: "circle.grid.cross")
+                    MetricTile(label: "Mean Track",
+                               value: report.meanTrackLength.formatted(.number.precision(.fractionLength(1))),
+                               symbol: "point.topleft.down.to.point.bottomright.curvepath")
                 }
-                ForEach(report.issues, id: \.self) { issue in
-                    Label(issue, systemImage: "xmark.octagon.fill").foregroundStyle(.red)
+
+                HStack(spacing: 10) {
+                    MetricTile(label: "Connected",
+                               value: "\(report.connectedImages)/\(report.registeredImages)",
+                               symbol: "link")
+                    MetricTile(label: "Graph Coverage",
+                               value: report.connectedImageRatio.formatted(.percent.precision(.fractionLength(1))),
+                               symbol: "network")
+                    MetricTile(label: "Baseline",
+                               value: report.baselineDiagonal.formatted(.number.precision(.significantDigits(4))),
+                               symbol: "ruler")
+                    MetricTile(label: "View Diversity",
+                               value: report.maximumViewAngleDegrees.formatted(.number.precision(.fractionLength(1))) + "°",
+                               symbol: "view.3d")
                 }
-                if report.passed {
-                    Label("Pose and overlap checks passed", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+
+                if !report.issues.isEmpty {
+                    VStack(alignment: .leading, spacing: 7) {
+                        ForEach(report.issues, id: \.self) { issue in
+                            Label(issue, systemImage: "xmark.octagon.fill")
+                                .font(.callout)
+                                .foregroundStyle(.red)
+                        }
+                    }
                 }
-            }.padding(6)
+            }
         }
     }
 
     private var checkpointComparison: some View {
-        GroupBox("Training comparison") {
-            VStack(alignment: .leading, spacing: 10) {
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
+                    sectionHeader("Training comparison", symbol: "rectangle.split.2x1")
+                    Spacer()
+                    Text("Synchronized camera")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 10) {
                     checkpointPicker("Left", selection: $leftCheckpoint)
                     checkpointPicker("Right", selection: $rightCheckpoint)
                     Spacer()
-                    Text("Synchronized camera").font(.caption).foregroundStyle(.secondary)
                 }
+
                 if let left = checkpoint(leftCheckpoint), let right = checkpoint(rightCheckpoint) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 12) {
                         comparisonPanel(left)
                         comparisonPanel(right)
                     }
-                    .frame(height: 360)
+                    .frame(height: 380)
                 }
-            }.padding(6)
+            }
         }
     }
 
@@ -347,7 +555,8 @@ struct ReconstructionWorkspace: View {
                 Text("Step \(checkpoint.iteration.formatted())")
                     .tag(Int?.some(checkpoint.iteration))
             }
-        }.frame(width: 220)
+        }
+        .frame(width: 220)
     }
 
     private func checkpoint(_ iteration: Int?) -> TrainingCheckpoint? {
@@ -355,18 +564,40 @@ struct ReconstructionWorkspace: View {
     }
 
     private func comparisonPanel(_ checkpoint: TrainingCheckpoint) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 7) {
             HStack {
-                Text("Step \(checkpoint.iteration.formatted())").font(.caption.bold())
+                Text("Step \(checkpoint.iteration.formatted())")
+                    .font(.caption.weight(.semibold))
                 Spacer()
-                Text(ByteCountFormatter.string(fromByteCount: Int64(checkpoint.bytes),
-                                               countStyle: .file))
-                    .font(.caption2).foregroundStyle(.secondary)
+                Text(ByteCountFormatter.string(fromByteCount: Int64(checkpoint.bytes), countStyle: .file))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             TrainingComparisonViewport(scenePath: checkpoint.url.path, camera: $comparisonCamera)
                 .background(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var processResult: some View {
+        ReconstructionCard {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("Process result", symbol: "terminal")
+                ScrollView(.horizontal) {
+                    Text(model.transcript)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(12)
+                .background(Color.black.opacity(0.82), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .foregroundStyle(.white.opacity(0.90))
+            }
+        }
     }
 }
