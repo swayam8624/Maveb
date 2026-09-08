@@ -179,12 +179,10 @@ void swapInstanceMethods(Class cls, SEL original, SEL replacement) {
 }
 
 - (void)aetherPerf_setScenePath:(NSString*)scenePath {
-    MTKView* metalView = [self aetherPerf_metalView];
-    const BOOL wasPaused = metalView.paused;
-    metalView.paused = YES;
+    // Scene decode/upload now happens against an isolated renderer on a worker queue. Keep the
+    // current renderer drawing while that candidate is prepared, then let the bridge swap it in.
     [self aetherPerf_restoreFullQuality];
     [self aetherPerf_setScenePath:scenePath];
-    metalView.paused = wasPaused;
 }
 
 - (void)aetherPerf_setDynamicMeshPath:(NSString*)dynamicMeshPath {
