@@ -8,8 +8,10 @@ set(AETHER_STUDIO_SOURCES
     Sources/ReconstructionReport.swift
     Sources/ReconstructionWorkspace.swift
     Sources/TrainingComparisonViewport.swift
+    Bridge/AetherAdaptiveGaussianBudget.mm
     Bridge/AetherCaptureBridge.mm
     Bridge/AetherViewportBridge.mm
+    Bridge/AetherViewportPerformance.mm
 )
 
 add_executable(AetherStudio MACOSX_BUNDLE ${AETHER_STUDIO_SOURCES})
@@ -39,7 +41,7 @@ aether_add_metal_library(AetherShaders "AetherShaders.metallib"
     "${PROJECT_SOURCE_DIR}/shaders/proxy.metal"
     "${PROJECT_SOURCE_DIR}/shaders/shadow.metal"
     "${PROJECT_SOURCE_DIR}/shaders/tsdf.metal"
-    "${PROJECT_SOURCE_DIR}/shaders/gaussian.metal")
+    "${PROJECT_SOURCE_DIR}/shaders/gaussian_responsive.metal")
 if(TARGET AetherShaders)
     add_dependencies(AetherStudio AetherShaders)
     target_sources(AetherStudio PRIVATE "${AetherShaders_OUTPUT}")

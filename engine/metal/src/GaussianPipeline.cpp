@@ -1,9 +1,12 @@
 #include <aether/metal/GaussianPipeline.hpp>
 
+#include "GaussianSpatialOrder.hpp"
+
 #include <Foundation/Foundation.hpp>
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstring>
 #include <limits>
 #include <string>
@@ -134,17 +137,24 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
         asset.gaussians.size() > std::numeric_limits<std::uint32_t>::max()) {
         return fail(ErrorCode::resourceExhausted, "Gaussian asset count is empty or exceeds Metal");
     }
+
+    const std::vector<std::uint32_t> progressiveOrder =
+        detail::buildProgressiveSpatialOrder(asset);
     std::vector<AetherGaussianGpu> converted(asset.gaussians.size());
-    for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
-        const gaussian::Gaussian& source = asset.gaussians[index];
-        AetherGaussianGpu& destination = converted[index];
+    for (std::size_t logicalIndex = 0; logicalIndex < asset.gaussians.size(); ++logicalIndex) {
+        const std::uint32_t sourceIndex = progressiveOrder[logicalIndex];
+        const gaussian::Gaussian& source = asset.gaussians[sourceIndex];
+        AetherGaussianGpu& destination = converted[logicalIndex];
         destination.positionOpacity = {source.position[0], source.position[1], source.position[2],
                                        source.opacityLogit};
         destination.logScaleRestCount = {source.logScale[0], source.logScale[1], source.logScale[2],
                                          static_cast<float>(source.restCount)};
         destination.rotation = {source.rotation[0], source.rotation[1], source.rotation[2],
                                 source.rotation[3]};
-        destination.dc = {source.dc[0], source.dc[1], source.dc[2], 0.0F};
+        // dc.w is unused by SH evaluation. Store the canonical source ID bit-exactly so a
+        // spatially reordered preview can still report stable picking/debug IDs.
+        destination.dc = {source.dc[0], source.dc[1], source.dc[2],
+                          std::bit_cast<float>(sourceIndex)};
         for (std::size_t coefficient = 0; coefficient < source.rest.size(); ++coefficient) {
             destination.shRest[coefficient / 4][coefficient % 4] = source.rest[coefficient];
         }
@@ -315,10 +325,21 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
         !result)
         return result;
 
+    // The responsive Studio shader packs {tile, quantized positive depth} into key.x while keeping
+    // the exact tile ID in key.y. During reduced-density preview this lets us sort one 32-bit key
+    // instead of the full 64-bit {depth,tile} pair. Eight 4-bit parallel passes (or four 8-bit
+    // serial passes) therefore preserve tile grouping + front-to-back order at half the radix work.
+    // The default 240k budget keeps the canonical/full path on the original 64-bit sort.
+    constexpr std::uint32_t compactSortTileLimit = 1U << 18U;
+    const std::uint32_t currentBudget =
+        responsiveGaussianViewportBudget.load(std::memory_order_relaxed);
+    const bool compactPreviewSort = currentBudget < 240'000U && tileCount < compactSortTileLimit;
+
     const bool parallelRadix = pipelines_[radixHistogram]->maxTotalThreadsPerThreadgroup() >= 256 &&
                                pipelines_[radixScatter]->maxTotalThreadsPerThreadgroup() >= 256;
     if (parallelRadix) {
-        for (std::uint32_t pass = 0; pass < 16; ++pass) {
+        const std::uint32_t passCount = compactPreviewSort ? 8U : 16U;
+        for (std::uint32_t pass = 0; pass < passCount; ++pass) {
             const bool even = (pass % 2U) == 0;
             MTL::Buffer* inputKeys = even ? keysA_.get() : keysB_.get();
             MTL::Buffer* inputValues = even ? valuesA_.get() : valuesB_.get();
@@ -362,7 +383,8 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
             scatter->endEncoding();
         }
     } else {
-        for (std::uint32_t pass = 0; pass < 8; ++pass) {
+        const std::uint32_t passCount = compactPreviewSort ? 4U : 8U;
+        for (std::uint32_t pass = 0; pass < passCount; ++pass) {
             const bool even = (pass % 2U) == 0;
             MTL::Buffer* inputKeys = even ? keysA_.get() : keysB_.get();
             MTL::Buffer* inputValues = even ? valuesA_.get() : valuesB_.get();

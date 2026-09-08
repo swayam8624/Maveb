@@ -7,7 +7,9 @@
 
 #include <Metal/Metal.hpp>
 
+#include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -20,6 +22,31 @@ struct GaussianPipelineStatistics final {
     std::uint32_t tileEntries{};
     std::uint32_t overflowedEntries{};
     std::uint32_t earlyTerminations{};
+};
+
+/// Editor-only global viewport budget. It is intentionally atomic because input handling and
+/// Metal draw callbacks need to change/read the budget without rebuilding the loaded asset.
+/// The full Gaussian asset remains resident; this only bounds live projection/sort/composite work.
+inline std::atomic<std::uint32_t> responsiveGaussianViewportBudget{240'000};
+
+inline void setResponsiveGaussianViewportBudget(std::uint32_t budget) noexcept {
+    responsiveGaussianViewportBudget.store(std::clamp(budget, 25'000U, 500'000U),
+                                           std::memory_order_relaxed);
+}
+
+struct ResponsiveGaussianCount final {
+    std::uint32_t loaded{};
+
+    ResponsiveGaussianCount& operator=(std::uint32_t value) noexcept {
+        loaded = value;
+        return *this;
+    }
+
+    [[nodiscard]] operator std::uint32_t() const noexcept {
+        const std::uint32_t budget =
+            responsiveGaussianViewportBudget.load(std::memory_order_relaxed);
+        return std::min(loaded, budget);
+    }
 };
 
 class GaussianPipeline final {
@@ -56,7 +83,7 @@ class GaussianPipeline final {
 
     MetalPtr<MTL::Device> device_;
     std::uint32_t maximumTileEntries_{};
-    std::uint32_t gaussianCount_{};
+    ResponsiveGaussianCount gaussianCount_{};
     std::uint32_t rangeCapacity_{};
     MetalPtr<MTL::Buffer> gaussians_;
     MetalPtr<MTL::Buffer> projected_;
