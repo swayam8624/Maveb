@@ -1,8 +1,10 @@
-// Responsive editor projection path. The rest of the Gaussian pipeline stays identical to the
-// correctness implementation in gaussian.metal; only projection is replaced with a conservative
-// early-rejection pass for interactive Studio workloads.
+// Responsive editor Gaussian path. Projection adds conservative early rejection and preserves
+// canonical IDs through spatial preview reordering. Key generation packs tile + quantized positive
+// depth into key.x so reduced-density interaction can sort the preview in half as many radix passes.
 #define aetherGaussianProject aetherGaussianProjectReference
+#define aetherGaussianGenerateKeys aetherGaussianGenerateKeysReference
 #include "gaussian.metal"
+#undef aetherGaussianGenerateKeys
 #undef aetherGaussianProject
 
 kernel void aetherGaussianProject(device const AetherGaussianGpu* gaussians [[buffer(0)]],
@@ -119,4 +121,37 @@ kernel void aetherGaussianProject(device const AetherGaussianGpu* gaussians [[bu
     projected[index] = output;
     tileCounts[index] = overlap;
     atomic_fetch_add_explicit(&counters[0], 1, memory_order_relaxed);
+}
+
+kernel void aetherGaussianGenerateKeys(
+    device const AetherProjectedGaussian* projected [[buffer(0)]],
+    device const uint* offsets [[buffer(1)]], device uint2* keys [[buffer(2)]],
+    device uint* values [[buffer(3)]], constant AetherGaussianCamera& camera [[buffer(4)]],
+    uint index [[thread_position_in_grid]]) {
+    if (index >= camera.tileGridCounts.z || projected[index].sourceCountValid.z == 0)
+        return;
+
+    const AetherProjectedGaussian gaussian = projected[index];
+    uint destination = offsets[index];
+
+    // 18 tile bits support up to 262,144 tiles (well beyond a 4K viewport's ~32K 16x16 tiles).
+    // The remaining 14 bits keep the high-order IEEE-754 bits of positive camera depth. Positive
+    // float bit patterns are monotonic with depth, so this remains front-to-back while accepting
+    // coarser depth precision only in the interactive preview sorter.
+    constexpr uint depthBits = 14u;
+    constexpr uint depthMask = (1u << depthBits) - 1u;
+    const uint positiveDepthBits = as_type<uint>(gaussian.centerDepthRadius.z);
+    const uint quantizedDepth = (positiveDepthBits >> (32u - depthBits)) & depthMask;
+
+    for (uint tileY = gaussian.tileBounds.y; tileY <= gaussian.tileBounds.w; ++tileY) {
+        for (uint tileX = gaussian.tileBounds.x; tileX <= gaussian.tileBounds.z; ++tileX) {
+            if (destination < camera.tileGridCounts.w) {
+                const uint tileId = tileY * camera.tileGridCounts.x + tileX;
+                const uint packedTileDepth = (tileId << depthBits) | quantizedDepth;
+                keys[destination] = uint2(packedTileDepth, tileId);
+                values[destination] = index;
+            }
+            ++destination;
+        }
+    }
 }
