@@ -15,8 +15,11 @@ kernel void aetherGaussianProject(device const AetherGaussianGpu* gaussians [[bu
         return;
 
     AetherProjectedGaussian output{};
-    output.sourceCountValid.x = index;
     const AetherGaussianGpu gaussian = gaussians[index];
+    // GaussianPipeline stores the canonical source index bit-exactly in dc.w. This lets the
+    // viewport reorder large assets spatially while picking/debug IDs remain stable.
+    const uint sourceIndex = as_type<uint>(gaussian.dc.w);
+    output.sourceCountValid.x = sourceIndex;
     const float4 cameraPoint4 = camera.worldToCamera * float4(gaussian.positionOpacity.xyz, 1.0f);
     const float3 cameraPoint = cameraPoint4.xyz;
     if (cameraPoint.z < camera.depthViewport.x || cameraPoint.z > camera.depthViewport.y) {
@@ -112,7 +115,7 @@ kernel void aetherGaussianProject(device const AetherGaussianGpu* gaussians [[bu
     output.tileBounds = uint4(minimumTile, maximumTile);
     const uint restCount = uint(max(gaussian.logScaleRestCount.w, 0.0f));
     const uint shDegree = restCount >= 45u ? 3u : restCount >= 24u ? 2u : restCount >= 9u ? 1u : 0u;
-    output.sourceCountValid = uint4(index, overlap, 1, shDegree);
+    output.sourceCountValid = uint4(sourceIndex, overlap, 1, shDegree);
     projected[index] = output;
     tileCounts[index] = overlap;
     atomic_fetch_add_explicit(&counters[0], 1, memory_order_relaxed);
