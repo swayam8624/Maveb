@@ -325,10 +325,21 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
         !result)
         return result;
 
+    // The responsive Studio shader packs {tile, quantized positive depth} into key.x while keeping
+    // the exact tile ID in key.y. During reduced-density preview this lets us sort one 32-bit key
+    // instead of the full 64-bit {depth,tile} pair. Eight 4-bit parallel passes (or four 8-bit
+    // serial passes) therefore preserve tile grouping + front-to-back order at half the radix work.
+    // The default 240k budget keeps the canonical/full path on the original 64-bit sort.
+    constexpr std::uint32_t compactSortTileLimit = 1U << 18U;
+    const std::uint32_t currentBudget =
+        responsiveGaussianViewportBudget.load(std::memory_order_relaxed);
+    const bool compactPreviewSort = currentBudget < 240'000U && tileCount < compactSortTileLimit;
+
     const bool parallelRadix = pipelines_[radixHistogram]->maxTotalThreadsPerThreadgroup() >= 256 &&
                                pipelines_[radixScatter]->maxTotalThreadsPerThreadgroup() >= 256;
     if (parallelRadix) {
-        for (std::uint32_t pass = 0; pass < 16; ++pass) {
+        const std::uint32_t passCount = compactPreviewSort ? 8U : 16U;
+        for (std::uint32_t pass = 0; pass < passCount; ++pass) {
             const bool even = (pass % 2U) == 0;
             MTL::Buffer* inputKeys = even ? keysA_.get() : keysB_.get();
             MTL::Buffer* inputValues = even ? valuesA_.get() : valuesB_.get();
@@ -372,7 +383,8 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
             scatter->endEncoding();
         }
     } else {
-        for (std::uint32_t pass = 0; pass < 8; ++pass) {
+        const std::uint32_t passCount = compactPreviewSort ? 4U : 8U;
+        for (std::uint32_t pass = 0; pass < passCount; ++pass) {
             const bool even = (pass % 2U) == 0;
             MTL::Buffer* inputKeys = even ? keysA_.get() : keysB_.get();
             MTL::Buffer* inputValues = even ? valuesA_.get() : valuesB_.get();
