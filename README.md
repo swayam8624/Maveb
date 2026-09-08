@@ -1,163 +1,159 @@
-# AETHER
+# AETHER / Maveb
 
-AETHER is a Metal-native research engine for reconstructing, rendering, relighting, and
-interacting with captured Gaussian worlds on Apple silicon.
+AETHER is a Metal-native captured-world research engine for Apple silicon. The project combines
+metric reconstruction, Gaussian scene representations, conventional mesh/PBR rendering, package
+provenance, and native macOS/iPad tooling.
 
-Reconstruction is currently in an oracle-first recovery: the former live camera panel was callback
-plumbing, not a valid scanner, and has been removed from the shipping path. The maintained
-reconstruction core now starts with versioned recorded metric RGB-D, known poses, calibrated TSDF
-integration, deterministic isosurface extraction, atomic PLY output, and geometry metrics. Live
-capture returns only after real-scene E3 evidence. See
-[ADR 0005](docs/adr/0005-reconstruction-truth-and-oracle-first.md).
+> Current status: research / engineering prototype. The project does **not yet claim production
+> Gaussian rendering or relighting**.
 
-The repository is being rebuilt from the original `MetalPractice` learning project as a set of
-verified, shippable milestones. The current foundation contains:
+## What the system does
 
-- A C++23 core with structured errors, profiling, logging, and safe resource discovery.
-- A declarative render graph with dependency analysis, pass culling, resource lifetimes, and DOT
-  export.
-- A Metal renderer with RAII ownership, bounded frames in flight, capability reporting, drawable
-  safety, and offline `.metallib` compilation.
-- A SwiftUI macOS application whose Objective-C++ bridge keeps Metal objects out of Swift.
-- A Swift 6 [MavebCapture iPad companion](apps/MavebCapture/README.md) that records checked,
-  calibrated RGB + LiDAR packages for deterministic desktop fusion.
-- A deterministic robust COLMAP-to-iPad Sim(3) alignment path that rejects camera-pose outliers,
-  measures metric position/orientation residuals, and emits every Sony/COLMAP camera in the iPad
-  world frame.
-- A versioned, hashed, bounded, per-chunk compressed [`.aether` container](docs/formats/AETHER_PACKAGE.md)
-  with `aether-pack` and `aether-inspect` command-line tools.
-- A [Canonical Asset v1](docs/formats/CANONICAL_ASSET.md) profile that packages a self-contained
-  metric textured GLB, calibrated cameras, per-vertex confidence, coordinate-frame semantics, and
-  hashed geometry/appearance provenance without requiring Gaussian content.
-- A bounded, deterministic [native static GLB writer](docs/formats/NATIVE_GLB_EXPORT.md) for
-  Maveb-owned indexed meshes, vertex colors, embedded textures, PBR materials, and static instances.
-- A bounded [standard 3DGS PLY importer](docs/formats/GAUSSIAN_PLY.md) and deterministic
-  anisotropic CPU reference rasterizer.
-- A Metal 3 Gaussian correctness path with projection, covariance, stable tile/depth ordering,
-  bounded compositing, depth/IDs/counters, CPU/GPU agreement tests, and PLY/`.aether` presentation
-  in AetherStudio, including click-to-pick source IDs and selectable depth, ID, occupancy, and
-  opacity views from the real GPU attachments.
-- A canonical proxy-mesh path with a dedicated reverse-Z normal/confidence/ID/motion G-buffer and
-  confidence-aware Gaussian occlusion, verified by a real Metal golden and proxy-ID readback.
-- A core glTF metallic-roughness path with bounded embedded/external image ingestion, ImageIO decode,
-  generated mipmaps and tangents, glTF samplers, material texture maps, normal mapping, and alpha
-  mask/blend states.
-- A warnings-as-errors CPU CI path, sanitizer preset, and foundation tests.
-- Deterministic block-sparse CPU and Metal 3 TSDF paths with a shared candidate-block contract,
-  bounded GPU allocations, immutable completed-generation snapshots, and exact CPU/GPU fixture
-  agreement. A halo-consistent incremental CPU mesher replaces/removes only dirty cell-owner
-  patches with exact full-extraction triangle coverage. GPU-resident meshing,
-  persistence/eviction, live scheduling, and real-capture GPU evidence remain open.
-- [MavebBench](benchmarks/README.md), a reproducible real-data evidence harness for ETH3D,
-  Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
-  dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs
-  without vendoring dataset bytes.
+The intended pipeline is:
 
-The project does **not** yet claim production Gaussian rendering or relighting. See
-[the roadmap](docs/ROADMAP.md) for implemented and pending exit gates.
+```text
+real-world capture
+    -> calibrated RGB / RGB-D evidence
+    -> metric reconstruction
+    -> canonical mesh + Gaussian assets
+    -> versioned .aether package
+    -> AetherStudio Metal viewport
+```
 
-## Requirements
+The maintained reconstruction path works from recorded metric RGB-D/camera evidence. The old live
+scanner path was intentionally removed rather than kept as an unvalidated demo.
 
-- Apple-silicon Mac running macOS 15 or newer.
-- Xcode 26 or newer.
-- CMake 3.28 or newer and Ninja.
-- The separately downloadable Xcode Metal Toolchain.
+## Responsive heavy-scene viewport
 
-Install the Metal compiler once if `xcrun metal` reports it is unavailable:
+Large Gaussian captures can contain hundreds of thousands or millions of splats, while the standard
+GPU path performs projection, tile counting, key generation/sorting, tile-range construction, and
+compositing every frame. AetherStudio therefore treats navigation as a responsive preview workload
+instead of a full-quality offline render.
+
+The Studio preview path currently uses:
+
+- adaptive drawable resolution while the camera/object is moving;
+- motion-sensitive Gaussian budgets with progressive quality recovery after input settles;
+- conservative early rejection of negligible low-opacity, sub-pixel, and safely off-screen splats;
+- a deterministic 32x32x32 coarse spatial ordering for large captures so low-budget prefixes cover
+  the whole scene instead of an arbitrary source-array prefix;
+- canonical source-ID preservation through the reordered preview path;
+- isolated background renderer construction for scene imports, followed by an atomic renderer swap,
+  so heavy package decode/upload does not block the macOS UI or mutate the renderer being drawn.
+
+This is a stepping stone toward a true hierarchical spatial Gaussian LOD/visibility structure. The
+current path deliberately prioritizes editor responsiveness while keeping the full source asset
+resident and unchanged.
+
+## Main components
+
+- `engine/core` - common errors, logging, diagnostics, timing and support utilities.
+- `engine/gaussian` - canonical Gaussian assets, PLY loading/codecs and reference operations.
+- `engine/mesh` - glTF/mesh loading and mesh utilities.
+- `engine/scene` - camera, transforms, lighting, shadows and scene-domain logic.
+- `engine/metal` - Apple Metal renderer, Gaussian GPU path and mesh/PBR rendering.
+- `engine/package` - `.aether` package reading/writing, hashing and provenance.
+- `engine/reconstruction` - metric reconstruction and reconstruction orchestration.
+- `engine/capture` - capture package validation/processing.
+- `apps/AetherStudio` - native macOS editor/research viewport.
+- `apps/MavebCapture` - iPad metric RGB-D capture application.
+
+## AetherStudio
+
+AetherStudio is the native macOS front end for scene import, captured-world rendering, mesh/PBR
+look-development, reconstruction workflows, research/debug views and benchmarking support.
+
+Scene assets are imported inside a project. The project document extension is `.aetherproject`;
+`.aether` is a captured-scene package rather than the document format itself.
+
+Supported scene imports include:
+
+- `.aether`
+- Gaussian `.ply`
+- `.gltf`
+- `.glb`
+
+## Build requirements
+
+The primary target is Apple silicon macOS.
+
+Typical requirements:
+
+- macOS 15+
+- Xcode 26+
+- CMake 3.28+
+- Ninja
+- Xcode Metal Toolchain
+
+Install the Metal compiler toolchain when needed:
 
 ```bash
 xcodebuild -downloadComponent metalToolchain
 ```
 
-## Build and test
+Configure, build and test:
 
 ```bash
 cmake --preset debug
 cmake --build --preset debug
 ctest --preset debug
+```
+
+Launch the Studio bundle:
+
+```bash
 open build/debug/apps/AetherStudio/AetherStudio.app
 ```
 
-The iPad recorder is built separately with the Xcode generator:
+When LaunchServices rejects a locally built bundle because of host-version metadata, the executable
+can also be launched directly for development diagnostics:
 
 ```bash
-cmake -S apps/MavebCapture -B build/ipad-capture -G Xcode \
-  -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=17.0
-cmake --build build/ipad-capture --config Debug -- \
-  -sdk iphoneos CODE_SIGNING_ALLOWED=NO
+./build/debug/apps/AetherStudio/AetherStudio.app/Contents/MacOS/AetherStudio
 ```
 
-CPU-only CI and sanitizer configurations do not require the app target:
+## Gaussian renderer
 
-```bash
-cmake --preset ci
-cmake --build --preset ci
-ctest --preset ci
+The Metal Gaussian path includes projection, covariance construction, tile overlap generation,
+prefix scans, depth/tile key generation, radix ordering, range building and front-to-back
+compositing. Debug outputs include depth, source IDs, occupancy, opacity and other research views.
 
-cmake --preset sanitizer
-cmake --build --preset sanitizer
-ctest --test-dir build/sanitizer --output-on-failure
+The responsive Studio shader is intentionally more conservative than the correctness/reference path:
+it can reject contributions that are visually negligible during interaction before performing the
+full covariance and spherical-harmonic work.
+
+## Hybrid scene direction
+
+AETHER is designed around captured static worlds plus conventional dynamic assets:
+
+```text
+captured Gaussian world
+        +
+dynamic glTF / PBR mesh
+        ->
+hybrid Metal viewport
 ```
 
-Release configuration intentionally fails if the Metal Toolchain is missing.
+This is intended to move captured environments closer to editable engine scenes rather than treating
+them as static scan viewers.
 
-## Reconstruction dependencies
+## Reconstruction and packaging
 
-The local RGB reconstruction adapter uses pinned COLMAP, Brush and `aether-proxy` versions under
-`.aether-deps/`. On Apple Silicon, after the documented native COLMAP libraries are installed, the
-full private tool setup can be bootstrapped with:
+The repository contains metric RGB-D/TSDF reconstruction tooling, deterministic mesh extraction,
+coordinate-alignment tooling and `.aether` packaging utilities. Packages are versioned and carry
+hashed/provenance-aware payloads rather than acting as an opaque model-file rename.
 
-```bash
-AETHER_BUILD_COLMAP=1 ./tools/bootstrap-reconstruction.zsh
-```
+Common generated assets can include canonical textured GLB geometry, proxy geometry, Gaussian PLY
+assets and packaged captured worlds.
 
-The bootstrap never writes dependency binaries into the repository and does not silently accept a
-mismatched COLMAP version.
+## Validation
 
-## Package and benchmark
+The codebase contains CPU/reference tests, Metal tests, reconstruction tests, package tests and
+benchmark tooling. GPU/reference agreement and deterministic behavior are treated as first-class
+engineering requirements rather than relying only on visual inspection.
 
-```bash
-build/debug/tools/aether-pack/aether-pack scene-directory --output scene.aether --json
-build/debug/tools/aether-inspect/aether-inspect scene.aether --json
-build/debug/apps/AetherBenchmark/aether-benchmark scene.aether \
-  --camera-path camera-path.json --width 1920 --height 1080 --json
-build/debug/tools/aether-capture/aether-capture validate dataset/images --json
-build/debug/tools/aether-keyframes/aether-keyframes extracted-frames \
-  --output keyframes --json
-build/debug/tools/aether-reconstruct/aether-reconstruct dataset \
-  --output reconstruction-job --trainer brush --seed 42 --dry-run --json
-build/debug/tools/aether-fuse/aether-fuse recorded-capture \
-build/debug/tools/aether-fuse/aether-fuse recorded-capture \
-  --output proxy.glb --voxel 0.01 --truncation 0.04 --json
-build/debug/tools/maveb-align-sensors/maveb-align-sensors colmap/sparse/0 ipad.mavebcapture \
-  --matches camera-matches.json --output metric-camera-rig.json --json
-```
+## Repository policy
 
-For the real-data regression layer:
-
-```bash
-export MAVEB_DATA="$HOME/Datasets/MavebBench"
-./tools/run-mavebbench.zsh doctor
-./tools/run-mavebbench.zsh run eth3d-pipes --steps 2000 --checkpoint-every 1000
-./tools/run-mavebbench.zsh run uco3d-object --video-fps 12 --steps 2000
-./tools/run-mavebbench.zsh run arkitscenes-47333462 --arkit-max-frames 30
-./tools/run-mavebbench.zsh report --output benchmarks/latest-report.md
-```
-
-The benchmark performs warmup frames, waits for each real Metal command buffer, and reports GPU
-median/p95 time plus allocation and Gaussian workload counters. See
-[the benchmark contract](docs/BENCHMARKING.md). Serial kernels are compatibility fallbacks only, and
-tiny-fixture timings are never used as release performance claims.
-
-## Repository history
-
-The complete pre-migration working tree, including uncommitted tutorial work and generated build
-state, is preserved on `archive/metal-practice-2026-07-12`. The maintained tutorial is under
-`examples/00_triangle`; generated artifacts and IDE user state are excluded from the flagship
-branch.
-
-## License
-
-AETHER source code is licensed under Apache-2.0. Documentation is licensed under CC BY 4.0 unless
-its file says otherwise. Datasets and third-party assets have separate manifests and are never
-implicitly covered by the code license.
+Performance preview mechanisms must not silently alter or overwrite canonical reconstruction data.
+Viewport quality reduction is temporary/editor-side; the original Gaussian asset remains available
+for correctness, export and future hierarchical LOD work.
