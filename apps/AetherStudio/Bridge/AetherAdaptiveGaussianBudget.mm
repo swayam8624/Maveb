@@ -52,10 +52,12 @@ void scheduleProgressiveRecovery(std::uint64_t generation) {
         double delaySeconds;
         std::uint32_t budget;
     };
+    // Avoid immediately snapping back to the full settled cost. The viewport can already be back
+    // at full drawable resolution at this point, so ramp Gaussian density separately.
     constexpr RecoveryStep steps[] = {
-        {0.22, 120'000},
-        {0.55, 180'000},
-        {1.10, 240'000},
+        {0.22, 110'000},
+        {0.55, 150'000},
+        {1.10, 190'000},
     };
 
     for (const RecoveryStep& step : steps) {
