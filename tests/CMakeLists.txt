@@ -7,6 +7,13 @@ target_compile_definitions(AetherTests PRIVATE
 aether_configure_target(AetherTests)
 add_test(NAME AetherTests COMMAND AetherTests)
 
+add_executable(AetherGaussianSpatialOrderTests GaussianSpatialOrderTests.cpp)
+target_link_libraries(AetherGaussianSpatialOrderTests PRIVATE Aether::Gaussian)
+target_include_directories(AetherGaussianSpatialOrderTests PRIVATE
+    "${PROJECT_SOURCE_DIR}/engine/metal/src")
+aether_configure_target(AetherGaussianSpatialOrderTests)
+add_test(NAME AetherGaussianSpatialOrderTests COMMAND AetherGaussianSpatialOrderTests)
+
 add_executable(AetherOracleGeometryTests OracleGeometryTests.cpp)
 target_link_libraries(AetherOracleGeometryTests PRIVATE Aether::Reconstruction)
 aether_configure_target(AetherOracleGeometryTests)
