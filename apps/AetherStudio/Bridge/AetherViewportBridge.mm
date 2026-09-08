@@ -8,13 +8,19 @@
 #include <aether/metal/Renderer.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
+#include <mutex>
 
 static NSString* gAetherRendererStatus = @"Renderer has not been initialized";
 
+typedef void (^AetherSceneLoadCompletion)(NSArray<NSString*>* names,
+                                          NSArray<NSString*>* materials,
+                                          NSString* _Nullable errorMessage);
+
 @interface AetherViewportDelegate : NSObject <MTKViewDelegate>
 - (instancetype)initWithDevice:(id<MTLDevice>)device;
-- (NSArray<NSString*>*)loadSceneAtPath:(NSString*)path;
+- (void)loadSceneAtPath:(NSString*)path completion:(AetherSceneLoadCompletion)completion;
 - (nullable NSArray<NSString*>*)attachDynamicMeshAtPath:(NSString*)path;
 - (void)detachDynamicMesh;
 - (void)setCameraKey:(unichar)key active:(BOOL)active;
@@ -50,6 +56,10 @@ static NSString* gAetherRendererStatus = @"Renderer has not been initialized";
 @implementation AetherViewportDelegate {
     std::unique_ptr<aether::metal::Renderer> _renderer;
     NSString* _rendererStatus;
+    id<MTLDevice> _device;
+    dispatch_queue_t _sceneLoadQueue;
+    std::mutex _rendererSwapMutex;
+    std::atomic<std::uint64_t> _sceneLoadGeneration;
 }
 
 - (NSArray<NSNumber*>*)cameraState {
@@ -88,6 +98,10 @@ static NSString* gAetherRendererStatus = @"Renderer has not been initialized";
 - (instancetype)initWithDevice:(id<MTLDevice>)device {
     self = [super init];
     if (self) {
+        _device = device;
+        _sceneLoadQueue = dispatch_queue_create("com.swayamsingal.aether.scene-load",
+                                                DISPATCH_QUEUE_SERIAL);
+        _sceneLoadGeneration.store(0, std::memory_order_relaxed);
         auto result =
             aether::metal::Renderer::create(reinterpret_cast<MTL::Device*>((__bridge void*)device));
         if (result) {
@@ -112,6 +126,7 @@ static NSString* gAetherRendererStatus = @"Renderer has not been initialized";
 }
 
 - (void)drawInMTKView:(MTKView*)view {
+    std::scoped_lock lock(_rendererSwapMutex);
     if (_renderer) {
         _renderer->draw(reinterpret_cast<MTK::View*>((__bridge void*)view));
     }
@@ -119,34 +134,119 @@ static NSString* gAetherRendererStatus = @"Renderer has not been initialized";
 
 - (void)mtkView:(MTKView*)view drawableSizeWillChange:(CGSize)size {
     (void)view;
+    std::scoped_lock lock(_rendererSwapMutex);
     if (_renderer) {
         _renderer->drawableSizeWillChange(size);
     }
 }
 
-- (NSArray<NSString*>*)loadSceneAtPath:(NSString*)path {
-    if (!_renderer) {
-        return @[];
+- (void)loadSceneAtPath:(NSString*)path completion:(AetherSceneLoadCompletion)completion {
+    if (!_device || path.length == 0) {
+        if (completion)
+            completion(@[], @[], @"No Metal device or scene path is available");
+        return;
     }
-    const NSString* extension = path.pathExtension.lowercaseString;
-    aether::Result<void> result;
-    if ([extension isEqualToString:@"ply"]) {
-        result = _renderer->loadPly(path.fileSystemRepresentation);
-    } else if ([extension isEqualToString:@"aether"]) {
-        result = _renderer->loadAether(path.fileSystemRepresentation);
-    } else {
-        result = _renderer->loadGltf(path.fileSystemRepresentation);
+
+    const std::uint64_t generation =
+        _sceneLoadGeneration.fetch_add(1, std::memory_order_relaxed) + 1;
+    NSString* pathCopy = [path copy];
+    id<MTLDevice> device = _device;
+
+    aether::metal::CameraSnapshot preservedCamera;
+    float preservedExposure = 0.0F;
+    BOOL hasPreservedCamera = NO;
+    {
+        std::scoped_lock lock(_rendererSwapMutex);
+        if (_renderer) {
+            preservedCamera = _renderer->cameraSnapshot();
+            preservedExposure = _renderer->exposureStops();
+            hasPreservedCamera = YES;
+        }
     }
-    if (!result) {
-        NSLog(@"AETHER scene load failed: %s", result.error().describe().c_str());
-        return @[];
-    } else {
-        NSLog(@"AETHER scene load succeeded: %@", path.lastPathComponent);
-    }
-    NSMutableArray<NSString*>* names = [NSMutableArray array];
-    for (const auto& name : _renderer->meshEntityNames())
-        [names addObject:[NSString stringWithUTF8String:name.c_str()]];
-    return names;
+
+    auto candidateHolder =
+        std::make_shared<std::unique_ptr<aether::metal::Renderer>>();
+    dispatch_async(_sceneLoadQueue, ^{
+        if (self->_sceneLoadGeneration.load(std::memory_order_relaxed) != generation)
+            return;
+
+        auto created = aether::metal::Renderer::create(
+            reinterpret_cast<MTL::Device*>((__bridge void*)device));
+        if (!created) {
+            NSString* message =
+                [NSString stringWithUTF8String:created.error().describe().c_str()];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (self->_sceneLoadGeneration.load(std::memory_order_relaxed) == generation &&
+                    completion)
+                    completion(@[], @[], message);
+            });
+            return;
+        }
+
+        *candidateHolder = std::move(*created);
+        const NSString* extension = pathCopy.pathExtension.lowercaseString;
+        aether::Result<void> result;
+        if ([extension isEqualToString:@"ply"]) {
+            result = (*candidateHolder)->loadPly(pathCopy.fileSystemRepresentation);
+        } else if ([extension isEqualToString:@"aether"]) {
+            result = (*candidateHolder)->loadAether(pathCopy.fileSystemRepresentation);
+        } else {
+            result = (*candidateHolder)->loadGltf(pathCopy.fileSystemRepresentation);
+        }
+
+        if (!result) {
+            NSString* message =
+                [NSString stringWithUTF8String:result.error().describe().c_str()];
+            NSLog(@"AETHER background scene load failed: %@ · %@", pathCopy.lastPathComponent,
+                  message);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (self->_sceneLoadGeneration.load(std::memory_order_relaxed) == generation &&
+                    completion)
+                    completion(@[], @[], message);
+            });
+            return;
+        }
+
+        if (hasPreservedCamera)
+            (void)(*candidateHolder)->setCameraSnapshot(preservedCamera);
+        (*candidateHolder)->setExposureStops(preservedExposure);
+
+        NSMutableArray<NSString*>* names = [NSMutableArray array];
+        for (const auto& name : (*candidateHolder)->meshEntityNames())
+            [names addObject:[NSString stringWithUTF8String:name.c_str()]];
+        NSMutableArray<NSString*>* materials = [NSMutableArray array];
+        for (const auto& material : (*candidateHolder)->materialSnapshots())
+            [materials addObject:[NSString stringWithUTF8String:material.name.c_str()]];
+        NSArray<NSString*>* immutableNames = [names copy];
+        NSArray<NSString*>* immutableMaterials = [materials copy];
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self->_sceneLoadGeneration.load(std::memory_order_relaxed) != generation)
+                return;
+
+            std::unique_ptr<aether::metal::Renderer> retiredRenderer;
+            {
+                std::scoped_lock lock(self->_rendererSwapMutex);
+                retiredRenderer = std::move(self->_renderer);
+                self->_renderer = std::move(*candidateHolder);
+            }
+
+            NSLog(@"AETHER background scene load succeeded: %@", pathCopy.lastPathComponent);
+            if (completion)
+                completion(immutableNames, immutableMaterials, nil);
+
+            // Renderer destruction can wait for in-flight command buffers. Do that off the UI
+            // thread after the new renderer is already active.
+            if (retiredRenderer) {
+                auto retiredHolder =
+                    std::make_shared<std::unique_ptr<aether::metal::Renderer>>(
+                        std::move(retiredRenderer));
+                dispatch_async(self->_sceneLoadQueue, ^{
+                    retiredHolder->reset();
+                });
+            }
+        });
+    });
 }
 
 - (nullable NSArray<NSString*>*)attachDynamicMeshAtPath:(NSString*)path {
@@ -662,11 +762,41 @@ BOOL AetherWriteDiagnostics(NSURL* destination, NSError** error) {
     if (_scenePath.length == 0) {
         return;
     }
-    NSArray<NSString*>* names = [_rendererDelegate loadSceneAtPath:_scenePath];
-    if (self.onMeshEntitiesChanged)
-        self.onMeshEntitiesChanged(names);
-    if (self.onMaterialsChanged)
-        self.onMaterialsChanged([_rendererDelegate materialNames]);
+
+    NSString* requestedPath = [_scenePath copy];
+    __weak AetherViewportView* weakSelf = self;
+    [_rendererDelegate loadSceneAtPath:requestedPath
+                            completion:^(NSArray<NSString*>* names,
+                                         NSArray<NSString*>* materials,
+                                         NSString* errorMessage) {
+                                AetherViewportView* strongSelf = weakSelf;
+                                if (!strongSelf ||
+                                    ![strongSelf->_scenePath isEqualToString:requestedPath])
+                                    return;
+                                if (errorMessage.length > 0) {
+                                    NSLog(@"AETHER scene load retained previous renderer: %@",
+                                          errorMessage);
+                                    return;
+                                }
+
+                                [strongSelf->_rendererDelegate
+                                    mtkView:strongSelf->_metalView
+                                    drawableSizeWillChange:strongSelf->_metalView.drawableSize];
+                                [strongSelf->_rendererDelegate
+                                    setGaussianDebugMode:strongSelf->_gaussianDebugMode];
+                                [strongSelf->_rendererDelegate
+                                    setShadowDebugMode:strongSelf->_shadowDebugMode
+                                                slice:strongSelf->_shadowDebugSlice];
+                                [strongSelf->_rendererDelegate
+                                    setExposureStops:strongSelf->_exposureStops];
+                                [strongSelf->_rendererDelegate setGizmoMode:strongSelf->_gizmoMode];
+                                [strongSelf->_rendererDelegate
+                                    setSelectedMeshEntity:strongSelf->_selectedMeshEntity];
+                                if (strongSelf.onMeshEntitiesChanged)
+                                    strongSelf.onMeshEntitiesChanged(names);
+                                if (strongSelf.onMaterialsChanged)
+                                    strongSelf.onMaterialsChanged(materials);
+                            }];
 }
 
 - (NSString*)dynamicMeshPath {
