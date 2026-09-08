@@ -41,7 +41,7 @@ aether_add_metal_library(AetherShaders "AetherShaders.metallib"
     "${PROJECT_SOURCE_DIR}/shaders/proxy.metal"
     "${PROJECT_SOURCE_DIR}/shaders/shadow.metal"
     "${PROJECT_SOURCE_DIR}/shaders/tsdf.metal"
-    "${PROJECT_SOURCE_DIR}/shaders/gaussian.metal")
+    "${PROJECT_SOURCE_DIR}/shaders/gaussian_responsive.metal")
 if(TARGET AetherShaders)
     add_dependencies(AetherStudio AetherShaders)
     target_sources(AetherStudio PRIVATE "${AetherShaders_OUTPUT}")
