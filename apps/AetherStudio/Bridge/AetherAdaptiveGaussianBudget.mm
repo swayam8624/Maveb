@@ -52,12 +52,13 @@ void scheduleProgressiveRecovery(std::uint64_t generation) {
         double delaySeconds;
         std::uint32_t budget;
     };
-    // Avoid immediately snapping back to the full settled cost. The viewport can already be back
-    // at full drawable resolution at this point, so ramp Gaussian density separately.
+    // Spatially progressive ordering means each prefix already covers the whole world. Recover
+    // density gradually so the first settled frames do not spike from interaction cost to 240k.
     constexpr RecoveryStep steps[] = {
-        {0.22, 110'000},
-        {0.55, 150'000},
-        {1.10, 190'000},
+        {0.20, 105'000},
+        {0.48, 145'000},
+        {0.82, 190'000},
+        {1.25, 240'000},
     };
 
     for (const RecoveryStep& step : steps) {
@@ -75,9 +76,8 @@ void scheduleProgressiveRecovery(std::uint64_t generation) {
 void noteInteraction(std::uint32_t budget) {
     const std::uint64_t generation =
         gInteractionGeneration.fetch_add(1, std::memory_order_relaxed) + 1;
-    // The existing viewport handler runs after this monitor and applies its generic 80k budget.
-    // Re-apply the motion-sensitive value on the next main-queue turn so stronger movement gets
-    // a substantially cheaper Gaussian workload.
+    // The viewport handler applies its generic budget first. Re-apply the motion-sensitive value on
+    // the next main-queue turn so stronger movement gets a substantially cheaper Gaussian workload.
     setBudgetAfterCurrentEvent(generation, budget);
     scheduleProgressiveRecovery(generation);
 }
