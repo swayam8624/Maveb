@@ -40,8 +40,9 @@ struct WorldEditResult final {
 /// Translation-only transform patches automatically translate the entity bounds. Rotation/scale
 /// changes require explicit replacement world bounds because the temporal layer intentionally does
 /// not own source geometry needed to recompute a rotated/scaled AABB.
-[[nodiscard]] Result<WorldEditResult>
-prepareWorldEdit(const WorldSnapshot& previous, TimestampNs timestamp,
-                 const std::vector<EntityPatch>& patches, WorldEditPolicy policy = {});
+[[nodiscard]] Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous,
+                                                       TimestampNs timestamp,
+                                                       const std::vector<EntityPatch>& patches,
+                                                       WorldEditPolicy policy = {});
 
 } // namespace aether::world
