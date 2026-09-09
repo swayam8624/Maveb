@@ -14,12 +14,12 @@ using aether::world::Bounds;
 using aether::world::ChangeFlag;
 using aether::world::EntityId;
 using aether::world::EntityState;
+using aether::world::hasFlag;
 using aether::world::RegionKey;
 using aether::world::RepresentationKind;
 using aether::world::SelectiveUpdatePolicy;
 using aether::world::WorldSnapshot;
 using aether::world::WorldTimeline;
-using aether::world::hasFlag;
 
 int failures{};
 
@@ -38,8 +38,7 @@ EntityState entity(std::uint64_t id, std::string name, std::string semantic, flo
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -48,7 +47,7 @@ EntityState entity(std::uint64_t id, std::string name, std::string semantic, flo
 }
 
 const aether::world::EntityDelta* findDelta(const aether::world::WorldDiff& diff,
-                                             std::uint64_t id) {
+                                            std::uint64_t id) {
     for (const auto& delta : diff.entities) {
         if (delta.id.value == id)
             return &delta;
@@ -85,7 +84,8 @@ void testRealityDiff() {
 
     const auto firstRevision = timeline.append(std::move(first));
     const auto secondRevision = timeline.append(std::move(second));
-    expect(firstRevision.has_value() && *firstRevision == 1, "first snapshot must become revision 1");
+    expect(firstRevision.has_value() && *firstRevision == 1,
+           "first snapshot must become revision 1");
     expect(secondRevision.has_value() && *secondRevision == 2,
            "second snapshot must become revision 2");
 
@@ -113,8 +113,7 @@ void testRealityDiff() {
     expect(chair && hasFlag(chair->flags, ChangeFlag::bounds),
            "chair world-bounds movement must be reported");
     expect(cup && hasFlag(cup->flags, ChangeFlag::removed), "cup must carry removed flag");
-    expect(monitor && hasFlag(monitor->flags, ChangeFlag::added),
-           "monitor must carry added flag");
+    expect(monitor && hasFlag(monitor->flags, ChangeFlag::added), "monitor must carry added flag");
 }
 
 void testSelectiveUpdatePlan() {
