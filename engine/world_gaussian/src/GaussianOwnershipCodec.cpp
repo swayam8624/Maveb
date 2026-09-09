@@ -1,5 +1,6 @@
 #include <aether/world_gaussian/GaussianOwnershipCodec.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <limits>
