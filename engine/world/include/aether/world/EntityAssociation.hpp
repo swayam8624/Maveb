@@ -31,9 +31,10 @@ struct AssociationResult final {
 /// (`id == 0`) are matched globally and deterministically against unmatched previous entities using
 /// semantic compatibility, metric center distance, bounds overlap, and representation signatures.
 /// Remaining observations receive fresh monotonically increasing IDs.
-[[nodiscard]] Result<AssociationResult>
-associateObservations(const WorldSnapshot& previous, TimestampNs timestamp,
-                      std::vector<EntityState> observations, std::uint64_t nextEntityId,
-                      AssociationPolicy policy = {});
+[[nodiscard]] Result<AssociationResult> associateObservations(const WorldSnapshot& previous,
+                                                              TimestampNs timestamp,
+                                                              std::vector<EntityState> observations,
+                                                              std::uint64_t nextEntityId,
+                                                              AssociationPolicy policy = {});
 
 } // namespace aether::world
