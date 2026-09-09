@@ -105,6 +105,7 @@ class Renderer final {
     /// Replaces the active captured Gaussian scene directly from a validated in-memory asset.
     /// Used by persistent-reality state reloads after authored edits.
     [[nodiscard]] Result<void> loadGaussianAsset(const gaussian::GaussianAsset& asset);
+    void clearCapturedGaussianScene() noexcept;
 
     /// Validates a source-order subset translation against the currently loaded shared GPU buffer
     /// without mutating visible state.
