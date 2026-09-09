@@ -16,6 +16,20 @@ NS_ASSUME_NONNULL_BEGIN
                                         error:(NSError* _Nullable* _Nullable)error;
 - (NSData* _Nullable)historyJSONWithError:(NSError* _Nullable* _Nullable)error;
 - (NSData* _Nullable)latestDiffJSONWithError:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)latestEntitiesJSONWithError:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)translateEntity:(uint64_t)entityId
+                                   x:(float)x
+                                   y:(float)y
+                                   z:(float)z
+                timestampNanoseconds:(uint64_t)timestampNanoseconds
+                               error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)relabelEntity:(uint64_t)entityId
+                     semanticLabel:(NSString*)semanticLabel
+              timestampNanoseconds:(uint64_t)timestampNanoseconds
+                             error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)removeEntity:(uint64_t)entityId
+             timestampNanoseconds:(uint64_t)timestampNanoseconds
+                            error:(NSError* _Nullable* _Nullable)error;
 
 @end
 
@@ -32,5 +46,16 @@ FOUNDATION_EXPORT NSData* _Nullable AetherWorldHistoryJSON(
     AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldLatestDiffJSON(
     AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldLatestEntitiesJSON(
+    AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldTranslateEntity(
+    AetherWorldBridge* bridge, uint64_t entityId, float x, float y, float z,
+    uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelabelEntity(
+    AetherWorldBridge* bridge, uint64_t entityId, NSString* semanticLabel,
+    uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRemoveEntity(
+    AetherWorldBridge* bridge, uint64_t entityId, uint64_t timestampNanoseconds,
+    NSError* _Nullable* _Nullable error);
 
 NS_ASSUME_NONNULL_END
