@@ -10,6 +10,7 @@ set(AETHER_STUDIO_SOURCES
     Sources/TrainingComparisonViewport.swift
     Sources/WorldEntityEditor.swift
     Sources/WorldHistoryWorkspace.swift
+    Sources/WorldTimeMachine.swift
     Bridge/AetherCaptureBridge.mm
     Bridge/AetherViewportBridge.mm
     Bridge/AetherWorldBridge.mm
