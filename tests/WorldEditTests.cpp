@@ -10,6 +10,7 @@ namespace {
 
 using aether::world::Bounds;
 using aether::world::ChangeFlag;
+using aether::world::EntityId;
 using aether::world::EntityPatch;
 using aether::world::EntityState;
 using aether::world::PersistentWorldModel;
@@ -104,9 +105,11 @@ void testRemovalAndSemanticEdit() {
         expect(false, "edit fixture entities must exist");
         return;
     }
+    const EntityId deskId = desk->id;
+    const EntityId chairId = chair->id;
 
     EntityPatch semantic;
-    semantic.id = desk->id;
+    semantic.id = deskId;
     semantic.semanticLabel = "desk";
     const auto semanticEdit = model.edit(200, {semantic});
     expect(semanticEdit.has_value(), "semantic relabel must commit as world history");
@@ -118,7 +121,7 @@ void testRemovalAndSemanticEdit() {
     }
 
     EntityPatch remove;
-    remove.id = chair->id;
+    remove.id = chairId;
     remove.remove = true;
     const auto removal = model.edit(300, {remove});
     expect(removal.has_value(), "stable captured entity must support authored removal");
