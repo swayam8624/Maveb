@@ -40,16 +40,15 @@ namespace {
         rhsLength <= std::numeric_limits<float>::epsilon()) {
         return std::numeric_limits<float>::infinity();
     }
-    const float cosine = std::clamp(std::abs(simd_dot(lhsVector / lhsLength, rhsVector / rhsLength)),
-                                    0.0F, 1.0F);
+    const float cosine =
+        std::clamp(std::abs(simd_dot(lhsVector / lhsLength, rhsVector / rhsLength)), 0.0F, 1.0F);
     return 2.0F * std::acos(cosine);
 }
 
 [[nodiscard]] float relativeScaleDelta(simd_float3 lhs, simd_float3 rhs) noexcept {
     float maximum{};
     for (std::size_t axis = 0; axis < 3; ++axis) {
-        const float denominator =
-            std::max({std::abs(lhs[axis]), std::abs(rhs[axis]), 1.0e-6F});
+        const float denominator = std::max({std::abs(lhs[axis]), std::abs(rhs[axis]), 1.0e-6F});
         maximum = std::max(maximum, std::abs(lhs[axis] - rhs[axis]) / denominator);
     }
     return maximum;
@@ -68,7 +67,8 @@ namespace {
                                         const DiffPolicy& policy) noexcept {
     EntityDelta delta;
     delta.id = before.id;
-    delta.translationMeters = simd_distance(before.transform.translation, after.transform.translation);
+    delta.translationMeters =
+        simd_distance(before.transform.translation, after.transform.translation);
     delta.rotationRadians = quaternionAngle(before.transform.rotation, after.transform.rotation);
     delta.relativeScale = relativeScaleDelta(before.transform.scale, after.transform.scale);
     delta.boundsMeters = boundsDelta(before.worldBounds, after.worldBounds);
@@ -108,7 +108,8 @@ Result<void> validateSnapshot(const WorldSnapshot& snapshot) {
         if (!entity.id.valid())
             return fail(ErrorCode::invalidArgument, "Persistent world entity ID cannot be zero");
         if (!ids.insert(entity.id.value).second) {
-            return fail(ErrorCode::invalidArgument, "Persistent world snapshot contains duplicate ID",
+            return fail(ErrorCode::invalidArgument,
+                        "Persistent world snapshot contains duplicate ID",
                         std::to_string(entity.id.value));
         }
         if (!scene::isFinite(entity.transform) || !scene::hasNonZeroScale(entity.transform)) {
@@ -136,15 +137,18 @@ Result<void> validateSnapshot(const WorldSnapshot& snapshot) {
 
 Result<WorldDiff> diffSnapshots(const WorldSnapshot& before, const WorldSnapshot& after,
                                 DiffPolicy policy) {
-    if (!validPolicy(policy))
-        return fail(ErrorCode::invalidArgument, "Reality Diff thresholds must be finite and non-negative");
+    if (!validPolicy(policy)) {
+        return fail(ErrorCode::invalidArgument,
+                    "Reality Diff thresholds must be finite and non-negative");
+    }
     if (auto result = validateSnapshot(before); !result)
         return std::unexpected(result.error());
     if (auto result = validateSnapshot(after); !result)
         return std::unexpected(result.error());
     if (after.timestamp < before.timestamp) {
-        return fail(ErrorCode::invalidArgument,
-                    "Reality Diff requires the after snapshot to be no older than the before snapshot");
+        return fail(
+            ErrorCode::invalidArgument,
+            "Reality Diff requires the after snapshot to be no older than the before snapshot");
     }
 
     std::unordered_map<std::uint64_t, const EntityState*> beforeById;
@@ -197,8 +201,8 @@ Result<WorldDiff> diffSnapshots(const WorldSnapshot& before, const WorldSnapshot
     if (!result.entities.empty()) {
         const std::size_t changed =
             result.summary.added + result.summary.removed + result.summary.modified;
-        result.summary.changeRatio = static_cast<float>(changed) /
-                                     static_cast<float>(result.entities.size());
+        result.summary.changeRatio =
+            static_cast<float>(changed) / static_cast<float>(result.entities.size());
     }
     return result;
 }
@@ -210,6 +214,10 @@ Result<std::uint64_t> WorldTimeline::append(WorldSnapshot snapshot) {
         return fail(ErrorCode::invalidArgument,
                     "Persistent world snapshots must be appended in strictly increasing time");
     }
+    if (!snapshots_.empty() &&
+        snapshots_.back().revision == std::numeric_limits<std::uint64_t>::max()) {
+        return fail(ErrorCode::resourceExhausted, "Persistent world revision space is exhausted");
+    }
 
     snapshot.revision = snapshots_.empty() ? 1U : snapshots_.back().revision + 1U;
     snapshots_.push_back(std::move(snapshot));
@@ -219,14 +227,17 @@ Result<std::uint64_t> WorldTimeline::append(WorldSnapshot snapshot) {
 Result<const WorldSnapshot*> WorldTimeline::snapshot(std::uint64_t revision) const {
     if (revision == 0)
         return fail(ErrorCode::invalidArgument, "Persistent world revision cannot be zero");
-    const auto match = std::find_if(snapshots_.begin(), snapshots_.end(),
-                                    [revision](const WorldSnapshot& candidate) {
-                                        return candidate.revision == revision;
-                                    });
-    if (match == snapshots_.end())
+    if (revision > static_cast<std::uint64_t>(snapshots_.size())) {
         return fail(ErrorCode::notFound, "Persistent world revision was not found",
                     std::to_string(revision));
-    return &*match;
+    }
+
+    const std::size_t index = static_cast<std::size_t>(revision - 1U);
+    if (snapshots_[index].revision != revision) {
+        return fail(ErrorCode::corruptData, "Persistent world timeline revision index is corrupt",
+                    std::to_string(revision));
+    }
+    return &snapshots_[index];
 }
 
 Result<WorldDiff> WorldTimeline::diff(std::uint64_t beforeRevision, std::uint64_t afterRevision,
