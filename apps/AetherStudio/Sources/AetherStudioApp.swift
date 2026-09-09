@@ -10,9 +10,38 @@ struct AetherStudioApp: App {
     }
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
+    .commands { PersistentRealityCommands() }
+
+    WindowGroup("Persistent Reality", id: "persistent-reality") {
+      PersistentRealityWindow()
+        .frame(minWidth: 980, minHeight: 700)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
 
     Settings {
       AetherSettingsView()
+    }
+  }
+}
+
+private struct PersistentRealityWindow: View {
+  @State private var archivePath: String?
+
+  var body: some View {
+    WorldHistoryWorkspace(archivePath: $archivePath)
+  }
+}
+
+private struct PersistentRealityCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandMenu("World") {
+      Button("Persistent Reality…") {
+        openWindow(id: "persistent-reality")
+      }
+      .keyboardShortcut("h", modifiers: [.command, .shift])
     }
   }
 }
