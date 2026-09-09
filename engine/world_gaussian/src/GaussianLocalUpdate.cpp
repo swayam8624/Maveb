@@ -66,6 +66,59 @@ regionKey(const gaussian::Gaussian& gaussian, float cellSizeMeters) {
            std::isfinite(primitive.position[2] + delta.z);
 }
 
+[[nodiscard]] Result<std::vector<std::size_t>>
+preflightOwnedTranslation(const gaussian::GaussianAsset& asset,
+                          const GaussianEntityOwnership& ownership, world::EntityId entity,
+                          simd_float3 translationDelta, std::size_t maximumAffectedGaussians) {
+    if (!entity.valid())
+        return fail(ErrorCode::invalidArgument, "Gaussian translation entity ID cannot be zero");
+    if (!finiteDelta(translationDelta))
+        return fail(ErrorCode::invalidArgument, "Gaussian translation delta must be finite");
+    if (maximumAffectedGaussians == 0)
+        return fail(ErrorCode::invalidArgument, "Gaussian translation budget cannot be zero");
+    if (ownership.owners.size() != asset.gaussians.size()) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian ownership count must match Gaussian asset primitive count");
+    }
+
+    std::vector<std::size_t> affectedIndices;
+    affectedIndices.reserve(std::min(asset.gaussians.size(), maximumAffectedGaussians));
+    for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
+        if (ownership.owners[index] != entity)
+            continue;
+        if (affectedIndices.size() >= maximumAffectedGaussians) {
+            return fail(ErrorCode::resourceExhausted,
+                        "Gaussian entity translation exceeds affected-primitive budget");
+        }
+        if (!finiteTranslatedPosition(asset.gaussians[index], translationDelta)) {
+            return fail(ErrorCode::resourceExhausted,
+                        "Gaussian entity translation would produce a non-finite position");
+        }
+        affectedIndices.push_back(index);
+    }
+    return affectedIndices;
+}
+
+void applyOwnedTranslation(gaussian::GaussianAsset& asset,
+                           const std::vector<std::size_t>& affectedIndices,
+                           simd_float3 translationDelta) noexcept {
+    for (const std::size_t index : affectedIndices) {
+        gaussian::Gaussian& primitive = asset.gaussians[index];
+        primitive.position[0] += translationDelta.x;
+        primitive.position[1] += translationDelta.y;
+        primitive.position[2] += translationDelta.z;
+    }
+}
+
+[[nodiscard]] const world::EntityState*
+findEntity(const world::WorldSnapshot& snapshot, world::EntityId entity) noexcept {
+    const auto match = std::find_if(snapshot.entities.begin(), snapshot.entities.end(),
+                                    [entity](const world::EntityState& state) {
+                                        return state.id == entity;
+                                    });
+    return match == snapshot.entities.end() ? nullptr : &*match;
+}
+
 } // namespace
 
 Result<GaussianLocalUpdateSelection>
@@ -138,40 +191,61 @@ Result<std::size_t>
 translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwnership& ownership,
                         world::EntityId entity, simd_float3 translationDelta,
                         std::size_t maximumAffectedGaussians) {
-    if (!entity.valid())
-        return fail(ErrorCode::invalidArgument, "Gaussian translation entity ID cannot be zero");
-    if (!finiteDelta(translationDelta))
-        return fail(ErrorCode::invalidArgument, "Gaussian translation delta must be finite");
-    if (maximumAffectedGaussians == 0)
-        return fail(ErrorCode::invalidArgument, "Gaussian translation budget cannot be zero");
-    if (ownership.owners.size() != asset.gaussians.size()) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian ownership count must match Gaussian asset primitive count");
-    }
+    auto affected = preflightOwnedTranslation(asset, ownership, entity, translationDelta,
+                                              maximumAffectedGaussians);
+    if (!affected)
+        return std::unexpected(affected.error());
+    applyOwnedTranslation(asset, *affected, translationDelta);
+    return affected->size();
+}
 
-    std::vector<std::size_t> affectedIndices;
-    affectedIndices.reserve(std::min(asset.gaussians.size(), maximumAffectedGaussians));
-    for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
-        if (ownership.owners[index] != entity)
-            continue;
-        if (affectedIndices.size() >= maximumAffectedGaussians) {
-            return fail(ErrorCode::resourceExhausted,
-                        "Gaussian entity translation exceeds affected-primitive budget");
-        }
-        if (!finiteTranslatedPosition(asset.gaussians[index], translationDelta)) {
-            return fail(ErrorCode::resourceExhausted,
-                        "Gaussian entity translation would produce a non-finite position");
-        }
-        affectedIndices.push_back(index);
-    }
+Result<PersistentGaussianTranslationResult>
+translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
+                                  gaussian::GaussianAsset& asset,
+                                  const GaussianEntityOwnership& ownership,
+                                  world::EntityId entity, simd_float3 targetWorldTranslation,
+                                  world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy,
+                                  GaussianLocalUpdatePolicy gaussianPolicy) {
+    const world::WorldSnapshot* latest = worldModel.latest();
+    if (!latest)
+        return fail(ErrorCode::notFound, "Persistent Gaussian edit requires an existing world");
+    const world::EntityState* state = findEntity(*latest, entity);
+    if (!state)
+        return fail(ErrorCode::notFound, "Persistent Gaussian entity was not found",
+                    std::to_string(entity.value));
+    if (!finiteDelta(targetWorldTranslation))
+        return fail(ErrorCode::invalidArgument, "Gaussian target translation must be finite");
 
-    for (const std::size_t index : affectedIndices) {
-        gaussian::Gaussian& primitive = asset.gaussians[index];
-        primitive.position[0] += translationDelta.x;
-        primitive.position[1] += translationDelta.y;
-        primitive.position[2] += translationDelta.z;
-    }
-    return affectedIndices.size();
+    const simd_float3 translationDelta = targetWorldTranslation - state->transform.translation;
+    world::EntityPatch patch;
+    patch.id = entity;
+    patch.transform = state->transform;
+    patch.transform->translation = targetWorldTranslation;
+
+    auto preparedWorld = world::prepareWorldEdit(*latest, timestamp, {patch}, worldPolicy);
+    if (!preparedWorld)
+        return std::unexpected(preparedWorld.error());
+
+    auto affected = preflightOwnedTranslation(asset, ownership, entity, translationDelta,
+                                              gaussianPolicy.maximumAffectedGaussians);
+    if (!affected)
+        return std::unexpected(affected.error());
+
+    auto selection = selectGaussiansForLocalUpdate(asset, preparedWorld->selectiveUpdate, &ownership,
+                                                   gaussianPolicy);
+    if (!selection)
+        return std::unexpected(selection.error());
+
+    auto committedWorld = worldModel.edit(timestamp, {patch}, worldPolicy);
+    if (!committedWorld)
+        return std::unexpected(committedWorld.error());
+
+    applyOwnedTranslation(asset, *affected, translationDelta);
+    return PersistentGaussianTranslationResult{
+        .worldEdit = std::move(*committedWorld),
+        .translatedGaussians = affected->size(),
+        .reoptimizationSelection = std::move(*selection),
+    };
 }
 
 } // namespace aether::world_gaussian
