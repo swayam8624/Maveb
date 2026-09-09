@@ -2,6 +2,7 @@
 
 #include <aether/core/Clock.hpp>
 #include <aether/core/Error.hpp>
+#include <aether/gaussian/GaussianAsset.hpp>
 #include <aether/mesh/MeshAsset.hpp>
 #include <aether/metal/FrameContext.hpp>
 #include <aether/metal/GaussianPipeline.hpp>
@@ -100,6 +101,16 @@ class Renderer final {
     void detachDynamicGltf() noexcept;
     [[nodiscard]] Result<void> loadPly(const std::filesystem::path& path);
     [[nodiscard]] Result<void> loadAether(const std::filesystem::path& path);
+
+    /// Replaces the active captured Gaussian scene directly from a validated in-memory asset.
+    /// Used by persistent-reality state reloads after authored edits.
+    [[nodiscard]] Result<void> loadGaussianAsset(const gaussian::GaussianAsset& asset);
+
+    /// Validates a source-order subset translation against the currently loaded shared GPU buffer
+    /// without mutating visible state.
+    [[nodiscard]] Result<void>
+    validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                simd_float3 translationDelta) const;
 
     /// Waits until every in-flight frame has released the shared Gaussian buffer, applies one
     /// transactional source-order subset translation, invalidates temporal history, then resumes
