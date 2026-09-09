@@ -46,4 +46,13 @@ Result<void> Renderer::loadGaussianAsset(const gaussian::GaussianAsset& asset) {
     return {};
 }
 
+void Renderer::clearCapturedGaussianScene() noexcept {
+    gaussianPipeline_.reset();
+    proxyVertices_.reset();
+    proxyIndices_.reset();
+    proxyVertexCount_ = 0;
+    proxyIndexCount_ = 0;
+    temporalHistoryValid_ = false;
+}
+
 } // namespace aether::metal
