@@ -129,6 +129,11 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebGaussianLocalUpdateTests PRIVATE Aether::WorldGaussian)
     aether_configure_target(MavebGaussianLocalUpdateTests)
     add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
+
+    add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
+    target_link_libraries(MavebGaussianOwnershipCodecTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianOwnershipCodecTests)
+    add_test(NAME MavebGaussianOwnershipCodecTests COMMAND MavebGaussianOwnershipCodecTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
