@@ -1,4 +1,5 @@
 #include <aether/world/PersistentWorld.hpp>
+#include <aether/world/SelectiveUpdate.hpp>
 
 #include <cmath>
 #include <cstdlib>
@@ -13,7 +14,9 @@ using aether::world::Bounds;
 using aether::world::ChangeFlag;
 using aether::world::EntityId;
 using aether::world::EntityState;
+using aether::world::RegionKey;
 using aether::world::RepresentationKind;
+using aether::world::SelectiveUpdatePolicy;
 using aether::world::WorldSnapshot;
 using aether::world::WorldTimeline;
 using aether::world::hasFlag;
@@ -51,6 +54,14 @@ const aether::world::EntityDelta* findDelta(const aether::world::WorldDiff& diff
             return &delta;
     }
     return nullptr;
+}
+
+bool containsRegion(const aether::world::SelectiveUpdatePlan& plan, RegionKey key) {
+    for (const auto& region : plan.dirtyRegions) {
+        if (region.key == key)
+            return true;
+    }
+    return false;
 }
 
 void testRealityDiff() {
@@ -106,6 +117,49 @@ void testRealityDiff() {
            "monitor must carry added flag");
 }
 
+void testSelectiveUpdatePlan() {
+    WorldSnapshot before;
+    before.revision = 1;
+    before.timestamp = 100;
+    before.entities = {entity(1, "Wall", "wall", 0.0F, 10, 20, 100),
+                       entity(2, "Chair", "chair", 1.0F, 30, 40, 100)};
+
+    WorldSnapshot after;
+    after.revision = 2;
+    after.timestamp = 200;
+    after.entities = {entity(1, "Wall", "wall", 0.0F, 10, 20, 200),
+                      entity(2, "Chair", "chair", 1.5F, 30, 41, 200),
+                      entity(3, "Monitor", "monitor", 3.0F, 50, 60, 200)};
+
+    const auto diff = aether::world::diffSnapshots(before, after);
+    expect(diff.has_value(), "selective update fixture must produce a Reality Diff");
+    if (!diff)
+        return;
+
+    SelectiveUpdatePolicy policy;
+    policy.cellSizeMeters = 0.5F;
+    policy.haloCells = 0;
+    const auto plan = aether::world::planSelectiveUpdates(before, after, *diff, policy);
+    expect(plan.has_value(), "changed world must produce a selective update plan");
+    if (!plan)
+        return;
+
+    expect(plan->changedEntities == 2, "moved chair and added monitor must schedule local work");
+    expect(plan->unchangedEntities == 1, "unchanged wall must not schedule reconstruction");
+    expect(!plan->dirtyRegions.empty(), "spatial changes must dirty metric grid regions");
+    expect(containsRegion(*plan, RegionKey{1, -1, -1}),
+           "chair previous metric extent must remain in dirty union");
+    expect(containsRegion(*plan, RegionKey{3, -1, -1}),
+           "chair new metric extent must be included in dirty union");
+    expect(containsRegion(*plan, RegionKey{5, -1, -1}),
+           "added monitor metric extent must be scheduled");
+
+    for (std::size_t index = 1; index < plan->dirtyRegions.size(); ++index) {
+        expect(plan->dirtyRegions[index - 1].key < plan->dirtyRegions[index].key,
+               "dirty regions must be unique and deterministically sorted");
+    }
+}
+
 void testJitterSuppression() {
     WorldSnapshot before;
     before.timestamp = 100;
@@ -157,6 +211,7 @@ void testTimelineGuards() {
 int main() noexcept {
     try {
         testRealityDiff();
+        testSelectiveUpdatePlan();
         testJitterSuppression();
         testTimelineGuards();
     } catch (const std::exception& error) {
