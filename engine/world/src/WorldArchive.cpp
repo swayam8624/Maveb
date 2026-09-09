@@ -2,6 +2,7 @@
 
 #include <simdjson.h>
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -316,6 +317,7 @@ Result<WorldArchiveData> loadWorldArchive(const std::filesystem::path& path,
         simdjson::dom::array entities;
         if (snapshotElement["entities"].get_array().get(entities) ||
             entities.size() > limits.maximumEntitiesPerSnapshot ||
+            entities.size() > limits.maximumTotalEntities ||
             totalEntities > limits.maximumTotalEntities - entities.size()) {
             return fail(ErrorCode::resourceExhausted, "World archive entity count exceeds limits");
         }
