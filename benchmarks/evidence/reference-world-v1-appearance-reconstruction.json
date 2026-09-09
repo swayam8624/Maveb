@@ -1,0 +1,105 @@
+{
+  "alignment": {
+    "accepted": true,
+    "correspondences": 140,
+    "inlierRatio": 1.0,
+    "inliers": 140,
+    "metricCameras": 140,
+    "orientationMedianDegrees": 1.0184488296785146,
+    "orientationP95Degrees": 1.1041287306763015,
+    "positionMedianMetres": 0.002584846459251004,
+    "positionP95Metres": 0.008187093356160335,
+    "repeatExecutionCount": 2,
+    "reportSha256": "55488c77995053088a6759361d811ae3cf8c1c603baef40a635259fdcfaf683e",
+    "reportsByteIdentical": true,
+    "scale": 0.05099110958794853,
+    "seed": 42,
+    "tool": "maveb-align-sensors"
+  },
+  "artifacts": {
+    "baseGaussiansPlySha256": "80cda92718248e243b63fc0f3715562f8694175bbc16ae7efceb6c5d9f35c438",
+    "cameraMatchesSha256": "b43a5cffeb96d45b2ff62181ea454b19defbcdfba208d95f91130930464b40fa",
+    "colmapCamerasTxtSha256": "de7cae86324896db935cb68d766c9d3090a6b72bddb35aee1b75b59da6468275",
+    "colmapImagesTxtSha256": "9ea17551a3d72e8be5fec0a9cf86ed2899c7cf9d9110d391926978740e855e43",
+    "colmapPoints3DTxtSha256": "cdc3ca3b8be8c20a17515107c636cd2698dfda438fd1a6727ac08c3be67cd05e",
+    "jobJsonSha256": "011688672b26d3b055daf36e5efca8992293cb2012cd873b1cba5a13630eefc8",
+    "metricCameraRigSha256": "55488c77995053088a6759361d811ae3cf8c1c603baef40a635259fdcfaf683e",
+    "photogrammetryProxyPlySha256": "f8d04d8475b4dd3f8f8f02f0fe0df7330236c8f8cf89813eb2ed35376a77ab2e",
+    "poseCoverageSha256": "37849fcc258f7e1aa324f10f0b367cb43da4b7ceeba4135721b6987a005d4c3e",
+    "sparseSelectionSha256": "cc62b56ddc1436828c397fb76a33aae52ef9e2b3a4f2aa0422ae02be9056e9b0"
+  },
+  "configuration": {
+    "brushCheckpointEvery": 5000,
+    "brushTotalSteps": 30000,
+    "cameraGrouping": "single",
+    "inputKind": "video",
+    "manualAlignmentAllowed": false,
+    "matcher": "sequential",
+    "seed": 42,
+    "sequentialOverlap": 10
+  },
+  "dependencies": {
+    "brush": {
+      "commit": "3edecbb2fe79d3e2c87eeab85b15e0b1dd10d486",
+      "version": "0.3.0"
+    },
+    "colmap": {
+      "bundleAdjustmentGpu": false,
+      "commit": "0b31f98133b470eae62811b557dc2bcff1e4f9a5",
+      "gpuFeatureExtraction": false,
+      "gpuFeatureMatching": false,
+      "version": "3.13.0"
+    },
+    "proxy": {
+      "open3d": "0.19.0",
+      "version": "0.1.0"
+    }
+  },
+  "input": {
+    "captureManifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "keyframeEvidencePath": "benchmarks/evidence/reference-world-v1-keyframes.json",
+    "keyframeEvidenceSha256": "767212c4fe2cf06baba2c05188c8dc90ffb25c93f88e6b4e8b32e717bc91cc8c",
+    "selectedImageSetSha256": "66730d7911757a0114239f38aaf63d8d1e6e1465e1bd070f04e2ccfa857690c1",
+    "selectedImages": 140
+  },
+  "integrity": {
+    "alignmentThresholdsTunedAfterResult": false,
+    "manualCorrespondenceEditingUsed": false,
+    "manualScaleRotationTranslationUsed": false,
+    "reconstructionParametersTunedAfterResult": false,
+    "repoAutotunePollutionRestored": true,
+    "syntheticFallbackUsed": false,
+    "unrelatedFixturePreserved": true,
+    "usedFrozenKeyframes": true,
+    "usedMaintainedMetricAlignment": true,
+    "usedMaintainedReconstructionAdapter": true
+  },
+  "reconstruction": {
+    "baselineDiagonal": 19.0471,
+    "connectedImageRatio": 1.0,
+    "connectedImages": 140,
+    "coverageIssues": [],
+    "logicalJob": "derived/c1.4c/reconstruction-job",
+    "maximumViewAngleDegrees": 91.6956,
+    "meanTrackLength": 9.81284,
+    "registeredImages": 140,
+    "registrationRatio": 1.0,
+    "resume": {
+      "finalIteration": 30000,
+      "initialRunInterruptedByHostRestart": true,
+      "latestSurvivingCheckpointIteration": 25000,
+      "latestSurvivingCheckpointSha256": "b7711e366db789944f77da4725fe1b63347eb09a6bc83a9210445a470e462d49",
+      "resumeExitCode": 0,
+      "resumeStartIteration": 25000,
+      "resumedWithMaintainedAdapter": true
+    },
+    "resumeKey": "69f07407a00fe3c0460507bdd4aa5c7b03cd5afd00350716c1e53dc9c1ab5285",
+    "selectedModel": "0",
+    "trackedPoints": 63336
+  },
+  "schemaVersion": 1,
+  "sourceCommit": "224b4b736e24c7de74e251ea1d31b2e714cc1a2d",
+  "stage": "C1.4c-reconstruction-and-metric-alignment",
+  "status": "completed-maintained-reconstruction-and-alignment",
+  "study": "reference-world-v1-appearance-reconstruction"
+}

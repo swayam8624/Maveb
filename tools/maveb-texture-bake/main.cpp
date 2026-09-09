@@ -579,7 +579,11 @@ int run(int argc, char** argv) {
     aether::mesh::MeshPrimitive primitive;
     primitive.name = "Maveb metric canonical mesh";
     primitive.vertices.reserve(proxy->vertices.size());
-    primitive.indices = proxy->indices;
+    if (proxy->indices.size() % 3U != 0)
+        return fail("Texture source index count is not triangular", options->json, 3);
+
+    const std::size_t sourceTriangles = proxy->indices.size() / 3U;
+    std::size_t droppedDegenerateTriangles{};
     for (const auto& source : proxy->vertices) {
         aether::mesh::MeshVertex vertex{};
         vertex.position = {source.position[0], source.position[1], source.position[2]};
@@ -587,6 +591,49 @@ int run(int argc, char** argv) {
         vertex.tangent = {1, 0, 0, 1};
         primitive.vertices.push_back(vertex);
     }
+
+    primitive.indices.reserve(proxy->indices.size());
+
+    constexpr float minimumCrossLengthSquared =
+        aether::reconstruction::TextureBaker::minimumTriangleCrossLengthSquared;
+
+    for (std::size_t offset = 0; offset < proxy->indices.size(); offset += 3U) {
+        const auto first = proxy->indices[offset];
+        const auto second = proxy->indices[offset + 1U];
+        const auto third = proxy->indices[offset + 2U];
+
+        if (first >= primitive.vertices.size() || second >= primitive.vertices.size() ||
+            third >= primitive.vertices.size()) {
+            return fail("Texture source contains an out-of-range index", options->json, 3);
+        }
+
+        const auto firstPosition = primitive.vertices[first].position;
+        const auto secondPosition = primitive.vertices[second].position;
+        const auto thirdPosition = primitive.vertices[third].position;
+
+        const auto cross =
+            simd_cross(secondPosition - firstPosition, thirdPosition - firstPosition);
+
+        const float crossLengthSquared = simd_length_squared(cross);
+
+        if (!std::isfinite(crossLengthSquared))
+            return fail("Texture source triangle area is non-finite", options->json, 3);
+
+        if (crossLengthSquared <= minimumCrossLengthSquared) {
+            ++droppedDegenerateTriangles;
+            continue;
+        }
+
+        primitive.indices.push_back(first);
+        primitive.indices.push_back(second);
+        primitive.indices.push_back(third);
+    }
+
+    const std::size_t retainedTriangles = primitive.indices.size() / 3U;
+
+    if (retainedTriangles == 0)
+        return fail("Texture source sanitization removed every triangle", options->json, 3);
+
     auto baked = aether::reconstruction::TextureBaker::bake(primitive, *cameras, options->bake);
     if (!baked)
         return fail(baked.error().describe(), options->json, 4);
@@ -665,6 +712,13 @@ int run(int argc, char** argv) {
                    << ",\"visibilityHeight\":" << options->bake.visibilityHeight
                    << ",\"gutterPixels\":" << options->bake.gutterPixels
                    << ",\"maximumCamerasPerTriangle\":" << options->bake.maximumCamerasPerTriangle
+                   << ",\"meshSanitization\":{\"policy\":"
+                      "\"drop-only-texture-baker-degenerate-triangles\""
+                   << ",\"sourceTriangles\":" << sourceTriangles
+                   << ",\"retainedTriangles\":" << retainedTriangles
+                   << ",\"droppedDegenerateTriangles\":" << droppedDegenerateTriangles
+                   << ",\"minimumCrossLengthSquared\":" << minimumCrossLengthSquared
+                   << ",\"vertexPositionsModified\":false}"
                    << "},\"result\":{\"glbSha256\":\"" << hash << "\",\"glbBytes\":" << bytes.size()
                    << ",\"triangles\":" << baked->report.triangles
                    << ",\"cameras\":" << baked->report.cameras
@@ -688,7 +742,9 @@ int run(int argc, char** argv) {
         std::cout << "{\"ok\":true,\"dryRun\":" << (options->dryRun ? "true" : "false")
                   << ",\"output\":\"" << escapeJson(options->output.string()) << "\",\"sha256\":\""
                   << hash << "\",\"provenance\":\"" << escapeJson(provenancePath.string())
-                  << "\",\"triangles\":" << baked->report.triangles
+                  << "\",\"sourceTriangles\":" << sourceTriangles
+                  << ",\"droppedDegenerateTriangles\":" << droppedDegenerateTriangles
+                  << ",\"triangles\":" << baked->report.triangles
                   << ",\"cameras\":" << baked->report.cameras
                   << ",\"coverage\":" << baked->report.coverage
                   << ",\"textureBytes\":" << asset.images[0].bytes.size()

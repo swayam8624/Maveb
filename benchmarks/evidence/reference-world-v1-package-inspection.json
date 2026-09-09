@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "study": "reference-world-v1-package-inspection",
+  "stage": "C1.6-package-and-inspection",
+  "status": "completed-deterministic-package-and-inspection",
+  "sourceCommit": "1859a19ff9beaead0591ae5f25ce62c946d22edd",
+  "input": {
+    "canonicalAssetEvidencePath": "benchmarks/evidence/reference-world-v1-canonical-asset.json",
+    "canonicalAssetEvidenceSha256": "b6d7f2f12167f3ed8793c0765ef86a143e089358f2bd0c0ad29a5bacf16f6abb",
+    "canonicalGlbSha256": "c4f91288df58589cb51749017de4eec774bc7a8481b5f714673a56869b148f35",
+    "canonicalBaseGaussiansSha256": "466e87bb53db549d7213b78200b28900dbda86bcf69767f3c4832011c4fa5519",
+    "canonicalCamerasSha256": "79d0fbd37dcc321eeb18f8fb98e754927d5c5658cd77018055b618e31b3abaee",
+    "canonicalManifestSha256": "c30ac1bd2ff9bbcd7d0253f4c608d1c286a775420a23da9db03b4c5eb39dd07e",
+    "canonicalMetadataSha256": "e386fd6abdaeb446453daa5f00f44a866ce05d94080d34352e6094e19582529b",
+    "canonicalizationSha256": "fd25b1ad898f4816406135f298ab6e9d08298ec43eaf91a74ff1cf632c69049a",
+    "metricProxySha256": "9632ea8ca5ec955b0e5bd71a42c9fbcdc7f19c37a207e14805ba7c299f8fddc3"
+  },
+  "packaging": {
+    "tool": "aether-pack",
+    "preset": "balanced",
+    "repeatExecutionCount": 2,
+    "packagesByteIdentical": true,
+    "packageSha256": "116acb5c570bbd6b8971bfb5e898a1da2d2d385693773874abd11da8cfe71185",
+    "packageBytes": 196710848,
+    "packageVersion": "1.1",
+    "contentHash": "43db3419987fd926a9e73f4928a6e86cb58bbe3564600eec5e5f3f92bf6fb91b",
+    "chunks": 7,
+    "sourceBytes": 261290169,
+    "canonical": true,
+    "canonicalVertices": 917877,
+    "canonicalTriangles": 305959,
+    "canonicalCameras": 140,
+    "canonicalMaterials": 2,
+    "canonicalImages": 1,
+    "packResultASha256": "f1c2b7068fad245f3be3c34f53e0f3d0830b77354efbf460ecfc0516f88986b8",
+    "packResultBSha256": "3d65ace48762d41eebca2c4ae1ca2b7404ba0ea51a7465b1231c85bb776042a8"
+  },
+  "inspection": {
+    "tool": "aether-inspect",
+    "repeatExecutionCount": 2,
+    "semanticResultsIdentical": true,
+    "inspectASha256": "abd531d2678dc53c34a8f07da9c4a514b57fa70dd32b5077d726445318d9a385",
+    "inspectBSha256": "f5ad5daa7596ea44483f92a769000f6dcf7646cce2b04e4bfa902fc0321f7acf",
+    "canonicalAsset": {
+      "name": "Maveb Reference Desk Corner v1",
+      "coordinateSystem": "right-handed-y-up-negative-z-forward",
+      "metersPerUnit": 1.0,
+      "cameras": 140,
+      "confidenceValues": 917877
+    },
+    "chunkTypes": [
+      "metadata",
+      "base-gaussians",
+      "proxy-mesh",
+      "canonical-asset",
+      "canonical-mesh",
+      "cameras",
+      "canonical-confidence"
+    ],
+    "chunkDetails": [
+      {"type":"metadata","required":true,"compression":"zstd","storedBytes":672,"uncompressedBytes":1257},
+      {"type":"base-gaussians","required":false,"compression":"zstd","storedBytes":134767396,"uncompressedBytes":158588448},
+      {"type":"proxy-mesh","required":false,"compression":"zstd","storedBytes":6943471,"uncompressedBytes":12305980},
+      {"type":"canonical-asset","required":true,"compression":"zstd","storedBytes":490,"uncompressedBytes":820},
+      {"type":"canonical-mesh","required":true,"compression":"zstd","storedBytes":51307563,"uncompressedBytes":86680620},
+      {"type":"cameras","required":true,"compression":"zstd","storedBytes":19057,"uncompressedBytes":41504},
+      {"type":"canonical-confidence","required":true,"compression":"none","storedBytes":3671540,"uncompressedBytes":3671540}
+    ]
+  },
+  "integrity": {
+    "wholePackageContentHashValidatedByReader": true,
+    "canonicalManifestReparsedFromPackage": true,
+    "canonicalMeshRevalidatedFromPackage": true,
+    "cameraRigDecodedFromPackage": true,
+    "confidenceDecodedFromPackage": true,
+    "confidenceCountMatchesCanonicalVertices": true,
+    "manualPackageEditingUsed": false,
+    "syntheticFallbackUsed": false,
+    "unrelatedFixturePreserved": true
+  }
+}

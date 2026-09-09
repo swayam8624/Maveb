@@ -1,0 +1,66 @@
+{
+  "capture": {
+    "application": {
+      "name": "MavebCapture",
+      "version": "0.1.0"
+    },
+    "basename": "reference.mavebcapture",
+    "completedAt": "2026-08-26T19:09:26.470Z",
+    "confidenceFrameCount": 307,
+    "contentSetSha256": "f833264b2eb7ca58efc7986e740ce3ece77a64e09b5f37e6ebc7ead5d8fb5747",
+    "coordinateSystem": {
+      "camera": "ARKit right-handed: +X right, +Y up, -Z forward",
+      "depthUnit": "metres",
+      "intrinsics": "3x3 column-major pixels",
+      "pose": "column-major camera-to-world 4x4 matrix"
+    },
+    "createdAt": "2026-08-26T19:08:46.434Z",
+    "device": {
+      "model": "iPad13,6",
+      "systemName": "iPadOS",
+      "systemVersion": "26.6.1"
+    },
+    "frameCount": 307,
+    "manifestSchemaVersion": 2,
+    "manifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "recovery": null,
+    "referencedFileCount": 1229,
+    "sourceID": "c75ec3b9-3d0f-476a-8b26-74739361cca6",
+    "statistics": {
+      "acceptedFrames": 307,
+      "admissionRejectedFrames": 2094,
+      "droppedFrames": 0,
+      "failedFrames": 0
+    },
+    "totalReferencedBytes": 1349377461
+  },
+  "integrity": {
+    "allReferencedPlaneHashesVerified": true,
+    "allReferencedPlaneSizesVerified": true,
+    "checkpointAbsent": true,
+    "frameIDsContiguous": true,
+    "intrinsicsFinite": true,
+    "journalAbsent": true,
+    "manifestFinalized": true,
+    "normalTrackingOnly": true,
+    "posesRigidCameraToWorld": true,
+    "syntheticFallbackUsed": false,
+    "timestampsMonotonic": true,
+    "unexpectedPayloadFilesAbsent": true
+  },
+  "mavebCommit": "b64a707ee7a0828dca54a9776206a270f3beb1c1",
+  "ownershipReleaseStatement": "User-owned physical scene cleared for publication with the Maveb v0.1 research release.",
+  "sceneName": "Maveb Reference Desk Corner v1",
+  "schemaVersion": 1,
+  "stage": "C1.1-frozen-acquisition",
+  "status": "frozen-valid-acquisition",
+  "study": "reference-world-v1-acquisition",
+  "validationPolicy": {
+    "expectedApplication": {
+      "name": "MavebCapture",
+      "version": "0.1.0"
+    },
+    "expectedManifestSchemaVersion": 2,
+    "minimumFrames": 30
+  }
+}

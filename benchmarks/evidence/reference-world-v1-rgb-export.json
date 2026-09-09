@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "study": "reference-world-v1-rgb-export",
+  "stage": "C1.4a-recorded-rgb-export",
+  "status": "completed-deterministic-rgb-export",
+  "sourceCommit": "83a1d2ec27c547af76683413be229223ccf5a347",
+  "input": {
+    "captureStorage": "external",
+    "captureSourceID": "c75ec3b9-3d0f-476a-8b26-74739361cca6",
+    "captureManifestSha256": "a0a1000169f6433c8b1165cb5dc8f2e608044edccbfd762be20e35d128df9588",
+    "captureContentSetSha256": "f833264b2eb7ca58efc7986e740ce3ece77a64e09b5f37e6ebc7ead5d8fb5747",
+    "frameCount": 307
+  },
+  "export": {
+    "tool": "maveb-export-capture-rgb",
+    "generator": "maveb-export-capture-rgb",
+    "pixelTransform": "none; native recorded pixel order preserved",
+    "imageFormat": "png",
+    "frameCount": 307,
+    "rgbManifestSha256": "c9feb160ad90d5ccb0ab568e7301af3c677811e642abfbefc40429a1f7578746",
+    "rgbImageSetSha256": "6e0c1dc1d0743a4738403adbc58c4ee6bcb1e3fc0f5865d9944f2a15d9e64f37",
+    "sourceBytes": 1082171555,
+    "logicalPrimaryExport": "derived/c1.4a/rgb-export-c"
+  },
+  "validation": {
+    "tool": "aether-capture validate",
+    "valid": true,
+    "imageCount": 307,
+    "medianSharpness": 1227.2096,
+    "exposureSpreadStops": 0.40019464
+  },
+  "determinism": {
+    "independentExportsCompared": ["A", "C", "D"],
+    "allPngBytesIdentical": true,
+    "allProvenanceManifestBytesIdentical": true,
+    "preCiHygieneExportMatchesFixedExporter": true,
+    "runAImageSetSha256": "6e0c1dc1d0743a4738403adbc58c4ee6bcb1e3fc0f5865d9944f2a15d9e64f37",
+    "runCImageSetSha256": "6e0c1dc1d0743a4738403adbc58c4ee6bcb1e3fc0f5865d9944f2a15d9e64f37",
+    "runDImageSetSha256": "6e0c1dc1d0743a4738403adbc58c4ee6bcb1e3fc0f5865d9944f2a15d9e64f37"
+  },
+  "ci": {
+    "workflow": "CI",
+    "runNumber": 524,
+    "runId": 33012247106,
+    "conclusion": "success",
+    "formatLint": "success",
+    "changedFilesStaticAnalysis": "success",
+    "cpuBuildTests": "success",
+    "sanitizer": "success",
+    "mavebBenchTests": "success",
+    "iPadCaptureCompile": "success"
+  },
+  "integrity": {
+    "rawCaptureModified": false,
+    "rawRgbExportVendored": false,
+    "manualImageAdjustmentUsed": false,
+    "orientationTransformApplied": false,
+    "mirroringTransformApplied": false,
+    "syntheticFallbackUsed": false,
+    "keyframeSelectionRunBeforeFreeze": false,
+    "colmapRunBeforeFreeze": false,
+    "gaussianTrainingRunBeforeFreeze": false
+  }
+}

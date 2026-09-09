@@ -209,7 +209,8 @@ Result<TextureBakeResult> TextureBaker::bake(const mesh::MeshPrimitive& source,
             !finite(source.vertices[c].position) ||
             simd_length_squared(
                 simd_cross(source.vertices[b].position - source.vertices[a].position,
-                           source.vertices[c].position - source.vertices[a].position)) <= epsilon)
+                           source.vertices[c].position - source.vertices[a].position)) <=
+                TextureBaker::minimumTriangleCrossLengthSquared)
             return fail(ErrorCode::corruptData, "Texture source contains invalid geometry");
     }
 
