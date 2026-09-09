@@ -30,13 +30,22 @@ class FrameQuiescence final {
 
 } // namespace
 
+Result<void>
+Renderer::validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                      simd_float3 translationDelta) const {
+    if (!gaussianPipeline_)
+        return fail(ErrorCode::notFound, "Gaussian translation requires an active captured scene");
+    return gaussianPipeline_->validateTranslation(gaussianIndices, translationDelta);
+}
+
 Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussianIndices,
                                           simd_float3 translationDelta) {
     if (!gaussianPipeline_)
         return fail(ErrorCode::notFound, "Gaussian translation requires an active captured scene");
     if (!std::isfinite(translationDelta.x) || !std::isfinite(translationDelta.y) ||
         !std::isfinite(translationDelta.z)) {
-        return fail(ErrorCode::invalidArgument, "Renderer Gaussian translation delta must be finite");
+        return fail(ErrorCode::invalidArgument,
+                    "Renderer Gaussian translation delta must be finite");
     }
     if (gaussianIndices.empty())
         return {};
