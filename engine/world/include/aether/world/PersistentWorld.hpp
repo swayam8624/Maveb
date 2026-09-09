@@ -134,8 +134,7 @@ struct WorldDiff final {
 
 [[nodiscard]] Result<void> validateSnapshot(const WorldSnapshot& snapshot);
 [[nodiscard]] Result<WorldDiff> diffSnapshots(const WorldSnapshot& before,
-                                              const WorldSnapshot& after,
-                                              DiffPolicy policy = {});
+                                              const WorldSnapshot& after, DiffPolicy policy = {});
 
 /// Append-only temporal memory for a captured world.
 ///
@@ -146,8 +145,7 @@ class WorldTimeline final {
   public:
     [[nodiscard]] Result<std::uint64_t> append(WorldSnapshot snapshot);
     [[nodiscard]] Result<const WorldSnapshot*> snapshot(std::uint64_t revision) const;
-    [[nodiscard]] Result<WorldDiff> diff(std::uint64_t beforeRevision,
-                                         std::uint64_t afterRevision,
+    [[nodiscard]] Result<WorldDiff> diff(std::uint64_t beforeRevision, std::uint64_t afterRevision,
                                          DiffPolicy policy = {}) const;
     [[nodiscard]] Result<WorldDiff> latestDiff(DiffPolicy policy = {}) const;
 
