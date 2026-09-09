@@ -45,7 +45,8 @@ namespace {
     const simd_float3 minimum{static_cast<float>(key.x) * cellSizeMeters,
                               static_cast<float>(key.y) * cellSizeMeters,
                               static_cast<float>(key.z) * cellSizeMeters};
-    return Bounds{minimum, minimum + simd_make_float3(cellSizeMeters)};
+    const simd_float3 extent{cellSizeMeters, cellSizeMeters, cellSizeMeters};
+    return Bounds{minimum, minimum + extent};
 }
 
 [[nodiscard]] Result<std::int32_t> checkedCellCoordinate(float coordinate, float cellSizeMeters,
