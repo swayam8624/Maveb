@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <functional>
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace aether::world {
 namespace {
@@ -15,6 +18,28 @@ struct Candidate final {
     float score{};
     float centerDistance{};
     std::uint64_t previousId{};
+};
+
+struct SpatialCell final {
+    std::int64_t x{};
+    std::int64_t y{};
+    std::int64_t z{};
+
+    bool operator==(const SpatialCell&) const = default;
+};
+
+struct SpatialCellHash final {
+    [[nodiscard]] std::size_t operator()(const SpatialCell& cell) const noexcept {
+        std::size_t seed = std::hash<std::int64_t>{}(cell.x);
+        const auto combine = [&seed](std::int64_t value) {
+            const std::size_t hashed = std::hash<std::int64_t>{}(value);
+            seed ^= hashed + static_cast<std::size_t>(0x9e3779b97f4a7c15ULL) + (seed << 6U) +
+                    (seed >> 2U);
+        };
+        combine(cell.y);
+        combine(cell.z);
+        return seed;
+    }
 };
 
 [[nodiscard]] simd_float3 center(const Bounds& bounds) noexcept {
@@ -70,8 +95,8 @@ struct Candidate final {
     return score;
 }
 
-[[nodiscard]] Result<void> validateObservationPayload(TimestampNs timestamp,
-                                                       const std::vector<EntityState>& observations) {
+[[nodiscard]] Result<void>
+validateObservationPayload(TimestampNs timestamp, const std::vector<EntityState>& observations) {
     WorldSnapshot validation;
     validation.timestamp = timestamp;
     validation.entities = observations;
@@ -80,17 +105,44 @@ struct Candidate final {
     return validateSnapshot(validation);
 }
 
+[[nodiscard]] Result<std::int64_t> cellCoordinate(float coordinate, float cellSizeMeters) {
+    const double scaled =
+        std::floor(static_cast<double>(coordinate) / static_cast<double>(cellSizeMeters));
+    constexpr double minimum = static_cast<double>(std::numeric_limits<std::int64_t>::min() + 1);
+    constexpr double maximum = static_cast<double>(std::numeric_limits<std::int64_t>::max() - 1);
+    if (scaled < minimum || scaled > maximum) {
+        return fail(ErrorCode::resourceExhausted,
+                    "Persistent entity association coordinate exceeds spatial-grid range");
+    }
+    return static_cast<std::int64_t>(scaled);
+}
+
+[[nodiscard]] Result<SpatialCell> spatialCell(simd_float3 point, float cellSizeMeters) {
+    auto x = cellCoordinate(point.x, cellSizeMeters);
+    auto y = cellCoordinate(point.y, cellSizeMeters);
+    auto z = cellCoordinate(point.z, cellSizeMeters);
+    if (!x)
+        return std::unexpected(x.error());
+    if (!y)
+        return std::unexpected(y.error());
+    if (!z)
+        return std::unexpected(z.error());
+    return SpatialCell{*x, *y, *z};
+}
+
 } // namespace
 
-Result<AssociationResult> associateObservations(const WorldSnapshot& previous, TimestampNs timestamp,
-                                                 std::vector<EntityState> observations,
-                                                 std::uint64_t nextEntityId,
-                                                 AssociationPolicy policy) {
+Result<AssociationResult> associateObservations(const WorldSnapshot& previous,
+                                                TimestampNs timestamp,
+                                                std::vector<EntityState> observations,
+                                                std::uint64_t nextEntityId,
+                                                AssociationPolicy policy) {
     if (!std::isfinite(policy.maximumCenterDistanceMeters) ||
         policy.maximumCenterDistanceMeters <= 0.0F || !std::isfinite(policy.minimumScore) ||
-        policy.minimumScore < 0.0F) {
+        policy.minimumScore < 0.0F || policy.maximumCandidatePairs == 0) {
         return fail(ErrorCode::invalidArgument,
-                    "Entity association policy requires finite positive distance and score bounds");
+                    "Entity association policy requires finite positive distance, score, and "
+                    "candidate-budget bounds");
     }
     if (auto result = validateSnapshot(previous); !result)
         return std::unexpected(result.error());
@@ -121,7 +173,8 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
         if (!observation.id.valid())
             continue;
         if (!explicitIds.insert(observation.id.value).second) {
-            return fail(ErrorCode::invalidArgument, "Observation set contains duplicate explicit ID",
+            return fail(ErrorCode::invalidArgument,
+                        "Observation set contains duplicate explicit ID",
                         std::to_string(observation.id.value));
         }
         maximumKnownId = std::max(maximumKnownId, observation.id.value);
@@ -138,26 +191,60 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
         }
     }
 
+    std::unordered_map<SpatialCell, std::vector<std::size_t>, SpatialCellHash> spatialIndex;
+    spatialIndex.reserve(previous.entities.size());
+    for (std::size_t previousIndex = 0; previousIndex < previous.entities.size(); ++previousIndex) {
+        if (previousMatched[previousIndex])
+            continue;
+        auto cell = spatialCell(center(previous.entities[previousIndex].worldBounds),
+                                policy.maximumCenterDistanceMeters);
+        if (!cell)
+            return std::unexpected(cell.error());
+        spatialIndex[*cell].push_back(previousIndex);
+    }
+
     std::vector<Candidate> candidates;
-    for (std::size_t observationIndex = 0; observationIndex < observations.size(); ++observationIndex) {
+    for (std::size_t observationIndex = 0; observationIndex < observations.size();
+         ++observationIndex) {
         if (observationMatched[observationIndex])
             continue;
         const EntityState& observation = observations[observationIndex];
-        for (std::size_t previousIndex = 0; previousIndex < previous.entities.size(); ++previousIndex) {
-            if (previousMatched[previousIndex])
-                continue;
-            const EntityState& prior = previous.entities[previousIndex];
-            if (!semanticCompatible(prior, observation, policy))
-                continue;
-            const float distance =
-                simd_distance(center(prior.worldBounds), center(observation.worldBounds));
-            if (distance > policy.maximumCenterDistanceMeters)
-                continue;
-            const float score = associationScore(prior, observation, distance, policy);
-            if (score < policy.minimumScore)
-                continue;
-            candidates.push_back(
-                Candidate{observationIndex, previousIndex, score, distance, prior.id.value});
+        auto observationCell =
+            spatialCell(center(observation.worldBounds), policy.maximumCenterDistanceMeters);
+        if (!observationCell)
+            return std::unexpected(observationCell.error());
+
+        for (std::int64_t dz = -1; dz <= 1; ++dz) {
+            for (std::int64_t dy = -1; dy <= 1; ++dy) {
+                for (std::int64_t dx = -1; dx <= 1; ++dx) {
+                    const SpatialCell neighbor{observationCell->x + dx, observationCell->y + dy,
+                                               observationCell->z + dz};
+                    const auto bucket = spatialIndex.find(neighbor);
+                    if (bucket == spatialIndex.end())
+                        continue;
+                    for (const std::size_t previousIndex : bucket->second) {
+                        if (previousMatched[previousIndex])
+                            continue;
+                        const EntityState& prior = previous.entities[previousIndex];
+                        if (!semanticCompatible(prior, observation, policy))
+                            continue;
+                        const float distance = simd_distance(center(prior.worldBounds),
+                                                             center(observation.worldBounds));
+                        if (distance > policy.maximumCenterDistanceMeters)
+                            continue;
+                        const float score = associationScore(prior, observation, distance, policy);
+                        if (score < policy.minimumScore)
+                            continue;
+                        if (candidates.size() >= policy.maximumCandidatePairs) {
+                            return fail(ErrorCode::resourceExhausted,
+                                        "Persistent entity association exceeds candidate-pair "
+                                        "budget");
+                        }
+                        candidates.push_back(Candidate{observationIndex, previousIndex, score,
+                                                       distance, prior.id.value});
+                    }
+                }
+            }
         }
     }
 
@@ -172,7 +259,8 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
     });
 
     for (const Candidate& candidate : candidates) {
-        if (observationMatched[candidate.observationIndex] || previousMatched[candidate.previousIndex])
+        if (observationMatched[candidate.observationIndex] ||
+            previousMatched[candidate.previousIndex])
             continue;
         observations[candidate.observationIndex].id = previous.entities[candidate.previousIndex].id;
         observationMatched[candidate.observationIndex] = true;
@@ -198,14 +286,15 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
         if (allocation == 0)
             return fail(ErrorCode::resourceExhausted, "Persistent entity ID space is exhausted");
         observation.id = EntityId{allocation};
-        observation.lastObserved = observation.lastObserved == 0 ? timestamp : observation.lastObserved;
+        observation.lastObserved =
+            observation.lastObserved == 0 ? timestamp : observation.lastObserved;
         observationMatched[index] = true;
         ++result.createdIds;
         allocation = allocation == std::numeric_limits<std::uint64_t>::max() ? 0 : allocation + 1U;
     }
 
-    result.missingPreviousEntities = static_cast<std::size_t>(
-        std::count(previousMatched.begin(), previousMatched.end(), false));
+    result.missingPreviousEntities =
+        static_cast<std::size_t>(std::count(previousMatched.begin(), previousMatched.end(), false));
     result.nextEntityId = allocation;
     result.snapshot.timestamp = timestamp;
     result.snapshot.entities = std::move(observations);
