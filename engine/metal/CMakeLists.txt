@@ -8,6 +8,7 @@ find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
 add_library(AetherMetal STATIC
     src/FrameContext.cpp
     src/GaussianPipeline.cpp
+    src/GaussianPipelineUpdates.cpp
     src/MetalSymbols.cpp
     src/Renderer.cpp
     src/ShaderABI.cpp
