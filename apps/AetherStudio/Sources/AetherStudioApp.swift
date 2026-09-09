@@ -38,6 +38,12 @@ struct AetherStudioApp: App {
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
 
+    WindowGroup("Live Persistent Reality", id: "live-persistent-reality") {
+      LivePersistentRealityEditor()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
     Settings {
       AetherSettingsView()
     }
@@ -76,6 +82,13 @@ private struct PersistentRealityCommands: Commands {
         openWindow(id: "world-intelligence")
       }
       .keyboardShortcut("i", modifiers: [.command, .shift])
+
+      Divider()
+
+      Button("Live Persistent Reality…") {
+        openWindow(id: "live-persistent-reality")
+      }
+      .keyboardShortcut("l", modifiers: [.command, .shift])
     }
   }
 }
