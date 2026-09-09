@@ -25,6 +25,12 @@ struct AetherStudioApp: App {
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
 
+    WindowGroup("Reality Time Machine", id: "reality-time-machine") {
+      WorldTimeMachineWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
     Settings {
       AetherSettingsView()
     }
@@ -53,6 +59,11 @@ private struct PersistentRealityCommands: Commands {
         openWindow(id: "persistent-entity-editor")
       }
       .keyboardShortcut("e", modifiers: [.command, .shift])
+
+      Button("Reality Time Machine…") {
+        openWindow(id: "reality-time-machine")
+      }
+      .keyboardShortcut("t", modifiers: [.command, .shift])
     }
   }
 }
