@@ -30,6 +30,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData* _Nullable)removeEntity:(uint64_t)entityId
              timestampNanoseconds:(uint64_t)timestampNanoseconds
                             error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)revertToRevision:(uint64_t)sourceRevision
+                 timestampNanoseconds:(uint64_t)timestampNanoseconds
+                                error:(NSError* _Nullable* _Nullable)error;
 
 @end
 
@@ -56,6 +59,9 @@ FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelabelEntity(
     uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldRemoveEntity(
     AetherWorldBridge* bridge, uint64_t entityId, uint64_t timestampNanoseconds,
+    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRevertToRevision(
+    AetherWorldBridge* bridge, uint64_t sourceRevision, uint64_t timestampNanoseconds,
     NSError* _Nullable* _Nullable error);
 
 NS_ASSUME_NONNULL_END
