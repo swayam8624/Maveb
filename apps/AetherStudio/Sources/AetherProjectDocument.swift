@@ -6,12 +6,13 @@ extension UTType {
 }
 
 struct AetherProjectState: Codable, Equatable {
-    static let currentSchemaVersion = 4
+    static let currentSchemaVersion = 5
 
     var schemaVersion = currentSchemaVersion
     var displayName = "Untitled AETHER Project"
     var scenePath: String?
     var dynamicMeshPath: String?
+    var worldArchivePath: String?
     var selectedWorkspace = "Scene"
     var entityTransformOverrides: [String: AetherTransformOverride] = [:]
     var materialOverrides: [String: AetherMaterialOverride] = [:]
@@ -25,6 +26,7 @@ struct AetherProjectState: Codable, Equatable {
          displayName: String = "Untitled AETHER Project",
          scenePath: String? = nil,
          dynamicMeshPath: String? = nil,
+         worldArchivePath: String? = nil,
          selectedWorkspace: String = "Scene",
          entityTransformOverrides: [String: AetherTransformOverride] = [:],
          materialOverrides: [String: AetherMaterialOverride] = [:],
@@ -37,6 +39,7 @@ struct AetherProjectState: Codable, Equatable {
         self.displayName = displayName
         self.scenePath = scenePath
         self.dynamicMeshPath = dynamicMeshPath
+        self.worldArchivePath = worldArchivePath
         self.selectedWorkspace = selectedWorkspace
         self.entityTransformOverrides = entityTransformOverrides
         self.materialOverrides = materialOverrides
@@ -48,8 +51,8 @@ struct AetherProjectState: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, displayName, scenePath, dynamicMeshPath, selectedWorkspace,
-             entityTransformOverrides,
+        case schemaVersion, displayName, scenePath, dynamicMeshPath, worldArchivePath,
+             selectedWorkspace, entityTransformOverrides,
              materialOverrides, lights, viewport, playback, selection, camera
     }
 
@@ -65,12 +68,13 @@ struct AetherProjectState: Codable, Equatable {
                       "Untitled AETHER Project"
         scenePath = try values.decodeIfPresent(String.self, forKey: .scenePath)
         dynamicMeshPath = try values.decodeIfPresent(String.self, forKey: .dynamicMeshPath)
+        worldArchivePath = try values.decodeIfPresent(String.self, forKey: .worldArchivePath)
         selectedWorkspace = try values.decodeIfPresent(String.self, forKey: .selectedWorkspace) ??
                             "Scene"
         entityTransformOverrides =
             try values.decodeIfPresent([String: AetherTransformOverride].self,
                                        forKey: .entityTransformOverrides) ?? [:]
-        materialOverrides = try values.decodeIfPresent([String: AetherMaterialOverride].self,
+        materialOverrides = try values.decodeIfPresent(AetherMaterialOverrideMap.self,
                                                         forKey: .materialOverrides) ?? [:]
         lights = try values.decodeIfPresent([AetherLightState].self, forKey: .lights) ?? [.defaultSun]
         if lights.isEmpty { lights = [.defaultSun] }
@@ -101,6 +105,8 @@ struct AetherProjectState: Codable, Equatable {
         }
     }
 }
+
+private typealias AetherMaterialOverrideMap = [String: AetherMaterialOverride]
 
 struct AetherViewportState: Codable, Equatable {
     var exposureStops: Float = 0

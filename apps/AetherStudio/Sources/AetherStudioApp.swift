@@ -10,9 +10,85 @@ struct AetherStudioApp: App {
     }
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
+    .commands { PersistentRealityCommands() }
+
+    WindowGroup("Persistent Reality", id: "persistent-reality") {
+      PersistentRealityWindow()
+        .frame(minWidth: 980, minHeight: 700)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Persistent Entity Editor", id: "persistent-entity-editor") {
+      WorldEntityEditorWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Reality Time Machine", id: "reality-time-machine") {
+      WorldTimeMachineWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("World Intelligence", id: "world-intelligence") {
+      WorldIntelligenceWorkspace()
+        .frame(minWidth: 980, minHeight: 720)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Live Persistent Reality", id: "live-persistent-reality") {
+      LivePersistentRealityEditor()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
 
     Settings {
       AetherSettingsView()
+    }
+  }
+}
+
+private struct PersistentRealityWindow: View {
+  @State private var archivePath: String?
+
+  var body: some View {
+    WorldHistoryWorkspace(archivePath: $archivePath)
+  }
+}
+
+private struct PersistentRealityCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandMenu("World") {
+      Button("Persistent Reality…") {
+        openWindow(id: "persistent-reality")
+      }
+      .keyboardShortcut("h", modifiers: [.command, .shift])
+
+      Button("Persistent Entity Editor…") {
+        openWindow(id: "persistent-entity-editor")
+      }
+      .keyboardShortcut("e", modifiers: [.command, .shift])
+
+      Button("Reality Time Machine…") {
+        openWindow(id: "reality-time-machine")
+      }
+      .keyboardShortcut("t", modifiers: [.command, .shift])
+
+      Button("World Intelligence…") {
+        openWindow(id: "world-intelligence")
+      }
+      .keyboardShortcut("i", modifiers: [.command, .shift])
+
+      Divider()
+
+      Button("Live Persistent Reality…") {
+        openWindow(id: "live-persistent-reality")
+      }
+      .keyboardShortcut("l", modifiers: [.command, .shift])
     }
   }
 }
