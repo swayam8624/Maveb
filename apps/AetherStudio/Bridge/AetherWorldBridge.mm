@@ -12,7 +12,6 @@
 
 namespace {
 using aether::world::ChangeFlag;
-using aether::world::EntityId;
 using aether::world::PersistentWorldModel;
 using aether::world::WorldDiff;
 using aether::world::WorldSnapshot;
@@ -232,3 +231,26 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
 }
 
 @end
+
+BOOL AetherWorldLoadArchive(AetherWorldBridge* bridge, NSURL* archiveURL, NSError** error) {
+    return [bridge loadArchiveAtURL:archiveURL error:error];
+}
+
+BOOL AetherWorldSaveArchive(AetherWorldBridge* bridge, NSURL* archiveURL, NSError** error) {
+    return [bridge saveArchiveAtURL:archiveURL error:error];
+}
+
+NSData* AetherWorldIngestCanonical(AetherWorldBridge* bridge, NSURL* directoryURL,
+                                   uint64_t timestampNanoseconds, NSError** error) {
+    return [bridge ingestCanonicalDirectory:directoryURL
+                       timestampNanoseconds:timestampNanoseconds
+                                      error:error];
+}
+
+NSData* AetherWorldHistoryJSON(AetherWorldBridge* bridge, NSError** error) {
+    return [bridge historyJSONWithError:error];
+}
+
+NSData* AetherWorldLatestDiffJSON(AetherWorldBridge* bridge, NSError** error) {
+    return [bridge latestDiffJSONWithError:error];
+}
