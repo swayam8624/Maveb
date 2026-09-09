@@ -8,6 +8,8 @@
 
 namespace {
 
+using aether::ErrorCode;
+using aether::world::AssociationPolicy;
 using aether::world::Bounds;
 using aether::world::EntityId;
 using aether::world::EntityState;
@@ -65,7 +67,8 @@ void testStableAssociationAndNewIdentity() {
 
     const auto associated =
         aether::world::associateObservations(previous, 200, std::move(observations), 100);
-    expect(associated.has_value(), "unassigned observations must associate against prior world state");
+    expect(associated.has_value(),
+           "unassigned observations must associate against prior world state");
     if (!associated)
         return;
 
@@ -136,6 +139,54 @@ void testExplicitIdentityIsAuthoritative() {
     expect(associated->reusedIds == 1, "explicit prior identity must count as reused");
 }
 
+void testSpatialHashMatchesAcrossCellBoundary() {
+    WorldSnapshot previous;
+    previous.timestamp = 100;
+    previous.entities = {entity(7, "Boundary Chair", "chair", 1.49F, 10, 20, 100)};
+
+    std::vector<EntityState> observations = {
+        entity(0, "Boundary Chair", "chair", 1.51F, 10, 20, 0),
+    };
+
+    AssociationPolicy policy;
+    policy.maximumCenterDistanceMeters = 1.5F;
+    const auto associated =
+        aether::world::associateObservations(previous, 200, std::move(observations), 8, policy);
+    expect(associated.has_value(), "neighboring spatial-hash cells must remain matchable");
+    if (!associated)
+        return;
+    expect(associated->reusedIds == 1,
+           "cell-boundary movement must preserve identity instead of creating remove/add churn");
+    expect(associated->snapshot.entities.front().id.value == 7,
+           "cross-cell spatial association must retain the prior stable ID");
+}
+
+void testCandidateBudgetFailsClosed() {
+    WorldSnapshot previous;
+    previous.timestamp = 100;
+    previous.entities = {
+        entity(1, "A", "object", 0.0F, 1, 1, 100),
+        entity(2, "B", "object", 0.1F, 2, 2, 100),
+    };
+
+    std::vector<EntityState> observations = {
+        entity(0, "Observed A", "object", 0.02F, 1, 1, 0),
+        entity(0, "Observed B", "object", 0.12F, 2, 2, 0),
+    };
+
+    AssociationPolicy policy;
+    policy.maximumCenterDistanceMeters = 1.0F;
+    policy.minimumScore = 0.0F;
+    policy.maximumCandidatePairs = 1;
+    const auto associated =
+        aether::world::associateObservations(previous, 200, std::move(observations), 3, policy);
+    expect(!associated.has_value(), "association must fail when its explicit pair budget is exceeded");
+    if (!associated) {
+        expect(associated.error().code == ErrorCode::resourceExhausted,
+               "candidate-pair budget failure must report resource exhaustion");
+    }
+}
+
 } // namespace
 
 int main() noexcept {
@@ -143,6 +194,8 @@ int main() noexcept {
         testStableAssociationAndNewIdentity();
         testSemanticMismatchDoesNotStealIdentity();
         testExplicitIdentityIsAuthoritative();
+        testSpatialHashMatchesAcrossCellBoundary();
+        testCandidateBudgetFailsClosed();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
         return EXIT_FAILURE;
