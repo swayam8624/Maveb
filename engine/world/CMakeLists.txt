@@ -1,4 +1,5 @@
 add_library(AetherWorld STATIC
+    src/EntityAssociation.cpp
     src/PersistentWorld.cpp
     src/SelectiveUpdate.cpp
 )
