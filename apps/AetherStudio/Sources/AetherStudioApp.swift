@@ -31,6 +31,13 @@ struct AetherStudioApp: App {
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
 
+    WindowGroup("World Intelligence", id: "world-intelligence") {
+      WorldIntelligenceWorkspace()
+        .frame(minWidth: 980, minHeight: 720)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
     Settings {
       AetherSettingsView()
     }
@@ -64,6 +71,11 @@ private struct PersistentRealityCommands: Commands {
         openWindow(id: "reality-time-machine")
       }
       .keyboardShortcut("t", modifiers: [.command, .shift])
+
+      Button("World Intelligence…") {
+        openWindow(id: "world-intelligence")
+      }
+      .keyboardShortcut("i", modifiers: [.command, .shift])
     }
   }
 }
