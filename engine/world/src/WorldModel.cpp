@@ -7,8 +7,10 @@ namespace aether::world {
 Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
                                                         std::vector<EntityState> observations,
                                                         WorldIngestPolicy policy) {
-    if (timestamp == 0)
-        return fail(ErrorCode::invalidArgument, "Persistent world observation timestamp cannot be zero");
+    if (timestamp == 0) {
+        return fail(ErrorCode::invalidArgument,
+                    "Persistent world observation timestamp cannot be zero");
+    }
 
     WorldSnapshot emptyPrevious;
     const WorldSnapshot* previous = timeline_.latest();
@@ -51,6 +53,31 @@ Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
         .createdIds = association->createdIds,
         .missingPreviousEntities = association->missingPreviousEntities,
     };
+}
+
+Result<void> PersistentWorldModel::save(const std::filesystem::path& path) const {
+    return saveWorldArchive(path, timeline_, nextEntityId_);
+}
+
+Result<PersistentWorldModel> PersistentWorldModel::load(const std::filesystem::path& path,
+                                                        WorldArchiveLimits limits) {
+    auto archive = loadWorldArchive(path, limits);
+    if (!archive)
+        return std::unexpected(archive.error());
+
+    PersistentWorldModel model;
+    for (WorldSnapshot& snapshot : archive->snapshots) {
+        const std::uint64_t storedRevision = snapshot.revision;
+        auto revision = model.timeline_.append(std::move(snapshot));
+        if (!revision)
+            return std::unexpected(revision.error());
+        if (*revision != storedRevision) {
+            return fail(ErrorCode::corruptData,
+                        "World archive revision changed while restoring persistent history");
+        }
+    }
+    model.nextEntityId_ = archive->nextEntityId;
+    return model;
 }
 
 } // namespace aether::world
