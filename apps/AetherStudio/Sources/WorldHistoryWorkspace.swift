@@ -90,7 +90,10 @@ private final class WorldHistoryModel: ObservableObject {
     Task {
       do {
         let payload = try await Task.detached(priority: .userInitiated) {
-          try native.value.loadArchive(url)
+          var bridgeError: NSError?
+          guard AetherWorldLoadArchive(native.value, url, &bridgeError) else {
+            throw bridgeError ?? CocoaError(.fileReadUnknown)
+          }
           return try Self.readState(from: native.value)
         }.value
         apply(payload)
@@ -112,7 +115,10 @@ private final class WorldHistoryModel: ObservableObject {
     Task {
       do {
         try await Task.detached(priority: .userInitiated) {
-          try native.value.saveArchive(url)
+          var bridgeError: NSError?
+          guard AetherWorldSaveArchive(native.value, url, &bridgeError) else {
+            throw bridgeError ?? CocoaError(.fileWriteUnknown)
+          }
         }.value
         status = "Saved \(revisions.count) persistent world revision\(revisions.count == 1 ? "" : "s")"
       } catch {
@@ -133,13 +139,17 @@ private final class WorldHistoryModel: ObservableObject {
     Task {
       do {
         let result = try await Task.detached(priority: .userInitiated) {
-          guard let transactionData = try native.value.ingestCanonical(
-            directory, timestampNanoseconds: timestamp)
+          var bridgeError: NSError?
+          guard let transactionData = AetherWorldIngestCanonical(
+            native.value, directory, timestamp, &bridgeError)
           else {
-            throw CocoaError(.fileReadCorruptFile)
+            throw bridgeError ?? CocoaError(.fileReadCorruptFile)
           }
           if let autoSaveURL {
-            try native.value.saveArchive(autoSaveURL)
+            bridgeError = nil
+            guard AetherWorldSaveArchive(native.value, autoSaveURL, &bridgeError) else {
+              throw bridgeError ?? CocoaError(.fileWriteUnknown)
+            }
           }
           let state = try Self.readState(from: native.value)
           let transaction = try JSONDecoder().decode(WorldIngestReport.self, from: transactionData)
@@ -161,6 +171,7 @@ private final class WorldHistoryModel: ObservableObject {
   func refresh() {
     guard !isBusy else { return }
     isBusy = true
+    errorMessage = nil
     let native = native
     Task {
       do {
@@ -179,7 +190,8 @@ private final class WorldHistoryModel: ObservableObject {
 
   private func nextTimestamp() -> UInt64 {
     let wallClock = UInt64(max(0, Date().timeIntervalSince1970) * 1_000_000_000.0)
-    let next = max(wallClock, lastTimestamp == UInt64.max ? UInt64.max : lastTimestamp + 1)
+    let sequenceFloor = lastTimestamp == UInt64.max ? UInt64.max : lastTimestamp + 1
+    let next = max(wallClock, sequenceFloor)
     lastTimestamp = next
     return next
   }
@@ -195,11 +207,13 @@ private final class WorldHistoryModel: ObservableObject {
   nonisolated private static func readState(
     from bridge: AetherWorldBridge
   ) throws -> (WorldHistoryEnvelope, RealityDiffEnvelope) {
-    guard let historyData = try bridge.historyJSON() else {
-      throw CocoaError(.fileReadCorruptFile)
+    var bridgeError: NSError?
+    guard let historyData = AetherWorldHistoryJSON(bridge, &bridgeError) else {
+      throw bridgeError ?? CocoaError(.fileReadCorruptFile)
     }
-    guard let diffData = try bridge.latestDiffJSON() else {
-      throw CocoaError(.fileReadCorruptFile)
+    bridgeError = nil
+    guard let diffData = AetherWorldLatestDiffJSON(bridge, &bridgeError) else {
+      throw bridgeError ?? CocoaError(.fileReadCorruptFile)
     }
     let decoder = JSONDecoder()
     return (
@@ -329,11 +343,14 @@ struct WorldHistoryWorkspace: View {
         HStack(spacing: 9) {
           Image(systemName: archivePath == nil ? "exclamationmark.circle" : "link")
             .foregroundStyle(.secondary)
-          Text(archivePath ?? "No archive linked to this project yet. Ingested history remains in memory until saved.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            .truncationMode(.middle)
+          Text(
+            archivePath
+              ?? "No archive linked to this project yet. Ingested history remains in memory until saved."
+          )
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(2)
+          .truncationMode(.middle)
           Spacer()
         }
       }
@@ -355,7 +372,7 @@ struct WorldHistoryWorkspace: View {
         }
 
         LazyVStack(spacing: 8) {
-          ForEach(model.revisions.reversed()) { revision in
+          ForEach(Array(model.revisions.reversed())) { revision in
             HStack(spacing: 12) {
               ZStack {
                 Circle().fill(Color.accentColor.opacity(0.13))
@@ -383,48 +400,45 @@ struct WorldHistoryWorkspace: View {
     }
   }
 
-  @ViewBuilder
   private var diffCard: some View {
     WorldHistoryCard {
       VStack(alignment: .leading, spacing: 14) {
         sectionHeader("Reality Diff", symbol: "arrow.left.arrow.right")
-        guard let diff = model.diff, diff.available, let summary = diff.summary else {
-          Text("Capture or author a second revision to compare reality across time.")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-          return
-        }
-
-        HStack(spacing: 10) {
-          WorldMetric(label: "Added", value: "\(summary.added)", symbol: "plus.circle")
-          WorldMetric(label: "Removed", value: "\(summary.removed)", symbol: "minus.circle")
-          WorldMetric(label: "Modified", value: "\(summary.modified)", symbol: "pencil.circle")
-          WorldMetric(
-            label: "Changed", value: summary.changeRatio.formatted(.percent.precision(.fractionLength(1))),
-            symbol: "percent")
-        }
-
-        HStack {
-          Text("r\(diff.beforeRevision ?? 0) → r\(diff.afterRevision ?? 0)")
-            .font(.caption.monospacedDigit().weight(.semibold))
-          Spacer()
-          if diff.truncated == true {
-            Label(
-              "Showing first \(diff.entities?.count ?? 0) of \(diff.totalEntityDeltas ?? 0)",
-              systemImage: "ellipsis.circle")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+        if let diff = model.diff, diff.available, let summary = diff.summary {
+          HStack(spacing: 10) {
+            WorldMetric(label: "Added", value: "\(summary.added)", symbol: "plus.circle")
+            WorldMetric(label: "Removed", value: "\(summary.removed)", symbol: "minus.circle")
+            WorldMetric(label: "Modified", value: "\(summary.modified)", symbol: "pencil.circle")
+            WorldMetric(
+              label: "Changed",
+              value: summary.changeRatio.formatted(.percent.precision(.fractionLength(1))),
+              symbol: "percent")
           }
-        }
 
-        if let entities = diff.entities, !entities.isEmpty {
-          LazyVStack(spacing: 8) {
-            ForEach(entities) { entity in
-              deltaRow(entity)
+          HStack {
+            Text("r\(diff.beforeRevision ?? 0) → r\(diff.afterRevision ?? 0)")
+              .font(.caption.monospacedDigit().weight(.semibold))
+            Spacer()
+            if diff.truncated == true {
+              Label(
+                "Showing first \(diff.entities?.count ?? 0) of \(diff.totalEntityDeltas ?? 0)",
+                systemImage: "ellipsis.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
           }
+
+          if let entities = diff.entities, !entities.isEmpty {
+            LazyVStack(spacing: 8) {
+              ForEach(entities) { entity in deltaRow(entity) }
+            }
+          } else {
+            Text("No entity-level changes exceeded the active Reality Diff thresholds.")
+              .font(.callout)
+              .foregroundStyle(.secondary)
+          }
         } else {
-          Text("No entity-level changes exceeded the active Reality Diff thresholds.")
+          Text(model.diff?.error ?? "Capture or author a second revision to compare reality across time.")
             .font(.callout)
             .foregroundStyle(.secondary)
         }
@@ -522,7 +536,7 @@ struct WorldHistoryWorkspace: View {
     panel.canChooseDirectories = true
     panel.allowsMultipleSelection = false
     guard panel.runModal() == .OK, let url = panel.url else { return }
-    let saveURL = archivePath.map(URL.init(fileURLWithPath:))
+    let saveURL = archivePath.map { URL(fileURLWithPath: $0) }
     model.ingestCanonical(url, autoSaveURL: saveURL)
   }
 
@@ -544,7 +558,7 @@ private struct FlowFlags: View {
 
   var body: some View {
     HStack(spacing: 5) {
-      ForEach(flags.prefix(6), id: \.self) { flag in
+      ForEach(Array(flags.prefix(6)), id: \.self) { flag in
         Text(flag)
           .font(.caption2.weight(.medium))
           .padding(.horizontal, 7)
