@@ -38,6 +38,7 @@ add_subdirectory(engine/canonical)
 add_subdirectory(engine/gaussian)
 add_subdirectory(engine/reconstruction)
 add_subdirectory(engine/hybrid)
+add_subdirectory(engine/world_adapters)
 
 if(AETHER_BUILD_TOOLS)
     if(APPLE)
