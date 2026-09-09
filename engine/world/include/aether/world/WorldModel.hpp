@@ -35,21 +35,21 @@ struct WorldIngestResult final {
 /// partial revision.
 class PersistentWorldModel final {
   public:
-    [[nodiscard]] Result<WorldIngestResult>
-    ingest(TimestampNs timestamp, std::vector<EntityState> observations,
-           WorldIngestPolicy policy = {});
+    [[nodiscard]] Result<WorldIngestResult> ingest(TimestampNs timestamp,
+                                                   std::vector<EntityState> observations,
+                                                   WorldIngestPolicy policy = {});
 
     /// Applies sparse authored mutations to stable persistent entities as one world revision.
-    [[nodiscard]] Result<WorldEditResult>
-    edit(TimestampNs timestamp, const std::vector<EntityPatch>& patches,
-         WorldEditPolicy policy = {});
+    [[nodiscard]] Result<WorldEditResult> edit(TimestampNs timestamp,
+                                               const std::vector<EntityPatch>& patches,
+                                               WorldEditPolicy policy = {});
 
     /// Atomically persists the complete committed history and identity allocator state.
     [[nodiscard]] Result<void> save(const std::filesystem::path& path) const;
 
     /// Restores a complete persistent-world model from a validated versioned archive.
-    [[nodiscard]] static Result<PersistentWorldModel>
-    load(const std::filesystem::path& path, WorldArchiveLimits limits = {});
+    [[nodiscard]] static Result<PersistentWorldModel> load(const std::filesystem::path& path,
+                                                           WorldArchiveLimits limits = {});
 
     [[nodiscard]] const WorldTimeline& timeline() const noexcept {
         return timeline_;
