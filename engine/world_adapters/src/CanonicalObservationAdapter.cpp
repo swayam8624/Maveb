@@ -3,11 +3,12 @@
 #include <aether/mesh/GltfLoader.hpp>
 
 #include <algorithm>
-#include <array>
 #include <bit>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,10 +31,10 @@ class StableHash final {
         addUnsigned(std::bit_cast<std::uint32_t>(value));
     }
 
-    void addString(const std::string& value) noexcept {
-        addUnsigned(value.size());
-        for (const unsigned char character : value)
-            addByte(character);
+    void addBytes(const std::vector<std::byte>& bytes) noexcept {
+        addUnsigned(bytes.size());
+        for (const std::byte value : bytes)
+            addByte(std::to_integer<std::uint8_t>(value));
     }
 
     [[nodiscard]] std::uint64_t value() const noexcept {
@@ -93,25 +94,47 @@ struct LocalBounds final {
         hash.addFloat(vertex.position.x);
         hash.addFloat(vertex.position.y);
         hash.addFloat(vertex.position.z);
+        hash.addFloat(vertex.normal.x);
+        hash.addFloat(vertex.normal.y);
+        hash.addFloat(vertex.normal.z);
+        hash.addFloat(vertex.tangent.x);
+        hash.addFloat(vertex.tangent.y);
+        hash.addFloat(vertex.tangent.z);
+        hash.addFloat(vertex.tangent.w);
     }
     for (const std::uint32_t index : primitive.indices)
         hash.addUnsigned(index);
     return hash.value();
 }
 
-void addOptionalIndex(StableHash& hash, const std::optional<std::size_t>& value) noexcept {
-    hash.addUnsigned(value.has_value() ? 1U : 0U);
-    if (value)
-        hash.addUnsigned(*value);
+void addTextureSignature(StableHash& hash, const mesh::MeshAsset& asset,
+                         const std::optional<std::size_t>& textureIndex) noexcept {
+    hash.addUnsigned(textureIndex.has_value() ? 1U : 0U);
+    if (!textureIndex)
+        return;
+    if (*textureIndex >= asset.textures.size()) {
+        hash.addUnsigned(std::numeric_limits<std::uint64_t>::max());
+        return;
+    }
+
+    const mesh::TextureAsset& texture = asset.textures[*textureIndex];
+    hash.addUnsigned(static_cast<std::uint64_t>(texture.magnification));
+    hash.addUnsigned(static_cast<std::uint64_t>(texture.minification));
+    hash.addUnsigned(static_cast<std::uint64_t>(texture.mipFilter));
+    hash.addUnsigned(static_cast<std::uint64_t>(texture.addressU));
+    hash.addUnsigned(static_cast<std::uint64_t>(texture.addressV));
+    if (texture.imageIndex >= asset.images.size()) {
+        hash.addUnsigned(std::numeric_limits<std::uint64_t>::max());
+        return;
+    }
+    hash.addBytes(asset.images[texture.imageIndex].bytes);
 }
 
 [[nodiscard]] std::uint64_t appearanceSignature(const mesh::MeshAsset& asset,
                                                  const mesh::MeshPrimitive& primitive) noexcept {
     StableHash hash;
-    hash.addUnsigned(primitive.materialIndex);
     if (primitive.materialIndex < asset.materials.size()) {
         const mesh::PbrMaterial& material = asset.materials[primitive.materialIndex];
-        hash.addString(material.name);
         hash.addFloat(material.baseColor.x);
         hash.addFloat(material.baseColor.y);
         hash.addFloat(material.baseColor.z);
@@ -127,11 +150,25 @@ void addOptionalIndex(StableHash& hash, const std::optional<std::size_t>& value)
         hash.addUnsigned(material.doubleSided ? 1U : 0U);
         hash.addUnsigned(material.alphaBlend ? 1U : 0U);
         hash.addUnsigned(material.alphaMask ? 1U : 0U);
-        addOptionalIndex(hash, material.baseColorTexture);
-        addOptionalIndex(hash, material.metallicRoughnessTexture);
-        addOptionalIndex(hash, material.normalTexture);
-        addOptionalIndex(hash, material.occlusionTexture);
-        addOptionalIndex(hash, material.emissiveTexture);
+        addTextureSignature(hash, asset, material.baseColorTexture);
+        addTextureSignature(hash, asset, material.metallicRoughnessTexture);
+        addTextureSignature(hash, asset, material.normalTexture);
+        addTextureSignature(hash, asset, material.occlusionTexture);
+        addTextureSignature(hash, asset, material.emissiveTexture);
+        for (const mesh::PbrMaterial::UvTransform& transform : material.uvTransforms) {
+            hash.addFloat(transform.scale.x);
+            hash.addFloat(transform.scale.y);
+            hash.addFloat(transform.offset.x);
+            hash.addFloat(transform.offset.y);
+            hash.addFloat(transform.rotation);
+        }
+    } else {
+        hash.addUnsigned(std::numeric_limits<std::uint64_t>::max());
+    }
+
+    for (const mesh::MeshVertex& vertex : primitive.vertices) {
+        hash.addFloat(vertex.textureCoordinate.x);
+        hash.addFloat(vertex.textureCoordinate.y);
     }
     hash.addUnsigned(primitive.vertexColors.size());
     for (const simd_float3 color : primitive.vertexColors) {
