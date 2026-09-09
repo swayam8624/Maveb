@@ -22,7 +22,8 @@ struct Candidate final {
 }
 
 [[nodiscard]] float volume(const Bounds& bounds) noexcept {
-    const simd_float3 extent = simd_max(bounds.maximum - bounds.minimum, simd_float3{0.0F, 0.0F, 0.0F});
+    const simd_float3 extent =
+        simd_max(bounds.maximum - bounds.minimum, simd_float3{0.0F, 0.0F, 0.0F});
     return extent.x * extent.y * extent.z;
 }
 
@@ -52,7 +53,8 @@ struct Candidate final {
                                      const AssociationPolicy& policy) noexcept {
     const float distanceScore =
         1.0F - std::clamp(centerDistance / policy.maximumCenterDistanceMeters, 0.0F, 1.0F);
-    float score = 0.55F * distanceScore + 0.25F * boundsIoU(previous.worldBounds, observation.worldBounds);
+    float score =
+        0.55F * distanceScore + 0.25F * boundsIoU(previous.worldBounds, observation.worldBounds);
     if (!previous.semanticLabel.empty() && previous.semanticLabel == observation.semanticLabel)
         score += 0.15F;
     if (previous.geometrySignature != 0 &&
@@ -73,11 +75,8 @@ struct Candidate final {
     WorldSnapshot validation;
     validation.timestamp = timestamp;
     validation.entities = observations;
-    for (std::size_t index = 0; index < validation.entities.size(); ++index) {
-        if (index == std::numeric_limits<std::uint64_t>::max())
-            return fail(ErrorCode::resourceExhausted, "Observation count exceeds persistent ID space");
+    for (std::size_t index = 0; index < validation.entities.size(); ++index)
         validation.entities[index].id = EntityId{static_cast<std::uint64_t>(index) + 1U};
-    }
     return validateSnapshot(validation);
 }
 
@@ -140,7 +139,6 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
     }
 
     std::vector<Candidate> candidates;
-    candidates.reserve(observations.size() * std::min<std::size_t>(previous.entities.size(), 32U));
     for (std::size_t observationIndex = 0; observationIndex < observations.size(); ++observationIndex) {
         if (observationMatched[observationIndex])
             continue;
@@ -151,7 +149,8 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
             const EntityState& prior = previous.entities[previousIndex];
             if (!semanticCompatible(prior, observation, policy))
                 continue;
-            const float distance = simd_distance(center(prior.worldBounds), center(observation.worldBounds));
+            const float distance =
+                simd_distance(center(prior.worldBounds), center(observation.worldBounds));
             if (distance > policy.maximumCenterDistanceMeters)
                 continue;
             const float score = associationScore(prior, observation, distance, policy);
@@ -181,9 +180,13 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
         ++result.reusedIds;
     }
 
-    std::uint64_t allocation = std::max(nextEntityId, maximumKnownId);
-    if (allocation != std::numeric_limits<std::uint64_t>::max())
-        ++allocation;
+    std::uint64_t allocation = nextEntityId == 0 ? 1U : nextEntityId;
+    if (allocation <= maximumKnownId) {
+        if (maximumKnownId == std::numeric_limits<std::uint64_t>::max())
+            allocation = 0;
+        else
+            allocation = maximumKnownId + 1U;
+    }
 
     for (std::size_t index = 0; index < observations.size(); ++index) {
         EntityState& observation = observations[index];
@@ -192,14 +195,13 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous, T
                 observation.lastObserved = timestamp;
             continue;
         }
-        if (allocation == 0 || allocation == std::numeric_limits<std::uint64_t>::max()) {
+        if (allocation == 0)
             return fail(ErrorCode::resourceExhausted, "Persistent entity ID space is exhausted");
-        }
         observation.id = EntityId{allocation};
         observation.lastObserved = observation.lastObserved == 0 ? timestamp : observation.lastObserved;
         observationMatched[index] = true;
         ++result.createdIds;
-        ++allocation;
+        allocation = allocation == std::numeric_limits<std::uint64_t>::max() ? 0 : allocation + 1U;
     }
 
     result.missingPreviousEntities = static_cast<std::size_t>(
