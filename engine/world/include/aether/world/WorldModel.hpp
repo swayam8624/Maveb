@@ -28,11 +28,19 @@ struct WorldIngestResult final {
     std::size_t missingPreviousEntities{};
 };
 
+/// Result of restoring a historical world state as a new append-only revision.
+struct WorldRevertResult final {
+    std::uint64_t revision{};
+    std::uint64_t sourceRevision{};
+    WorldDiff diff;
+    SelectiveUpdatePlan selectiveUpdate;
+};
+
 /// Transactional persistent model of a captured physical world.
 ///
-/// Observation ingestion and authored edits both compute their full candidate diff/update plan
-/// before mutating committed history. Failed work therefore cannot consume entity IDs or append a
-/// partial revision.
+/// Observation ingestion, authored edits, and historical restores compute their complete candidate
+/// diff/update plan before mutating committed history. Failed work therefore cannot consume entity
+/// IDs or append a partial revision.
 class PersistentWorldModel final {
   public:
     [[nodiscard]] Result<WorldIngestResult> ingest(TimestampNs timestamp,
@@ -43,6 +51,12 @@ class PersistentWorldModel final {
     [[nodiscard]] Result<WorldEditResult> edit(TimestampNs timestamp,
                                                const std::vector<EntityPatch>& patches,
                                                WorldEditPolicy policy = {});
+
+    /// Restores a historical snapshot as a new revision without deleting later history or rolling
+    /// back the persistent-ID allocator. This is the primitive behind non-destructive time travel.
+    [[nodiscard]] Result<WorldRevertResult> revertTo(std::uint64_t sourceRevision,
+                                                      TimestampNs timestamp,
+                                                      WorldEditPolicy policy = {});
 
     /// Atomically persists the complete committed history and identity allocator state.
     [[nodiscard]] Result<void> save(const std::filesystem::path& path) const;
