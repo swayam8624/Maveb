@@ -18,6 +18,7 @@ using aether::world::PersistentWorldModel;
 using aether::world::RepresentationKind;
 using aether::world::WorldDiff;
 using aether::world::WorldEditResult;
+using aether::world::WorldRevertResult;
 using aether::world::WorldSnapshot;
 
 constexpr std::size_t maximumDiffEntitiesForStudio = 5000;
@@ -105,6 +106,16 @@ NSDictionary* editPayload(const WorldEditResult& edit) {
         @"removedEntities" : @(edit.removedEntities),
         @"dirtyRegionCount" : @(edit.selectiveUpdate.dirtyRegions.size()),
         @"summary" : diffSummary(edit.diff),
+    };
+}
+
+NSDictionary* revertPayload(const WorldRevertResult& reverted) {
+    return @{
+        @"schemaVersion" : @1,
+        @"revision" : @(reverted.revision),
+        @"sourceRevision" : @(reverted.sourceRevision),
+        @"dirtyRegionCount" : @(reverted.selectiveUpdate.dirtyRegions.size()),
+        @"summary" : diffSummary(reverted.diff),
     };
 }
 
@@ -255,7 +266,8 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
 - (NSData*)ingestCanonicalDirectory:(NSURL*)directoryURL
                timestampNanoseconds:(uint64_t)timestampNanoseconds
                               error:(NSError**)error {
-    auto canonical = aether::canonical::CanonicalAssetLoader::load(directoryURL.fileSystemRepresentation);
+    auto canonical =
+        aether::canonical::CanonicalAssetLoader::load(directoryURL.fileSystemRepresentation);
     if (!canonical) {
         setError(error, canonical.error());
         return nil;
@@ -409,6 +421,17 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
     return jsonData(editPayload(*edited), error);
 }
 
+- (NSData*)revertToRevision:(uint64_t)sourceRevision
+       timestampNanoseconds:(uint64_t)timestampNanoseconds
+                      error:(NSError**)error {
+    auto reverted = model(_worldModel).revertTo(sourceRevision, timestampNanoseconds);
+    if (!reverted) {
+        setError(error, reverted.error());
+        return nil;
+    }
+    return jsonData(revertPayload(*reverted), error);
+}
+
 @end
 
 BOOL AetherWorldLoadArchive(AetherWorldBridge* bridge, NSURL* archiveURL, NSError** error) {
@@ -460,4 +483,11 @@ NSData* AetherWorldRelabelEntity(AetherWorldBridge* bridge, uint64_t entityId,
 NSData* AetherWorldRemoveEntity(AetherWorldBridge* bridge, uint64_t entityId,
                                 uint64_t timestampNanoseconds, NSError** error) {
     return [bridge removeEntity:entityId timestampNanoseconds:timestampNanoseconds error:error];
+}
+
+NSData* AetherWorldRevertToRevision(AetherWorldBridge* bridge, uint64_t sourceRevision,
+                                    uint64_t timestampNanoseconds, NSError** error) {
+    return [bridge revertToRevision:sourceRevision
+               timestampNanoseconds:timestampNanoseconds
+                              error:error];
 }
