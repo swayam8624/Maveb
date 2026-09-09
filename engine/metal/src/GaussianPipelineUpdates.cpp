@@ -6,8 +6,9 @@
 
 namespace aether::metal {
 
-Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
-                                         simd_float3 translationDelta) {
+Result<void>
+GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                      simd_float3 translationDelta) const {
     if (!gaussians_ || gaussianCount_ == 0)
         return fail(ErrorCode::notFound, "Gaussian translation requires a loaded GPU scene");
     if (!std::isfinite(translationDelta.x) || !std::isfinite(translationDelta.y) ||
@@ -26,7 +27,7 @@ Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussian
     if (sorted.back() >= gaussianCount_)
         return fail(ErrorCode::invalidArgument, "Gaussian GPU translation index is out of range");
 
-    auto* primitives = static_cast<AetherGaussianGpu*>(gaussians_->contents());
+    const auto* primitives = static_cast<const AetherGaussianGpu*>(gaussians_->contents());
     if (!primitives)
         return fail(ErrorCode::metal, "Gaussian shared GPU buffer is not CPU-addressable");
 
@@ -39,7 +40,19 @@ Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussian
                         "Gaussian GPU translation would produce a non-finite position");
         }
     }
+    return {};
+}
 
+Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
+                                         simd_float3 translationDelta) {
+    if (auto validation = validateTranslation(gaussianIndices, translationDelta); !validation)
+        return std::unexpected(validation.error());
+    if (gaussianIndices.empty())
+        return {};
+
+    std::vector<std::uint32_t> sorted(gaussianIndices.begin(), gaussianIndices.end());
+    std::sort(sorted.begin(), sorted.end());
+    auto* primitives = static_cast<AetherGaussianGpu*>(gaussians_->contents());
     for (const std::uint32_t index : sorted) {
         primitives[index].positionOpacity.x += translationDelta.x;
         primitives[index].positionOpacity.y += translationDelta.y;
