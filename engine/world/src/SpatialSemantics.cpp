@@ -22,7 +22,7 @@ namespace {
 }
 
 [[nodiscard]] float pointToBounds(simd_float3 point, const Bounds& bounds) noexcept {
-    const simd_float3 closest = simd_clamp(point, bounds.minimum, bounds.maximum);
+    const simd_float3 closest = simd_min(simd_max(point, bounds.minimum), bounds.maximum);
     return simd_distance(point, closest);
 }
 
@@ -164,22 +164,18 @@ Result<std::vector<EntityId>> SemanticSpatialIndex::intersecting(const Bounds& r
     };
 
     if (semanticLabel.empty()) {
-        result.reserve(std::min(maximumResults, entities_.size()));
-        for (const IndexedEntity& candidate : entities_) {
+        result.reserve(entities_.size());
+        for (const IndexedEntity& candidate : entities_)
             append(candidate);
-            if (result.size() == maximumResults)
-                break;
-        }
     } else if (const auto* candidates = semanticCandidates(semanticLabel)) {
-        result.reserve(std::min(maximumResults, candidates->size()));
-        for (const std::size_t index : *candidates) {
+        result.reserve(candidates->size());
+        for (const std::size_t index : *candidates)
             append(entities_[index]);
-            if (result.size() == maximumResults)
-                break;
-        }
     }
 
     std::sort(result.begin(), result.end());
+    if (result.size() > maximumResults)
+        result.resize(maximumResults);
     return result;
 }
 
