@@ -33,6 +33,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData* _Nullable)revertToRevision:(uint64_t)sourceRevision
                  timestampNanoseconds:(uint64_t)timestampNanoseconds
                                 error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)semanticEntities:(NSString*)semanticLabel
+                           maxResults:(NSUInteger)maxResults
+                                error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)nearestEntitiesFromX:(float)x
+                                        y:(float)y
+                                        z:(float)z
+                            semanticLabel:(NSString*)semanticLabel
+                   maximumDistanceMeters:(float)maximumDistanceMeters
+                               maxResults:(NSUInteger)maxResults
+                                    error:(NSError* _Nullable* _Nullable)error;
+- (NSData* _Nullable)relationsFromEntity:(uint64_t)subjectId
+                                toEntity:(uint64_t)referenceId
+                      nearDistanceMeters:(float)nearDistanceMeters
+                                   error:(NSError* _Nullable* _Nullable)error;
 
 @end
 
@@ -62,6 +76,15 @@ FOUNDATION_EXPORT NSData* _Nullable AetherWorldRemoveEntity(
     NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldRevertToRevision(
     AetherWorldBridge* bridge, uint64_t sourceRevision, uint64_t timestampNanoseconds,
+    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldSemanticEntities(
+    AetherWorldBridge* bridge, NSString* semanticLabel, NSUInteger maxResults,
+    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldNearestEntities(
+    AetherWorldBridge* bridge, float x, float y, float z, NSString* semanticLabel,
+    float maximumDistanceMeters, NSUInteger maxResults, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelations(
+    AetherWorldBridge* bridge, uint64_t subjectId, uint64_t referenceId, float nearDistanceMeters,
     NSError* _Nullable* _Nullable error);
 
 NS_ASSUME_NONNULL_END
