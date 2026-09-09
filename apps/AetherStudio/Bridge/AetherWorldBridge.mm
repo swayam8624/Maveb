@@ -1,6 +1,7 @@
 #import "AetherWorldBridge.h"
 
 #include <aether/canonical/CanonicalAsset.hpp>
+#include <aether/world/SpatialSemantics.hpp>
 #include <aether/world/WorldModel.hpp>
 #include <aether/world_adapters/CanonicalObservationAdapter.hpp>
 
@@ -12,10 +13,13 @@
 
 namespace {
 using aether::world::ChangeFlag;
+using aether::world::EntityId;
 using aether::world::EntityPatch;
 using aether::world::EntityState;
 using aether::world::PersistentWorldModel;
 using aether::world::RepresentationKind;
+using aether::world::SemanticSpatialIndex;
+using aether::world::SpatialQueryPolicy;
 using aether::world::WorldDiff;
 using aether::world::WorldEditResult;
 using aether::world::WorldRevertResult;
@@ -23,6 +27,7 @@ using aether::world::WorldSnapshot;
 
 constexpr std::size_t maximumDiffEntitiesForStudio = 5000;
 constexpr std::size_t maximumWorldEntitiesForStudio = 5000;
+constexpr std::size_t maximumSpatialQueryResultsForStudio = 5000;
 
 PersistentWorldModel& model(void* storage) {
     return *static_cast<PersistentWorldModel*>(storage);
@@ -171,6 +176,22 @@ const EntityState* findEntity(const PersistentWorldModel& world, std::uint64_t e
     return match == latest->entities.end() ? nullptr : &*match;
 }
 
+NSDictionary* compactEntityPayload(const PersistentWorldModel& world, EntityId id) {
+    const EntityState* entity = findEntity(world, id.value);
+    if (!entity) {
+        return @{
+            @"id" : @(id.value),
+            @"name" : @"",
+            @"semanticLabel" : @"",
+        };
+    }
+    return @{
+        @"id" : @(entity->id.value),
+        @"name" : text(entity->name),
+        @"semanticLabel" : text(entity->semanticLabel),
+    };
+}
+
 NSDictionary* diffPayload(const PersistentWorldModel& world) {
     if (world.timeline().size() < 2) {
         return @{
@@ -226,6 +247,22 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
         @"truncated" : @(diff->entities.size() > count),
         @"totalEntityDeltas" : @(diff->entities.size()),
     };
+}
+
+Result<SemanticSpatialIndex> spatialIndex(const PersistentWorldModel& world) {
+    const WorldSnapshot* latest = world.latest();
+    if (!latest)
+        return aether::fail(aether::ErrorCode::notFound,
+                            "Spatial query requires a committed world revision");
+    return SemanticSpatialIndex::build(*latest);
+}
+
+Result<std::string> utf8(NSString* value, const char* field) {
+    const char* bytes = value.UTF8String;
+    if (!bytes)
+        return aether::fail(aether::ErrorCode::invalidArgument,
+                            "Studio string could not be represented as UTF-8", field);
+    return std::string(bytes);
 }
 
 } // namespace
@@ -382,16 +419,15 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
                  std::to_string(entityId));
         return nil;
     }
-    const char* utf8 = semanticLabel.UTF8String;
-    if (!utf8) {
-        setError(error, aether::ErrorCode::invalidArgument,
-                 "Semantic label could not be represented as UTF-8");
+    auto label = utf8(semanticLabel, "semanticLabel");
+    if (!label) {
+        setError(error, label.error());
         return nil;
     }
 
     EntityPatch patch;
     patch.id = entity->id;
-    patch.semanticLabel = std::string(utf8);
+    patch.semanticLabel = std::move(*label);
     auto edited = model(_worldModel).edit(timestampNanoseconds, {patch});
     if (!edited) {
         setError(error, edited.error());
@@ -430,6 +466,118 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
         return nil;
     }
     return jsonData(revertPayload(*reverted), error);
+}
+
+- (NSData*)semanticEntities:(NSString*)semanticLabel
+                 maxResults:(NSUInteger)maxResults
+                      error:(NSError**)error {
+    auto label = utf8(semanticLabel, "semanticLabel");
+    if (!label) {
+        setError(error, label.error());
+        return nil;
+    }
+    auto index = spatialIndex(model(_worldModel));
+    if (!index) {
+        setError(error, index.error());
+        return nil;
+    }
+    const std::size_t boundedResults =
+        std::min<std::size_t>(maxResults, maximumSpatialQueryResultsForStudio);
+    auto ids = index->findSemantic(*label, boundedResults);
+    if (!ids) {
+        setError(error, ids.error());
+        return nil;
+    }
+
+    NSMutableArray* entities = [NSMutableArray arrayWithCapacity:ids->size()];
+    for (const EntityId id : *ids)
+        [entities addObject:compactEntityPayload(model(_worldModel), id)];
+    NSDictionary* payload = @{
+        @"schemaVersion" : @1,
+        @"revision" : @(index->revision()),
+        @"semanticLabel" : semanticLabel,
+        @"entities" : entities,
+    };
+    return jsonData(payload, error);
+}
+
+- (NSData*)nearestEntitiesFromX:(float)x
+                              y:(float)y
+                              z:(float)z
+                  semanticLabel:(NSString*)semanticLabel
+         maximumDistanceMeters:(float)maximumDistanceMeters
+                     maxResults:(NSUInteger)maxResults
+                          error:(NSError**)error {
+    auto label = utf8(semanticLabel, "semanticLabel");
+    if (!label) {
+        setError(error, label.error());
+        return nil;
+    }
+    auto index = spatialIndex(model(_worldModel));
+    if (!index) {
+        setError(error, index.error());
+        return nil;
+    }
+
+    SpatialQueryPolicy policy;
+    policy.maximumDistanceMeters = maximumDistanceMeters;
+    policy.maximumResults =
+        std::min<std::size_t>(maxResults, maximumSpatialQueryResultsForStudio);
+    auto hits = index->nearest(simd_float3{x, y, z}, *label, policy);
+    if (!hits) {
+        setError(error, hits.error());
+        return nil;
+    }
+
+    NSMutableArray* results = [NSMutableArray arrayWithCapacity:hits->size()];
+    for (const auto& hit : *hits) {
+        const NSDictionary* entity = compactEntityPayload(model(_worldModel), hit.id);
+        [results addObject:@{
+            @"id" : entity[@"id"],
+            @"name" : entity[@"name"],
+            @"semanticLabel" : entity[@"semanticLabel"],
+            @"pointToBoundsMeters" : @(hit.pointToBoundsMeters),
+            @"centerDistanceMeters" : @(hit.centerDistanceMeters),
+        }];
+    }
+    NSDictionary* payload = @{
+        @"schemaVersion" : @1,
+        @"revision" : @(index->revision()),
+        @"queryPoint" : @[@(x), @(y), @(z)],
+        @"semanticLabel" : semanticLabel,
+        @"results" : results,
+    };
+    return jsonData(payload, error);
+}
+
+- (NSData*)relationsFromEntity:(uint64_t)subjectId
+                      toEntity:(uint64_t)referenceId
+            nearDistanceMeters:(float)nearDistanceMeters
+                         error:(NSError**)error {
+    auto index = spatialIndex(model(_worldModel));
+    if (!index) {
+        setError(error, index.error());
+        return nil;
+    }
+    auto relation = index->relations(EntityId{subjectId}, EntityId{referenceId}, nearDistanceMeters);
+    if (!relation) {
+        setError(error, relation.error());
+        return nil;
+    }
+
+    NSDictionary* payload = @{
+        @"schemaVersion" : @1,
+        @"revision" : @(index->revision()),
+        @"subject" : compactEntityPayload(model(_worldModel), relation->subject),
+        @"reference" : compactEntityPayload(model(_worldModel), relation->reference),
+        @"centerDistanceMeters" : @(relation->centerDistanceMeters),
+        @"boundsSeparationMeters" : @(relation->boundsSeparationMeters),
+        @"intersects" : @(relation->intersects),
+        @"subjectContainsReference" : @(relation->subjectContainsReference),
+        @"subjectInsideReference" : @(relation->subjectInsideReference),
+        @"near" : @(relation->near),
+    };
+    return jsonData(payload, error);
 }
 
 @end
@@ -490,4 +638,29 @@ NSData* AetherWorldRevertToRevision(AetherWorldBridge* bridge, uint64_t sourceRe
     return [bridge revertToRevision:sourceRevision
                timestampNanoseconds:timestampNanoseconds
                               error:error];
+}
+
+NSData* AetherWorldSemanticEntities(AetherWorldBridge* bridge, NSString* semanticLabel,
+                                    NSUInteger maxResults, NSError** error) {
+    return [bridge semanticEntities:semanticLabel maxResults:maxResults error:error];
+}
+
+NSData* AetherWorldNearestEntities(AetherWorldBridge* bridge, float x, float y, float z,
+                                   NSString* semanticLabel, float maximumDistanceMeters,
+                                   NSUInteger maxResults, NSError** error) {
+    return [bridge nearestEntitiesFromX:x
+                                     y:y
+                                     z:z
+                         semanticLabel:semanticLabel
+                maximumDistanceMeters:maximumDistanceMeters
+                            maxResults:maxResults
+                                 error:error];
+}
+
+NSData* AetherWorldRelations(AetherWorldBridge* bridge, uint64_t subjectId, uint64_t referenceId,
+                             float nearDistanceMeters, NSError** error) {
+    return [bridge relationsFromEntity:subjectId
+                              toEntity:referenceId
+                    nearDistanceMeters:nearDistanceMeters
+                                 error:error];
 }
