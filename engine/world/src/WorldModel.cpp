@@ -77,6 +77,61 @@ Result<WorldEditResult> PersistentWorldModel::edit(TimestampNs timestamp,
     return prepared;
 }
 
+Result<WorldRevertResult> PersistentWorldModel::revertTo(std::uint64_t sourceRevision,
+                                                         TimestampNs timestamp,
+                                                         WorldEditPolicy policy) {
+    const WorldSnapshot* previous = timeline_.latest();
+    if (!previous)
+        return fail(ErrorCode::notFound, "Persistent world restore requires an existing revision");
+    if (sourceRevision == previous->revision) {
+        return fail(ErrorCode::invalidArgument,
+                    "Persistent world restore source is already the latest revision");
+    }
+    if (timestamp == 0 || timestamp <= previous->timestamp) {
+        return fail(ErrorCode::invalidArgument,
+                    "Persistent world restore timestamp must be newer than committed state");
+    }
+    if (previous->revision == std::numeric_limits<std::uint64_t>::max())
+        return fail(ErrorCode::resourceExhausted, "Persistent world revision space is exhausted");
+
+    auto source = timeline_.snapshot(sourceRevision);
+    if (!source)
+        return std::unexpected(source.error());
+
+    WorldSnapshot candidate = **source;
+    candidate.revision = previous->revision + 1U;
+    candidate.timestamp = timestamp;
+
+    auto diff = diffSnapshots(*previous, candidate, policy.diff);
+    if (!diff)
+        return std::unexpected(diff.error());
+    const std::size_t changed = diff->summary.added + diff->summary.removed + diff->summary.modified;
+    if (changed == 0) {
+        return fail(ErrorCode::invalidArgument,
+                    "Persistent world restore would create an identical no-op revision");
+    }
+
+    auto selectiveUpdate =
+        planSelectiveUpdates(*previous, candidate, *diff, policy.selectiveUpdate);
+    if (!selectiveUpdate)
+        return std::unexpected(selectiveUpdate.error());
+
+    auto revision = timeline_.append(candidate);
+    if (!revision)
+        return std::unexpected(revision.error());
+    if (*revision != candidate.revision) {
+        return fail(ErrorCode::internal,
+                    "Persistent world timeline assigned an unexpected restored revision");
+    }
+
+    return WorldRevertResult{
+        .revision = *revision,
+        .sourceRevision = sourceRevision,
+        .diff = std::move(*diff),
+        .selectiveUpdate = std::move(*selectiveUpdate),
+    };
+}
+
 Result<void> PersistentWorldModel::save(const std::filesystem::path& path) const {
     return saveWorldArchive(path, timeline_, nextEntityId_);
 }
