@@ -2,6 +2,7 @@ add_library(AetherWorld STATIC
     src/EntityAssociation.cpp
     src/PersistentWorld.cpp
     src/SelectiveUpdate.cpp
+    src/SpatialSemantics.cpp
     src/WorldArchive.cpp
     src/WorldEdit.cpp
     src/WorldModel.cpp
