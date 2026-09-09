@@ -14,6 +14,7 @@ namespace aether::world {
 struct AssociationPolicy final {
     float maximumCenterDistanceMeters{1.5F};
     float minimumScore{0.20F};
+    std::size_t maximumCandidatePairs{2'000'000};
     bool allowSemanticMismatch{false};
 };
 
