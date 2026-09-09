@@ -46,12 +46,13 @@ struct SelectiveUpdatePlan final {
 
 /// Converts an entity-level Reality Diff into a deterministic, halo-expanded set of metric cells.
 ///
-/// Added entities dirty their new bounds, removed entities dirty their previous bounds, and moved or
-/// modified entities dirty the union of old and new bounds. The result is deliberately independent
-/// of TSDF/Gaussian implementation details so both representations can consume the same local-update
-/// contract.
-[[nodiscard]] Result<SelectiveUpdatePlan>
-planSelectiveUpdates(const WorldSnapshot& before, const WorldSnapshot& after, const WorldDiff& diff,
-                     SelectiveUpdatePolicy policy = {});
+/// Added entities dirty their new bounds, removed entities dirty their previous bounds, and moved
+/// or modified entities dirty the union of old and new bounds. The result is deliberately
+/// independent of TSDF/Gaussian implementation details so both representations can consume the same
+/// local-update contract.
+[[nodiscard]] Result<SelectiveUpdatePlan> planSelectiveUpdates(const WorldSnapshot& before,
+                                                               const WorldSnapshot& after,
+                                                               const WorldDiff& diff,
+                                                               SelectiveUpdatePolicy policy = {});
 
 } // namespace aether::world
