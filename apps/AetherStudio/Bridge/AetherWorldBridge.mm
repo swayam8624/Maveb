@@ -12,11 +12,16 @@
 
 namespace {
 using aether::world::ChangeFlag;
+using aether::world::EntityPatch;
+using aether::world::EntityState;
 using aether::world::PersistentWorldModel;
+using aether::world::RepresentationKind;
 using aether::world::WorldDiff;
+using aether::world::WorldEditResult;
 using aether::world::WorldSnapshot;
 
 constexpr std::size_t maximumDiffEntitiesForStudio = 5000;
+constexpr std::size_t maximumWorldEntitiesForStudio = 5000;
 
 PersistentWorldModel& model(void* storage) {
     return *static_cast<PersistentWorldModel*>(storage);
@@ -35,6 +40,11 @@ void setError(NSError** output, const aether::Error& source) {
     *output = [NSError errorWithDomain:@"com.swayamsingal.aether.world"
                                   code:static_cast<NSInteger>(source.code)
                               userInfo:@{NSLocalizedDescriptionKey : description}];
+}
+
+void setError(NSError** output, aether::ErrorCode code, std::string message,
+              std::string context = {}) {
+    setError(output, aether::Error{code, std::move(message), std::move(context)});
 }
 
 NSData* jsonData(id object, NSError** error) {
@@ -62,6 +72,21 @@ NSArray<NSString*>* flagNames(ChangeFlag flags) {
     return names;
 }
 
+NSString* representationName(RepresentationKind kind) {
+    switch (kind) {
+    case RepresentationKind::mesh:
+        return @"mesh";
+    case RepresentationKind::gaussian:
+        return @"gaussian";
+    case RepresentationKind::hybrid:
+        return @"hybrid";
+    case RepresentationKind::volumetric:
+        return @"volumetric";
+    case RepresentationKind::unknown:
+        return @"unknown";
+    }
+}
+
 NSDictionary* diffSummary(const WorldDiff& diff) {
     return @{
         @"added" : @(diff.summary.added),
@@ -69,6 +94,47 @@ NSDictionary* diffSummary(const WorldDiff& diff) {
         @"modified" : @(diff.summary.modified),
         @"unchanged" : @(diff.summary.unchanged),
         @"changeRatio" : @(diff.summary.changeRatio),
+    };
+}
+
+NSDictionary* editPayload(const WorldEditResult& edit) {
+    return @{
+        @"schemaVersion" : @1,
+        @"revision" : @(edit.candidate.revision),
+        @"updatedEntities" : @(edit.updatedEntities),
+        @"removedEntities" : @(edit.removedEntities),
+        @"dirtyRegionCount" : @(edit.selectiveUpdate.dirtyRegions.size()),
+        @"summary" : diffSummary(edit.diff),
+    };
+}
+
+NSDictionary* entityPayload(const EntityState& entity) {
+    const simd_float4 rotation = entity.transform.rotation.vector;
+    return @{
+        @"id" : @(entity.id.value),
+        @"name" : text(entity.name),
+        @"semanticLabel" : text(entity.semanticLabel),
+        @"representation" : representationName(entity.representation),
+        @"confidence" : @(entity.confidence),
+        @"lastObserved" : @(entity.lastObserved),
+        @"geometrySignature" : @(entity.geometrySignature),
+        @"appearanceSignature" : @(entity.appearanceSignature),
+        @"translation" : @[
+            @(entity.transform.translation.x), @(entity.transform.translation.y),
+            @(entity.transform.translation.z)
+        ],
+        @"rotation" : @[@(rotation.x), @(rotation.y), @(rotation.z), @(rotation.w)],
+        @"scale" : @[
+            @(entity.transform.scale.x), @(entity.transform.scale.y), @(entity.transform.scale.z)
+        ],
+        @"boundsMinimum" : @[
+            @(entity.worldBounds.minimum.x), @(entity.worldBounds.minimum.y),
+            @(entity.worldBounds.minimum.z)
+        ],
+        @"boundsMaximum" : @[
+            @(entity.worldBounds.maximum.x), @(entity.worldBounds.maximum.y),
+            @(entity.worldBounds.maximum.z)
+        ],
     };
 }
 
@@ -81,6 +147,17 @@ std::unordered_map<std::uint64_t, std::string> entityNames(const WorldSnapshot& 
     for (const auto& entity : after.entities)
         names[entity.id.value] = entity.name;
     return names;
+}
+
+const EntityState* findEntity(const PersistentWorldModel& world, std::uint64_t entityId) {
+    const WorldSnapshot* latest = world.latest();
+    if (!latest)
+        return nullptr;
+    const auto match = std::find_if(latest->entities.begin(), latest->entities.end(),
+                                    [entityId](const EntityState& entity) {
+                                        return entity.id.value == entityId;
+                                    });
+    return match == latest->entities.end() ? nullptr : &*match;
 }
 
 NSDictionary* diffPayload(const PersistentWorldModel& world) {
@@ -230,6 +307,108 @@ NSDictionary* diffPayload(const PersistentWorldModel& world) {
     return jsonData(diffPayload(model(_worldModel)), error);
 }
 
+- (NSData*)latestEntitiesJSONWithError:(NSError**)error {
+    const WorldSnapshot* latest = model(_worldModel).latest();
+    if (!latest) {
+        NSDictionary* payload = @{
+            @"schemaVersion" : @1,
+            @"available" : @NO,
+            @"entities" : @[],
+        };
+        return jsonData(payload, error);
+    }
+
+    const std::size_t count = std::min(latest->entities.size(), maximumWorldEntitiesForStudio);
+    NSMutableArray* entities = [NSMutableArray arrayWithCapacity:count];
+    for (std::size_t index = 0; index < count; ++index)
+        [entities addObject:entityPayload(latest->entities[index])];
+
+    NSDictionary* payload = @{
+        @"schemaVersion" : @1,
+        @"available" : @YES,
+        @"revision" : @(latest->revision),
+        @"timestamp" : @(latest->timestamp),
+        @"entities" : entities,
+        @"truncated" : @(latest->entities.size() > count),
+        @"totalEntities" : @(latest->entities.size()),
+    };
+    return jsonData(payload, error);
+}
+
+- (NSData*)translateEntity:(uint64_t)entityId
+                         x:(float)x
+                         y:(float)y
+                         z:(float)z
+      timestampNanoseconds:(uint64_t)timestampNanoseconds
+                     error:(NSError**)error {
+    const EntityState* entity = findEntity(model(_worldModel), entityId);
+    if (!entity) {
+        setError(error, aether::ErrorCode::notFound, "Persistent world entity was not found",
+                 std::to_string(entityId));
+        return nil;
+    }
+
+    EntityPatch patch;
+    patch.id = entity->id;
+    patch.transform = entity->transform;
+    patch.transform->translation = {x, y, z};
+    auto edited = model(_worldModel).edit(timestampNanoseconds, {patch});
+    if (!edited) {
+        setError(error, edited.error());
+        return nil;
+    }
+    return jsonData(editPayload(*edited), error);
+}
+
+- (NSData*)relabelEntity:(uint64_t)entityId
+           semanticLabel:(NSString*)semanticLabel
+    timestampNanoseconds:(uint64_t)timestampNanoseconds
+                   error:(NSError**)error {
+    const EntityState* entity = findEntity(model(_worldModel), entityId);
+    if (!entity) {
+        setError(error, aether::ErrorCode::notFound, "Persistent world entity was not found",
+                 std::to_string(entityId));
+        return nil;
+    }
+    const char* utf8 = semanticLabel.UTF8String;
+    if (!utf8) {
+        setError(error, aether::ErrorCode::invalidArgument,
+                 "Semantic label could not be represented as UTF-8");
+        return nil;
+    }
+
+    EntityPatch patch;
+    patch.id = entity->id;
+    patch.semanticLabel = std::string(utf8);
+    auto edited = model(_worldModel).edit(timestampNanoseconds, {patch});
+    if (!edited) {
+        setError(error, edited.error());
+        return nil;
+    }
+    return jsonData(editPayload(*edited), error);
+}
+
+- (NSData*)removeEntity:(uint64_t)entityId
+   timestampNanoseconds:(uint64_t)timestampNanoseconds
+                  error:(NSError**)error {
+    const EntityState* entity = findEntity(model(_worldModel), entityId);
+    if (!entity) {
+        setError(error, aether::ErrorCode::notFound, "Persistent world entity was not found",
+                 std::to_string(entityId));
+        return nil;
+    }
+
+    EntityPatch patch;
+    patch.id = entity->id;
+    patch.remove = true;
+    auto edited = model(_worldModel).edit(timestampNanoseconds, {patch});
+    if (!edited) {
+        setError(error, edited.error());
+        return nil;
+    }
+    return jsonData(editPayload(*edited), error);
+}
+
 @end
 
 BOOL AetherWorldLoadArchive(AetherWorldBridge* bridge, NSURL* archiveURL, NSError** error) {
@@ -253,4 +432,32 @@ NSData* AetherWorldHistoryJSON(AetherWorldBridge* bridge, NSError** error) {
 
 NSData* AetherWorldLatestDiffJSON(AetherWorldBridge* bridge, NSError** error) {
     return [bridge latestDiffJSONWithError:error];
+}
+
+NSData* AetherWorldLatestEntitiesJSON(AetherWorldBridge* bridge, NSError** error) {
+    return [bridge latestEntitiesJSONWithError:error];
+}
+
+NSData* AetherWorldTranslateEntity(AetherWorldBridge* bridge, uint64_t entityId, float x, float y,
+                                   float z, uint64_t timestampNanoseconds, NSError** error) {
+    return [bridge translateEntity:entityId
+                                 x:x
+                                 y:y
+                                 z:z
+              timestampNanoseconds:timestampNanoseconds
+                             error:error];
+}
+
+NSData* AetherWorldRelabelEntity(AetherWorldBridge* bridge, uint64_t entityId,
+                                 NSString* semanticLabel, uint64_t timestampNanoseconds,
+                                 NSError** error) {
+    return [bridge relabelEntity:entityId
+                   semanticLabel:semanticLabel
+            timestampNanoseconds:timestampNanoseconds
+                           error:error];
+}
+
+NSData* AetherWorldRemoveEntity(AetherWorldBridge* bridge, uint64_t entityId,
+                                uint64_t timestampNanoseconds, NSError** error) {
+    return [bridge removeEntity:entityId timestampNanoseconds:timestampNanoseconds error:error];
 }
