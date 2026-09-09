@@ -1,5 +1,6 @@
 add_library(AetherWorldGaussian STATIC
     src/GaussianLocalUpdate.cpp
+    src/GaussianOwnershipCodec.cpp
 )
 add_library(Aether::WorldGaussian ALIAS AetherWorldGaussian)
 
