@@ -29,7 +29,7 @@ struct WorldArchiveData final {
                                             std::uint64_t nextEntityId);
 
 /// Loads and validates a versioned persistent-world archive with explicit resource limits.
-[[nodiscard]] Result<WorldArchiveData>
-loadWorldArchive(const std::filesystem::path& path, WorldArchiveLimits limits = {});
+[[nodiscard]] Result<WorldArchiveData> loadWorldArchive(const std::filesystem::path& path,
+                                                        WorldArchiveLimits limits = {});
 
 } // namespace aether::world
