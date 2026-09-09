@@ -163,6 +163,11 @@ class WorldTimeline final {
         return snapshots_.empty() ? nullptr : &snapshots_.back();
     }
 
+    /// Read-only chronological access used by persistence, diagnostics, Studio history and sync.
+    [[nodiscard]] const std::vector<WorldSnapshot>& snapshots() const noexcept {
+        return snapshots_;
+    }
+
   private:
     std::vector<WorldSnapshot> snapshots_;
 };
