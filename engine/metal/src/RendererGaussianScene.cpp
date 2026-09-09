@@ -17,6 +17,27 @@ namespace {
     return static_cast<std::uint32_t>(std::clamp(requested, minimumEntries, maximumEntries));
 }
 
+class FrameQuiescence final {
+  public:
+    FrameQuiescence(dispatch_semaphore_t semaphore, std::size_t slotCount) noexcept
+        : semaphore_(semaphore) {
+        for (; acquired_ < slotCount; ++acquired_)
+            dispatch_semaphore_wait(semaphore_, DISPATCH_TIME_FOREVER);
+    }
+
+    ~FrameQuiescence() {
+        for (std::size_t index = 0; index < acquired_; ++index)
+            dispatch_semaphore_signal(semaphore_);
+    }
+
+    FrameQuiescence(const FrameQuiescence&) = delete;
+    FrameQuiescence& operator=(const FrameQuiescence&) = delete;
+
+  private:
+    dispatch_semaphore_t semaphore_{};
+    std::size_t acquired_{};
+};
+
 } // namespace
 
 Result<void> Renderer::loadGaussianAsset(const gaussian::GaussianAsset& asset) {
@@ -27,7 +48,10 @@ Result<void> Renderer::loadGaussianAsset(const gaussian::GaussianAsset& asset) {
     if (auto loaded = (*pipeline)->load(asset); !loaded)
         return std::unexpected(loaded.error());
 
-    // Publish only after the replacement Gaussian pipeline is fully allocated and uploaded.
+    // Build/upload first, then stop every frame only for the short publication window. This keeps
+    // failed replacement non-mutating while preventing an in-flight command buffer from retaining
+    // resources owned by the old pipeline after it is destroyed.
+    FrameQuiescence quiescence(frameSemaphore_, frameContexts_.size());
     meshPrimitives_.clear();
     meshInstances_.clear();
     meshAnimationAsset_.reset();
@@ -47,6 +71,7 @@ Result<void> Renderer::loadGaussianAsset(const gaussian::GaussianAsset& asset) {
 }
 
 void Renderer::clearCapturedGaussianScene() noexcept {
+    FrameQuiescence quiescence(frameSemaphore_, frameContexts_.size());
     gaussianPipeline_.reset();
     proxyVertices_.reset();
     proxyIndices_.reset();
