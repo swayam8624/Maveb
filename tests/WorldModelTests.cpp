@@ -153,6 +153,73 @@ void testTimestampFailureIsNonMutating() {
     expect(model.nextEntityId() == allocator, "timestamp rejection must not consume identity space");
 }
 
+void testHistoricalRevertCreatesNewRevisionWithoutReusingIds() {
+    PersistentWorldModel model;
+    const auto first = model.ingest(
+        100, {observation("Desk", "desk", 0.0F, 10, 10),
+              observation("Chair", "chair", 1.0F, 20, 20)});
+    expect(first.has_value(), "time-travel fixture must create revision 1");
+    if (!first)
+        return;
+
+    const auto second = model.ingest(
+        200, {observation("Desk", "desk", 0.0F, 10, 10),
+              observation("Chair", "chair", 1.5F, 20, 20),
+              observation("Plant", "plant", 3.0F, 30, 30)});
+    expect(second.has_value(), "time-travel fixture must create revision 2");
+    if (!second)
+        return;
+
+    const EntityState* plantBeforeRevert = findByName(model, "Plant");
+    expect(plantBeforeRevert && plantBeforeRevert->id.value == 3,
+           "future plant must receive stable ID 3 before restore");
+    const std::uint64_t allocatorBeforeRevert = model.nextEntityId();
+    expect(allocatorBeforeRevert == 4, "future identity allocation must advance before restore");
+
+    const auto reverted = model.revertTo(1, 300);
+    expect(reverted.has_value(), "historical world state must restore as a new revision");
+    if (!reverted)
+        return;
+
+    expect(reverted->revision == 3 && reverted->sourceRevision == 1,
+           "restoring revision 1 after revision 2 must append revision 3");
+    expect(reverted->diff.summary.removed == 1,
+           "restoring the past must remove the future-only plant in Reality Diff");
+    expect(reverted->diff.summary.modified == 1,
+           "restoring the past must move the chair back as a modification");
+    expect(!reverted->selectiveUpdate.dirtyRegions.empty(),
+           "time travel must schedule local spatial work for reversed changes");
+    expect(model.timeline().size() == 3,
+           "time travel must preserve both historical revisions and append a third");
+    expect(model.nextEntityId() == allocatorBeforeRevert,
+           "time travel must never roll the persistent-ID allocator backward");
+    expect(findByName(model, "Plant") == nullptr,
+           "latest restored state must no longer contain the future-only plant");
+
+    const EntityState* restoredChair = findByName(model, "Chair");
+    expect(restoredChair && restoredChair->id.value == 2,
+           "restored historical entity must preserve its stable identity");
+    expect(restoredChair && restoredChair->transform.translation.x == 1.0F,
+           "restored chair must return to its historical metric position");
+
+    const auto future = model.ingest(
+        400, {observation("Desk", "desk", 0.0F, 10, 10),
+              observation("Chair", "chair", 1.0F, 20, 20),
+              observation("Lamp", "lamp", 5.0F, 40, 40)});
+    expect(future.has_value(), "world must continue evolving after time travel");
+    if (!future)
+        return;
+    const EntityState* lamp = findByName(model, "Lamp");
+    expect(lamp && lamp->id.value == 4,
+           "new future entity must not reuse ID 3 from the reverted-away plant");
+
+    const std::size_t sizeBeforeNoOp = model.timeline().size();
+    const auto noOp = model.revertTo(model.latest()->revision, 500);
+    expect(!noOp.has_value(), "restoring the already-latest revision must fail as a no-op");
+    expect(model.timeline().size() == sizeBeforeNoOp,
+           "rejected no-op time travel must not append world history");
+}
+
 } // namespace
 
 int main() noexcept {
@@ -160,6 +227,7 @@ int main() noexcept {
         testInitialAndIncrementalIngest();
         testFailedUpdateRollsBackTimelineAndAllocator();
         testTimestampFailureIsNonMutating();
+        testHistoricalRevertCreatesNewRevisionWithoutReusingIds();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
         return EXIT_FAILURE;
