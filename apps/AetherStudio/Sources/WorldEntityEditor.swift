@@ -1,8 +1,9 @@
 import AppKit
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
-private struct WorldEditorEntityEnvelope: Decodable {
+private struct WorldEditorEntityEnvelope: Decodable, Sendable {
   let schemaVersion: Int
   let available: Bool
   let revision: UInt64?
@@ -12,7 +13,7 @@ private struct WorldEditorEntityEnvelope: Decodable {
   let totalEntities: Int?
 }
 
-private struct WorldEditorEntity: Decodable, Identifiable, Equatable {
+private struct WorldEditorEntity: Decodable, Identifiable, Equatable, Sendable {
   let id: UInt64
   let name: String
   let semanticLabel: String
@@ -32,7 +33,7 @@ private struct WorldEditorEntity: Decodable, Identifiable, Equatable {
   var z: Double { translation.indices.contains(2) ? translation[2] : 0 }
 }
 
-private struct WorldEditorDiffSummary: Decodable, Equatable {
+private struct WorldEditorDiffSummary: Decodable, Equatable, Sendable {
   let added: Int
   let removed: Int
   let modified: Int
@@ -40,7 +41,7 @@ private struct WorldEditorDiffSummary: Decodable, Equatable {
   let changeRatio: Double
 }
 
-private struct WorldEditorEditReport: Decodable, Equatable {
+private struct WorldEditorEditReport: Decodable, Equatable, Sendable {
   let schemaVersion: Int
   let revision: UInt64
   let updatedEntities: Int
@@ -123,9 +124,12 @@ private final class WorldEntityEditorModel: ObservableObject {
 
   func translateSelected() {
     guard let selectedID, let archiveURL, !isBusy else { return }
+    let targetX = Float(x)
+    let targetY = Float(y)
+    let targetZ = Float(z)
     performEdit(statusText: "Moving persistent entity…") { bridge, timestamp, error in
       AetherWorldTranslateEntity(
-        bridge, selectedID, Float(self.x), Float(self.y), Float(self.z), timestamp, error)
+        bridge, selectedID, targetX, targetY, targetZ, timestamp, error)
     } saveTo: archiveURL
   }
 
@@ -474,7 +478,9 @@ struct WorldEntityEditorWindow: View {
           .foregroundStyle(.secondary)
         }
         Spacer()
-        Button("Remove Entity", systemImage: "trash", role: .destructive, action: model.removeSelected)
+        Button(
+          "Remove Entity", systemImage: "trash", role: .destructive,
+          action: model.removeSelected)
           .disabled(model.isBusy)
       }
     }
