@@ -2,8 +2,10 @@
 
 #include <aether/world/EntityAssociation.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
+#include <aether/world/WorldArchive.hpp>
 
 #include <cstdint>
+#include <filesystem>
 #include <vector>
 
 namespace aether::world {
@@ -41,6 +43,13 @@ class PersistentWorldModel final {
     [[nodiscard]] Result<WorldIngestResult>
     ingest(TimestampNs timestamp, std::vector<EntityState> observations,
            WorldIngestPolicy policy = {});
+
+    /// Atomically persists the complete committed history and identity allocator state.
+    [[nodiscard]] Result<void> save(const std::filesystem::path& path) const;
+
+    /// Restores a complete persistent-world model from a validated versioned archive.
+    [[nodiscard]] static Result<PersistentWorldModel>
+    load(const std::filesystem::path& path, WorldArchiveLimits limits = {});
 
     [[nodiscard]] const WorldTimeline& timeline() const noexcept {
         return timeline_;
