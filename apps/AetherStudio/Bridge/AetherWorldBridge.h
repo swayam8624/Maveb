@@ -4,7 +4,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Stateful bridge between SwiftUI Studio and the C++ persistent-world engine.
 /// Heavy calls are synchronous and must be invoked away from the main actor.
-@interface AetherWorldBridge : NSObject
+@interface AetherWorldBridge : NSObject {
+@private
+    void* _worldModel;
+}
 
 /// Loads a previously saved persistent-world archive, replacing the bridge's current model.
 - (BOOL)loadArchiveAtURL:(NSURL*)archiveURL error:(NSError* _Nullable* _Nullable)error;
