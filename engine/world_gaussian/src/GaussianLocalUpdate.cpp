@@ -6,6 +6,7 @@
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace aether::world_gaussian {
 namespace {
@@ -56,6 +57,13 @@ regionKey(const gaussian::Gaussian& gaussian, float cellSizeMeters) {
 
 [[nodiscard]] bool finiteDelta(simd_float3 delta) noexcept {
     return std::isfinite(delta.x) && std::isfinite(delta.y) && std::isfinite(delta.z);
+}
+
+[[nodiscard]] bool finiteTranslatedPosition(const gaussian::Gaussian& primitive,
+                                            simd_float3 delta) noexcept {
+    return std::isfinite(primitive.position[0] + delta.x) &&
+           std::isfinite(primitive.position[1] + delta.y) &&
+           std::isfinite(primitive.position[2] + delta.z);
 }
 
 } // namespace
@@ -141,20 +149,29 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
                     "Gaussian ownership count must match Gaussian asset primitive count");
     }
 
-    std::size_t affected{};
+    std::vector<std::size_t> affectedIndices;
+    affectedIndices.reserve(std::min(asset.gaussians.size(), maximumAffectedGaussians));
     for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
         if (ownership.owners[index] != entity)
             continue;
-        if (affected >= maximumAffectedGaussians)
+        if (affectedIndices.size() >= maximumAffectedGaussians) {
             return fail(ErrorCode::resourceExhausted,
                         "Gaussian entity translation exceeds affected-primitive budget");
+        }
+        if (!finiteTranslatedPosition(asset.gaussians[index], translationDelta)) {
+            return fail(ErrorCode::resourceExhausted,
+                        "Gaussian entity translation would produce a non-finite position");
+        }
+        affectedIndices.push_back(index);
+    }
+
+    for (const std::size_t index : affectedIndices) {
         gaussian::Gaussian& primitive = asset.gaussians[index];
         primitive.position[0] += translationDelta.x;
         primitive.position[1] += translationDelta.y;
         primitive.position[2] += translationDelta.z;
-        ++affected;
     }
-    return affected;
+    return affectedIndices.size();
 }
 
 } // namespace aether::world_gaussian
