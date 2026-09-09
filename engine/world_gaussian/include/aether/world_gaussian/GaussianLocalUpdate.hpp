@@ -39,11 +39,9 @@ struct PersistentGaussianTranslationResult final {
 ///
 /// When ownership is supplied, splats owned by stable entities are intentionally rejected even if
 /// they occupy the same dirty metric cell; unowned boundary splats may be included conservatively.
-[[nodiscard]] Result<GaussianLocalUpdateSelection>
-selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
-                              const world::SelectiveUpdatePlan& worldUpdate,
-                              const GaussianEntityOwnership* ownership = nullptr,
-                              GaussianLocalUpdatePolicy policy = {});
+[[nodiscard]] Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdate(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
 
 /// Applies a rigid translation to every Gaussian owned by one stable persistent entity.
 /// Gaussian scale, rotation, opacity, and SH appearance remain unchanged under pure translation.
@@ -57,13 +55,10 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
 /// committed; once the World commit succeeds, applying the already-validated Gaussian translation
 /// is non-failing. The returned local selection identifies splats eligible for subsequent bounded
 /// appearance re-optimization while protecting stable owned neighbors.
-[[nodiscard]] Result<PersistentGaussianTranslationResult>
-translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
-                                  gaussian::GaussianAsset& asset,
-                                  const GaussianEntityOwnership& ownership,
-                                  world::EntityId entity, simd_float3 targetWorldTranslation,
-                                  world::TimestampNs timestamp,
-                                  world::WorldEditPolicy worldPolicy = {},
-                                  GaussianLocalUpdatePolicy gaussianPolicy = {});
+[[nodiscard]] Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
+    world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
+    const GaussianEntityOwnership& ownership, world::EntityId entity,
+    simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
+    world::WorldEditPolicy worldPolicy = {}, GaussianLocalUpdatePolicy gaussianPolicy = {});
 
 } // namespace aether::world_gaussian
