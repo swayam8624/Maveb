@@ -55,6 +55,28 @@ Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
     };
 }
 
+Result<WorldEditResult> PersistentWorldModel::edit(TimestampNs timestamp,
+                                                   const std::vector<EntityPatch>& patches,
+                                                   WorldEditPolicy policy) {
+    const WorldSnapshot* previous = timeline_.latest();
+    if (!previous)
+        return fail(ErrorCode::notFound, "Persistent world edit requires an existing revision");
+
+    auto prepared = prepareWorldEdit(*previous, timestamp, patches, policy);
+    if (!prepared)
+        return std::unexpected(prepared.error());
+
+    const std::uint64_t expectedRevision = prepared->candidate.revision;
+    auto revision = timeline_.append(prepared->candidate);
+    if (!revision)
+        return std::unexpected(revision.error());
+    if (*revision != expectedRevision) {
+        return fail(ErrorCode::internal,
+                    "Persistent world timeline assigned an unexpected authored revision");
+    }
+    return prepared;
+}
+
 Result<void> PersistentWorldModel::save(const std::filesystem::path& path) const {
     return saveWorldArchive(path, timeline_, nextEntityId_);
 }

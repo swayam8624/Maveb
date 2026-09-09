@@ -108,6 +108,11 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebWorldArchiveTests PRIVATE Aether::World)
     aether_configure_target(MavebWorldArchiveTests)
     add_test(NAME MavebWorldArchiveTests COMMAND MavebWorldArchiveTests)
+
+    add_executable(MavebWorldEditTests tests/WorldEditTests.cpp)
+    target_link_libraries(MavebWorldEditTests PRIVATE Aether::World)
+    aether_configure_target(MavebWorldEditTests)
+    add_test(NAME MavebWorldEditTests COMMAND MavebWorldEditTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)

@@ -3,6 +3,7 @@
 #include <aether/world/EntityAssociation.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
 #include <aether/world/WorldArchive.hpp>
+#include <aether/world/WorldEdit.hpp>
 
 #include <cstdint>
 #include <filesystem>
@@ -29,20 +30,19 @@ struct WorldIngestResult final {
 
 /// Transactional persistent model of a captured physical world.
 ///
-/// Ingest performs the entire temporal pipeline before mutating committed state:
-///
-/// observations -> stable-ID association -> candidate snapshot -> Reality Diff -> selective
-/// update plan -> append-only commit
-///
-/// If association, validation, diffing, update planning, or dirty-region budgeting fails, neither
-/// the timeline nor the ID allocator advances. This gives Studio/reconstruction one high-level
-/// operation with deterministic rollback semantics rather than requiring callers to coordinate
-/// partially committed subsystems.
+/// Observation ingestion and authored edits both compute their full candidate diff/update plan
+/// before mutating committed history. Failed work therefore cannot consume entity IDs or append a
+/// partial revision.
 class PersistentWorldModel final {
   public:
     [[nodiscard]] Result<WorldIngestResult>
     ingest(TimestampNs timestamp, std::vector<EntityState> observations,
            WorldIngestPolicy policy = {});
+
+    /// Applies sparse authored mutations to stable persistent entities as one world revision.
+    [[nodiscard]] Result<WorldEditResult>
+    edit(TimestampNs timestamp, const std::vector<EntityPatch>& patches,
+         WorldEditPolicy policy = {});
 
     /// Atomically persists the complete committed history and identity allocator state.
     [[nodiscard]] Result<void> save(const std::filesystem::path& path) const;

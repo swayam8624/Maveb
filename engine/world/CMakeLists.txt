@@ -3,6 +3,7 @@ add_library(AetherWorld STATIC
     src/PersistentWorld.cpp
     src/SelectiveUpdate.cpp
     src/WorldArchive.cpp
+    src/WorldEdit.cpp
     src/WorldModel.cpp
 )
 add_library(Aether::World ALIAS AetherWorld)
