@@ -113,6 +113,11 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebWorldEditTests PRIVATE Aether::World)
     aether_configure_target(MavebWorldEditTests)
     add_test(NAME MavebWorldEditTests COMMAND MavebWorldEditTests)
+
+    add_executable(MavebSpatialSemanticsTests tests/SpatialSemanticsTests.cpp)
+    target_link_libraries(MavebSpatialSemanticsTests PRIVATE Aether::World)
+    aether_configure_target(MavebSpatialSemanticsTests)
+    add_test(NAME MavebSpatialSemanticsTests COMMAND MavebSpatialSemanticsTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
