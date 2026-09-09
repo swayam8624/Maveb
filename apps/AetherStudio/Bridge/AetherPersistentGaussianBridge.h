@@ -34,4 +34,19 @@ NS_ASSUME_NONNULL_BEGIN
                                error:(NSError* _Nullable* _Nullable)error;
 @end
 
+/// Exact C entry points keep Swift 6 independent from Objective-C selector import heuristics.
+FOUNDATION_EXPORT BOOL AetherPersistentLoadWorld(
+    AetherPersistentGaussianView* view, NSURL* archiveURL, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentLoadGaussianPLY(
+    AetherPersistentGaussianView* view, NSURL* plyURL, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentSaveState(
+    AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherPersistentEntitiesJSON(
+    AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherPersistentOwnershipJSON(
+    AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherPersistentTranslateEntity(
+    AetherPersistentGaussianView* view, uint64_t entityId, float x, float y, float z,
+    uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
+
 NS_ASSUME_NONNULL_END
