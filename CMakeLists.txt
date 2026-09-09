@@ -118,6 +118,11 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebSpatialSemanticsTests PRIVATE Aether::World)
     aether_configure_target(MavebSpatialSemanticsTests)
     add_test(NAME MavebSpatialSemanticsTests COMMAND MavebSpatialSemanticsTests)
+
+    add_executable(MavebSemanticSceneGraphTests tests/SemanticSceneGraphTests.cpp)
+    target_link_libraries(MavebSemanticSceneGraphTests PRIVATE Aether::World)
+    aether_configure_target(MavebSemanticSceneGraphTests)
+    add_test(NAME MavebSemanticSceneGraphTests COMMAND MavebSemanticSceneGraphTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
