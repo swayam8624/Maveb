@@ -1,5 +1,6 @@
 add_library(AetherWorld STATIC
     src/PersistentWorld.cpp
+    src/SelectiveUpdate.cpp
 )
 add_library(Aether::World ALIAS AetherWorld)
 
