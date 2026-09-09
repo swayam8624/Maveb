@@ -2,6 +2,7 @@
 
 #include <aether/gaussian/GaussianAsset.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
+#include <aether/world/WorldModel.hpp>
 
 #include <cstddef>
 #include <vector>
@@ -27,6 +28,12 @@ struct GaussianLocalUpdateSelection final {
     std::size_t unaffectedGaussians{};
 };
 
+struct PersistentGaussianTranslationResult final {
+    world::WorldEditResult worldEdit;
+    std::size_t translatedGaussians{};
+    GaussianLocalUpdateSelection reoptimizationSelection;
+};
+
 /// Maps halo-expanded persistent-world dirty regions to the exact Gaussian primitives that may be
 /// reconsidered by local deformation/re-optimization.
 ///
@@ -44,5 +51,19 @@ selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
 translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwnership& ownership,
                         world::EntityId entity, simd_float3 translationDelta,
                         std::size_t maximumAffectedGaussians = 5'000'000);
+
+/// Commits one authored persistent-entity translation and its owned Gaussian field as a single
+/// logical transaction. Gaussian work is fully preflighted before the append-only World revision is
+/// committed; once the World commit succeeds, applying the already-validated Gaussian translation
+/// is non-failing. The returned local selection identifies splats eligible for subsequent bounded
+/// appearance re-optimization while protecting stable owned neighbors.
+[[nodiscard]] Result<PersistentGaussianTranslationResult>
+translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
+                                  gaussian::GaussianAsset& asset,
+                                  const GaussianEntityOwnership& ownership,
+                                  world::EntityId entity, simd_float3 targetWorldTranslation,
+                                  world::TimestampNs timestamp,
+                                  world::WorldEditPolicy worldPolicy = {},
+                                  GaussianLocalUpdatePolicy gaussianPolicy = {});
 
 } // namespace aether::world_gaussian
