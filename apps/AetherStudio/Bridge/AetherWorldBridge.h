@@ -1,5 +1,10 @@
 #import <Foundation/Foundation.h>
 
+#ifdef __cplusplus
+#include <aether/core/Error.hpp>
+using aether::Result;
+#endif
+
 NS_ASSUME_NONNULL_BEGIN
 
 /// Stateful bridge between SwiftUI Studio and the C++ persistent-world engine.
