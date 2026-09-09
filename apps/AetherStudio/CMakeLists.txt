@@ -8,12 +8,14 @@ set(AETHER_STUDIO_SOURCES
     Sources/ReconstructionReport.swift
     Sources/ReconstructionWorkspace.swift
     Sources/TrainingComparisonViewport.swift
+    Sources/WorldHistoryWorkspace.swift
     Bridge/AetherCaptureBridge.mm
     Bridge/AetherViewportBridge.mm
+    Bridge/AetherWorldBridge.mm
 )
 
 add_executable(AetherStudio MACOSX_BUNDLE ${AETHER_STUDIO_SOURCES})
-target_link_libraries(AetherStudio PRIVATE Aether::Metal Aether::Capture
+target_link_libraries(AetherStudio PRIVATE Aether::Metal Aether::Capture Aether::WorldAdapters
     "-framework AppKit" "-framework Metal" "-framework MetalKit" "-framework SwiftUI")
 target_include_directories(AetherStudio PRIVATE Bridge)
 
