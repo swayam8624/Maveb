@@ -19,6 +19,12 @@ struct AetherStudioApp: App {
     .windowStyle(.titleBar)
     .windowToolbarStyle(.unified(showsTitle: false))
 
+    WindowGroup("Persistent Entity Editor", id: "persistent-entity-editor") {
+      WorldEntityEditorWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
     Settings {
       AetherSettingsView()
     }
@@ -42,6 +48,11 @@ private struct PersistentRealityCommands: Commands {
         openWindow(id: "persistent-reality")
       }
       .keyboardShortcut("h", modifiers: [.command, .shift])
+
+      Button("Persistent Entity Editor…") {
+        openWindow(id: "persistent-entity-editor")
+      }
+      .keyboardShortcut("e", modifiers: [.command, .shift])
     }
   }
 }
