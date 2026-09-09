@@ -11,6 +11,7 @@ add_library(AetherMetal STATIC
     src/GaussianPipelineUpdates.cpp
     src/MetalSymbols.cpp
     src/Renderer.cpp
+    src/RendererGaussianUpdates.cpp
     src/ShaderABI.cpp
     src/SparseMetalTsdfVolume.cpp
 )
