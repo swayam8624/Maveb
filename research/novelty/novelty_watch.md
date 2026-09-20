@@ -40,6 +40,14 @@ A MAVEB contribution must not be phrased as "we update only selected Gaussians."
 
 It directly triangulates geometric Gaussians, updates explicit meshes online and freezes fully optimized historical regions. MAVEB's heterogeneous dependency closure must be different from simply incrementally extracting/updating mesh.
 
+
+### Fourier/phase-correlation point-cloud registration — KILLED AS NOVELTY
+**Closest work:** frequency-domain point-cloud registration (2019), efficient low-frequency 3D shift estimation by phase correlation (ISPRS 2020), robust global point-cloud registration with 3D Fourier/phase correlation (ISPRS JPRS 2021), plus later PHASER-family spectral registration.
+
+The Fourier shift theorem, voxelized point-cloud phase correlation, low-frequency phase fitting, and robustness to noise/uneven density are established prior art. MAVEB may use phase correlation as a baseline or mathematical tool, but **translation recovery from spectral phase is not novel**.
+
+The only surviving phase question is stricter: can a geometry-canonicalized *local* spectral constraint provide a useful and measurable certificate/bound on unintended edit damage outside an authored region, and beat simpler geometric invariants under Gaussian split/merge/prune/densify? If not, kill the phase family entirely.
+
 ## Current surviving distinctions to attack
 
 ### A. Certified geometry-preserving local editing
