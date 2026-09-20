@@ -131,6 +131,19 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebGaussianLocalUpdateTests)
     add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
 
+
+    add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
+    target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebStableTextureAtlasTests)
+    add_test(NAME MavebStableTextureAtlasTests COMMAND MavebStableTextureAtlasTests)
+
+    add_executable(MavebPersistentTexturePageAllocatorTests
+        tests/PersistentTexturePageAllocatorTests.cpp)
+    target_link_libraries(MavebPersistentTexturePageAllocatorTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebPersistentTexturePageAllocatorTests)
+    add_test(NAME MavebPersistentTexturePageAllocatorTests
+        COMMAND MavebPersistentTexturePageAllocatorTests)
+
     add_executable(MavebLocalityLedgerTests tests/LocalityLedgerTests.cpp)
     target_link_libraries(MavebLocalityLedgerTests PRIVATE Aether::World)
     aether_configure_target(MavebLocalityLedgerTests)
