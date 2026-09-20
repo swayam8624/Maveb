@@ -27,8 +27,15 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "demoted-supporting",
-      "note": "Raw-field phase rejected; canonical phase survives only for correspondence-free resampling problems. Rigid known-correspondence edits are solved by simpler Procrustes baseline."
+      "status": "continue-narrowly",
+      "note": "Raw-field phase rejected; canonical phase survives only for correspondence-free resampling problems. Rigid known-correspondence edits are solved by simpler Procrustes baseline.",
+      "latest_evidence": [
+        "phase-invariants-v0: phase separates tested edits from split nuisance but does not dominate simpler controls",
+        "phase-representation-nuisance-v1: raw anisotropic opacity-weighted field phase rejected",
+        "local-canonical-phase-v3: canonical phase overall AUC 0.784 vs canonical density L2 0.776",
+        "local-phase-contamination-v4: coherent translations recover well, but partial motion becomes aggregate/mass-weighted and cannot provide max-displacement certificate alone"
+      ],
+      "next_action": "Test partitioned/multi-component local support or drop phase in favor of simpler canonical density plus explicit geometry constraints."
     },
     {
       "hypothesis_id": "H002",
@@ -609,7 +616,14 @@
         "deterministic configs/results"
       ],
       "status": "promoted-integration",
-      "note": "Synthetic RegionKey index probes remove O(N) selection scans with exact set equivalence; production integration branch created."
+      "note": "Synthetic RegionKey index probes remove O(N) selection scans with exact set equivalence; production integration branch created.",
+      "latest_evidence": [
+        "dependency-locality-audit-v0: PR #28 semantic locality still performs O(N) Gaussian scan",
+        "gaussian-region-index-v0: exact indexed selection removes full scan in synthetic benchmark",
+        "gaussian-region-index-maintenance-v1: small changed fractions maintain index far below full rebuild cost in synthetic benchmark",
+        "production-shaped GaussianSpatialIndex and indexed selector added on research/maveb-discovery-persistent"
+      ],
+      "next_action": "Obtain green CI, run in-repo locality benchmark, then measure real clustered scenes and Apple M2 Pro performance."
     },
     {
       "hypothesis_id": "H025",
@@ -709,7 +723,11 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-probe",
+      "latest_evidence": [
+        "gaussian-index-layout-v2 exposes memory-latency tradeoff: hash-bucket prototype ~88 MB RSS vs sorted compact prototype ~41 MB RSS at 1M synthetic primitives"
+      ],
+      "next_action": "Compare flat/open-addressed hash, Morton-sorted region ranges and compact region-directory layouts."
     },
     {
       "hypothesis_id": "H029",
@@ -759,7 +777,11 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-probe",
+      "latest_evidence": [
+        "gaussian-region-index-v0 shows primitive inspections scale with selected dirty buckets in synthetic data rather than total Gaussian count"
+      ],
+      "next_action": "Run same fixed scene over 0.1%-100% dirty fractions with scan/index/full-update wall time, bytes touched and memory overhead."
     },
     {
       "hypothesis_id": "H031",
@@ -2888,5 +2910,6 @@
       "status": "probe-candidate"
     }
   ],
-  "lastPrunedAt": "2026-09-20"
+  "lastPrunedAt": "2026-09-20",
+  "lastUpdated": "2026-09-20"
 }
