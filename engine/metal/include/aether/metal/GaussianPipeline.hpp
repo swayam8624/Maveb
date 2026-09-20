@@ -26,6 +26,11 @@ struct GaussianPipelineStatistics final {
     std::uint32_t earlyTerminations{};
 };
 
+struct GaussianEditBounds final {
+    simd_float3 minimum{};
+    simd_float3 maximum{};
+};
+
 struct GaussianPublicationStatistics final {
     std::size_t touchedRecords{};
     std::size_t contiguousRanges{};
@@ -57,6 +62,12 @@ class GaussianPipeline final {
     [[nodiscard]] Result<void>
     validateTranslation(std::span<const std::uint32_t> gaussianIndices,
                         simd_float3 translationDelta) const;
+
+    /// Returns a conservative 3-sigma world AABB covering selected splats before and after
+    /// applying the proposed translation. Used to invalidate only affected temporal history.
+    [[nodiscard]] Result<GaussianEditBounds>
+    translationBounds(std::span<const std::uint32_t> gaussianIndices,
+                      simd_float3 translationDelta) const;
 
     /// Applies one metric translation to canonical CPU state and journals the changed source IDs.
     /// Recycled frame slots publish only stale ranges before their next encode.
