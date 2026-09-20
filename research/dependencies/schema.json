@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Declare captured-world dependency edges for exact or conservative incremental repair experiments.",
+  "nodeKinds": [
+    "observation",
+    "tsdf_block",
+    "mesh_patch",
+    "gaussian_region",
+    "texture_tile",
+    "material_state",
+    "gpu_gaussian_page",
+    "gpu_mesh_page",
+    "temporal_history_tile"
+  ],
+  "nodeFields": {
+    "id": "stable experiment-local identifier",
+    "kind": "one of nodeKinds",
+    "revision": "source/derived revision",
+    "bytes": "optional retained payload bytes",
+    "metadata": "free-form measured metadata"
+  },
+  "edgeFields": {
+    "source": "upstream node id",
+    "target": "derived node id",
+    "relation": "reads|supports|owns|projects_to|materializes|invalidates",
+    "exact": "true if dependency is proven exact, false if conservative",
+    "evidence": "source code/doc/probe reference"
+  },
+  "changeFields": {
+    "changedSources": "source node ids directly invalidated by a new capture/edit",
+    "expectedAffected": "optional exhaustive-oracle affected node ids on tiny scenes"
+  },
+  "outputMetrics": [
+    "affected node count by kind",
+    "transitive closure size",
+    "bytes in affected closure",
+    "component Update Locality Ratios",
+    "false-positive invalidations vs exact oracle",
+    "false-negative invalidations (must be zero for correctness)"
+  ],
+  "rule": "No global artifact may be silently omitted from the graph because it is inconvenient to instrument."
+}
