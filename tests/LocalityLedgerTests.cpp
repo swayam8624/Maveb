@@ -46,6 +46,10 @@ void testIndependentRatiosAndJson() {
                "\"textureTexelsWritten\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
                std::string::npos,
            "not-applicable domains must serialize with null ratio");
+    expect(json->find(
+               "\"materialStatesUpdated\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
+               std::string::npos,
+           "material-state domain must serialize independently");
 }
 
 void testZeroFullBaselineFailsClosed() {
@@ -81,7 +85,9 @@ void testS1CoreCoverageRequiresEveryHeadlineLayer() {
         LocalityDomain::meshCellsRegenerated,
         LocalityDomain::gaussiansInspected,
         LocalityDomain::gaussiansUpdated,
+        LocalityDomain::texturePagesUpdated,
         LocalityDomain::textureTexelsWritten,
+        LocalityDomain::materialStatesUpdated,
         LocalityDomain::gpuPublicationBytes,
         LocalityDomain::temporalPixelsInvalidated,
     };
