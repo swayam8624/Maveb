@@ -25,8 +25,8 @@ jobs:
         run: cmake --preset ci
       - name: Build research probes
         run: >-
-          cmake --build build/ci --parallel --
-          maveb-identity-probe maveb-update-locality-probe
+          cmake --build build/ci --parallel
+          --target maveb-identity-probe maveb-update-locality-probe
       - name: Run probes
         shell: bash
         run: |
