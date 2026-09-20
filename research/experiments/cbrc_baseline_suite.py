@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import asdict
+import math
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -93,6 +93,11 @@ def parse_graph(payload: dict[str, Any]) -> dict[str, Any]:
     ids = _node_index(payload)
     edges = _edges(payload, ids)
     work, change, source = _vectors(payload)
+    full_work_baseline = payload.get("full_work_baseline")
+    if full_work_baseline is not None:
+        full_work_baseline = float(full_work_baseline)
+        if not math.isfinite(full_work_baseline) or full_work_baseline < 0:
+            raise ValueError("full_work_baseline must be finite and non-negative")
     hard = [ids[str(x)] for x in payload.get("hard_closure", [])]
     qois = _qois(payload, ids)
     return {
@@ -106,6 +111,7 @@ def parse_graph(payload: dict[str, Any]) -> dict[str, Any]:
         "K": certificate_transfer(len(ids), edges),
         "pred": exact_predecessors(len(ids), edges),
         "changed_fraction": float(payload.get("changed_fraction", 0.0)),
+        "full_work_baseline": full_work_baseline,
     }
 
 
@@ -118,6 +124,7 @@ def certify(parsed: dict[str, Any], cone: Iterable[int]) -> Certificate:
         exact_predecessors=parsed["pred"],
         work=parsed["work"],
         qois=parsed["qois"],
+        full_work_baseline=parsed["full_work_baseline"],
     )
 
 
@@ -194,8 +201,151 @@ def selection_methods(parsed: dict[str, Any], fraction_threshold: float = 0.1) -
         exact_predecessors=parsed["pred"],
         work=parsed["work"],
         qois=parsed["qois"],
+        full_work_baseline=parsed["full_work_baseline"],
     )
     return result
+
+
+def _full_work(parsed: dict[str, Any]) -> float:
+    baseline = parsed["full_work_baseline"]
+    return float(parsed["work"].sum()) if baseline is None else float(baseline)
+
+
+def global_norm_certify(parsed: dict[str, Any], cone: Iterable[int]) -> Certificate:
+    n = len(parsed["ids"])
+    C = predecessor_closure(cone, parsed["pred"], n)
+    requested = {int(v) for v in cone}
+    full_work = _full_work(parsed)
+    if C != requested:
+        return Certificate(
+            cone=tuple(sorted(requested)),
+            exterior=tuple(sorted(set(range(n)) - requested)),
+            stable=False,
+            reason="cone is not exact-predecessor consistent",
+            bound_by_qoi={q.name: float("inf") for q in parsed["qois"]},
+            passes=False,
+            work=float(parsed["work"][list(requested)].sum()) if requested else 0.0,
+            full_work=full_work,
+            used_full_rebuild=False,
+            transient_amplification=None,
+            susceptibility=None,
+        )
+
+    O = sorted(set(range(n)) - C)
+    Cidx = sorted(C)
+    local_work = float(parsed["work"][Cidx].sum()) if Cidx else 0.0
+    if not O:
+        return Certificate(
+            cone=tuple(Cidx),
+            exterior=(),
+            stable=True,
+            reason="full rebuild",
+            bound_by_qoi={q.name: 0.0 for q in parsed["qois"]},
+            passes=True,
+            work=full_work,
+            full_work=full_work,
+            used_full_rebuild=True,
+            transient_amplification=0.0,
+            susceptibility=0.0,
+        )
+
+    Koo = parsed["K"][np.ix_(O, O)]
+    row_sum = np.sum(np.abs(Koo), axis=1)
+    gamma = float(np.max(row_sum)) if row_sum.size else 0.0
+    if not math.isfinite(gamma) or gamma >= 1.0:
+        return Certificate(
+            cone=tuple(Cidx),
+            exterior=tuple(O),
+            stable=False,
+            reason=f"global infinity-norm tail is not contractive: {gamma:.6g}",
+            bound_by_qoi={q.name: float("inf") for q in parsed["qois"]},
+            passes=False,
+            work=local_work,
+            full_work=full_work,
+            used_full_rebuild=False,
+            transient_amplification=None,
+            susceptibility=None,
+        )
+
+    frontier = parsed["source"][O].copy()
+    if Cidx:
+        frontier += parsed["K"][np.ix_(O, Cidx)] @ parsed["change"][Cidx]
+    scalar = (float(np.max(frontier)) if frontier.size else 0.0) / (1.0 - gamma)
+
+    bounds: dict[str, float] = {}
+    passes = True
+    for qoi in parsed["qois"]:
+        row_l1 = np.sum(np.abs(qoi.R[:, O]), axis=1)
+        bound = (float(np.max(row_l1)) if row_l1.size else 0.0) * scalar
+        bounds[qoi.name] = bound
+        passes = passes and bound <= qoi.epsilon
+
+    return Certificate(
+        cone=tuple(Cidx),
+        exterior=tuple(O),
+        stable=True,
+        reason=f"global infinity-norm tail gamma={gamma:.6g}",
+        bound_by_qoi=bounds,
+        passes=passes,
+        work=local_work,
+        full_work=full_work,
+        used_full_rebuild=False,
+        transient_amplification=None,
+        susceptibility=1.0 / (1.0 - gamma),
+    )
+
+
+def global_norm_greedy(parsed: dict[str, Any]) -> Certificate:
+    n = len(parsed["ids"])
+    cone = predecessor_closure(parsed["hard"], parsed["pred"], n)
+    current = global_norm_certify(parsed, cone)
+    if current.passes and current.work < current.full_work:
+        return current
+
+    all_nodes = set(range(n))
+
+    def score(cert: Certificate) -> float:
+        if not cert.stable:
+            return float("inf")
+        return max(
+            (
+                cert.bound_by_qoi[q.name] / max(q.epsilon, 1e-15)
+                for q in parsed["qois"]
+            ),
+            default=0.0,
+        )
+
+    while cone != all_nodes:
+        base = score(current)
+        best = None
+        for node in sorted(all_nodes - cone):
+            candidate = predecessor_closure(cone | {node}, parsed["pred"], n)
+            extra = candidate - cone
+            extra_work = float(parsed["work"][list(extra)].sum()) if extra else 0.0
+            cert = global_norm_certify(parsed, candidate)
+            next_score = score(cert)
+            if math.isinf(base) and math.isfinite(next_score):
+                utility = float("inf")
+            elif math.isfinite(base) and math.isfinite(next_score):
+                improvement = base - next_score
+                utility = (
+                    float("inf")
+                    if extra_work == 0.0 and improvement > 0.0
+                    else 0.0
+                    if extra_work == 0.0
+                    else improvement / extra_work
+                )
+            else:
+                utility = float("-inf")
+            key = (1 if cert.passes else 0, utility, -cert.work, -node)
+            if best is None or key > best[0]:
+                best = (key, candidate, cert)
+        if best is None:
+            break
+        _, cone, current = best
+        if current.passes and current.work < current.full_work:
+            return current
+    return global_norm_certify(parsed, all_nodes)
 
 
 def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
@@ -215,6 +365,7 @@ def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
         exact_predecessors=no_pred["pred"],
         work=no_pred["work"],
         qois=no_pred["qois"],
+        full_work_baseline=no_pred["full_work_baseline"],
     )
 
     # A2/A3: remove analytic Gaussian or temporal theorem. Fail closed by
@@ -252,6 +403,7 @@ def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
             exact_predecessors=mutated["pred"],
             work=mutated["work"],
             qois=mutated["qois"],
+            full_work_baseline=mutated["full_work_baseline"],
         )
 
     # A4: no QoI specialization. Every state block contributes unit weight to
@@ -272,9 +424,35 @@ def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
         exact_predecessors=parsed["pred"],
         work=parsed["work"],
         qois=global_qoi,
+        full_work_baseline=parsed["full_work_baseline"],
     )
 
-    # A5: no certified fallback. Return exact closure even if it fails; this is
+    # A5: collapse HARD/ANALYTIC distinction. Every edge becomes exact,
+    # preserving safety while exposing the work penalty of losing soft bounds.
+    exact_edges = [
+        RevisionEdge(edge.src, edge.dst, EdgeClass.HARD, None, None)
+        for edge in parsed["edges"]
+    ]
+    all_exact = dict(parsed)
+    all_exact["K"] = certificate_transfer(n, exact_edges)
+    all_exact["pred"] = exact_predecessors(n, exact_edges)
+    result["ABLATE_HARD_SOFT_SEPARATION"] = greedy_minimum_work_cone(
+        K_cert=all_exact["K"],
+        source=all_exact["source"],
+        true_change_bound=all_exact["change"],
+        hard_closure=all_exact["hard"],
+        exact_predecessors=all_exact["pred"],
+        work=all_exact["work"],
+        qois=all_exact["qois"],
+        full_work_baseline=all_exact["full_work_baseline"],
+    )
+
+    # A6: replace the exact exterior resolvent with one global infinity-norm
+    # geometric tail. This stays conservative when contractive but is generally
+    # looser than graph-structured response.
+    result["ABLATE_GLOBAL_NORM_TAIL"] = global_norm_greedy(parsed)
+
+    # A7: no certified fallback. Return exact closure even if it fails; this is
     # intentionally expected to expose unsafe cases.
     result["ABLATE_NO_FALLBACK"] = certify(
         parsed,
