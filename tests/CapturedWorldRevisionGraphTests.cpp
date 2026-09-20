@@ -18,10 +18,12 @@ void expect(bool condition, const char* message) {
 aether::cbrc::CapturedWorldCostModel costs() {
     return {
         .version = "fixture-cost-v1",
+        .observationMs = 0.002,
         .tsdfBlockMs = 0.01,
         .meshCellMs = 0.001,
         .meshPatchMs = 0.01,
         .texturePageMs = 0.05,
+        .materialStateMs = 0.01,
         .gaussianInspectionMs = 0.0001,
         .gaussianUpdateMs = 0.001,
         .gpuPublicationByteMs = 1.0e-6,
@@ -31,11 +33,15 @@ aether::cbrc::CapturedWorldCostModel costs() {
 
 aether::cbrc::CapturedWorldRevisionInput input() {
     aether::cbrc::CapturedWorldRevisionInput result;
+    result.observationsInspected = 3;
+    result.fullObservations = 100;
     result.mesher.dirtyBlocksInput = 2;
     result.mesher.ownerPatchesRegenerated = 4;
     result.mesher.ownerCellsRegenerated = 1000;
     result.dirtyTexturePages = 2;
     result.fullTexturePages = 100;
+    result.materialStatesUpdated = 1;
+    result.fullMaterialStates = 20;
     result.gaussiansInspected = 25;
     result.gaussiansUpdated = 5;
     result.fullGaussians = 1000;
@@ -61,12 +67,16 @@ void testStructuralHardClosureRegistersCrossLayerWork() {
     expect(built.has_value(), "captured-world graph must build");
     if (!built)
         return;
+    expect(contains(built->hardClosure, built->observation),
+           "changed observations must be in exact hard closure");
     expect(contains(built->hardClosure, built->tsdf),
            "dirty TSDF must be in exact hard closure");
     expect(contains(built->hardClosure, built->mesh),
            "dirty TSDF must force exact mesh repair");
     expect(contains(built->hardClosure, built->texture),
            "dirty mesh-linked texture pages must be structural repair");
+    expect(contains(built->hardClosure, built->material),
+           "dirty material binding must be structural repair");
     expect(contains(built->hardClosure, built->gaussian),
            "Gaussian edit must be in hard closure");
     expect(contains(built->hardClosure, built->gpuPublication),
