@@ -51,11 +51,21 @@ if(Python3_Interpreter_FOUND)
             "${PROJECT_SOURCE_DIR}/research/probes/temporal_representation_oracle.py"
             --synthetic
             --output "${PROJECT_BINARY_DIR}/test-artifacts/temporal-representation-oracle.json")
-    add_test(NAME MavebResamplingLineageProbe
-        COMMAND ${Python3_EXECUTABLE}
-            "${PROJECT_SOURCE_DIR}/research/probes/resampling_lineage_probe.py"
-            --self-test
-            --output "${PROJECT_BINARY_DIR}/test-artifacts/resampling-lineage-v1.json")
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+        RESULT_VARIABLE MAVEb_NUMPY_IMPORT_RESULT
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    if(MAVEb_NUMPY_IMPORT_RESULT EQUAL 0)
+        add_test(NAME MavebResamplingLineageProbe
+            COMMAND ${Python3_EXECUTABLE}
+                "${PROJECT_SOURCE_DIR}/research/probes/resampling_lineage_probe.py"
+                --self-test
+                --output "${PROJECT_BINARY_DIR}/test-artifacts/resampling-lineage-v1.json")
+    else()
+        message(STATUS "Skipping MavebResamplingLineageProbe CTest: NumPy unavailable")
+    endif()
 endif()
 
 if(TARGET AetherCapture)
