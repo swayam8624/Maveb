@@ -36,10 +36,14 @@ std::string_view localityDomainName(LocalityDomain domain) noexcept {
         return "gaussiansInspected";
     case LocalityDomain::gaussiansUpdated:
         return "gaussiansUpdated";
+    case LocalityDomain::texturePagesUpdated:
+        return "texturePagesUpdated";
     case LocalityDomain::textureSlotsConsidered:
         return "textureSlotsConsidered";
     case LocalityDomain::textureTexelsWritten:
         return "textureTexelsWritten";
+    case LocalityDomain::materialStatesUpdated:
+        return "materialStatesUpdated";
     case LocalityDomain::cpuToGpuBytes:
         return "cpuToGpuBytes";
     case LocalityDomain::gpuToCpuBytes:
@@ -134,7 +138,9 @@ Result<void> LocalityLedger::validateS1CoreCoverage() const {
         LocalityDomain::meshCellsRegenerated,
         LocalityDomain::gaussiansInspected,
         LocalityDomain::gaussiansUpdated,
+        LocalityDomain::texturePagesUpdated,
         LocalityDomain::textureTexelsWritten,
+        LocalityDomain::materialStatesUpdated,
         LocalityDomain::gpuPublicationBytes,
         LocalityDomain::temporalPixelsInvalidated,
     };
