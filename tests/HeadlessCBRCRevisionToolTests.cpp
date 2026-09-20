@@ -141,6 +141,9 @@ int main(int argc, char** argv) noexcept {
                "translation evidence JSON must exist");
         expect(std::filesystem::is_regular_file(output / "certificate.json"),
                "certificate evidence JSON must exist");
+        expect(std::filesystem::is_regular_file(
+                   output / "native-planner-certificate.json"),
+               "canonical native planner certificate JSON must exist");
         expect(std::filesystem::is_regular_file(gaussianSidecar(archive, 2)),
                "new immutable Gaussian revision sidecar must exist");
         expect(std::filesystem::is_regular_file(ownershipSidecar(archive, 2)),
@@ -148,6 +151,8 @@ int main(int argc, char** argv) noexcept {
 
         const std::string translation = readText(output / "translation.json");
         const std::string certificate = readText(output / "certificate.json");
+        const std::string nativePlanner =
+            readText(output / "native-planner-certificate.json");
         expect(translation.find("\"persisted\":true") != std::string::npos,
                "translation evidence must report durable persistence");
         expect(translation.find("\"usedOverlayIndex\":true") != std::string::npos,
@@ -156,6 +161,10 @@ int main(int argc, char** argv) noexcept {
                "certificate evidence must be available");
         expect(certificate.find("\"outputConePlanner\"") != std::string::npos,
                "certificate evidence must include planner decision");
+        expect(nativePlanner.find(
+                   "\"artifact\":\"maveb-cbrc-native-certificate\"") !=
+                   std::string::npos,
+               "native planner artifact must use canonical certificate schema");
 
         auto reloaded = aether::world::PersistentWorldModel::load(archive);
         expect(reloaded.has_value() && reloaded->latest() && reloaded->latest()->revision == 2,
