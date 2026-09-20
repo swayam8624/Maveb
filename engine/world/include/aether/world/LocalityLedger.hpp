@@ -58,6 +58,10 @@ class LocalityLedger final {
     [[nodiscard]] const LocalityCounter& counter(LocalityDomain domain) const noexcept;
     [[nodiscard]] Result<void> validate() const;
 
+    /// Strong S1 certificate gate: requires a non-zero equivalent full baseline for every core
+    /// heterogeneous layer used by the headline dependency-locality claim.
+    [[nodiscard]] Result<void> validateS1CoreCoverage() const;
+
     /// Deterministic JSON object containing raw counters and per-domain ratio/null.
     /// The caller owns experiment metadata such as git SHA, dataset, machine, and timing.
     [[nodiscard]] Result<std::string> toJson() const;
