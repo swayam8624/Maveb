@@ -130,6 +130,66 @@ void testProjectedCertificateBoundsExactReferenceDifference() {
            "compact edited splats should leave some pixels exactly outside the certificate support");
 }
 
+void testProjectedCertificateSupportsTranslatedCamera() {
+    aether::gaussian::GaussianAsset unchanged;
+    unchanged.gaussians.push_back(
+        primitive(0.0F, 4.0F, {0.0F, 0.0F, 1.0F}, 2.0F));
+
+    aether::gaussian::GaussianAsset beforeChanged;
+    beforeChanged.gaussians.push_back(
+        primitive(-0.05F, 3.0F, {1.0F, 0.0F, 0.0F}, 2.0F));
+
+    aether::gaussian::GaussianAsset afterChanged;
+    afterChanged.gaussians.push_back(
+        primitive(0.15F, 3.0F, {0.0F, 1.0F, 0.0F}, 2.0F));
+
+    aether::gaussian::GaussianAsset oldFull = unchanged;
+    oldFull.gaussians.insert(oldFull.gaussians.end(),
+                             beforeChanged.gaussians.begin(),
+                             beforeChanged.gaussians.end());
+    aether::gaussian::GaussianAsset newFull = unchanged;
+    newFull.gaussians.insert(newFull.gaussians.end(),
+                             afterChanged.gaussians.begin(),
+                             afterChanged.gaussians.end());
+
+    auto c = camera();
+    c.cameraWorldPosition = {0.25F, 0.0F, 0.0F};
+    c.worldToCamera[3] = -0.25F;
+
+    const std::array<float, 3> background{0.05F, 0.05F, 0.05F};
+    auto oldImage =
+        aether::gaussian::ReferenceRasterizer::render(oldFull, c, background);
+    auto newImage =
+        aether::gaussian::ReferenceRasterizer::render(newFull, c, background);
+    expect(oldImage && newImage, "translated-camera reference images must render");
+    if (!oldImage || !newImage)
+        return;
+
+    const double cap = sceneColorCap(beforeChanged, afterChanged, unchanged);
+    auto certificate =
+        aether::world_gaussian::certifyGaussianImageRevision(
+            beforeChanged, afterChanged, c, cap);
+    expect(certificate.has_value(),
+           "translated-camera projected certificate must succeed");
+    if (!certificate)
+        return;
+
+    for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
+        double actual{};
+        for (std::size_t channel = 0; channel < 3; ++channel) {
+            actual = std::max(
+                actual,
+                std::abs(static_cast<double>(oldImage->color[pixel][channel]) -
+                         static_cast<double>(newImage->color[pixel][channel])));
+        }
+        if (actual > certificate->rgbLInfBounds[pixel] + 2.0e-6) {
+            expect(false,
+                   "translated-camera reference difference exceeded certificate");
+            return;
+        }
+    }
+}
+
 void testEmptyEditedSetsGiveZeroImageBound() {
     aether::gaussian::GaussianAsset empty;
     auto certificate =
@@ -147,6 +207,7 @@ void testEmptyEditedSetsGiveZeroImageBound() {
 int main() noexcept {
     try {
         testProjectedCertificateBoundsExactReferenceDifference();
+        testProjectedCertificateSupportsTranslatedCamera();
         testEmptyEditedSetsGiveZeroImageBound();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
