@@ -1010,6 +1010,48 @@
       "claims_relevant_to_maveb": "Kills generic hybrid TSDF+Gaussian continual mapping, TSDF-guided variation detection, and targeted Gaussian density update as headline novelty.",
       "overlap_with_candidate_maveb_contribution": "Very high overlap with H2/H5/H6 and generic S1 reconstruction layers; forces S1 to prove cross-derived-state dependency closure and work/equivalence accounting beyond TSDF-to-Gaussian changed-region mapping.",
       "potential_unexplored_gap": "Heterogeneous dependency closure including explicit mesh/texture/render-resource/temporal-history publication and per-layer ULR remains a candidate distinction, not a verified novelty claim."
+    },
+    {
+      "id": "p049",
+      "title": "Generating High-Fidelity Texture in RGB-D Reconstruction using Patches Density Regularization",
+      "authors": "Xinqi Liu; Jituo Li; Guodong Lu",
+      "year": 2023,
+      "venue": "Computer-Aided Design 160 (2023), Article 103516",
+      "link": "https://doi.org/10.1016/j.cad.2023.103516",
+      "code_repository": "",
+      "representation": "online RGB-D voxel/mesh reconstruction with texture atlas patches",
+      "inputs": "RGB-D stream",
+      "outputs": "online reconstructed geometry with high-fidelity texture atlas",
+      "central_contribution": "Adds texture-patch density regularization for less fragmented texture mapping, plus incremental texture updates and hierarchical-aware seam leveling for near-real-time RGB-D reconstruction.",
+      "major_algorithms": "MRF optimal-view selection with patch-density regularization; enhanced voxel texture state; temporal/incremental texture update; hierarchical seam leveling",
+      "metrics": "paper compares texture quality and runtime against online/offline RGB-D reconstruction baselines; exact table values not transcribed in this refresh",
+      "hardware": "not transcribed in this refresh",
+      "runtime": "paper reports near-real-time texture reconstruction; exact timings must be imported from source tables before baseline use",
+      "limitations": "does not target dynamic non-rigid scenes and notes large-scale pose-drift/memory challenges; incremental texture updating itself is occupied prior art",
+      "claims_relevant_to_maveb": "Kills generic incremental RGB-D texture update and temporal texture continuity as standalone novelty.",
+      "overlap_with_candidate_maveb_contribution": "Direct collision with H117/H119 if phrased as incremental texture reconstruction; MAVEB must instead measure texture as one dependency-local layer in an end-to-end heterogeneous repair closure.",
+      "potential_unexplored_gap": "Stable captured-world dependency addressing, explicit dirty-byte/page accounting, and equivalence across mesh/Gaussian/GPU/temporal layers remain candidate systems distinctions only."
+    },
+    {
+      "id": "p050",
+      "title": "Immediate 3D Gaussian Splat Reconstruction of Unordered Input with Global Consistency",
+      "authors": "Andreas Meuleman; Linus Franke; Boris Zhestiankin; Camille Montemagni; George Drettakis",
+      "year": 2026,
+      "venue": "arXiv 2607.14481 (2026 preprint)",
+      "link": "https://arxiv.org/abs/2607.14481",
+      "code_repository": "",
+      "representation": "incremental/global-consistent 3D Gaussian reconstruction with progressive hierarchy",
+      "inputs": "ordered and out-of-order image capture, including large scenes",
+      "outputs": "immediate-feedback globally consistent Gaussian radiance-field reconstruction",
+      "central_contribution": "Combines fast out-of-order matching, covisibility/keyframe selection, fast local Gaussian reconstruction, cluster-based loop closure and a progressive hierarchy for immediate globally consistent feedback.",
+      "major_algorithms": "visual-place-recognition matching; covisibility graph; connected keyframe selection; local GPU Gaussian optimization; cluster loop closure; progressive hierarchy",
+      "metrics": "paper evaluates reconstruction quality/efficiency on scenes with up to thousands of images; exact tables not transcribed here",
+      "hardware": "not transcribed in this refresh",
+      "runtime": "immediate-feedback reconstruction reported; exact performance values must be sourced before comparison",
+      "limitations": "focuses capture-time image reconstruction/global consistency rather than repeated long-term heterogeneous world revision closure",
+      "claims_relevant_to_maveb": "Raises the bar for any generic claim around immediate incremental Gaussian capture, global consistency, out-of-order updates or scalable Gaussian hierarchy.",
+      "overlap_with_candidate_maveb_contribution": "Relevant to capture/reconstruction layer and large-scene scaling but not a direct substitute for S1's proposed cross-derived-state revision-work accounting.",
+      "potential_unexplored_gap": "Repeated captured-world revisions with causal dependency closure across non-Gaussian derived state remain a candidate distinction."
     }
   ]
 }
