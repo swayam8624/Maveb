@@ -3,6 +3,7 @@
 #include <aether/core/Clock.hpp>
 #include <aether/core/Error.hpp>
 #include <aether/gaussian/GaussianAsset.hpp>
+#include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/mesh/MeshAsset.hpp>
 #include <aether/metal/FrameContext.hpp>
 #include <aether/metal/GaussianPipeline.hpp>
@@ -67,6 +68,7 @@ struct GaussianRevisionCertificateStatistics final {
     std::uint64_t fullFramePixels{};
     double maximumCurrentRgbBound{};
     double sceneColorUpperBound{};
+    gaussian::ReferenceCamera camera{};
 
     [[nodiscard]] double affectedPixelRatio() const noexcept {
         if (fullFramePixels == 0)
