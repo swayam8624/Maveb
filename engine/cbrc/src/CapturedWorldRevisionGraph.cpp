@@ -49,6 +49,11 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC certificate parameters are invalid");
     }
+    if (input.mesher.dirtyBlocksInput > 0 &&
+        !input.mesher.fullReferenceWorkAvailable) {
+        return fail(ErrorCode::invalidArgument,
+                    "Captured-world CBRC mesh work requires a full-reference baseline");
+    }
     if (input.observationsInspected > input.fullObservations ||
         input.dirtyTexturePages > input.fullTexturePages ||
         input.materialStatesUpdated > input.fullMaterialStates ||
@@ -117,6 +122,67 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         costs.temporalPixelMs, "temporal-history");
     if (!temporalCost)
         return std::unexpected(temporalCost.error());
+
+    auto fullObservationCost = checkedCost(
+        static_cast<double>(input.fullObservations),
+        costs.observationMs, "full-observations");
+    if (!fullObservationCost)
+        return std::unexpected(fullObservationCost.error());
+    auto fullTsdfCost = checkedCost(
+        static_cast<double>(input.mesher.snapshotBlocksScanned),
+        costs.tsdfBlockMs, "full-tsdf");
+    if (!fullTsdfCost)
+        return std::unexpected(fullTsdfCost.error());
+    auto fullMeshCellCost = checkedCost(
+        static_cast<double>(input.mesher.fullReferenceCells),
+        costs.meshCellMs, "full-mesh-cells");
+    if (!fullMeshCellCost)
+        return std::unexpected(fullMeshCellCost.error());
+    auto fullMeshPatchCost = checkedCost(
+        static_cast<double>(input.mesher.snapshotBlocksScanned),
+        costs.meshPatchMs, "full-mesh-patches");
+    if (!fullMeshPatchCost)
+        return std::unexpected(fullMeshPatchCost.error());
+    auto fullTextureCost = checkedCost(
+        static_cast<double>(input.fullTexturePages),
+        costs.texturePageMs, "full-texture-pages");
+    if (!fullTextureCost)
+        return std::unexpected(fullTextureCost.error());
+    auto fullMaterialCost = checkedCost(
+        static_cast<double>(input.fullMaterialStates),
+        costs.materialStateMs, "full-material-state");
+    if (!fullMaterialCost)
+        return std::unexpected(fullMaterialCost.error());
+    auto fullGaussianInspectionCost = checkedCost(
+        static_cast<double>(input.fullGaussians),
+        costs.gaussianInspectionMs, "full-gaussian-inspection");
+    if (!fullGaussianInspectionCost)
+        return std::unexpected(fullGaussianInspectionCost.error());
+    auto fullGaussianUpdateCost = checkedCost(
+        static_cast<double>(input.fullGaussians),
+        costs.gaussianUpdateMs, "full-gaussian-update");
+    if (!fullGaussianUpdateCost)
+        return std::unexpected(fullGaussianUpdateCost.error());
+    auto fullPublicationCost = checkedCost(
+        static_cast<double>(input.fullGpuPublicationBytes),
+        costs.gpuPublicationByteMs, "full-gpu-publication");
+    if (!fullPublicationCost)
+        return std::unexpected(fullPublicationCost.error());
+    auto fullTemporalCost = checkedCost(
+        static_cast<double>(input.fullTemporalPixels),
+        costs.temporalPixelMs, "full-temporal-history");
+    if (!fullTemporalCost)
+        return std::unexpected(fullTemporalCost.error());
+
+    const double fullWorkBaseline =
+        *fullObservationCost + *fullTsdfCost +
+        *fullMeshCellCost + *fullMeshPatchCost +
+        *fullTextureCost + *fullMaterialCost +
+        *fullGaussianInspectionCost + *fullGaussianUpdateCost +
+        *fullPublicationCost + *fullTemporalCost;
+    if (!std::isfinite(fullWorkBaseline))
+        return fail(ErrorCode::resourceExhausted,
+                    "Captured-world CBRC full-work baseline overflow");
 
     std::vector<revision::RevisionNode> nodes;
     nodes.reserve(10);
@@ -188,7 +254,8 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
              0.0, "temporal-validation-discontinuity-v1"});
     }
 
-    auto graph = revision::RevisionGraph::build(std::move(nodes), std::move(edges));
+    auto graph = revision::RevisionGraph::build(
+        std::move(nodes), std::move(edges), fullWorkBaseline);
     if (!graph)
         return std::unexpected(graph.error());
 
