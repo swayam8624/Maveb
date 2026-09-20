@@ -2,6 +2,7 @@
 #include <aether/reconstruction/IncrementalSparseTsdfMesher.hpp>
 #include <aether/reconstruction/RecordedProviders.hpp>
 #include <aether/reconstruction/SparseTsdfVolume.hpp>
+#include <aether/world/LocalityLedger.hpp>
 
 #include <algorithm>
 #include <array>
@@ -200,6 +201,40 @@ void testIncrementalHaloMeshing() {
     auto updates = mesher->update(*snapshot, dirty);
     expect(updates && !updates->empty() && mesher->generation() == snapshot->generation,
            "dirty sparse blocks should produce completed-generation mesh patches");
+    if (!updates)
+        return;
+
+    const auto& work = mesher->lastUpdateWorkStatistics();
+    expect(work.dirtyBlocksInput == dirty.size(),
+           "incremental meshing work statistics must preserve exact dirty-block input count");
+    expect(work.snapshotBlocksScanned == snapshot->blocks.size(),
+           "current incremental mesher must expose its full resident-snapshot block scan");
+    expect(work.ownerPatchesRegenerated == updates->size(),
+           "owner-patch work counter must match committed patch updates");
+    expect(work.ownerCellsRegenerated > 0 && work.fieldVoxelsMaterialized > 0,
+           "incremental meshing work statistics must count local cells and materialized field");
+    expect(work.fullReferenceWorkAvailable && work.fullReferenceCells > 0,
+           "fixture must expose a comparable full-extraction Marching-Cubes cell baseline");
+
+    aether::world::LocalityLedger locality;
+    expect(locality
+               .set(aether::world::LocalityDomain::tsdfBlocksRead,
+                    static_cast<std::uint64_t>(work.snapshotBlocksScanned),
+                    static_cast<std::uint64_t>(snapshot->blocks.size()))
+               .has_value(),
+           "TSDF block-read locality must bind to the exact resident-block baseline");
+    if (work.fullReferenceWorkAvailable) {
+        expect(locality
+                   .set(aether::world::LocalityDomain::meshCellsRegenerated,
+                        static_cast<std::uint64_t>(work.ownerCellsRegenerated),
+                        static_cast<std::uint64_t>(work.fullReferenceCells))
+                   .has_value(),
+               "mesh-cell locality must use the same Marching-Cubes cell unit in both paths");
+    }
+    const auto blockRatio =
+        locality.counter(aether::world::LocalityDomain::tsdfBlocksRead).ratio();
+    expect(blockRatio.has_value() && *blockRatio == 1.0,
+           "current snapshot-map construction must honestly report globally scanning resident blocks");
     const auto incremental = mesher->mesh();
     expect(triangleCount(incremental) == triangleCount(*full),
            "halo-owned incremental patches should cover every full-extraction triangle exactly");
