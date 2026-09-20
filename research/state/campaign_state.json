@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T20:24+05:30",
+  "updatedAt": "2026-09-20T21:55+05:30",
   "branches": {
     "discovery": {
       "name": "research/maveb-discovery",
@@ -29,48 +29,28 @@
     }
   },
   "corpus": {
-    "papers": 47,
-    "repositoryImplementations": 17,
+    "papers": 52,
+    "repositoryImplementations": 18,
     "hypotheses": 119,
-    "mediumStrengthShortlist": 8
+    "finalFilter": {
+      "lockedHeadline": 5,
+      "requiredMechanisms": 16,
+      "evaluationOrAblation": 6,
+      "deferredFollowup": 92
+    }
   },
   "strongestDirections": [
     {
       "id": "S1",
-      "name": "dependency-certified heterogeneous minimal-work repair",
-      "status": "active-promoted",
+      "name": "MAVEB-CLOSURE: dependency-certified heterogeneous minimal-work repair",
+      "status": "problem-locked",
       "evidence": [
-        "exact TSDF->mesh locality already exists",
-        "Gaussian spatial index synthetic selection and maintenance probes passed",
-        "GPU publication and global temporal-history locality leaks identified"
-      ]
-    },
-    {
-      "id": "S2",
-      "name": "certified non-target geometric preservation for local edits",
-      "status": "active",
-      "evidence": [
-        "generic editing/selective update heavily occupied by prior art",
-        "requires explicit geometry certificate/bound to remain distinct"
-      ]
-    },
-    {
-      "id": "S3",
-      "name": "temporal representation migration",
-      "status": "active-but-hardened",
-      "evidence": [
-        "static regional mesh/Gaussian allocation heavily occupied",
-        "offline measured migration oracle committed",
-        "only temporal cross-representation switching remains interesting"
-      ]
-    },
-    {
-      "id": "S4",
-      "name": "resampling-stable lineage with downstream benefit",
-      "status": "active-unproven",
-      "evidence": [
-        "generic persistent identities occupied",
-        "must survive split/merge/prune/densify and improve downstream task"
+        "exact TSDF-to-mesh locality already exists",
+        "indexed Gaussian selection removes a hidden full scan in controlled probes",
+        "stable/coherent texture paging prototype exists",
+        "versioned per-frame Gaussian publication removes edit-time global frame quiescence",
+        "regional temporal-history invalidation is implemented conservatively",
+        "unit-safe cross-layer locality ledger and evaluator exist"
       ]
     }
   ],
@@ -192,15 +172,39 @@
     "claimsAllowed": "structural correctness only until full CI and Apple-silicon measurements pass"
   },
   "nextExecutionQueue": [
-    "get research/maveb-discovery-persistent fully green; then run production locality benchmark on Apple silicon",
-    "get research/maveb-ulr-ledger green and attach first exact Gaussian inspection ULR counter",
-    "get observability branch green and test true removal/reappearance versus unknown occlusion",
-    "prototype dependency-coherent texture page assignment or sub-page writes; naive page rewrite is killed",
-    "measure same-cardinality Gaussian GPU record patch publication versus full reload",
-    "implement conservative regional temporal-history invalidation and measure changed/unchanged errors",
-    "collect real per-region representation costs before running temporal migration oracle",
-    "strengthen lineage against persistent-density alternatives such as Eulerian Splatting",
-    "refresh literature/repository collisions continuously"
+    "get research/maveb-s1-locked fully green across CI and AetherStudio compile",
+    "run Apple-silicon end-to-end sparse-change measurements on the locked line",
+    "execute VG-Scene adapter on public/local dataset sequences after license review",
+    "bind every required layer to the S1 work ledger and emit revision certificates",
+    "run the frozen 750-cell synthetic evaluation matrix",
+    "run closest compatible continual-mapping baselines and full rebuild references",
+    "characterize crossover where local repair stops beating full rebuild",
+    "produce only evidence-backed figures from raw committed results"
   ],
-  "paperReady": false
+  "paperReady": false,
+  "lockedIntegrationBranch": "research/maveb-s1-locked",
+  "problemLock": {
+    "locked": true,
+    "name": "MAVEB-CLOSURE",
+    "problem": "Dependency-certified heterogeneous minimal-work repair for persistent captured worlds",
+    "methodIdentity": "Cross-Derived-State Revision Certificate (CDSRC)",
+    "headlineHypotheses": [
+      "H027",
+      "H029",
+      "H030",
+      "H035",
+      "H118"
+    ],
+    "document": "research/state/PROBLEM_LOCK.md",
+    "claimProven": false,
+    "paperReady": false
+  },
+  "hypothesisFilter": {
+    "date": "2026-09-20",
+    "headline": 5,
+    "requiredMechanisms": 16,
+    "evaluationOrAblation": 6,
+    "deferredFollowup": 92,
+    "document": "research/hypotheses/final_filter_2026-09-20.md"
+  }
 }
