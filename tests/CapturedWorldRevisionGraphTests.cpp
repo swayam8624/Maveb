@@ -36,8 +36,12 @@ aether::cbrc::CapturedWorldRevisionInput input() {
     result.observationsInspected = 3;
     result.fullObservations = 100;
     result.mesher.dirtyBlocksInput = 2;
+    result.mesher.snapshotBlocksScanned = 100;
     result.mesher.ownerPatchesRegenerated = 4;
     result.mesher.ownerCellsRegenerated = 1000;
+    result.mesher.fullReferenceWorkAvailable = true;
+    result.mesher.fullReferenceVoxelSamples = 125000;
+    result.mesher.fullReferenceCells = 100000;
     result.dirtyTexturePages = 2;
     result.fullTexturePages = 100;
     result.materialStatesUpdated = 1;
@@ -104,6 +108,8 @@ void testPlannerProducesCertifiedResult() {
         return;
     expect(result->passes, "captured-world result must satisfy RGB QoI");
     expect(result->stable, "captured-world result must be stable");
+    expect(result->fullWork > result->work,
+           "captured-world result must compare local work against independent full baseline");
 }
 
 void testIncrementalWorkCannotExceedFullBaseline() {
