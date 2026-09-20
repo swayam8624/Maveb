@@ -1,6 +1,7 @@
 # CBRC implementation and execution plan
 
-Status: frozen execution plan for `research/maveb-cbrc-implementation`.
+Status: v1 implementation complete; this file remains the frozen execution/evidence contract.
+See `CBRC_IMPLEMENTATION_STATUS.md` for the completed component matrix.
 Problem: MAVEB-CLOSURE.
 Method: Criticality-Bounded Revision Cones (CBRC).
 
@@ -126,14 +127,14 @@ F6. per-layer work ledger stacked bars.
 F7. cone visualization plus screen-space residual map.
 F8. adversarial revisions that force conservative fallback.
 
-## Implementation-complete gate before paper prose
+## Evidence-complete gate before performance/result prose
 
-Paper drafting may begin when all are true:
+The software implementation is complete. Performance/result prose may begin when all evidence gates below are true:
 
 - reference certificate unit tests pass;
 - typed edge registry exists and fails closed;
-- at least Gaussian and temporal gain paths are integrated end-to-end;
-- certificate artifact is emitted by a real revision;
+- Gaussian and temporal gain paths are integrated end-to-end;
+- canonical native and production certificate artifacts are emitted by a real revision;
 - full rebuild oracle can replay the same revision;
 - at least one real scene produces `actual <= bound <= epsilon`;
 - at least one adversarial/high-coupling case triggers full fallback;
