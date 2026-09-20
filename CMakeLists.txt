@@ -38,6 +38,7 @@ add_subdirectory(engine/mesh)
 add_subdirectory(engine/canonical)
 add_subdirectory(engine/gaussian)
 add_subdirectory(engine/reconstruction)
+add_subdirectory(engine/cbrc)
 add_subdirectory(engine/hybrid)
 add_subdirectory(engine/world_adapters)
 add_subdirectory(engine/world_gaussian)
@@ -211,6 +212,13 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebRevisionPlannerTests PRIVATE Aether::Revision)
     aether_configure_target(MavebRevisionPlannerTests)
     add_test(NAME MavebRevisionPlannerTests COMMAND MavebRevisionPlannerTests)
+
+    add_executable(MavebCapturedWorldRevisionGraphTests
+        tests/CapturedWorldRevisionGraphTests.cpp)
+    target_link_libraries(MavebCapturedWorldRevisionGraphTests PRIVATE Aether::CBRC)
+    aether_configure_target(MavebCapturedWorldRevisionGraphTests)
+    add_test(NAME MavebCapturedWorldRevisionGraphTests
+        COMMAND MavebCapturedWorldRevisionGraphTests)
 
     add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
     target_link_libraries(MavebGaussianOwnershipCodecTests PRIVATE Aether::WorldGaussian)
