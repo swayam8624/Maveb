@@ -222,3 +222,35 @@ high-priority public baseline dataset: 6 synthetic and 3 real pre/post-change RG
 Tracked:
 - paper: https://arxiv.org/abs/2510.09962
 - repository/dataset: https://github.com/heyicheng-never/VG-Mapping
+
+
+### Generic incremental RGB-D texture update — KILLED AS HEADLINE
+**Closest work:** Liu, Li & Lu, *Generating High-Fidelity Texture in RGB-D Reconstruction
+using Patches Density Regularization*, Computer-Aided Design 160 (2023).
+
+This work already presents an online RGB-D texture-mapping pipeline with an incremental texture
+update strategy, enhanced voxel state for temporal texture continuity, and hierarchical-aware seam
+leveling.
+
+Therefore MAVEB must not claim novelty for:
+
+- incremental RGB-D texture reconstruction;
+- temporal texture continuity;
+- avoiding full texture optimization after every frame;
+- hierarchical seam-update acceleration.
+
+H117/H119 remain useful only as **dependency-local captured-world infrastructure**: stable addresses,
+explicit dirty-byte/page scope, and a demonstrated end-to-end work/equivalence consequence inside
+S1.
+
+### Immediate incremental Gaussian reconstruction with global consistency — OCCUPIED
+**Closest work:** Meuleman et al., *Immediate 3D Gaussian Splat Reconstruction of Unordered Input
+with Global Consistency* (2026).
+
+Fast local Gaussian reconstruction, out-of-order capture support, covisibility-driven keyframe
+selection, cluster loop closure and progressive large-scene hierarchy are all occupied territory.
+MAVEB should not broaden S1 into a generic "immediate incremental 3DGS reconstruction" claim.
+
+Tracked:
+- https://doi.org/10.1016/j.cad.2023.103516
+- https://arxiv.org/abs/2607.14481
