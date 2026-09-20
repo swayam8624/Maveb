@@ -1,86 +1,89 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "frozenAt": "2026-09-20",
-  "updatedAt": "2026-09-20T20:20+05:30",
+  "updatedAt": "2026-09-20T21:58+05:30",
+  "lockedBranch": "research/maveb-s1-locked",
   "rules": [
-    "cheap falsification before integration",
-    "novelty collision kills headline claim immediately",
-    "primary metrics fixed before medium/full experiment",
-    "all negative results retained",
-    "no numeric result is evidence until the committed probe actually executes"
+    "all current-paper experiments run from the locked integration branch",
+    "novelty collision reopens the problem lock immediately",
+    "primary metrics and tolerances are frozen before medium/full runs",
+    "all negative results are retained",
+    "no numeric result is evidence until the committed probe or benchmark actually executes",
+    "native work units remain separate; no synthetic aggregate work score",
+    "full-reference equivalence is mandatory wherever equivalence is claimed"
   ],
   "queue": [
     {
       "priority": 1,
-      "id": "D3",
-      "name": "indexed persistent Gaussian selection",
-      "branch": "research/maveb-discovery-persistent",
-      "next": "finish format/static-analysis CI; preserve exact scan/index equivalence and ownership semantics; then run the in-repo locality benchmark on Apple silicon",
-      "kill": "semantic mismatch, maintenance overhead, or M2-Pro measurements show no meaningful work reduction"
+      "id": "L0",
+      "name": "locked-line validation",
+      "branch": "research/maveb-s1-locked",
+      "next": "obtain green CPU tests, sanitizer, static analysis, AetherStudio compile and relevant Metal tests on the consolidated head",
+      "kill": "compile/test failures reveal incompatible merged mechanisms or correctness regressions"
     },
     {
       "priority": 2,
-      "id": "D4",
-      "name": "cross-layer ULR ledger and first instrumented path",
-      "branch": "research/maveb-ulr-ledger",
-      "next": "get ledger CI green; record Gaussian inspection ULR first, then attach TSDF/mesh/GPU/temporal counters without mixing units",
-      "kill": "instrumentation cannot define equivalent full baselines or hidden global stages keep end-to-end locality near one"
+      "id": "L1",
+      "name": "complete cross-layer CDSRC instrumentation",
+      "branch": "research/maveb-s1-locked",
+      "next": "bind observations, TSDF read/write, mesh cells, Gaussian inspect/update, texture writes, GPU publication and temporal invalidation to one revision certificate with explicit full baselines",
+      "kill": "a required layer cannot expose a meaningful equivalent full baseline or hides global work"
     },
     {
       "priority": 3,
-      "id": "D5",
-      "name": "observability-safe world transactions",
-      "branch": "research/maveb-observability",
-      "next": "get full CI green; test unknown vs observed-absent vs true removal vs reappearance with explicit negative-evidence regions",
-      "kill": "semantics are not conservative/correct under partial observation or introduce unacceptable stale-state behavior"
+      "id": "L2",
+      "name": "Apple-silicon sparse-change benchmark",
+      "branch": "research/maveb-s1-locked",
+      "next": "run 0.1/0.25/0.5/1/2/5/10/25/50/100 percent changes on the M2 Pro path and record wall time, bytes, memory and per-layer ULR",
+      "kill": "1-5 percent changes do not produce a clear end-to-end advantage or one global layer dominates"
     },
     {
       "priority": 4,
-      "id": "D6",
-      "name": "paged stable texture addressing",
-      "branch": "future child after stable-atlas correctness branch",
-      "next": "retain fixed global atlas only as correctness oracle; prototype persistent pages/indirection and measure address survival, texel density, fragmentation and dirty-page bytes",
-      "kill": "indirection/fragmentation/compaction causes global churn or destroys usable texture density"
+      "id": "L3",
+      "name": "VG-Scene evolving-world evaluation",
+      "branch": "research/maveb-s1-locked",
+      "next": "run the local VG-Scene adapter and full/reference repair experiments on available real and synthetic sequences after dataset-license review",
+      "kill": "benefit disappears on public evolving scenes or quality/equivalence regresses"
     },
     {
       "priority": 5,
-      "id": "D7",
-      "name": "same-cardinality Gaussian GPU publication locality",
-      "branch": "future PR28-derived child",
-      "next": "patch stable Gaussian record ranges without full scene reload/all-record conversion; measure bytes written, publication stall and next-frame cost",
-      "kill": "safe publication still requires effectively global copying/quiescence or patching hurts frame correctness/performance"
+      "id": "L4",
+      "name": "750-cell controlled matrix",
+      "branch": "research/maveb-s1-locked",
+      "next": "execute the frozen change-fraction x change-type x scale x seed matrix and archive raw certificates",
+      "kill": "sparse-regime behavior is unstable across seeds/change classes or crossover is trivial"
     },
     {
       "priority": 6,
-      "id": "T1",
-      "name": "regional temporal-history invalidation",
-      "branch": "future PR28-derived child",
-      "next": "implement conservative dirty-world AABB projection mask and compare global/no/V0/V1 history invalidation",
-      "kill": "masks cover most pixels, changed-region ghosting regresses, or cost erases unchanged-region benefit"
+      "id": "L5",
+      "name": "closest-baseline comparison",
+      "branch": "research/maveb-s1-locked",
+      "next": "compare full rebuild and strongest task-compatible continual/changing-scene Gaussian baselines using fair inputs and published code/data when available",
+      "kill": "locked method wins only against weak or mismatched baselines"
     },
     {
       "priority": 7,
-      "id": "R1",
-      "name": "offline temporal representation migration oracle",
-      "branch": "research/maveb-discovery",
-      "next": "collect measured per-region TSDF/mesh/Gaussian quality-memory-render-update tuples; solve exact temporal oracle before online policy work",
-      "kill": "best fixed feasible representation remains Pareto-optimal on held-out revisions"
+      "id": "L6",
+      "name": "mechanism ablations",
+      "branch": "research/maveb-s1-locked",
+      "next": "remove indexed Gaussian selection, coherent texture pages, observability semantics, versioned GPU publication and regional temporal invalidation one at a time",
+      "kill": "headline result persists unchanged without the proposed dependency mechanisms, indicating the claimed mechanism is not explanatory"
     },
     {
       "priority": 8,
-      "id": "C1",
-      "name": "resampling-stable lineage benefit",
-      "branch": "research/maveb-discovery",
-      "next": "strengthen benchmark against persistent-density and nearest/covariance/ICP/OT baselines; require downstream repair/history benefit",
-      "kill": "representation-level baseline matches correspondence or no downstream benefit remains"
-    },
-    {
-      "priority": 9,
-      "id": "P7",
-      "name": "geometry certificate tightness",
-      "branch": "research/maveb-discovery",
-      "next": "continue only as spare parallel probe; compare direct geometric/density bounds before more phase-specific work",
-      "kill": "useful coverage requires excessive slack or simpler geometry certificate dominates"
+      "id": "L7",
+      "name": "crossover and failure-regime characterization",
+      "branch": "research/maveb-s1-locked",
+      "next": "measure where incremental repair should deliberately fall back to full rebuild and quantify unchanged-world damage and repeated-edit drift",
+      "kill": "no meaningful sparse/local regime or unacceptable accumulated damage"
     }
-  ]
+  ],
+  "deferred": [
+    "temporal representation migration",
+    "geometry-certificate paper",
+    "resampling-lineage paper beyond retained ablation",
+    "bounded scheduling paper",
+    "general uncertainty paper"
+  ],
+  "paperReady": false
 }
