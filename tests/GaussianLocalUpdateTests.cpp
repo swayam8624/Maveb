@@ -162,6 +162,60 @@ void testIndexedSelectionMatchesFullScanAndTracksInspections() {
            "relocated index must remain selection-equivalent to full scan");
 }
 
+
+void testIndexedSelectionScalesWithDirtyPopulation() {
+    GaussianAsset asset;
+    GaussianEntityOwnership ownership;
+    constexpr std::size_t regionCount = 100;
+    constexpr std::size_t gaussiansPerRegion = 100;
+    asset.gaussians.reserve(regionCount * gaussiansPerRegion);
+    ownership.owners.reserve(regionCount * gaussiansPerRegion);
+
+    for (std::size_t region = 0; region < regionCount; ++region) {
+        const float baseX = static_cast<float>(region) + 0.1F;
+        for (std::size_t local = 0; local < gaussiansPerRegion; ++local) {
+            const float y = 0.001F * static_cast<float>(local);
+            asset.gaussians.push_back(gaussian(baseX, y, 0.1F));
+            ownership.owners.push_back(region == 37 ? EntityId{1} : EntityId{2});
+        }
+    }
+
+    SelectiveUpdatePlan plan;
+    plan.cellSizeMeters = 1.0F;
+    RegionUpdate region;
+    region.key = RegionKey{37, 0, 0};
+    region.entities = {EntityId{1}};
+    plan.dirtyRegions.push_back(region);
+
+    auto index = GaussianSpatialIndex::build(asset, plan.cellSizeMeters);
+    expect(index.has_value(), "large deterministic Gaussian spatial index must build");
+    if (!index)
+        return;
+
+    const auto scanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan, &ownership);
+    const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
+        asset, plan, *index, &ownership);
+    expect(scanned.has_value() && indexed.has_value(),
+           "large full-scan and indexed selections must both succeed");
+    if (!scanned || !indexed)
+        return;
+
+    expect(scanned->gaussianIndices == indexed->gaussianIndices,
+           "large indexed selection must be exactly equivalent to full scan");
+    expect(scanned->ownedMatches == indexed->ownedMatches &&
+               scanned->conservativeUnownedMatches == indexed->conservativeUnownedMatches &&
+               scanned->rejectedStableOwnedGaussians == indexed->rejectedStableOwnedGaussians &&
+               scanned->unaffectedGaussians == indexed->unaffectedGaussians,
+           "large indexed selection must preserve ownership accounting");
+    expect(scanned->inspectedGaussians == asset.gaussians.size(),
+           "large full scan must inspect every Gaussian");
+    expect(indexed->inspectedGaussians == gaussiansPerRegion,
+           "large indexed selection must inspect only the dirty-region Gaussian population");
+    expect(indexed->gaussianIndices.size() == gaussiansPerRegion,
+           "large indexed selection must return the exact dirty entity population");
+}
+
 void testOwnedTranslationIsTransactional() {
     GaussianAsset asset;
     asset.gaussians = {
@@ -263,6 +317,7 @@ int main() noexcept {
     try {
         testOwnershipProtectsStableSplatsInDirtyCells();
         testIndexedSelectionMatchesFullScanAndTracksInspections();
+        testIndexedSelectionScalesWithDirtyPopulation();
         testOwnedTranslationIsTransactional();
         testPersistentWorldAndGaussianTranslationCommitTogether();
         testOwnershipShapeAndSelectionBudgetFailClosed();
