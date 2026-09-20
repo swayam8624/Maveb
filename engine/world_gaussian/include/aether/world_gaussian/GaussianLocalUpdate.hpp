@@ -43,6 +43,10 @@ struct PersistentGaussianTranslationResult final {
     world::WorldEditResult worldEdit;
     std::size_t translatedGaussians{};
     GaussianLocalUpdateSelection reoptimizationSelection;
+    bool usedOverlayIndex{};
+    bool overlayIndexValid{true};
+    bool overlayIndexCompacted{};
+    GaussianOverlaySelectionDiagnostics overlayDiagnostics;
 };
 
 /// Maps halo-expanded persistent-world dirty regions to the exact Gaussian primitives that may be
@@ -94,5 +98,19 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
     const GaussianEntityOwnership& ownership, world::EntityId entity,
     simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
     world::WorldEditPolicy worldPolicy = {}, GaussianLocalUpdatePolicy gaussianPolicy = {});
+
+/// Indexed equivalent of translatePersistentGaussianEntity(). The overlay index
+/// is queried before commit, then advanced after the authoritative World+asset
+/// transaction. If incremental index maintenance fails, it is rebuilt from the
+/// post-edit asset; if that rebuild also fails, the returned flag marks the
+/// index invalid so callers must drop it and fall back to the scan path.
+[[nodiscard]] Result<PersistentGaussianTranslationResult>
+translatePersistentGaussianEntityIndexed(
+    world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
+    const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
+    world::EntityId entity, simd_float3 targetWorldTranslation,
+    world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy = {},
+    GaussianLocalUpdatePolicy gaussianPolicy = {});
+
 
 } // namespace aether::world_gaussian
