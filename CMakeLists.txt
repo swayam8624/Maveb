@@ -132,6 +132,21 @@ if(AETHER_BUILD_TESTS)
     add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
 
 
+    add_executable(MavebGaussianRegionIndexTests tests/GaussianRegionIndexTests.cpp)
+    target_link_libraries(MavebGaussianRegionIndexTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianRegionIndexTests)
+    add_test(NAME MavebGaussianRegionIndexTests COMMAND MavebGaussianRegionIndexTests)
+
+    add_executable(MavebGaussianLocalityCertificateTests tests/GaussianLocalityCertificateTests.cpp)
+    target_link_libraries(MavebGaussianLocalityCertificateTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianLocalityCertificateTests)
+    add_test(NAME MavebGaussianLocalityCertificateTests COMMAND MavebGaussianLocalityCertificateTests)
+
+    add_executable(MavebGaussianOverlaySpatialIndexTests tests/GaussianOverlaySpatialIndexTests.cpp)
+    target_link_libraries(MavebGaussianOverlaySpatialIndexTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianOverlaySpatialIndexTests)
+    add_test(NAME MavebGaussianOverlaySpatialIndexTests COMMAND MavebGaussianOverlaySpatialIndexTests)
+
     add_executable(MavebGaussianPublicationPlanTests tests/GaussianPublicationPlanTests.cpp)
     target_link_libraries(MavebGaussianPublicationPlanTests PRIVATE Aether::Gaussian)
     aether_configure_target(MavebGaussianPublicationPlanTests)
