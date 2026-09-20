@@ -350,6 +350,7 @@ def main() -> int:
         sys.executable,
         str(analysis),
         "--rows", str(rows_path),
+        "--baselines", str(baselines_path),
         "--output-dir", str(analysis_dir),
     ]
     if spatial_for_figure is not None:
