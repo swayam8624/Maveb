@@ -19,6 +19,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from research.cbrc.work import WorkCostModel
+
 
 def require_number(data: dict[str, Any], key: str, *, positive: bool = False) -> float:
     value = float(data[key])
@@ -27,6 +31,31 @@ def require_number(data: dict[str, Any], key: str, *, positive: bool = False) ->
     if not positive and value < 0:
         raise ValueError(f"{key} must be non-negative")
     return value
+
+
+def resolve_scalar_work(manifest: dict[str, Any]) -> tuple[float, float, str, str]:
+    model_data = manifest.get("work_cost_model")
+    ledger = manifest.get("work_ledger", {})
+    if model_data is not None:
+        if not isinstance(ledger, dict):
+            raise ValueError("work_ledger must be an object")
+        domains = ledger.get("domains", ledger)
+        if not isinstance(domains, dict) or not domains:
+            raise ValueError(
+                "work_cost_model requires non-empty work_ledger domains"
+            )
+        model = WorkCostModel.from_mapping(model_data)
+        candidate = model.estimate(domains, field="incremental")
+        full = model.estimate(domains, field="full")
+        if full <= 0.0:
+            raise ValueError("frozen work-cost model produced non-positive full work")
+        return candidate, full, model.version, model.cost_unit
+
+    # Compatibility path for early fixtures only. Final evaluation manifests
+    # should use work_cost_model + native work_ledger.
+    candidate = require_number(manifest, "candidate_work")
+    full = require_number(manifest, "full_work", positive=True)
+    return candidate, full, "explicit-manifest-fixture", "arbitrary"
 
 
 def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
@@ -87,8 +116,9 @@ def finalize_row(
     if returncode not in (0, 3):
         raise RuntimeError(f"oracle failed with exit code {returncode}")
 
-    full_work = require_number(manifest, "full_work", positive=True)
-    candidate_work = require_number(manifest, "candidate_work")
+    candidate_work, full_work, work_model_version, work_cost_unit = (
+        resolve_scalar_work(manifest)
+    )
     total_nodes = int(manifest["total_nodes"])
     hard_nodes = int(manifest["hard_closure_nodes"])
     candidate_nodes = int(manifest["candidate_cone_nodes"])
@@ -138,6 +168,8 @@ def finalize_row(
         "stable": True,
         "planner_work": planner_work,
         "full_work": full_work,
+        "work_cost_model_version": work_model_version,
+        "work_cost_unit": work_cost_unit,
         "qois": {"rgb_linf": qoi},
         "work_ledger": manifest.get("work_ledger", {}),
         "candidateDiagnostics": {
