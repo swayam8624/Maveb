@@ -35,6 +35,8 @@ jobs:
           echo "$PWD/.venv-ci/bin" >> "$GITHUB_PATH"
       - name: MavebBench unit tests
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
+      - name: Research evaluation unit tests
+        run: python3 -m unittest discover -s research/tests -p 'test_*.py'
 
   sanitizer:
     name: Sanitizer
