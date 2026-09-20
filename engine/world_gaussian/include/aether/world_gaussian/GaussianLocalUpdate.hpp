@@ -2,6 +2,7 @@
 
 #include <aether/gaussian/GaussianAsset.hpp>
 #include <aether/world_gaussian/GaussianSpatialIndex.hpp>
+#include <aether/world/LocalityLedger.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
 #include <aether/world/WorldModel.hpp>
 
@@ -30,6 +31,12 @@ struct GaussianLocalUpdateSelection final {
     /// Number of primitives whose ownership/selection state was actually inspected.
     std::size_t inspectedGaussians{};
 };
+
+/// Records the selector's primitive-inspection work against the exact full-scene scan baseline.
+/// This does not record gaussiansUpdated because selection is only eligibility for later work.
+[[nodiscard]] Result<void> recordGaussianSelectionLocality(
+    const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
+    world::LocalityLedger& ledger);
 
 struct PersistentGaussianTranslationResult final {
     world::WorldEditResult worldEdit;
