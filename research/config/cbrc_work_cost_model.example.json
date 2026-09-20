@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "version": "replace-with-frozen-calibration-id",
+  "cost_unit": "ms",
+  "calibration_rule": "Calibrate on dedicated pre-evaluation microbenchmarks; freeze before final CBRC matrix. Do not fit coefficients on final evaluation outcomes.",
+  "domains": {
+    "observationsInspected": {"unit": "observations", "cost_per_unit": 0.0},
+    "tsdfBlocksRead": {"unit": "blocks", "cost_per_unit": 0.0},
+    "tsdfBlocksWritten": {"unit": "blocks", "cost_per_unit": 0.0},
+    "meshCellsRegenerated": {"unit": "cells", "cost_per_unit": 0.0},
+    "meshPatchesRegenerated": {"unit": "patches", "cost_per_unit": 0.0},
+    "gaussiansInspected": {"unit": "gaussians", "cost_per_unit": 0.0},
+    "gaussiansUpdated": {"unit": "gaussians", "cost_per_unit": 0.0},
+    "textureTexelsWritten": {"unit": "texels", "cost_per_unit": 0.0},
+    "gpuPublicationBytes": {"unit": "bytes", "cost_per_unit": 0.0},
+    "temporalPixelsInvalidated": {"unit": "pixels", "cost_per_unit": 0.0}
+  },
+  "note": "Zero placeholders are intentionally unusable for a meaningful minimum-work claim until calibrated and frozen."
+}
