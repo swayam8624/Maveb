@@ -10,7 +10,11 @@ function(aether_resolve_simdjson)
     endif()
     set(SIMDJSON_DEVELOPER_MODE OFF CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    # simdjson is a pinned third-party dependency. Mark its FetchContent subdirectory as
+    # SYSTEM so Maveb's intentionally strict warning policy does not promote warnings in
+    # external headers/sources to project build failures.
     FetchContent_Declare(simdjson
+        SYSTEM
         URL https://github.com/simdjson/simdjson/archive/refs/tags/v3.12.3.tar.gz
         URL_HASH SHA256=d0af071f2f4187d8b26b556e83ef832b634bd5feb4e2f537b9dabbd334d4e334
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
