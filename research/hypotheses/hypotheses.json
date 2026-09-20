@@ -234,15 +234,15 @@
       "family": "E",
       "family_name": "Edit preservation invariants",
       "name": "Certificate by interval bounds",
-      "research_question": "Can conservative influence bounds on Gaussian support certify that edited primitives cannot materially affect distant regions?",
+      "research_question": "Can conservative anisotropic-Gaussian tail bounds certify a uniform upper bound on density-field disturbance outside an allowed edit volume?",
       "prior_art_collision": "GaussianEditor variants; SC-GS; EditSplat; InterGSEdit; SuGaR; Fourier point-cloud decomposition",
-      "expected_novelty": "UNVERIFIED. Must survive literature refresh and direct baseline comparison.",
-      "required_implementation": "Cheap probe first; surviving path must integrate into MAVEB C++23/Metal/world architecture as appropriate.",
+      "expected_novelty": "UNVERIFIED but strengthened: unlike generic local editing, the candidate contribution is an explicit uniform disturbance bound derived from Gaussian tails.",
+      "required_implementation": "Implement face-wise tail certificate in C++ against real MAVEB Gaussian assets; then attack rendering-space and surface-displacement relevance.",
       "required_datasets": "Synthetic controlled ground truth first; then task-appropriate public real datasets and MAVEB real capture only as complement.",
       "expected_experiment_cost": "low-to-medium for initial probe",
-      "falsification_experiment": "Compute truncated-support/influence bounds and validate against exact render/geometry changes.",
-      "success_metric": "tight enough to exclude most world while never missing measured effects",
-      "failure_metric": "bounds too loose to be useful",
+      "falsification_experiment": "For controlled edits, compare analytic outside-volume bound against exhaustive/sampled field evaluation, hard-freeze baseline, and real renderer leakage. Search direct prior art for certified local 3DGS editing.",
+      "success_metric": "No bound violations; useful tightness at practical boundary margins; certificate predicts non-target damage and can gate edits without destroying edit fidelity.",
+      "failure_metric": "Bound is too loose at useful margins, does not correlate with rendered/surface disturbance, or close prior art already establishes the same certificate.",
       "visual_demo_potential": "medium-to-high if mechanism survives; visualization must originate from real implementation",
       "siggraph_relevance": "possible; unscored until N0-N7 gates",
       "cvpr_relevance": "possible for 3D vision mechanisms; unscored until evidence",
@@ -250,9 +250,12 @@
       "dependencies": [
         "repository audit",
         "literature corpus",
-        "deterministic configs/results"
+        "deterministic configs/results",
+        "research/theory/gaussian_tail_locality_certificate.md",
+        "research/results/probes/gaussian-tail-locality-certificate-v0-summary.json",
+        "EditBench3D"
       ],
-      "status": "probe-candidate"
+      "status": "priority-survivor-after-analytic-probe"
     },
     {
       "hypothesis_id": "H011",
