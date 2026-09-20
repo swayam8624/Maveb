@@ -27,6 +27,7 @@ target_link_libraries(AetherMetal
     PUBLIC Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction
     PRIVATE
         Aether::WorldGaussian
+        Aether::Revision
         ${METAL_FRAMEWORK}
         ${METALKIT_FRAMEWORK}
         ${FOUNDATION_FRAMEWORK}
