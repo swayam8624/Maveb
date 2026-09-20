@@ -86,6 +86,11 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)
     aether_configure_target(AetherUncertaintyTsdfTests)
     add_test(NAME AetherUncertaintyTsdfTests COMMAND AetherUncertaintyTsdfTests)
+
+    add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
+    target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebStableTextureAtlasTests)
+    add_test(NAME MavebStableTextureAtlasTests COMMAND MavebStableTextureAtlasTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
