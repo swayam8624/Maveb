@@ -75,13 +75,13 @@ class GaussianPipeline final {
     [[nodiscard]] GaussianPipelineStatistics statistics() const noexcept;
 
     /// Logical bytes/ranges changed by the most recent local mutation.
-    [[nodiscard]] GaussianPublicationStatistics publicationStatistics() const noexcept {
+    [[nodiscard]] GaussianPublicationStatistics publicationStatistics() const {
         std::scoped_lock lock(publicationMutex_);
         return lastPublicationStatistics_;
     }
 
     /// Actual bytes/ranges copied into the most recently recycled frame-slot source buffer.
-    [[nodiscard]] GaussianPublicationStatistics framePublicationStatistics() const noexcept {
+    [[nodiscard]] GaussianPublicationStatistics framePublicationStatistics() const {
         std::scoped_lock lock(publicationMutex_);
         return lastFramePublicationStatistics_;
     }
