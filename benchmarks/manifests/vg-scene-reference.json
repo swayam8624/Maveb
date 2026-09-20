@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "vg-scene-reference",
   "title": "VG-Scene semi-static RGB-D benchmark",
-  "kind": "reference-only",
+  "kind": "vg-scene",
   "root": "$MAVEB_DATA/VG-Scene",
   "source": {
     "paper": "https://arxiv.org/abs/2510.09962",
@@ -10,9 +10,17 @@
     "repositoryCommit": "8f7de4fcbc04aae1c33f1c8ac4914333e60afe8b"
   },
   "temporalStructure": "Each sequence contains pre-change and post-change RGB-D subsequences.",
-  "changeTypes": ["addition", "removal", "rearrangement"],
+  "changeTypes": [
+    "addition",
+    "removal",
+    "rearrangement"
+  ],
   "sequences": {
-    "real": ["meeting_room_745", "multi_tables_593", "table_276"],
+    "real": [
+      "meeting_room_745",
+      "multi_tables_593",
+      "table_276"
+    ],
     "synthetic": [
       "barbershop1_280",
       "barbershop2_280",
@@ -26,6 +34,7 @@
     "real": "rgb/depth streams + groundtruth.txt + camera metadata as supplied by VG-Scene",
     "synthetic": "results RGB/depth + traj.txt + intrinsic.txt as supplied by VG-Scene"
   },
-  "status": "reference-only-until-adapter-and-dataset-license-review",
-  "note": "High-priority public evolving-scene baseline for S1/S5. Dataset bytes remain outside Git. Do not claim runnable VG-Mapping method reproduction until the official repository releases method code and licensing is reviewed."
+  "status": "adapter-ready-local-data-required",
+  "note": "High-priority evolving-scene baseline for S1/S5. Adapter is implemented for local structural normalization; dataset bytes remain outside Git and method-code reproduction remains out of scope until official code/licensing permit it.",
+  "adapter": "benchmarks/scripts/adapters/vgscene_to_temporal_manifest.py"
 }
