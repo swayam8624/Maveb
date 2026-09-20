@@ -4,6 +4,7 @@ add_library(AetherWorldGaussian STATIC
     src/GaussianOverlaySpatialIndex.cpp
     src/GaussianLocalityCertificate.cpp
     src/GaussianRenderCertificate.cpp
+    src/GaussianImageRevisionCertificate.cpp
     src/GaussianSpatialIndex.cpp
     src/GaussianOwnershipAssignment.cpp
     src/GaussianOwnershipCodec.cpp
