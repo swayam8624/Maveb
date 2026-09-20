@@ -1118,6 +1118,19 @@ void Renderer::draw(MTK::View* view) noexcept {
                        lastTemporalInvalidationPlan_.fullFrame) {
                 lastGaussianRevisionCertificateStatistics_
                     .temporalFullFrameFallback = true;
+                if (!lastTemporalInvalidationPlan_.fullFrame) {
+                    regionalInvalidation = false;
+                    const std::uint64_t fullPixels =
+                        static_cast<std::uint64_t>(sceneTargetWidth_) *
+                        sceneTargetHeight_;
+                    lastTemporalInvalidationPlan_ = {
+                        .fullFrame = true,
+                        .empty = false,
+                        .normalizedRect = {0.0F, 0.0F, 1.0F, 1.0F},
+                        .invalidatedPixels = fullPixels,
+                        .fullFramePixels = fullPixels,
+                    };
+                }
             }
         } else if (forceTemporalFullHistoryInvalidation) {
             historyUsable = false;
