@@ -186,3 +186,39 @@ Tracked additions:
 - CubifyGS: https://arxiv.org/abs/2606.28720
 - SI-Update: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6958781
 - Eulerian Gaussian Splatting: https://arxiv.org/abs/2605.29136
+
+
+### Hybrid TSDF + Gaussian semi-static map repair — KILLED AS HEADLINE
+**Closest work:** VG-Mapping (RA-L 2026 accepted; arXiv 2510.09962).
+
+VG-Mapping already maintains an online RGB-D Gaussian map for semi-static scenes using a hybrid
+TSDF + 3DGS representation. The TSDF supplies geometry for variation detection, and variation-aware
+density control inserts/prunes Gaussians and targets changed-region map updates.
+
+Therefore MAVEB must not claim novelty for:
+
+- hybrid TSDF + Gaussian mapping;
+- using TSDF/depth to detect changed regions in a Gaussian map;
+- updating Gaussian density only in changed/semi-static regions;
+- an RGB-D semi-static Gaussian benchmark by itself.
+
+### Consequence for S1
+
+VG-Mapping substantially narrows S1. The surviving candidate distinction must be demonstrated, not
+asserted:
+
+> one captured-world revision produces an explicit dependency closure whose work is instrumented
+> across evidence/TSDF, explicit mesh, Gaussian state, texture/material state, GPU publication and
+> temporal history, with per-layer work ratios and declared full-reference equivalence.
+
+If MAVEB ultimately measures only TSDF-guided local Gaussian updates, S1 is already occupied and
+must be killed.
+
+The official repository at pinned commit
+`8f7de4fcbc04aae1c33f1c8ac4914333e60afe8b` currently exposes the VG-Scene dataset and
+supplementary material but marks method code as not yet released. VG-Scene is nevertheless a
+high-priority public baseline dataset: 6 synthetic and 3 real pre/post-change RGB-D sequences.
+
+Tracked:
+- paper: https://arxiv.org/abs/2510.09962
+- repository/dataset: https://github.com/heyicheng-never/VG-Mapping
