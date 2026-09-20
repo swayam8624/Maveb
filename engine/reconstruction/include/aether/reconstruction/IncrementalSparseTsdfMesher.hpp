@@ -24,8 +24,8 @@ struct SparseMeshPatchUpdate final {
 /// Exact work counters for the most recently committed incremental meshing update.
 ///
 /// These counters deliberately separate local Marching-Cubes cell work from the snapshot-block scan
-/// needed to construct the current lookup structure. This exposes cases where geometry semantics are
-/// local but implementation work is still global in resident world size.
+/// needed to construct the current lookup structure. This exposes cases where geometry semantics
+/// are local but implementation work is still global in resident world size.
 struct IncrementalSparseMesherWorkStatistics final {
     std::size_t dirtyBlocksInput{};
     std::size_t snapshotBlocksScanned{};
