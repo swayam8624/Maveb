@@ -1,3 +1,4 @@
+#include <aether/cbrc/Version.hpp>
 #include <aether/gaussian/GaussianCodec.hpp>
 #include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/revision/RevisionCertificateJson.hpp>
@@ -520,9 +521,10 @@ int main(int argc, char** argv) try {
         aether::revision::serializeRevisionCertificateJson(
             *plannerGraph, *planned,
             {
-                .graphVersion = "gaussian-output-cone-v2",
-                .boundVersion = "gaussian-image-temporal-v1",
-                .costModelVersion = "temporal-pixel-work-v1",
+                .graphVersion = std::string(aether::cbrc::gaussianOutputGraphVersion),
+                .boundVersion = std::string(aether::cbrc::gaussianTemporalBoundVersion),
+                .costModelVersion =
+                    std::string(aether::cbrc::headlessTemporalPixelCostModelVersion),
             });
     if (!nativePlannerCertificate) {
         std::cerr << nativePlannerCertificate.error().describe() << '\n';
