@@ -6,6 +6,7 @@ target_link_libraries(maveb-cbrc-revision PRIVATE
     Aether::World
     Aether::WorldGaussian
     Aether::Revision
+    Aether::CBRC
 )
 target_compile_features(maveb-cbrc-revision PRIVATE cxx_std_23)
 aether_configure_target(maveb-cbrc-revision)
