@@ -153,6 +153,26 @@ def outward_radius(
     return selected
 
 
+def forward_exact_closure(
+    node_count: int,
+    edges: list[RevisionEdge],
+    seed: Iterable[int],
+) -> set[int]:
+    adjacency = [set() for _ in range(node_count)]
+    for edge in edges:
+        if edge.edge_class in (EdgeClass.HARD, EdgeClass.EMPIRICAL):
+            adjacency[edge.src].add(edge.dst)
+    selected = {int(v) for v in seed}
+    frontier = list(selected)
+    while frontier:
+        source = frontier.pop()
+        for target in adjacency[source]:
+            if target not in selected:
+                selected.add(target)
+                frontier.append(target)
+    return selected
+
+
 def empirical_ordered_cone(parsed: dict[str, Any]) -> Certificate:
     n = len(parsed["ids"])
     cone = predecessor_closure(parsed["hard"], parsed["pred"], n)
@@ -395,6 +415,7 @@ def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
         mutated = dict(parsed)
         mutated["K"] = certificate_transfer(n, edges)
         mutated["pred"] = exact_predecessors(n, edges)
+        mutated["hard"] = sorted(forward_exact_closure(n, edges, mutated["hard"]))
         result[label] = greedy_minimum_work_cone(
             K_cert=mutated["K"],
             source=mutated["source"],
@@ -436,6 +457,9 @@ def ablations(payload: dict[str, Any]) -> dict[str, Certificate]:
     all_exact = dict(parsed)
     all_exact["K"] = certificate_transfer(n, exact_edges)
     all_exact["pred"] = exact_predecessors(n, exact_edges)
+    all_exact["hard"] = sorted(
+        forward_exact_closure(n, exact_edges, all_exact["hard"])
+    )
     result["ABLATE_HARD_SOFT_SEPARATION"] = greedy_minimum_work_cone(
         K_cert=all_exact["K"],
         source=all_exact["source"],
