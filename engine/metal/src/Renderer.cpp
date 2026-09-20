@@ -1121,6 +1121,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                         .available = true,
                         .stable = planned->stable,
                         .passes = planned->passes,
+                        .temporalValidationStable = temporalValidationStable,
                         .temporalRepairSelected = temporalRepairSelected,
                         .fullRebuild = planned->fullRebuild,
                         .resolvedRgbBound = planned->qois.empty()
@@ -1138,6 +1139,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                         .available = false,
                         .stable = false,
                         .passes = false,
+                        .temporalValidationStable = temporalValidationStable,
                         .temporalRepairSelected = true,
                         .fullRebuild = true,
                         .resolvedRgbBound = std::numeric_limits<double>::infinity(),
@@ -1155,6 +1157,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                     .available = false,
                     .stable = false,
                     .passes = false,
+                    .temporalValidationStable = temporalValidationStable,
                     .temporalRepairSelected = true,
                     .fullRebuild = true,
                     .resolvedRgbBound = std::numeric_limits<double>::infinity(),
