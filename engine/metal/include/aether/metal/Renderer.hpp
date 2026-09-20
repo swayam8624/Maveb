@@ -58,6 +58,18 @@ struct GaussianEditPublicationStatistics final {
     bool globalTemporalHistoryInvalidated{};
 };
 
+struct GaussianOutputConePlannerStatistics final {
+    bool available{};
+    bool stable{};
+    bool passes{};
+    bool temporalRepairSelected{};
+    bool fullRebuild{};
+    double resolvedRgbBound{};
+    double epsilon{};
+    double plannerWork{};
+    double fullWork{};
+};
+
 struct GaussianRevisionCertificateStatistics final {
     bool available{};
     bool invalidationCoversCertifiedSupport{};
@@ -227,6 +239,20 @@ class Renderer final {
     gaussianRevisionCertificateStatistics() const noexcept {
         return lastGaussianRevisionCertificateStatistics_;
     }
+    [[nodiscard]] GaussianOutputConePlannerStatistics
+    gaussianOutputConePlannerStatistics() const noexcept {
+        return lastGaussianOutputConePlannerStatistics_;
+    }
+    [[nodiscard]] Result<void> setGaussianRevisionRgbTolerance(double epsilon) noexcept {
+        if (!std::isfinite(epsilon) || epsilon < 0.0)
+            return fail(ErrorCode::invalidArgument,
+                        "Gaussian revision RGB tolerance must be finite and non-negative");
+        gaussianRevisionRgbTolerance_ = epsilon;
+        return {};
+    }
+    [[nodiscard]] double gaussianRevisionRgbTolerance() const noexcept {
+        return gaussianRevisionRgbTolerance_;
+    }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
         return {proxyVertexCount_, proxyIndexCount_ / 3U};
@@ -380,6 +406,8 @@ class Renderer final {
     std::uint32_t gizmoMode_{};
     GaussianEditPublicationStatistics lastGaussianEditPublicationStatistics_{};
     GaussianRevisionCertificateStatistics lastGaussianRevisionCertificateStatistics_{};
+    GaussianOutputConePlannerStatistics lastGaussianOutputConePlannerStatistics_{};
+    double gaussianRevisionRgbTolerance_{1.0 / 255.0};
     Clock::TimePoint previousFrameTime_ = Clock::now();
 };
 
