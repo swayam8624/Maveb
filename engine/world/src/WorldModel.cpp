@@ -52,6 +52,7 @@ Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
         .reusedIds = association->reusedIds,
         .createdIds = association->createdIds,
         .missingPreviousEntities = association->missingPreviousEntities,
+        .carriedForwardUnobservedEntities = association->carriedForwardUnobservedEntities,
     };
 }
 
