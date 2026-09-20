@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-stable-slot-traffic-v0",
+  "executedAt": "2026-09-20",
+  "status": "mechanical-accounting-probe",
+  "recordBytes": 256,
+  "configuration": {
+    "initialGaussians": 1000000,
+    "capacityFactor": 1.25,
+    "revisions": 200,
+    "splitFractionPerRevision": 0.001,
+    "mergeFractionPerRevision": 0.0005
+  },
+  "rows": [
+    {
+      "modifyFraction": 0.001,
+      "revisionsCompleted": 200,
+      "capacity": 1250000,
+      "finalActive": 1105147,
+      "freeSlots": 144853,
+      "maxActive": 1105147,
+      "fullReloadBytes": 53833534208,
+      "stableSlotWriteBytes": 215213056,
+      "writeRatio": 0.003997750828850802,
+      "capacityExhausted": false
+    },
+    {
+      "modifyFraction": 0.005,
+      "revisionsCompleted": 200,
+      "capacity": 1250000,
+      "finalActive": 1105147,
+      "freeSlots": 144853,
+      "maxActive": 1105147,
+      "fullReloadBytes": 53833534208,
+      "stableSlotWriteBytes": 430546944,
+      "writeRatio": 0.007997746206601796,
+      "capacityExhausted": false
+    },
+    {
+      "modifyFraction": 0.01,
+      "revisionsCompleted": 200,
+      "capacity": 1250000,
+      "finalActive": 1105147,
+      "freeSlots": 144853,
+      "maxActive": 1105147,
+      "fullReloadBytes": 53833534208,
+      "stableSlotWriteBytes": 699714560,
+      "writeRatio": 0.01299774518419075,
+      "capacityExhausted": false
+    },
+    {
+      "modifyFraction": 0.02,
+      "revisionsCompleted": 200,
+      "capacity": 1250000,
+      "finalActive": 1105147,
+      "freeSlots": 144853,
+      "maxActive": 1105147,
+      "fullReloadBytes": 53833534208,
+      "stableSlotWriteBytes": 1238049280,
+      "writeRatio": 0.022997733628568235,
+      "capacityExhausted": false
+    },
+    {
+      "modifyFraction": 0.05,
+      "revisionsCompleted": 200,
+      "capacity": 1250000,
+      "finalActive": 1105147,
+      "freeSlots": 144853,
+      "maxActive": 1105147,
+      "fullReloadBytes": 53833534208,
+      "stableSlotWriteBytes": 2853057792,
+      "writeRatio": 0.05299777980350429,
+      "capacityExhausted": false
+    }
+  ],
+  "decision": "PROMOTE TO METAL IMPLEMENTATION PROBE ONLY. The accounting shows enough theoretical byte leverage to justify implementing same-cardinality partial record updates; no performance claim exists until measured on Apple silicon.",
+  "next": [
+    "Implement a bounded updateRecords(indices, asset) path against shared Canonical Gaussians buffer without reallocating projected/sort state for same-cardinality edits.",
+    "Measure CPU conversion time, bytes written, revision latency, and next-frame GPU time versus full GaussianPipeline::load on M2 Pro.",
+    "Only after same-cardinality success consider split/merge stable-slot/free-list semantics."
+  ]
+}
