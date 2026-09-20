@@ -12,10 +12,12 @@ namespace aether::cbrc {
 
 struct CapturedWorldCostModel final {
     std::string version;
+    double observationMs{};
     double tsdfBlockMs{};
     double meshCellMs{};
     double meshPatchMs{};
     double texturePageMs{};
+    double materialStateMs{};
     double gaussianInspectionMs{};
     double gaussianUpdateMs{};
     double gpuPublicationByteMs{};
@@ -23,10 +25,16 @@ struct CapturedWorldCostModel final {
 };
 
 struct CapturedWorldRevisionInput final {
+    std::size_t observationsInspected{};
+    std::size_t fullObservations{};
+
     reconstruction::IncrementalSparseMesherWorkStatistics mesher;
 
     std::size_t dirtyTexturePages{};
     std::size_t fullTexturePages{};
+
+    std::size_t materialStatesUpdated{};
+    std::size_t fullMaterialStates{};
 
     std::size_t gaussiansInspected{};
     std::size_t gaussiansUpdated{};
@@ -55,9 +63,11 @@ struct CapturedWorldGraphBuild final {
     std::vector<revision::RevisionNodeId> hardClosure;
     std::vector<revision::RevisionQoI> qois;
 
+    revision::RevisionNodeId observation{};
     revision::RevisionNodeId tsdf{};
     revision::RevisionNodeId mesh{};
     revision::RevisionNodeId texture{};
+    revision::RevisionNodeId material{};
     revision::RevisionNodeId gaussian{};
     revision::RevisionNodeId gpuPublication{};
     revision::RevisionNodeId currentImage{};
