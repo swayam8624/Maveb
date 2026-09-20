@@ -41,6 +41,12 @@ if(Python3_Interpreter_FOUND)
             -s "${PROJECT_SOURCE_DIR}/tools/aether-proxy/tests" -v)
     set_tests_properties(AetherProxyPythonTests PROPERTIES
         ENVIRONMENT "PYTHONPATH=${PROJECT_SOURCE_DIR}/tools/aether-proxy/src")
+
+    add_test(NAME MavebResamplingLineageProbe
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/research/probes/resampling_lineage_probe.py"
+            --self-test
+            --output "${PROJECT_BINARY_DIR}/test-artifacts/resampling-lineage-v1.json")
 endif()
 
 if(TARGET AetherCapture)
