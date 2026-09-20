@@ -214,6 +214,13 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebRevisionPlannerTests)
     add_test(NAME MavebRevisionPlannerTests COMMAND MavebRevisionPlannerTests)
 
+    add_executable(MavebRevisionCertificateJsonTests
+        tests/RevisionCertificateJsonTests.cpp)
+    target_link_libraries(MavebRevisionCertificateJsonTests PRIVATE Aether::Revision)
+    aether_configure_target(MavebRevisionCertificateJsonTests)
+    add_test(NAME MavebRevisionCertificateJsonTests
+        COMMAND MavebRevisionCertificateJsonTests)
+
     add_executable(MavebCapturedWorldRevisionGraphTests
         tests/CapturedWorldRevisionGraphTests.cpp)
     target_link_libraries(MavebCapturedWorldRevisionGraphTests PRIVATE Aether::CBRC)
