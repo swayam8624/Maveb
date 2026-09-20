@@ -73,6 +73,11 @@ class CBRCSchemaContractTests(unittest.TestCase):
             },
         )
 
+    def test_replay_example_uses_frozen_v1_versions(self):
+        replay = self.load(CONFIG / "cbrc_gaussian_replay_manifest.example.json")
+        self.assertEqual(replay["graph_version"], "gaussian-output-cone-v2")
+        self.assertEqual(replay["bound_version"], "gaussian-image-temporal-v1")
+
     def test_native_certificate_schema_locks_artifact_identity(self):
         schema = self.load(SCHEMA / "cbrc_native_certificate.schema.json")
         self.assertEqual(
