@@ -1,4 +1,5 @@
-#include <aether/world_gaussian/GaussianLocalUpdate.hpp>\n#include <aether/world_gaussian/GaussianSpatialIndex.hpp>
+#include <aether/world_gaussian/GaussianLocalUpdate.hpp>
+#include <aether/world_gaussian/GaussianSpatialIndex.hpp>
 
 #include <cstdlib>
 #include <exception>
@@ -19,7 +20,8 @@ using aether::world::RegionUpdate;
 using aether::world::RepresentationKind;
 using aether::world::SelectiveUpdatePlan;
 using aether::world_gaussian::GaussianEntityOwnership;
-using aether::world_gaussian::GaussianLocalUpdatePolicy;\nusing aether::world_gaussian::GaussianSpatialIndex;
+using aether::world_gaussian::GaussianLocalUpdatePolicy;
+using aether::world_gaussian::GaussianSpatialIndex;
 
 int failures{};
 
