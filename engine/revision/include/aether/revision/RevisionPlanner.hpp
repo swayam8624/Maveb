@@ -3,6 +3,7 @@
 #include <aether/core/Error.hpp>
 
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -70,7 +71,8 @@ struct RevisionConeCertificate final {
 class RevisionGraph final {
   public:
     [[nodiscard]] static Result<RevisionGraph>
-    build(std::vector<RevisionNode> nodes, std::vector<RevisionEdge> edges);
+    build(std::vector<RevisionNode> nodes, std::vector<RevisionEdge> edges,
+          std::optional<double> fullWorkBaseline = std::nullopt);
 
     [[nodiscard]] std::size_t nodeCount() const noexcept { return nodes_.size(); }
     [[nodiscard]] const RevisionNode& node(RevisionNodeId id) const noexcept {
@@ -78,6 +80,9 @@ class RevisionGraph final {
     }
     [[nodiscard]] const std::vector<RevisionEdge>& edges() const noexcept {
         return edges_;
+    }
+    [[nodiscard]] double fullWorkBaseline() const noexcept {
+        return fullWorkBaseline_;
     }
 
     /// HARD and EMPIRICAL edges are exact for certification. This closure only
@@ -91,6 +96,7 @@ class RevisionGraph final {
     std::vector<RevisionEdge> edges_;
     std::vector<std::vector<RevisionNodeId>> exactPredecessors_;
     std::vector<std::vector<std::size_t>> analyticOutgoing_;
+    double fullWorkBaseline_{};
 };
 
 /// sourceBounds[node] is a conservative direct disturbance remaining at the
