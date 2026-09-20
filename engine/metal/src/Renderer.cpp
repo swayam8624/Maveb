@@ -285,7 +285,9 @@ void Renderer::draw(MTK::View* view) noexcept {
     }
 
     dispatch_semaphore_wait(frameSemaphore_, DISPATCH_TIME_FOREVER);
-    FrameContext& frame = *frameContexts_[frameNumber_ % frameContexts_.size()];
+    const std::size_t frameSlot =
+        static_cast<std::size_t>(frameNumber_ % frameContexts_.size());
+    FrameContext& frame = *frameContexts_[frameSlot];
     frame.beginFrame();
     MTL::CommandBuffer* commandBuffer = commandQueue_->commandBuffer();
     if (!commandBuffer) {
@@ -348,7 +350,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                 gaussianCamera.debugOptions = {gaussianDebugMode_, 0U, 0U, 0U};
                 auto encoded =
                     gaussianPipeline_->encode(commandBuffer, gaussianCamera, gaussianColor_.get(),
-                                              gaussianDepth_.get(), gaussianIds_.get());
+                                              gaussianDepth_.get(), gaussianIds_.get(), frameSlot);
                 if (encoded) {
                     presentGaussians = true;
                 } else {
