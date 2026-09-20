@@ -138,6 +138,12 @@ if(AETHER_BUILD_TESTS)
     add_test(NAME MavebGaussianPublicationPlanTests COMMAND MavebGaussianPublicationPlanTests)
 
 
+    add_executable(MavebTemporalInvalidationTests tests/TemporalInvalidationTests.cpp)
+    target_link_libraries(MavebTemporalInvalidationTests PRIVATE Aether::Scene)
+    aether_configure_target(MavebTemporalInvalidationTests)
+    add_test(NAME MavebTemporalInvalidationTests COMMAND MavebTemporalInvalidationTests)
+
+
     add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
     target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
     aether_configure_target(MavebStableTextureAtlasTests)
