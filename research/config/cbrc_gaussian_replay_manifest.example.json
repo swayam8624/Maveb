@@ -9,23 +9,52 @@
   "coupling_regime": "unknown",
   "before_ply": "/absolute/path/to/before.ply",
   "after_ply": "/absolute/path/to/after.ply",
-  "changed_indices": [0],
+  "changed_indices": [
+    0
+  ],
   "camera": {
     "width": 1280,
     "height": 720,
-    "focal_x": 900.0,
-    "focal_y": 900.0,
-    "center_x": 640.0,
-    "center_y": 360.0,
+    "focal_x": 900,
+    "focal_y": 900,
+    "center_x": 640,
+    "center_y": 360,
     "near": 0.01,
-    "far": 10000.0,
-    "background": [0.0, 0.0, 0.0]
+    "far": 10000,
+    "background": [
+      0,
+      0,
+      0
+    ],
+    "camera_world_position": [
+      0,
+      0,
+      0
+    ],
+    "world_to_camera": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ]
   },
   "epsilon_rgb_linf": 0.01,
   "hard_closure_nodes": 1,
   "candidate_cone_nodes": 1,
   "total_nodes": 1,
-  "candidate_work": 1.0,
-  "full_work": 1.0,
+  "candidate_work": 1,
+  "full_work": 1,
   "work_ledger": {}
 }
