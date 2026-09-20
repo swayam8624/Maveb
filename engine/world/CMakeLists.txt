@@ -1,5 +1,6 @@
 add_library(AetherWorld STATIC
     src/EntityAssociation.cpp
+    src/LocalityLedger.cpp
     src/PersistentWorld.cpp
     src/SelectiveUpdate.cpp
     src/SemanticSceneGraph.cpp
