@@ -52,14 +52,14 @@ class GaussianPipeline final {
     /// Output: uploaded GPU representation with fixed shared CPU/MSL ABI.
     [[nodiscard]] Result<void> load(const gaussian::GaussianAsset& asset);
 
-    /// Validates a source-order subset translation without mutating GPU-visible state.
+    /// Validates a source-order subset translation against canonical CPU state without mutating
+    /// any in-flight frame-slot source buffer.
     [[nodiscard]] Result<void>
     validateTranslation(std::span<const std::uint32_t> gaussianIndices,
                         simd_float3 translationDelta) const;
 
-    /// Applies one metric translation to a unique subset of source-order Gaussian IDs.
-    /// The shared GPU buffer is fully preflighted before mutation, so invalid IDs, duplicates, or
-    /// non-finite resulting positions leave every primitive unchanged.
+    /// Applies one metric translation to canonical CPU state and journals the changed source IDs.
+    /// Recycled frame slots publish only stale ranges before their next encode.
     [[nodiscard]] Result<void> translate(std::span<const std::uint32_t> gaussianIndices,
                                          simd_float3 translationDelta);
 
