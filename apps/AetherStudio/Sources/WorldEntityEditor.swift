@@ -127,25 +127,34 @@ private final class WorldEntityEditorModel: ObservableObject {
     let targetX = Float(x)
     let targetY = Float(y)
     let targetZ = Float(z)
-    performEdit(statusText: "Moving persistent entity…") { bridge, timestamp, error in
-      AetherWorldTranslateEntity(
-        bridge, selectedID, targetX, targetY, targetZ, timestamp, error)
-    } saveTo: archiveURL
+    performEdit(
+      statusText: "Moving persistent entity…",
+      operation: { bridge, timestamp, error in
+        AetherWorldTranslateEntity(
+          bridge, selectedID, targetX, targetY, targetZ, timestamp, error)
+      },
+      saveTo: archiveURL)
   }
 
   func relabelSelected() {
     guard let selectedID, let archiveURL, !isBusy else { return }
     let label = semanticLabel
-    performEdit(statusText: "Updating semantic identity…") { bridge, timestamp, error in
-      AetherWorldRelabelEntity(bridge, selectedID, label, timestamp, error)
-    } saveTo: archiveURL
+    performEdit(
+      statusText: "Updating semantic identity…",
+      operation: { bridge, timestamp, error in
+        AetherWorldRelabelEntity(bridge, selectedID, label, timestamp, error)
+      },
+      saveTo: archiveURL)
   }
 
   func removeSelected() {
     guard let selectedID, let archiveURL, !isBusy else { return }
-    performEdit(statusText: "Removing persistent entity…") { bridge, timestamp, error in
-      AetherWorldRemoveEntity(bridge, selectedID, timestamp, error)
-    } saveTo: archiveURL
+    performEdit(
+      statusText: "Removing persistent entity…",
+      operation: { bridge, timestamp, error in
+        AetherWorldRemoveEntity(bridge, selectedID, timestamp, error)
+      },
+      saveTo: archiveURL)
   }
 
   func refresh() {
