@@ -33,6 +33,74 @@ def load_campaign(path: Path) -> dict[str, Any]:
     return payload
 
 
+def capture_case(
+    case: dict[str, Any],
+    *,
+    revision_tool: Path,
+    case_dir: Path,
+) -> tuple[Path, Path]:
+    revision = case.get("revision")
+    if not isinstance(revision, dict):
+        return Path(case["translation"]), Path(case["certificate"])
+
+    archive = Path(revision["archive"])
+    target = revision.get("target")
+    camera = revision.get("camera", {})
+    if not isinstance(target, list) or len(target) != 3:
+        raise ValueError(f"case {case['id']} revision.target must contain 3 values")
+    if not isinstance(camera, dict):
+        raise ValueError(f"case {case['id']} revision.camera must be an object")
+
+    capture_dir = case_dir / "capture"
+    command = [
+        str(revision_tool),
+        "--archive", str(archive),
+        "--entity", str(int(revision["entity"])),
+        "--target", ",".join(str(float(v)) for v in target),
+        "--timestamp", str(int(revision["timestamp"])),
+        "--output-dir", str(capture_dir),
+        "--epsilon", str(float(case["epsilon"])),
+    ]
+    scalar_camera = {
+        "width": "--width",
+        "height": "--height",
+        "focal_x": "--focal-x",
+        "focal_y": "--focal-y",
+        "center_x": "--center-x",
+        "center_y": "--center-y",
+        "near": "--near",
+        "far": "--far",
+    }
+    for key, flag in scalar_camera.items():
+        if key in camera:
+            command.extend([flag, str(camera[key])])
+    if "camera_world_position" in camera:
+        values = camera["camera_world_position"]
+        if not isinstance(values, list) or len(values) != 3:
+            raise ValueError("camera_world_position must contain 3 values")
+        command.extend(
+            ["--camera-world-position", ",".join(str(float(v)) for v in values)]
+        )
+    if "world_to_camera" in camera:
+        values = camera["world_to_camera"]
+        if not isinstance(values, list) or len(values) != 16:
+            raise ValueError("world_to_camera must contain 16 values")
+        command.extend(
+            ["--world-to-camera", ",".join(str(float(v)) for v in values)]
+        )
+    if "history_weight" in revision:
+        command.extend(["--history-weight", str(float(revision["history_weight"]))])
+    if not bool(revision.get("history_stable", True)):
+        command.append("--history-unstable")
+
+    run(command)
+    translation = capture_dir / "translation.json"
+    certificate = capture_dir / "certificate.json"
+    if not translation.exists() or not certificate.exists():
+        raise RuntimeError(f"case {case['id']} did not produce capture evidence")
+    return translation, certificate
+
+
 def gate_rows(rows: list[dict[str, Any]], campaign: dict[str, Any]) -> dict[str, Any]:
     if not rows:
         raise ValueError("campaign produced no rows")
@@ -92,6 +160,7 @@ def main() -> int:
     parser.add_argument("--campaign", type=Path, required=True)
     parser.add_argument("--oracle", type=Path, required=True)
     parser.add_argument("--git-sha", required=True)
+    parser.add_argument("--revision-tool", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
 
@@ -105,11 +174,24 @@ def main() -> int:
     for case in campaign["cases"]:
         case_id = str(case["id"])
         case_dir = root / "cases" / case_id
+        if isinstance(case.get("revision"), dict):
+            if args.revision_tool is None:
+                raise ValueError(
+                    f"case {case_id} requests headless capture but --revision-tool is missing"
+                )
+            translation, certificate = capture_case(
+                case,
+                revision_tool=args.revision_tool,
+                case_dir=case_dir,
+            )
+        else:
+            translation, certificate = Path(case["translation"]), Path(case["certificate"])
+
         command = [
             sys.executable,
             str(bundle_script),
-            "--translation", str(Path(case["translation"])),
-            "--certificate", str(Path(case["certificate"])),
+            "--translation", str(translation),
+            "--certificate", str(certificate),
             "--oracle", str(args.oracle),
             "--scene-id", str(case["scene_id"]),
             "--git-sha", args.git_sha,
