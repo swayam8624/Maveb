@@ -6,6 +6,7 @@ import argparse
 import json
 import subprocess
 import sys
+import statistics
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -101,6 +102,54 @@ def capture_case(
     return translation, certificate
 
 
+def baseline_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for record in records:
+        for family in ("baselines", "ablations"):
+            for method, result in record[family].items():
+                grouped.setdefault((family, method), []).append(result)
+
+    summary: dict[str, Any] = {"baselines": {}, "ablations": {}}
+    for (family, method), values in sorted(grouped.items()):
+        ratios = [
+            float(value["workRatioFull"])
+            for value in values
+            if value.get("workRatioFull") is not None
+        ]
+        summary[family][method] = {
+            "cases": len(values),
+            "passRate": sum(bool(value["passes"]) for value in values) / len(values),
+            "fullRebuildRate": (
+                sum(bool(value["usedFullRebuild"]) for value in values) / len(values)
+            ),
+            "medianWorkRatioFull": (
+                statistics.median(ratios) if ratios else None
+            ),
+        }
+    return summary
+
+
+def verify_native_python_planner_parity(
+    manifest: dict[str, Any],
+    baseline_result: dict[str, Any],
+    *,
+    tolerance: float = 1e-9,
+) -> dict[str, Any]:
+    production = manifest["production_certificate"]["outputConePlanner"]
+    python_cbrc = baseline_result["baselines"]["CBRC"]
+    work_delta = abs(float(production["plannerWork"]) - float(python_cbrc["work"]))
+    pass_match = bool(production["passes"]) == bool(python_cbrc["passes"])
+    fallback_match = bool(production["fullRepair"]) == bool(
+        python_cbrc["usedFullRebuild"]
+    )
+    return {
+        "workDelta": work_delta,
+        "passMatch": pass_match,
+        "fallbackMatch": fallback_match,
+        "pass": work_delta <= tolerance and pass_match and fallback_match,
+    }
+
+
 def gate_rows(rows: list[dict[str, Any]], campaign: dict[str, Any]) -> dict[str, Any]:
     if not rows:
         raise ValueError("campaign produced no rows")
@@ -168,9 +217,17 @@ def main() -> int:
     root = args.output_dir
     root.mkdir(parents=True, exist_ok=True)
     all_rows: list[dict[str, Any]] = []
+    all_baselines: list[dict[str, Any]] = []
+    parity_results: list[dict[str, Any]] = []
     spatial_for_figure: Path | None = None
 
     bundle_script = Path(__file__).resolve().with_name("cbrc_evidence_bundle.py")
+    baseline_script = (
+        Path(__file__).resolve().parents[2]
+        / "research"
+        / "experiments"
+        / "cbrc_baseline_suite.py"
+    )
     for case in campaign["cases"]:
         case_id = str(case["id"])
         case_dir = root / "cases" / case_id
@@ -202,6 +259,41 @@ def main() -> int:
             command.extend(["--work-cost-model", str(Path(case["work_cost_model"]))])
         run(command)
 
+        manifest_payload = json.loads((case_dir / "replay-manifest.json").read_text())
+        planner_graph = manifest_payload.get("output_planner_graph")
+        if not isinstance(planner_graph, dict):
+            raise RuntimeError(
+                f"case {case_id} is missing output_planner_graph evidence"
+            )
+        planner_graph_path = case_dir / "output-planner-graph.json"
+        planner_graph_path.write_text(
+            json.dumps(planner_graph, indent=2, sort_keys=True) + "\n"
+        )
+        baseline_path = case_dir / "baselines.json"
+        run(
+            [
+                sys.executable,
+                str(baseline_script),
+                "--input",
+                str(planner_graph_path),
+                "--output",
+                str(baseline_path),
+            ]
+        )
+        baseline_result = json.loads(baseline_path.read_text())
+        baseline_result["case_id"] = case_id
+        baseline_result["scene_id"] = str(case["scene_id"])
+        baseline_result["coupling_regime"] = str(
+            case.get("coupling_regime", "unknown")
+        )
+        all_baselines.append(baseline_result)
+
+        parity = verify_native_python_planner_parity(
+            manifest_payload, baseline_result
+        )
+        parity["case_id"] = case_id
+        parity_results.append(parity)
+
         row = json.loads((case_dir / "revision-row.json").read_text())
         row["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
         row["edit_class"] = str(case.get("edit_class", row.get("edit_class", "gaussian")))
@@ -216,8 +308,23 @@ def main() -> int:
     rows_path.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_rows)
     )
+    baselines_path = root / "campaign-baselines.jsonl"
+    baselines_path.write_text(
+        "".join(json.dumps(item, sort_keys=True) + "\n" for item in all_baselines)
+    )
+    summary = baseline_summary(all_baselines)
+    (root / "baseline-summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n"
+    )
+    (root / "planner-parity.json").write_text(
+        json.dumps(parity_results, indent=2, sort_keys=True) + "\n"
+    )
 
     gates = gate_rows(all_rows, campaign)
+    gates["gates"]["nativePythonPlannerParity"] = all(
+        item["pass"] for item in parity_results
+    )
+    gates["pass"] = all(gates["gates"].values())
     gate_path = root / "campaign-gates.json"
     gate_path.write_text(json.dumps(gates, indent=2, sort_keys=True) + "\n")
 
