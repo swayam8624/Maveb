@@ -193,12 +193,29 @@ def empirical_ordered_cone(parsed: dict[str, Any]) -> Certificate:
     return certify(parsed, range(n))
 
 
+def full_rebuild_baseline(parsed: dict[str, Any]) -> Certificate:
+    complete = certify(parsed, range(len(parsed["ids"])))
+    return Certificate(
+        cone=complete.cone,
+        exterior=(),
+        stable=True,
+        reason="full reference rebuild baseline",
+        bound_by_qoi={q.name: 0.0 for q in parsed["qois"]},
+        passes=True,
+        work=_full_work(parsed),
+        full_work=_full_work(parsed),
+        used_full_rebuild=True,
+        transient_amplification=0.0,
+        susceptibility=0.0,
+    )
+
+
 def selection_methods(parsed: dict[str, Any], fraction_threshold: float = 0.1) -> dict[str, Certificate]:
     n = len(parsed["ids"])
     exact = predecessor_closure(parsed["hard"], parsed["pred"], n)
 
     result: dict[str, Certificate] = {
-        "FULL": certify(parsed, range(n)),
+        "FULL": full_rebuild_baseline(parsed),
         "EXACT": certify(parsed, exact),
     }
     for radius in range(4):
