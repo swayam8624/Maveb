@@ -70,12 +70,27 @@ def validate_vector(x: np.ndarray | Sequence[float], n: int, *, name: str) -> np
 
 
 def predecessor_closure(
-    seed: Iterable[int], exact_predecessors: Sequence[set[int]], n: int
+    seed: Iterable[int],
+    dependency_predecessors: Sequence[set[int]],
+    n: int,
+    active: np.ndarray | Sequence[bool] | None = None,
 ) -> set[int]:
-    """Return exact predecessor closure required to reproduce repaired state."""
+    """Close a repair set over predecessors whose true state may change.
 
-    if len(exact_predecessors) != n:
-        raise ValueError("exact_predecessors length must equal node count")
+    Unchanged predecessors need not be repaired because their before/after
+    values are identical. When active is omitted, all predecessors are treated
+    as potentially changed.
+    """
+
+    if len(dependency_predecessors) != n:
+        raise ValueError("dependency_predecessors length must equal node count")
+    active_mask = (
+        np.ones(n, dtype=bool)
+        if active is None
+        else np.asarray(active, dtype=bool).reshape(-1)
+    )
+    if active_mask.shape != (n,):
+        raise ValueError(f"active must have shape ({n},)")
     closure = {int(v) for v in seed}
     if any(v < 0 or v >= n for v in closure):
         raise ValueError("seed contains invalid node")
@@ -83,17 +98,22 @@ def predecessor_closure(
     stack = list(closure)
     while stack:
         v = stack.pop()
-        for u in exact_predecessors[v]:
+        for u in dependency_predecessors[v]:
             if u < 0 or u >= n:
-                raise ValueError("exact predecessor contains invalid node")
-            if u not in closure:
+                raise ValueError("dependency predecessor contains invalid node")
+            if active_mask[u] and u not in closure:
                 closure.add(u)
                 stack.append(u)
     return closure
 
 
-def is_admissible(cone: set[int], exact_predecessors: Sequence[set[int]], n: int) -> bool:
-    return predecessor_closure(cone, exact_predecessors, n) == set(cone)
+def is_admissible(
+    cone: set[int],
+    dependency_predecessors: Sequence[set[int]],
+    n: int,
+    active: np.ndarray | Sequence[bool] | None = None,
+) -> bool:
+    return predecessor_closure(cone, dependency_predecessors, n, active) == set(cone)
 
 
 def _spectral_radius(A: np.ndarray) -> float:
@@ -151,7 +171,7 @@ def certify_cone(
     source: np.ndarray | Sequence[float],
     true_change_bound: np.ndarray | Sequence[float],
     cone: Iterable[int],
-    exact_predecessors: Sequence[set[int]],
+    dependency_predecessors: Sequence[set[int]],
     work: np.ndarray | Sequence[float],
     qois: Sequence[QoI],
 ) -> Certificate:
@@ -167,12 +187,13 @@ def certify_cone(
     if any(v < 0 or v >= n for v in C):
         raise ValueError("cone contains invalid node")
 
-    if not is_admissible(C, exact_predecessors, n):
+    active = z > 0.0
+    if not is_admissible(C, dependency_predecessors, n, active):
         return Certificate(
             cone=tuple(sorted(C)),
             exterior=tuple(sorted(set(range(n)) - C)),
             stable=False,
-            reason="cone is not exact-predecessor consistent",
+            reason="cone is not active-predecessor consistent",
             bound_by_qoi={q.name: float("inf") for q in qois},
             passes=False,
             work=float(c[list(C)].sum()) if C else 0.0,
@@ -261,7 +282,7 @@ def greedy_minimum_work_cone(
     source: np.ndarray | Sequence[float],
     true_change_bound: np.ndarray | Sequence[float],
     hard_closure: Iterable[int],
-    exact_predecessors: Sequence[set[int]],
+    dependency_predecessors: Sequence[set[int]],
     work: np.ndarray | Sequence[float],
     qois: Sequence[QoI],
 ) -> Certificate:
@@ -273,7 +294,9 @@ def greedy_minimum_work_cone(
     K = validate_transfer(K_cert)
     n = K.shape[0]
     c = validate_vector(work, n, name="work")
-    C = predecessor_closure(hard_closure, exact_predecessors, n)
+    z = validate_vector(true_change_bound, n, name="true_change_bound")
+    active = z > 0.0
+    C = predecessor_closure(hard_closure, dependency_predecessors, n, active)
 
     def score(cert: Certificate) -> float:
         if not cert.stable:
@@ -289,9 +312,9 @@ def greedy_minimum_work_cone(
     current = certify_cone(
         K_cert=K,
         source=source,
-        true_change_bound=true_change_bound,
+        true_change_bound=z,
         cone=C,
-        exact_predecessors=exact_predecessors,
+        dependency_predecessors=dependency_predecessors,
         work=c,
         qois=qois,
     )
@@ -304,7 +327,9 @@ def greedy_minimum_work_cone(
         best = None
 
         for v in sorted(all_nodes - C):
-            candidate_C = predecessor_closure(C | {v}, exact_predecessors, n)
+            candidate_C = predecessor_closure(
+                C | {v}, dependency_predecessors, n, active
+            )
             extra = candidate_C - C
             extra_work = float(c[list(extra)].sum())
             if extra_work <= 0:
@@ -313,9 +338,9 @@ def greedy_minimum_work_cone(
             cert = certify_cone(
                 K_cert=K,
                 source=source,
-                true_change_bound=true_change_bound,
+                true_change_bound=z,
                 cone=candidate_C,
-                exact_predecessors=exact_predecessors,
+                dependency_predecessors=dependency_predecessors,
                 work=c,
                 qois=qois,
             )
@@ -338,9 +363,9 @@ def greedy_minimum_work_cone(
     return certify_cone(
         K_cert=K,
         source=source,
-        true_change_bound=true_change_bound,
+        true_change_bound=z,
         cone=all_nodes,
-        exact_predecessors=exact_predecessors,
+        dependency_predecessors=dependency_predecessors,
         work=c,
         qois=qois,
     )

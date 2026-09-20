@@ -4,7 +4,9 @@ from research.cbrc.edges import (
     EdgeClass,
     RevisionEdge,
     certificate_transfer,
+    dependency_predecessors,
     exact_predecessors,
+    hard_forward_closure,
 )
 
 
@@ -14,12 +16,21 @@ class CBRCEdgeRegistryTests(unittest.TestCase):
         K = certificate_transfer(2, edges)
         self.assertEqual(K[1, 0], 0.25)
         self.assertEqual(exact_predecessors(2, edges)[1], set())
+        self.assertEqual(dependency_predecessors(2, edges)[1], {0})
 
     def test_empirical_edge_is_promoted_to_exact_predecessor(self):
         edges = [RevisionEdge(0, 1, EdgeClass.EMPIRICAL, gain=0.2)]
         K = certificate_transfer(2, edges)
         self.assertEqual(K[1, 0], 0.0)
         self.assertEqual(exact_predecessors(2, edges)[1], {0})
+
+    def test_hard_forward_closure_propagates_hard_and_empirical_only(self):
+        edges = [
+            RevisionEdge(0, 1, EdgeClass.HARD),
+            RevisionEdge(1, 2, EdgeClass.EMPIRICAL, gain=0.3),
+            RevisionEdge(2, 3, EdgeClass.ANALYTIC, gain=0.2, bound_id="proof-v1"),
+        ]
+        self.assertEqual(hard_forward_closure(4, edges, {0}), {0, 1, 2})
 
     def test_hard_edge_cannot_smuggle_gain(self):
         with self.assertRaises(ValueError):

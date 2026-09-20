@@ -88,14 +88,17 @@ def trial(
 
     work = rng.uniform(0.8, 1.2, n)
     qoi = QoI("state_linf", np.eye(n), epsilon)
-    exact_predecessors = [set() for _ in range(n)]
+    dependency_predecessors = [
+        set(int(u) for u in np.flatnonzero(K[v, :] > 0.0))
+        for v in range(n)
+    ]
 
     cbrc = greedy_minimum_work_cone(
         K_cert=K,
         source=source,
         true_change_bound=z,
         hard_closure=source_nodes,
-        exact_predecessors=exact_predecessors,
+        dependency_predecessors=dependency_predecessors,
         work=work,
         qois=[qoi],
     )
@@ -108,7 +111,7 @@ def trial(
             source=source,
             true_change_bound=z,
             cone=C,
-            exact_predecessors=exact_predecessors,
+            dependency_predecessors=dependency_predecessors,
             work=work,
             qois=[qoi],
         )

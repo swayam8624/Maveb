@@ -1,7 +1,9 @@
 """Typed dependency registry for CBRC certification.
 
 EMPIRICAL dependencies are useful for ordering, but without an analytic upper
-bound they are conservatively promoted to exact predecessor closure.
+bound they are conservatively promoted to HARD propagation. Cone admissibility
+uses all declared dependencies, restricted at runtime to predecessors whose
+true-change bound is nonzero.
 """
 
 from __future__ import annotations
@@ -75,6 +77,47 @@ def exact_predecessors(
         if edge.edge_class in (EdgeClass.HARD, EdgeClass.EMPIRICAL):
             pred[edge.dst].add(edge.src)
     return pred
+
+
+def dependency_predecessors(
+    node_count: int, edges: Iterable[RevisionEdge]
+) -> list[set[int]]:
+    """Return every declared predecessor for repair-cone admissibility."""
+    edges = validate_edges(node_count, edges)
+    pred = [set() for _ in range(node_count)]
+    for edge in edges:
+        pred[edge.dst].add(edge.src)
+    return pred
+
+
+def fail_closed_successors(
+    node_count: int, edges: Iterable[RevisionEdge]
+) -> list[set[int]]:
+    """Return forward edges that must propagate exact repair."""
+    edges = validate_edges(node_count, edges)
+    succ = [set() for _ in range(node_count)]
+    for edge in edges:
+        if edge.edge_class in (EdgeClass.HARD, EdgeClass.EMPIRICAL):
+            succ[edge.src].add(edge.dst)
+    return succ
+
+
+def hard_forward_closure(
+    node_count: int, edges: Iterable[RevisionEdge], sources: Iterable[int]
+) -> set[int]:
+    """Exact forward closure of physical sources through fail-closed edges."""
+    succ = fail_closed_successors(node_count, edges)
+    closure = {int(v) for v in sources}
+    if any(v < 0 or v >= node_count for v in closure):
+        raise ValueError("source contains invalid node")
+    stack = list(closure)
+    while stack:
+        u = stack.pop()
+        for v in succ[u]:
+            if v not in closure:
+                closure.add(v)
+                stack.append(v)
+    return closure
 
 
 def empirical_priority(
