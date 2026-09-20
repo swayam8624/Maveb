@@ -108,6 +108,22 @@ class CBRCCertificateTests(unittest.TestCase):
         self.assertEqual(cert.work, 5.0)
         self.assertEqual(cert.full_work, 5.0)
 
+    def test_complete_cone_can_be_cheaper_than_full_rebuild(self):
+        cert = greedy_minimum_work_cone(
+            K_cert=np.zeros((2, 2)),
+            source=np.array([0.0, 1.0]),
+            true_change_bound=np.zeros(2),
+            hard_closure={0},
+            exact_predecessors=[set(), set()],
+            work=np.array([0.0, 25.0]),
+            qois=[QoI("out", np.array([[0.0, 1.0]]), 0.0)],
+            full_work_baseline=100.0,
+        )
+        self.assertTrue(cert.passes)
+        self.assertFalse(cert.used_full_rebuild)
+        self.assertEqual(cert.work, 25.0)
+        self.assertEqual(cert.full_work, 100.0)
+
     def test_zero_work_node_can_break_unsafe_exterior(self):
         K = np.zeros((3, 3))
         K[2, 1] = 1.0
