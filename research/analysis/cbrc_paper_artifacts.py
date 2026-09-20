@@ -27,6 +27,88 @@ def load_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def load_baseline_records(path: Path) -> list[dict[str, Any]]:
+    records = [
+        json.loads(line)
+        for line in path.read_text().splitlines()
+        if line.strip()
+    ]
+    if not records:
+        raise ValueError("baseline analysis requires at least one record")
+    return records
+
+
+def method_comparison_tables(
+    records: list[dict[str, Any]], output: Path
+) -> dict[str, Any]:
+    flat: list[dict[str, Any]] = []
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        for family in ("baselines", "ablations"):
+            for method, result in record.get(family, {}).items():
+                row = {
+                    "family": family,
+                    "method": method,
+                    "case": record.get("case_id", ""),
+                    "scene": record.get("scene_id", ""),
+                    "coupling": record.get("coupling_regime", ""),
+                    "passes": bool(result.get("passes", False)),
+                    "full_rebuild": bool(result.get("usedFullRebuild", False)),
+                    "work_ratio_full": result.get("workRatioFull"),
+                    "work": result.get("work"),
+                    "full_work": result.get("fullWork"),
+                }
+                flat.append(row)
+                grouped[(family, method)].append(row)
+
+    if flat:
+        write_csv(
+            output / "T1_method_case_results.csv",
+            list(flat[0]),
+            flat,
+        )
+
+    summary_rows: list[dict[str, Any]] = []
+    summary_json: dict[str, Any] = {"baselines": {}, "ablations": {}}
+    for (family, method), rows in sorted(grouped.items()):
+        ratios = sorted(
+            float(row["work_ratio_full"])
+            for row in rows
+            if row["work_ratio_full"] is not None
+        )
+        summary = {
+            "cases": len(rows),
+            "pass_rate": sum(row["passes"] for row in rows) / len(rows),
+            "full_rebuild_rate": (
+                sum(row["full_rebuild"] for row in rows) / len(rows)
+            ),
+            "median_work_ratio_full": (
+                statistics.median(ratios) if ratios else None
+            ),
+            "p25_work_ratio_full": percentile(ratios, 0.25) if ratios else None,
+            "p75_work_ratio_full": percentile(ratios, 0.75) if ratios else None,
+        }
+        summary_json[family][method] = summary
+        summary_rows.append(
+            {
+                "family": family,
+                "method": method,
+                **summary,
+            }
+        )
+
+    if summary_rows:
+        write_csv(
+            output / "T2_method_summary.csv",
+            list(summary_rows[0]),
+            summary_rows,
+        )
+    (output / "method-summary.json").write_text(
+        json.dumps(summary_json, indent=2, sort_keys=True) + "\n"
+    )
+    return summary_json
+
+
 def finite(value: Any, name: str) -> float:
     number = float(value)
     if not math.isfinite(number):
@@ -475,6 +557,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rows", type=Path, required=True)
     parser.add_argument("--spatial", type=Path)
+    parser.add_argument("--baselines", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     rows = load_rows(args.rows)
@@ -489,6 +572,15 @@ def main() -> int:
     f8(rows, args.output_dir)
 
     summary = summarize(rows)
+    if args.baselines:
+        method_comparison_tables(
+            load_baseline_records(args.baselines), args.output_dir
+        )
+        summary["paperFigureReadiness"]["T1"] = True
+        summary["paperFigureReadiness"]["T2"] = True
+    else:
+        summary["paperFigureReadiness"]["T1"] = False
+        summary["paperFigureReadiness"]["T2"] = False
     if args.spatial:
         f7(args.spatial, args.output_dir, rows[0])
         summary["paperFigureReadiness"]["F7"] = True
