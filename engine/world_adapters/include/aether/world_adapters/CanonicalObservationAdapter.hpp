@@ -23,6 +23,6 @@ struct CanonicalObservationConfig final {
 [[nodiscard]] Result<std::vector<world::EntityState>>
 observationsFromCanonicalAsset(const canonical::CanonicalAssetPayload& asset,
                                world::TimestampNs timestamp,
-                               CanonicalObservationConfig config = {});
+                               const CanonicalObservationConfig& config = {});
 
 } // namespace aether::world_adapters
