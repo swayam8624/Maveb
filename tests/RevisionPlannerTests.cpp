@@ -123,11 +123,24 @@ void testGreedyExpansionCanAvoidFullRebuild() {
 }
 
 void testFullFallbackWhenOnlyOutputRepairCanPass() {
-    auto graph = simpleChain();
+    auto graph = RevisionGraph::build(
+        {
+            {"gaussian-edit", 1.0, 0.5},
+            {"current-image", 2.0, 0.5},
+            {"history", 3.0, 0.0},
+        },
+        {
+            {0, 1, RevisionEdgeClass::analytic, 0.4, "gaussian-image-v1"},
+            {1, 2, RevisionEdgeClass::analytic, 0.5, "temporal-v1"},
+        });
+    expect(graph.has_value(), "full-fallback graph must build");
+    if (!graph)
+        return;
+
     const std::vector<double> source{0.0, 0.0, 0.0};
     const std::vector<RevisionNodeId> hard{0};
     const std::vector<RevisionQoI> qois{{"resolved-rgb", {{2, 1.0}}, 0.0}};
-    auto result = greedyCertifiedRevisionCone(graph, source, hard, qois);
+    auto result = greedyCertifiedRevisionCone(*graph, source, hard, qois);
     expect(result.has_value(), "zero-epsilon planner must return fallback");
     if (!result)
         return;
