@@ -259,7 +259,8 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     expect(indexed->inspectedGaussians == 10,
            "indexed selection must inspect only Gaussian primitives in the dirty cell");
     expect(indexed->inspectedGaussians * 1'000 < scanned->inspectedGaussians,
-           "indexed selection must demonstrate at least three orders of magnitude inspection reduction in sparse fixture");
+           "indexed selection must demonstrate at least three orders of magnitude inspection "
+           "reduction in sparse fixture");
 }
 
 void testSelectionLocalityLedgerUsesFullScanBaseline() {
@@ -382,8 +383,8 @@ void testOwnershipShapeAndSelectionBudgetFailClosed() {
 
     GaussianLocalUpdatePolicy budget;
     budget.maximumAffectedGaussians = 1;
-    const auto rejected =
-        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), nullptr, budget);
+    const auto rejected = aether::world_gaussian::selectGaussiansForLocalUpdate(
+        asset, oneDirtyCell(), nullptr, budget);
     expect(!rejected.has_value(), "local Gaussian selection must enforce affected-splat budget");
 }
 
