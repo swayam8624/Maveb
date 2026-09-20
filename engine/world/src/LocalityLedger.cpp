@@ -58,7 +58,7 @@ std::string_view localityDomainName(LocalityDomain domain) noexcept {
 
 Result<std::size_t> LocalityLedger::checkedIndex(LocalityDomain domain) {
     const auto index = static_cast<std::size_t>(domain);
-    if (index >= counters_.size())
+    if (index >= static_cast<std::size_t>(LocalityDomain::count))
         return fail(ErrorCode::invalidArgument, "Locality ledger domain is out of range");
     return index;
 }
