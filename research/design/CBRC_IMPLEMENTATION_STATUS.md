@@ -1,8 +1,8 @@
 # CBRC v1 implementation status
 
-Status: **implementation complete; empirical campaign pending**  
-Branch: `research/maveb-cbrc-implementation`  
-Method: Criticality-Bounded Revision Cones (CBRC)  
+Status: **implementation complete; empirical campaign pending**
+Branch: `research/maveb-cbrc-implementation`
+Method: Criticality-Bounded Revision Cones (CBRC)
 Problem: MAVEB-CLOSURE
 
 This file distinguishes completed engineering from measurements that still require real captured scenes.
