@@ -44,6 +44,51 @@ def script_path(name: str) -> Path:
     return Path(__file__).resolve().with_name(name)
 
 
+def validate_native_planner_certificate(
+    path: Path, manifest: dict
+) -> dict:
+    payload = json.loads(path.read_text())
+    if payload.get("schemaVersion") != 1:
+        raise ValueError("native planner certificate schemaVersion must be 1")
+    if payload.get("artifact") != "maveb-cbrc-native-certificate":
+        raise ValueError("native planner certificate artifact identity is invalid")
+    if payload.get("graphVersion") != manifest.get("graph_scope"):
+        raise ValueError("native planner graphVersion disagrees with replay graph_scope")
+    if payload.get("boundVersion") != manifest.get("bound_version"):
+        raise ValueError("native planner boundVersion disagrees with replay bound_version")
+
+    production = manifest["production_certificate"]["outputConePlanner"]
+    comparisons = (
+        ("passes", bool(payload.get("passes")), bool(production["passes"])),
+        (
+            "fullRebuild",
+            bool(payload.get("fullRebuild")),
+            bool(production["fullRepair"]),
+        ),
+    )
+    for name, actual, expected in comparisons:
+        if actual != expected:
+            raise ValueError(
+                f"native planner {name} disagrees with production planner telemetry"
+            )
+
+    for native_key, production_key in (
+        ("work", "plannerWork"),
+        ("fullWork", "fullWork"),
+    ):
+        native_value = float(payload[native_key])
+        production_value = float(production[production_key])
+        tolerance = max(
+            1e-9,
+            1e-9 * max(abs(native_value), abs(production_value), 1.0),
+        )
+        if abs(native_value - production_value) > tolerance:
+            raise ValueError(
+                f"native planner {native_key} disagrees with production planner telemetry"
+            )
+    return payload
+
+
 def bundle(
     *,
     translation: Path,
@@ -54,12 +99,15 @@ def bundle(
     epsilon: float,
     output_dir: Path,
     work_cost_model: Path | None = None,
+    native_planner_certificate: Path | None = None,
 ) -> dict:
     if epsilon < 0:
         raise ValueError("epsilon must be non-negative")
     for path in (translation, certificate, oracle):
         if not path.exists():
             raise FileNotFoundError(path)
+    if native_planner_certificate is not None and not native_planner_certificate.exists():
+        raise FileNotFoundError(native_planner_certificate)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "replay-manifest.json"
@@ -83,6 +131,10 @@ def bundle(
     run_checked(bind_command)
 
     manifest_payload = json.loads(manifest.read_text())
+    if native_planner_certificate is not None:
+        validate_native_planner_certificate(
+            native_planner_certificate, manifest_payload
+        )
     manifest_payload["spatial_output"] = str(spatial)
     manifest.write_text(
         json.dumps(manifest_payload, indent=2, sort_keys=True) + "\n"
@@ -127,6 +179,8 @@ def bundle(
     }
     if work_cost_model is not None:
         artifacts["workCostModel"] = work_cost_model
+    if native_planner_certificate is not None:
+        artifacts["nativePlannerCertificate"] = native_planner_certificate
 
     provenance = {
         "schemaVersion": 1,
@@ -156,6 +210,7 @@ def main() -> int:
     parser.add_argument("--git-sha", required=True)
     parser.add_argument("--epsilon", type=float, required=True)
     parser.add_argument("--work-cost-model", type=Path)
+    parser.add_argument("--native-planner-certificate", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     result = bundle(
@@ -167,6 +222,7 @@ def main() -> int:
         epsilon=args.epsilon,
         output_dir=args.output_dir,
         work_cost_model=args.work_cost_model,
+        native_planner_certificate=args.native_planner_certificate,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
