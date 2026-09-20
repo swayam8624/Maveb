@@ -9,6 +9,7 @@ MODULE_PATH = Path(__file__).parents[2] / "research" / "tools" / "aggregate_expe
 SPEC = importlib.util.spec_from_file_location("aggregate_experiments", MODULE_PATH)
 agg = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
+sys.modules[SPEC.name] = agg
 SPEC.loader.exec_module(agg)
 
 
