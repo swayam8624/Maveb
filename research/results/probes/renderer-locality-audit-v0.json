@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "experiment": "renderer-locality-audit-v0",
+  "date": "2026-09-20",
+  "baselines": {
+    "main": "1d95c8f480fb2868d821fa107215311f1deab17c",
+    "pr27": "39935e5c172d9745747b58c28ad69ab6e473f955"
+  },
+  "facts": [
+    {
+      "source": "shaders/shared/AetherShaderTypes.h",
+      "fact": "sizeof(AetherGaussianGpu)==256 and sizeof(AetherProjectedGaussian)==80"
+    },
+    {
+      "source": "engine/metal/src/GaussianPipeline.cpp::load",
+      "fact": "Every load converts every Gaussian, allocates canonical/projected/count/offset/scan buffers sized by the full asset, and memcpy()s the full canonical Gaussian array."
+    },
+    {
+      "source": "engine/metal/src/Renderer.cpp::loadPly/loadAether",
+      "fact": "Scene loading creates a new GaussianPipeline and calls load() for the whole Gaussian asset; no patch/update API is present."
+    },
+    {
+      "source": "PR #27 perf/heavy-scene-interaction",
+      "fact": "ResponsiveGaussianCount bounds live projection/sort/composite work while the full Gaussian asset remains resident; it does not add revision-level GPU patch updates."
+    },
+    {
+      "source": "GaussianPipeline::encode",
+      "fact": "The current frame path projects/scans/generates keys over gaussianCount_ before sorting/compositing. Revision-application locality and per-frame visibility/render locality are distinct problems."
+    }
+  ],
+  "oneMillionGaussianAccounting": {
+    "canonicalGaussianBytes": 256000000,
+    "projectedGaussianBytes": 80000000,
+    "tileCountBytes": 4000000,
+    "tileOffsetBytes": 4000000,
+    "note": "~344 MB before scan-block state and tile-key/value/range buffers. This is allocation footprint accounting, not measured resident GPU memory."
+  },
+  "decision": "PROMOTE REVISION-APPLICATION GPU LOCALITY AS A REQUIRED DEPENDENCY-CLOSURE LAYER. Do not conflate it with per-frame visibility/sort acceleration.",
+  "survivingMechanisms": [
+    "same-cardinality in-place canonical record updates for changed slots/ranges",
+    "stable slot/free-list or chunked region storage for split/merge/prune without whole-buffer rebuild",
+    "explicit active/tombstone semantics if capacity exceeds live primitive count",
+    "later: dirty/visible regional dispatch if profiling shows per-frame global projection is dominant"
+  ],
+  "killConditions": [
+    "If stable-slot maintenance causes unacceptable fragmentation or scan cost that outweighs reload savings, abandon stable slots.",
+    "If Metal shared-buffer patching does not reduce measured revision latency/bytes on M2 Pro, do not claim renderer update locality.",
+    "If primitive reorder requirements force global record motion under the chosen renderer, use region/chunk indirection instead of pretending slots are stable."
+  ]
+}
