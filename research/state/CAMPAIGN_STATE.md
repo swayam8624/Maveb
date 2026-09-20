@@ -1,83 +1,117 @@
 # MAVEB Discovery Campaign State
 
-Updated: **2026-09-20 20:24 IST**
+Updated: **2026-09-20 22:00 IST**
 
-## Current center of gravity
+## Problem lock
 
-The strongest surviving direction remains **S1 — dependency-certified heterogeneous minimal-work
-repair**. The campaign is now explicitly separating three things:
+The exploration phase is closed for the current paper.
 
-1. semantic locality — only the intended world region should change;
-2. computational locality — work/bytes/synchronization should scale with the affected dependency
-   closure rather than total world size;
-3. correctness equivalence — where equivalence is claimed, the incremental result must match the
-   declared full reference within an explicit exact/tolerance contract.
+**Locked problem:** MAVEB-CLOSURE — dependency-certified heterogeneous minimal-work repair for
+persistent captured worlds.
 
-No one local subsystem is a headline contribution by itself.
+**Locked method identity:** Cross-Derived-State Revision Certificate (CDSRC).
 
-## What is now real
+The paper asks whether one localized physical-world revision can trigger a conservative dependency
+closure spanning observations/evidence, TSDF, explicit mesh, Gaussian state, texture/material state,
+GPU publication and temporal history, while matching a declared full-reference result and making
+work scale with affected state instead of total world size.
 
-- Literature corpus: **47 papers**; mined implementation ledger: **17 repositories**.
-- Hypothesis database: **119 hypotheses**.
-- `research/maveb-discovery-persistent` contains production-shaped indexed Gaussian selection.
-  At head `535d1f1`, CPU build/tests, sanitizers, iPad compile and AetherStudio compile passed;
-  formatting/static-analysis issues were fixed at `f6a307b` and the rerun is queued.
-- `research/maveb-ulr-ledger` now contains a unit-safe per-domain work ledger plus Gaussian
-  inspection instrumentation. CI is pending; no result claim yet.
-- `research/maveb-observability` contains explicit absence-evidence semantics for preserving
-  unobserved entities. Full validation is pending.
-- `research/maveb-stable-atlas` is **fully CI green** and proves stable-slot UV addressing as a
-  correctness mechanism.
+See `research/state/PROBLEM_LOCK.md`.
 
-## New falsification results
+## Consolidated branch
 
-### Compact base + relocation delta
+All current-paper work is consolidated on:
 
-An executed NumPy reference probe at one million primitives preserved exact selected primitive IDs
-for cumulative 1/2/5/10/20/40% relocation. Small deltas are structurally cheap to rebuild, but
-overlay query/storage overhead grows. This promotes the mechanism to production A/B testing only;
-it is not Apple-silicon or paper evidence.
+`research/maveb-s1-locked`
 
-### Fixed global stable atlas — rejected for scale
+Historical branches remain useful as provenance and correctness oracles but are no longer the active
+execution source.
 
-The implementation is correct, but reserving one global fixed slot space collapses per-slot texture
-resolution at large capacities. Keep it as a correctness oracle, not the scalable architecture.
+The locked line now contains:
 
-### Naive stable pages — rejected
+- persistent/indexed Gaussian local selection;
+- unit-safe cross-layer LocalityLedger;
+- observability-safe persistent-world semantics;
+- stable-atlas correctness oracle;
+- persistent locality-aware texture page allocator;
+- versioned per-frame Gaussian GPU publication;
+- conservative regional temporal-history invalidation;
+- temporal representation oracle probe;
+- resampling-lineage downstream probe;
+- VG-Scene local adapter + MavebBench integration;
+- S1 evaluator, frozen 750-cell experiment matrix and SVG evidence generator;
+- literature/mining/hypothesis/negative-result campaign evidence.
 
-With 250k active slots and **1% randomly scattered changes**, whole-page rewrite fractions were
-about 47% (64 slots/page), 92% (256), and ~100% (1024/4096). A clustered 1% change stayed near 1%.
+## Corpus and filter
 
-Therefore texture locality requires **dependency/spatially coherent page assignment and/or sub-page
-writes**. Stable addresses alone do not imply local work.
+- Literature corpus: **52 papers**
+- Mined implementations: **18 repositories**
+- Hypotheses: **119**
+- Locked headline hypotheses: **5**
+- Required mechanisms: **16**
+- Evaluation/ablation hypotheses: **6**
+- Deferred follow-ups: **92**
 
-## Novelty pressure
+The headline set is H027, H029, H030, H035 and H118.
 
-2026 work such as GaME, LTGS, CubifyGS, SI-Update and Eulerian Gaussian Splatting removes broad
-claims around continual Gaussian updating, long-term chronology, reusable object assets, selective
-changed-object repair, and primitive-index persistence. S1 survives only in its sharper
-cross-representation/cross-derived-state form, and even that remains an unverified candidate claim.
+See `research/hypotheses/final_filter_2026-09-20.md`.
 
-## Immediate execution order
+## Novelty boundary
 
-1. Finish indexed-selector CI and Apple-silicon benchmark.
-2. Finish ULR ledger CI; attach exact counters layer by layer.
-3. Finish observability correctness validation.
-4. Replace naive texture paging with locality-coherent allocation/sub-page write probes.
-5. Attack GPU publication quiescence/full-buffer reload.
-6. Attack global temporal-history invalidation.
-7. Only after real regional cost tuples exist, run representation-migration oracle.
-8. Continue literature refresh and kill collisions immediately.
+The current paper does **not** claim novelty for local Gaussian optimization, hybrid TSDF+Gaussian
+mapping, persistent Gaussian/object identity, virtual texturing, sparse GPU publication, regional
+TAA invalidation, Gaussian streaming/deltas, dependency graphs, or self-adjusting scene-graph
+rendering by themselves.
+
+Those ideas are prior art or enabling mechanisms.
+
+The surviving candidate contribution is the **end-to-end captured-world closure and certificate**:
+physical evidence change → heterogeneous derived-state closure → bounded repair → native-unit work
+ledger → full-reference equivalence.
+
+This remains a candidate contribution until closest-prior-art search and experimental evidence pass
+the lock gates.
+
+## What is already real
+
+- Exact sparse TSDF→mesh incremental correctness exists.
+- Controlled Gaussian region-index probes show exact selection agreement and large inspection
+  reduction in sparse fixtures.
+- Stable fixed-capacity atlas correctness is proven, while that architecture was rejected for scale.
+- Naive page-level texture rewriting was rejected; locality-coherent allocation survived the cheap
+  probe and a production-shaped persistent allocator now exists.
+- Versioned per-frame Gaussian publication removes edit-time all-frame quiescence on the locked line.
+- Regional temporal-history invalidation uses conservative projected edit support and unions multiple
+  pending edits.
+- The S1 evaluator rejects missing headline layers, hidden sparse global work and failed
+  full-reference equivalence.
+- VG-Scene is a runnable local benchmark target, subject to external dataset/license availability.
+
+## Required next evidence
+
+1. Green CI / Studio / sanitizer validation for the consolidated locked head.
+2. Bind every required layer to one CDSRC transaction.
+3. Run Apple-silicon sparse-change measurements.
+4. Execute the frozen 750-cell controlled matrix.
+5. Run public evolving-scene experiments including VG-Scene where licensing permits.
+6. Compare full rebuild and strongest task-compatible continual/changing-scene baselines.
+7. Run mechanism ablations.
+8. Characterize the crossover where local repair should fall back to a full rebuild.
+9. Produce figures only from committed raw results.
 
 ## Research integrity
 
-A numeric overlay result was briefly created before the corresponding probe had actually executed.
-It was deleted immediately and the correction is preserved in `research/LOG.md`. The subsequently
-stored NumPy overlay result is from a real execution and is explicitly labeled with its runtime.
+No numeric result is promoted unless the corresponding committed experiment actually executed.
+Synthetic/Linux/Python results remain labelled as such and are never reported as Apple-silicon or
+production measurements.
 
-## Rule
+A previously created unexecuted Gaussian-overlay result was deleted and the correction remains
+recorded in `research/LOG.md`.
 
-Every future result must move a hard gate, kill/pivot a hypothesis, or improve evidence
-infrastructure. Correct engineering without a measured research consequence is not a claim.
+## Status
 
-`PAPER_READY = false`
+PROBLEM_LOCKED = true  
+METHOD_IDENTITY_LOCKED = true  
+HYPOTHESIS_FILTER_COMPLETE = true  
+CLAIM_PROVEN = false  
+PAPER_READY = false
