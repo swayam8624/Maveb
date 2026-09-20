@@ -22,6 +22,70 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
                 hashlib.sha256(b"abc").hexdigest(),
             )
 
+    def test_native_planner_certificate_matches_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "native.json"
+            path.write_text(
+                """{
+  "schemaVersion": 1,
+  "artifact": "maveb-cbrc-native-certificate",
+  "graphVersion": "gaussian-output-cone-v2",
+  "boundVersion": "gaussian-image-temporal-v1",
+  "costModelVersion": "temporal-pixel-work-v1",
+  "passes": true,
+  "fullRebuild": false,
+  "work": 25.0,
+  "fullWork": 100.0
+}
+"""
+            )
+            manifest = {
+                "graph_scope": "gaussian-output-cone-v2",
+                "bound_version": "gaussian-image-temporal-v1",
+                "production_certificate": {
+                    "outputConePlanner": {
+                        "passes": True,
+                        "fullRepair": False,
+                        "plannerWork": 25.0,
+                        "fullWork": 100.0,
+                    }
+                },
+            }
+            payload = mod.validate_native_planner_certificate(path, manifest)
+            self.assertEqual(payload["work"], 25.0)
+
+    def test_native_planner_certificate_version_mismatch_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "native.json"
+            path.write_text(
+                """{
+  "schemaVersion": 1,
+  "artifact": "maveb-cbrc-native-certificate",
+  "graphVersion": "stale-graph",
+  "boundVersion": "gaussian-image-temporal-v1",
+  "costModelVersion": "temporal-pixel-work-v1",
+  "passes": true,
+  "fullRebuild": false,
+  "work": 25.0,
+  "fullWork": 100.0
+}
+"""
+            )
+            manifest = {
+                "graph_scope": "gaussian-output-cone-v2",
+                "bound_version": "gaussian-image-temporal-v1",
+                "production_certificate": {
+                    "outputConePlanner": {
+                        "passes": True,
+                        "fullRepair": False,
+                        "plannerWork": 25.0,
+                        "fullWork": 100.0,
+                    }
+                },
+            }
+            with self.assertRaisesRegex(ValueError, "graphVersion"):
+                mod.validate_native_planner_certificate(path, manifest)
+
     def test_negative_epsilon_fails_before_execution(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
