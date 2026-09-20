@@ -31,10 +31,7 @@ validateQoIs(std::span<const RevisionQoI> qois, std::size_t nodeCount) {
 }
 
 [[nodiscard]] double totalWork(const RevisionGraph& graph) noexcept {
-    double total{};
-    for (std::size_t index = 0; index < graph.nodeCount(); ++index)
-        total += graph.node(static_cast<RevisionNodeId>(index)).workCost;
-    return total;
+    return graph.fullWorkBaseline();
 }
 
 [[nodiscard]] double violationScore(const RevisionConeCertificate& certificate) {
@@ -52,7 +49,8 @@ validateQoIs(std::span<const RevisionQoI> qois, std::size_t nodeCount) {
 
 Result<RevisionGraph>
 RevisionGraph::build(std::vector<RevisionNode> nodes,
-                     std::vector<RevisionEdge> edges) {
+                     std::vector<RevisionEdge> edges,
+                     std::optional<double> fullWorkBaseline) {
     if (nodes.empty())
         return fail(ErrorCode::invalidArgument,
                     "Revision graph requires at least one node");
@@ -70,6 +68,19 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
                         node.name);
         }
     }
+
+    double summedLocalWork{};
+    for (const RevisionNode& node : nodes) {
+        summedLocalWork += node.workCost;
+        if (!std::isfinite(summedLocalWork))
+            return fail(ErrorCode::resourceExhausted,
+                        "Revision graph local-work sum overflow");
+    }
+    const double fullBaseline =
+        fullWorkBaseline.has_value() ? *fullWorkBaseline : summedLocalWork;
+    if (!finiteNonNegative(fullBaseline))
+        return fail(ErrorCode::invalidArgument,
+                    "Revision graph full-work baseline must be finite and non-negative");
 
     RevisionGraph result;
     result.exactPredecessors_.resize(nodes.size());
@@ -109,6 +120,7 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
 
     result.nodes_ = std::move(nodes);
     result.edges_ = std::move(edges);
+    result.fullWorkBaseline_ = fullBaseline;
     return result;
 }
 
@@ -206,6 +218,7 @@ certifyRevisionCone(const RevisionGraph& graph,
         certificate.passes = true;
         certificate.fullRebuild = true;
         certificate.reason = "full rebuild";
+        certificate.work = certificate.fullWork;
         for (const RevisionQoI& qoi : qois)
             certificate.qois.push_back({qoi.name, 0.0, qoi.epsilon});
         return certificate;
