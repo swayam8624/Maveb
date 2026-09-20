@@ -62,6 +62,29 @@ class CBRCReplayTests(unittest.TestCase):
             row["candidateDiagnostics"]["candidateRgbBound"], 0.08
         )
 
+    def test_auto_diff_manifest_uses_detect_flag(self):
+        m = manifest()
+        m.update(
+            {
+                "before_ply": "before.ply",
+                "after_ply": "after.ply",
+                "epsilon_rgb_linf": 0.1,
+                "detect_changed": True,
+                "camera": {
+                    "width": 64,
+                    "height": 64,
+                    "focal_x": 70,
+                    "focal_y": 70,
+                    "center_x": 32,
+                    "center_y": 32,
+                },
+            }
+        )
+        m.pop("changed_indices", None)
+        command = mod.build_oracle_command(Path("oracle"), m)
+        self.assertIn("--detect-changed", command)
+        self.assertNotIn("--changed", command)
+
     def test_frozen_work_model_converts_native_ledger(self):
         m = manifest()
         m.pop("candidate_work")
