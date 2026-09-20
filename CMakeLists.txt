@@ -221,6 +221,19 @@ if(AETHER_BUILD_TESTS)
     add_test(NAME MavebCapturedWorldRevisionGraphTests
         COMMAND MavebCapturedWorldRevisionGraphTests)
 
+    if(TARGET maveb-cbrc-revision)
+        add_executable(MavebHeadlessCBRCRevisionToolTests
+            tests/HeadlessCBRCRevisionToolTests.cpp)
+        target_link_libraries(MavebHeadlessCBRCRevisionToolTests
+            PRIVATE Aether::Gaussian Aether::World Aether::WorldGaussian)
+        aether_configure_target(MavebHeadlessCBRCRevisionToolTests)
+        add_test(
+            NAME MavebHeadlessCBRCRevisionToolTests
+            COMMAND MavebHeadlessCBRCRevisionToolTests
+                $<TARGET_FILE:maveb-cbrc-revision>
+        )
+    endif()
+
     add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
     target_link_libraries(MavebGaussianOwnershipCodecTests PRIVATE Aether::WorldGaussian)
     aether_configure_target(MavebGaussianOwnershipCodecTests)
