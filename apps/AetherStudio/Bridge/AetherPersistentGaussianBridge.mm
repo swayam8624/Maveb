@@ -30,6 +30,7 @@ using aether::world::EntityState;
 using aether::world::PersistentWorldModel;
 using aether::world::RepresentationKind;
 using aether::world_gaussian::GaussianEntityOwnership;
+using aether::world_gaussian::GaussianOverlaySpatialIndex;
 
 constexpr std::uintmax_t maximumPersistentGaussianBytes = 8ULL * 1024ULL * 1024ULL * 1024ULL;
 constexpr std::size_t maximumPersistentGaussians = 100'000'000;
@@ -223,6 +224,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
     std::unique_ptr<PersistentWorldModel> _world;
     std::unique_ptr<GaussianAsset> _gaussians;
     std::unique_ptr<GaussianEntityOwnership> _ownership;
+    std::unique_ptr<GaussianOverlaySpatialIndex> _gaussianOverlayIndex;
     std::filesystem::path _archivePath;
     NSString* _rendererStatus;
 }
@@ -273,6 +275,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
     const auto* latest = loadedWorld->latest();
     std::unique_ptr<GaussianAsset> restoredGaussians;
     std::unique_ptr<GaussianEntityOwnership> restoredOwnership;
+    std::unique_ptr<GaussianOverlaySpatialIndex> restoredOverlayIndex;
     if (latest) {
         const auto gaussianPath = gaussianSidecar(archivePath, latest->revision);
         const auto ownerPath = ownershipSidecar(archivePath, latest->revision);
@@ -314,6 +317,12 @@ NSDictionary* entityPayload(const EntityState& entity) {
                          "Persistent Gaussian sidecars disagree on primitive count");
                 return NO;
             }
+            auto overlay = GaussianOverlaySpatialIndex::build(
+                *decoded, aether::world::SelectiveUpdatePolicy{}.cellSizeMeters);
+            if (overlay) {
+                restoredOverlayIndex =
+                    std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay));
+            }
             if (auto rendered = _renderer->loadGaussianAsset(*decoded); !rendered) {
                 setError(error, rendered.error());
                 return NO;
@@ -331,6 +340,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
     _world = std::make_unique<PersistentWorldModel>(std::move(*loadedWorld));
     _gaussians = std::move(restoredGaussians);
     _ownership = std::move(restoredOwnership);
+    _gaussianOverlayIndex = std::move(restoredOverlayIndex);
     _archivePath = archivePath;
     return YES;
 }
@@ -351,6 +361,8 @@ NSDictionary* entityPayload(const EntityState& entity) {
         setError(error, ownership.error());
         return NO;
     }
+    auto overlay = GaussianOverlaySpatialIndex::build(
+        *loaded, aether::world::SelectiveUpdatePolicy{}.cellSizeMeters);
     if (auto rendered = _renderer->loadGaussianAsset(*loaded); !rendered) {
         setError(error, rendered.error());
         return NO;
@@ -358,6 +370,9 @@ NSDictionary* entityPayload(const EntityState& entity) {
 
     _gaussians = std::make_unique<GaussianAsset>(std::move(*loaded));
     _ownership = std::make_unique<GaussianEntityOwnership>(std::move(*ownership));
+    _gaussianOverlayIndex =
+        overlay ? std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay))
+                : nullptr;
     auto persisted = persistState(_archivePath, *_world, *_gaussians, *_ownership);
     if (!persisted) {
         setError(error, persisted.error());
