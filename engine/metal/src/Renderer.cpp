@@ -187,8 +187,8 @@ std::uint32_t tileEntryBudget(std::size_t gaussianCount) {
 }
 } // namespace
 
-Result<std::unique_ptr<Renderer>> Renderer::create(
-    MTL::Device* device, const std::filesystem::path& shaderLibraryPath) {
+Result<std::unique_ptr<Renderer>> Renderer::create(MTL::Device* device,
+                                                   const std::filesystem::path& shaderLibraryPath) {
     if (!device) {
         return fail(ErrorCode::metal, "No Metal device is available on this Mac");
     }
