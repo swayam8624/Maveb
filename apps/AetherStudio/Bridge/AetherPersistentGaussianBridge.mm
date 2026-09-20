@@ -38,8 +38,9 @@ constexpr std::size_t maximumEntitiesForStudio = 10'000;
 
 NSString* text(const std::string& value) {
     return [[NSString alloc] initWithBytes:value.data()
-                                   length:value.size()
-                                 encoding:NSUTF8StringEncoding] ?: @"";
+                                    length:value.size()
+                                  encoding:NSUTF8StringEncoding]
+               ?: @"";
 }
 
 void setError(NSError** output, const aether::Error& source) {
@@ -78,10 +79,9 @@ const EntityState* findEntity(const PersistentWorldModel& world, std::uint64_t e
     const auto* latest = world.latest();
     if (!latest)
         return nullptr;
-    const auto match = std::find_if(latest->entities.begin(), latest->entities.end(),
-                                    [entityId](const EntityState& entity) {
-                                        return entity.id.value == entityId;
-                                    });
+    const auto match =
+        std::find_if(latest->entities.begin(), latest->entities.end(),
+                     [entityId](const EntityState& entity) { return entity.id.value == entityId; });
     return match == latest->entities.end() ? nullptr : &*match;
 }
 
@@ -96,7 +96,7 @@ std::filesystem::path ownershipSidecar(const std::filesystem::path& worldArchive
 }
 
 aether::Result<std::vector<std::byte>> readBinaryFile(const std::filesystem::path& path,
-                                                       std::uintmax_t maximumBytes) {
+                                                      std::uintmax_t maximumBytes) {
     std::error_code filesystemError;
     const auto size = std::filesystem::file_size(path, filesystemError);
     if (filesystemError)
@@ -139,7 +139,7 @@ aether::Result<void> atomicWrite(const std::filesystem::path& path,
 }
 
 aether::Result<GaussianEntityOwnership> assignOwnership(const GaussianAsset& asset,
-                                                         const PersistentWorldModel& world) {
+                                                        const PersistentWorldModel& world) {
     const auto* latest = world.latest();
     if (!latest)
         return aether::fail(aether::ErrorCode::notFound,
@@ -174,9 +174,10 @@ aether::Result<void> persistState(const std::filesystem::path& archivePath,
     if (!ownershipBytes)
         return std::unexpected(ownershipBytes.error());
 
-    // Revision-addressed immutable sidecars are published first. The world archive is saved last and
-    // therefore acts as the commit marker. A crash before the final save can leave harmless orphan
-    // sidecars, while an archive-visible revision always has both complete representation files.
+    // Revision-addressed immutable sidecars are published first. The world archive is saved last
+    // and therefore acts as the commit marker. A crash before the final save can leave harmless
+    // orphan sidecars, while an archive-visible revision always has both complete representation
+    // files.
     if (auto saved = atomicWrite(gaussianSidecar(archivePath, latest->revision), *gaussianBytes);
         !saved)
         return saved;
@@ -296,8 +297,8 @@ NSDictionary* entityPayload(const EntityState& entity) {
                 setError(error, gaussianBytes.error());
                 return NO;
             }
-            auto decoded = aether::gaussian::GaussianCodec::decode(*gaussianBytes,
-                                                                   maximumPersistentGaussians);
+            auto decoded =
+                aether::gaussian::GaussianCodec::decode(*gaussianBytes, maximumPersistentGaussians);
             if (!decoded) {
                 setError(error, decoded.error());
                 return NO;
@@ -373,8 +374,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
     _ownership = std::make_unique<GaussianEntityOwnership>(std::move(*ownership));
     _gaussianOverlayIndex.reset();
     if (overlay) {
-        _gaussianOverlayIndex =
-            std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay));
+        _gaussianOverlayIndex = std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay));
     }
     auto persisted = persistState(_archivePath, *_world, *_gaussians, *_ownership);
     if (!persisted) {
@@ -416,7 +416,8 @@ NSDictionary* entityPayload(const EntityState& entity) {
         @"truncated" : @(latest.entities.size() > count),
         @"totalEntities" : @(latest.entities.size()),
         @"gaussianStateLoaded" : @(_gaussians != nullptr && _ownership != nullptr),
-    }, error);
+    },
+                    error);
 }
 
 - (NSData*)ownershipJSONWithError:(NSError**)error {
@@ -441,11 +442,12 @@ NSDictionary* entityPayload(const EntityState& entity) {
         @"overlayDeltaEntries" : @(overlayStatistics.deltaEntries),
         @"overlayMovedPrimitives" : @(overlayStatistics.movedPrimitives),
         @"overlayCompactionRecommended" : @(overlayStatistics.compactionRecommended),
-        @"coverage" : @(_ownership->owners.empty()
-                            ? 0.0
-                            : static_cast<double>(assigned) /
-                                  static_cast<double>(_ownership->owners.size())),
-    }, error);
+        @"coverage" :
+            @(_ownership->owners.empty()
+                  ? 0.0
+                  : static_cast<double>(assigned) / static_cast<double>(_ownership->owners.size())),
+    },
+                    error);
 }
 
 - (NSData*)revisionCertificateJSONWithError:(NSError**)error {
@@ -482,34 +484,23 @@ NSDictionary* entityPayload(const EntityState& entity) {
                 @(certificate.camera.cameraWorldPosition[2])
             ],
             @"worldToCamera" : @[
-                @(certificate.camera.worldToCamera[0]),
-                @(certificate.camera.worldToCamera[1]),
-                @(certificate.camera.worldToCamera[2]),
-                @(certificate.camera.worldToCamera[3]),
-                @(certificate.camera.worldToCamera[4]),
-                @(certificate.camera.worldToCamera[5]),
-                @(certificate.camera.worldToCamera[6]),
-                @(certificate.camera.worldToCamera[7]),
-                @(certificate.camera.worldToCamera[8]),
-                @(certificate.camera.worldToCamera[9]),
-                @(certificate.camera.worldToCamera[10]),
-                @(certificate.camera.worldToCamera[11]),
-                @(certificate.camera.worldToCamera[12]),
-                @(certificate.camera.worldToCamera[13]),
-                @(certificate.camera.worldToCamera[14]),
-                @(certificate.camera.worldToCamera[15])
+                @(certificate.camera.worldToCamera[0]), @(certificate.camera.worldToCamera[1]),
+                @(certificate.camera.worldToCamera[2]), @(certificate.camera.worldToCamera[3]),
+                @(certificate.camera.worldToCamera[4]), @(certificate.camera.worldToCamera[5]),
+                @(certificate.camera.worldToCamera[6]), @(certificate.camera.worldToCamera[7]),
+                @(certificate.camera.worldToCamera[8]), @(certificate.camera.worldToCamera[9]),
+                @(certificate.camera.worldToCamera[10]), @(certificate.camera.worldToCamera[11]),
+                @(certificate.camera.worldToCamera[12]), @(certificate.camera.worldToCamera[13]),
+                @(certificate.camera.worldToCamera[14]), @(certificate.camera.worldToCamera[15])
             ],
         },
-        @"invalidationCoversCertifiedSupport" :
-            @(certificate.invalidationCoversCertifiedSupport),
-        @"temporalFullFrameFallback" :
-            @(certificate.temporalFullFrameFallback),
+        @"invalidationCoversCertifiedSupport" : @(certificate.invalidationCoversCertifiedSupport),
+        @"temporalFullFrameFallback" : @(certificate.temporalFullFrameFallback),
         @"outputConePlanner" : @{
             @"available" : @(outputPlan.available),
             @"stable" : @(outputPlan.stable),
             @"passes" : @(outputPlan.passes),
-            @"temporalRepairSelected" :
-                @(outputPlan.temporalRepairSelected),
+            @"temporalRepairSelected" : @(outputPlan.temporalRepairSelected),
             @"fullRepair" : @(outputPlan.fullRebuild),
             @"resolvedRgbBound" : @(outputPlan.resolvedRgbBound),
             @"epsilon" : @(outputPlan.epsilon),
@@ -523,8 +514,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
             @"fullBufferBytes" : @(publication.sourceBuffer.fullBufferBytes),
             @"byteRatio" : @(publication.sourceBuffer.byteRatio()),
             @"frameSlotsQuiesced" : @(publication.frameSlotsQuiesced),
-            @"globalTemporalHistoryInvalidated" :
-                @(publication.globalTemporalHistoryInvalidated),
+            @"globalTemporalHistoryInvalidated" : @(publication.globalTemporalHistoryInvalidated),
         },
         @"temporal" : @{
             @"fullFrame" : @(temporal.fullFrame),
@@ -537,13 +527,13 @@ NSDictionary* entityPayload(const EntityState& entity) {
                 @(temporal.normalizedRect.z), @(temporal.normalizedRect.w)
             ],
         },
-    }, error);
+    },
+                    error);
 }
 
 - (BOOL)setRevisionRgbTolerance:(double)epsilon error:(NSError**)error {
     if (!_renderer) {
-        setError(error, aether::ErrorCode::notFound,
-                 "Persistent renderer is unavailable");
+        setError(error, aether::ErrorCode::notFound, "Persistent renderer is unavailable");
         return NO;
     }
     auto updated = _renderer->setGaussianRevisionRgbTolerance(epsilon);
@@ -603,14 +593,13 @@ NSDictionary* entityPayload(const EntityState& entity) {
         setError(error, preflight.error());
         return nil;
     }
-    auto edited =
-        _gaussianOverlayIndex
-            ? aether::world_gaussian::translatePersistentGaussianEntityIndexed(
-                  *_world, *_gaussians, *_ownership, *_gaussianOverlayIndex,
-                  EntityId{entityId}, target, timestampNanoseconds)
-            : aether::world_gaussian::translatePersistentGaussianEntity(
-                  *_world, *_gaussians, *_ownership, EntityId{entityId},
-                  target, timestampNanoseconds);
+    auto edited = _gaussianOverlayIndex
+                      ? aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+                            *_world, *_gaussians, *_ownership, *_gaussianOverlayIndex,
+                            EntityId{entityId}, target, timestampNanoseconds)
+                      : aether::world_gaussian::translatePersistentGaussianEntity(
+                            *_world, *_gaussians, *_ownership, EntityId{entityId}, target,
+                            timestampNanoseconds);
     if (!edited) {
         setError(error, edited.error());
         return nil;
@@ -650,8 +639,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
         @"overlayIndexCompacted" : @(edited->overlayIndexCompacted),
         @"overlayDirtyRegionsQueried" : @(edited->overlayDiagnostics.dirtyRegionsQueried),
         @"overlayBaseEntriesVisited" : @(edited->overlayDiagnostics.baseEntriesVisited),
-        @"overlayStaleBaseEntriesSkipped" :
-            @(edited->overlayDiagnostics.staleBaseEntriesSkipped),
+        @"overlayStaleBaseEntriesSkipped" : @(edited->overlayDiagnostics.staleBaseEntriesSkipped),
         @"overlayDeltaEntriesVisited" : @(edited->overlayDiagnostics.deltaEntriesVisited),
         @"reoptimizationGaussians" : @(edited->reoptimizationSelection.gaussianIndices.size()),
         @"protectedStableGaussians" :

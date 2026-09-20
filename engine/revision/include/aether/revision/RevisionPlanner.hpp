@@ -74,7 +74,9 @@ class RevisionGraph final {
     build(std::vector<RevisionNode> nodes, std::vector<RevisionEdge> edges,
           std::optional<double> fullWorkBaseline = std::nullopt);
 
-    [[nodiscard]] std::size_t nodeCount() const noexcept { return nodes_.size(); }
+    [[nodiscard]] std::size_t nodeCount() const noexcept {
+        return nodes_.size();
+    }
     [[nodiscard]] const RevisionNode& node(RevisionNodeId id) const noexcept {
         return nodes_[id];
     }
@@ -103,10 +105,8 @@ class RevisionGraph final {
 /// node if it lies outside the repaired cone. The caller normally sets direct
 /// changed HARD nodes in the hard closure so their exterior source is absent.
 [[nodiscard]] Result<RevisionConeCertificate>
-certifyRevisionCone(const RevisionGraph& graph,
-                    std::span<const double> sourceBounds,
-                    std::span<const RevisionNodeId> cone,
-                    std::span<const RevisionQoI> qois);
+certifyRevisionCone(const RevisionGraph& graph, std::span<const double> sourceBounds,
+                    std::span<const RevisionNodeId> cone, std::span<const RevisionQoI> qois);
 
 /// Greedy certified feasible-cone search. This is not a proof of combinatorial
 /// global optimality. It expands the exact-predecessor-consistent hard seed
@@ -115,8 +115,7 @@ certifyRevisionCone(const RevisionGraph& graph,
 /// Cyclic ANALYTIC exterior response is deliberately unsupported in v1; such a
 /// candidate is unstable and the search must expand/break the cycle or rebuild.
 [[nodiscard]] Result<RevisionConeCertificate>
-greedyCertifiedRevisionCone(const RevisionGraph& graph,
-                            std::span<const double> sourceBounds,
+greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> sourceBounds,
                             std::span<const RevisionNodeId> hardClosure,
                             std::span<const RevisionQoI> qois);
 

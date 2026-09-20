@@ -42,8 +42,8 @@ struct DirtyRegionInfo final {
     return static_cast<std::int32_t>(scaled);
 }
 
-[[nodiscard]] Result<world::RegionKey>
-regionKey(const gaussian::Gaussian& gaussian, float cellSizeMeters) {
+[[nodiscard]] Result<world::RegionKey> regionKey(const gaussian::Gaussian& gaussian,
+                                                 float cellSizeMeters) {
     auto x = cellCoordinate(gaussian.position[0], cellSizeMeters);
     auto y = cellCoordinate(gaussian.position[1], cellSizeMeters);
     auto z = cellCoordinate(gaussian.position[2], cellSizeMeters);
@@ -111,22 +111,19 @@ void applyOwnedTranslation(gaussian::GaussianAsset& asset,
     }
 }
 
-[[nodiscard]] const world::EntityState*
-findEntity(const world::WorldSnapshot& snapshot, world::EntityId entity) noexcept {
-    const auto match = std::find_if(snapshot.entities.begin(), snapshot.entities.end(),
-                                    [entity](const world::EntityState& state) {
-                                        return state.id == entity;
-                                    });
+[[nodiscard]] const world::EntityState* findEntity(const world::WorldSnapshot& snapshot,
+                                                   world::EntityId entity) noexcept {
+    const auto match =
+        std::find_if(snapshot.entities.begin(), snapshot.entities.end(),
+                     [entity](const world::EntityState& state) { return state.id == entity; });
     return match == snapshot.entities.end() ? nullptr : &*match;
 }
 
 } // namespace
 
-Result<GaussianLocalUpdateSelection>
-selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
-                              const world::SelectiveUpdatePlan& worldUpdate,
-                              const GaussianEntityOwnership* ownership,
-                              GaussianLocalUpdatePolicy policy) {
+Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdate(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianEntityOwnership* ownership, GaussianLocalUpdatePolicy policy) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
         return fail(ErrorCode::invalidArgument,
                     "World update cell size must be finite and positive");
@@ -190,13 +187,10 @@ selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
     return result;
 }
 
-
-Result<GaussianLocalUpdateSelection>
-selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
-                                     const world::SelectiveUpdatePlan& worldUpdate,
-                                     const GaussianSpatialIndex& spatialIndex,
-                                     const GaussianEntityOwnership* ownership,
-                                     GaussianLocalUpdatePolicy policy) {
+Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdateIndexed(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianSpatialIndex& spatialIndex, const GaussianEntityOwnership* ownership,
+    GaussianLocalUpdatePolicy policy) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
         return fail(ErrorCode::invalidArgument,
                     "World update cell size must be finite and positive");
@@ -266,15 +260,13 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
     return result;
 }
 
-Result<GaussianLocalUpdateSelection>
-selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
-                                     const world::SelectiveUpdatePlan& worldUpdate,
-                                     const GaussianOverlaySpatialIndex& spatialIndex,
-                                     const GaussianEntityOwnership* ownership,
-                                     GaussianLocalUpdatePolicy policy,
-                                     GaussianOverlaySelectionDiagnostics* diagnostics) {
+Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdateIndexed(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianOverlaySpatialIndex& spatialIndex, const GaussianEntityOwnership* ownership,
+    GaussianLocalUpdatePolicy policy, GaussianOverlaySelectionDiagnostics* diagnostics) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
-        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+        return fail(ErrorCode::invalidArgument,
+                    "World update cell size must be finite and positive");
     if (policy.maximumAffectedGaussians == 0)
         return fail(ErrorCode::invalidArgument, "Gaussian local-update budget cannot be zero");
     if (ownership && ownership->owners.size() != asset.gaussians.size()) {
@@ -286,8 +278,9 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
                     "Gaussian overlay spatial index primitive count does not match current asset");
     }
     if (spatialIndex.cellSizeMeters() != worldUpdate.cellSizeMeters) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian overlay spatial index cell size does not match selective-update plan");
+        return fail(
+            ErrorCode::invalidArgument,
+            "Gaussian overlay spatial index cell size does not match selective-update plan");
     }
 
     std::unordered_map<world::RegionKey, DirtyRegionInfo, RegionKeyHash> dirty;
@@ -356,9 +349,9 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
     return result;
 }
 
-Result<void> recordGaussianSelectionLocality(
-    const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
-    world::LocalityLedger& ledger) {
+Result<void> recordGaussianSelectionLocality(const gaussian::GaussianAsset& asset,
+                                             const GaussianLocalUpdateSelection& selection,
+                                             world::LocalityLedger& ledger) {
     if (selection.inspectedGaussians > asset.gaussians.size()) {
         return fail(ErrorCode::corruptData,
                     "Gaussian locality instrumentation exceeds full-scene primitive count");
@@ -368,10 +361,10 @@ Result<void> recordGaussianSelectionLocality(
                       static_cast<std::uint64_t>(asset.gaussians.size()));
 }
 
-Result<std::size_t>
-translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwnership& ownership,
-                        world::EntityId entity, simd_float3 translationDelta,
-                        std::size_t maximumAffectedGaussians) {
+Result<std::size_t> translateOwnedGaussians(gaussian::GaussianAsset& asset,
+                                            const GaussianEntityOwnership& ownership,
+                                            world::EntityId entity, simd_float3 translationDelta,
+                                            std::size_t maximumAffectedGaussians) {
     auto affected = preflightOwnedTranslation(asset, ownership, entity, translationDelta,
                                               maximumAffectedGaussians);
     if (!affected)
@@ -380,13 +373,11 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
     return affected->size();
 }
 
-Result<PersistentGaussianTranslationResult>
-translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
-                                  gaussian::GaussianAsset& asset,
-                                  const GaussianEntityOwnership& ownership,
-                                  world::EntityId entity, simd_float3 targetWorldTranslation,
-                                  world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy,
-                                  GaussianLocalUpdatePolicy gaussianPolicy) {
+Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
+    world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
+    const GaussianEntityOwnership& ownership, world::EntityId entity,
+    simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
+    world::WorldEditPolicy worldPolicy, GaussianLocalUpdatePolicy gaussianPolicy) {
     const world::WorldSnapshot* latest = worldModel.latest();
     if (!latest)
         return fail(ErrorCode::notFound, "Persistent Gaussian edit requires an existing world");
@@ -412,8 +403,8 @@ translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
     if (!affected)
         return std::unexpected(affected.error());
 
-    auto selection = selectGaussiansForLocalUpdate(
-        asset, preparedWorld->selectiveUpdate, &ownership, gaussianPolicy);
+    auto selection = selectGaussiansForLocalUpdate(asset, preparedWorld->selectiveUpdate,
+                                                   &ownership, gaussianPolicy);
     if (!selection)
         return std::unexpected(selection.error());
 
@@ -429,21 +420,18 @@ translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
     };
 }
 
-Result<PersistentGaussianTranslationResult>
-translatePersistentGaussianEntityIndexed(
+Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntityIndexed(
     world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
     const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
-    world::EntityId entity, simd_float3 targetWorldTranslation,
-    world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy,
-    GaussianLocalUpdatePolicy gaussianPolicy) {
+    world::EntityId entity, simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
+    world::WorldEditPolicy worldPolicy, GaussianLocalUpdatePolicy gaussianPolicy) {
     const world::WorldSnapshot* latest = worldModel.latest();
     if (!latest)
         return fail(ErrorCode::notFound,
                     "Indexed persistent Gaussian edit requires an existing world");
     const world::EntityState* state = findEntity(*latest, entity);
     if (!state)
-        return fail(ErrorCode::notFound,
-                    "Indexed persistent Gaussian entity was not found",
+        return fail(ErrorCode::notFound, "Indexed persistent Gaussian entity was not found",
                     std::to_string(entity.value));
     if (!finiteDelta(targetWorldTranslation))
         return fail(ErrorCode::invalidArgument,
@@ -452,34 +440,30 @@ translatePersistentGaussianEntityIndexed(
         return fail(ErrorCode::invalidArgument,
                     "Gaussian overlay index primitive count does not match current asset");
     }
-    if (spatialIndex.cellSizeMeters() !=
-        worldPolicy.selectiveUpdate.cellSizeMeters) {
+    if (spatialIndex.cellSizeMeters() != worldPolicy.selectiveUpdate.cellSizeMeters) {
         return fail(ErrorCode::invalidArgument,
                     "Gaussian overlay index cell size does not match World edit policy");
     }
 
-    const simd_float3 translationDelta =
-        targetWorldTranslation - state->transform.translation;
+    const simd_float3 translationDelta = targetWorldTranslation - state->transform.translation;
     world::EntityPatch patch;
     patch.id = entity;
     patch.transform = state->transform;
     patch.transform->translation = targetWorldTranslation;
 
-    auto preparedWorld =
-        world::prepareWorldEdit(*latest, timestamp, {patch}, worldPolicy);
+    auto preparedWorld = world::prepareWorldEdit(*latest, timestamp, {patch}, worldPolicy);
     if (!preparedWorld)
         return std::unexpected(preparedWorld.error());
 
-    auto affected = preflightOwnedTranslation(
-        asset, ownership, entity, translationDelta,
-        gaussianPolicy.maximumAffectedGaussians);
+    auto affected = preflightOwnedTranslation(asset, ownership, entity, translationDelta,
+                                              gaussianPolicy.maximumAffectedGaussians);
     if (!affected)
         return std::unexpected(affected.error());
 
     GaussianOverlaySelectionDiagnostics diagnostics;
-    auto selection = selectGaussiansForLocalUpdateIndexed(
-        asset, preparedWorld->selectiveUpdate, spatialIndex, &ownership,
-        gaussianPolicy, &diagnostics);
+    auto selection =
+        selectGaussiansForLocalUpdateIndexed(asset, preparedWorld->selectiveUpdate, spatialIndex,
+                                             &ownership, gaussianPolicy, &diagnostics);
     if (!selection)
         return std::unexpected(selection.error());
 

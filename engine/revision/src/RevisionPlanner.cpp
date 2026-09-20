@@ -14,16 +14,14 @@ namespace {
     return std::isfinite(value) && value >= 0.0;
 }
 
-[[nodiscard]] Result<void>
-validateQoIs(std::span<const RevisionQoI> qois, std::size_t nodeCount) {
+[[nodiscard]] Result<void> validateQoIs(std::span<const RevisionQoI> qois, std::size_t nodeCount) {
     for (const RevisionQoI& qoi : qois) {
         if (qoi.name.empty() || !finiteNonNegative(qoi.epsilon))
             return fail(ErrorCode::invalidArgument,
                         "Revision QoI requires a name and finite non-negative epsilon");
         for (const RevisionQoITerm& term : qoi.terms) {
             if (term.node >= nodeCount || !finiteNonNegative(term.weight)) {
-                return fail(ErrorCode::invalidArgument,
-                            "Revision QoI term is invalid", qoi.name);
+                return fail(ErrorCode::invalidArgument, "Revision QoI term is invalid", qoi.name);
             }
         }
     }
@@ -47,22 +45,17 @@ validateQoIs(std::span<const RevisionQoI> qois, std::size_t nodeCount) {
 
 } // namespace
 
-Result<RevisionGraph>
-RevisionGraph::build(std::vector<RevisionNode> nodes,
-                     std::vector<RevisionEdge> edges,
-                     std::optional<double> fullWorkBaseline) {
+Result<RevisionGraph> RevisionGraph::build(std::vector<RevisionNode> nodes,
+                                           std::vector<RevisionEdge> edges,
+                                           std::optional<double> fullWorkBaseline) {
     if (nodes.empty())
-        return fail(ErrorCode::invalidArgument,
-                    "Revision graph requires at least one node");
-    if (nodes.size() >
-        static_cast<std::size_t>(std::numeric_limits<RevisionNodeId>::max())) {
-        return fail(ErrorCode::resourceExhausted,
-                    "Revision graph exceeds uint32 node space");
+        return fail(ErrorCode::invalidArgument, "Revision graph requires at least one node");
+    if (nodes.size() > static_cast<std::size_t>(std::numeric_limits<RevisionNodeId>::max())) {
+        return fail(ErrorCode::resourceExhausted, "Revision graph exceeds uint32 node space");
     }
 
     for (const RevisionNode& node : nodes) {
-        if (!finiteNonNegative(node.workCost) ||
-            !finiteNonNegative(node.changeBound)) {
+        if (!finiteNonNegative(node.workCost) || !finiteNonNegative(node.changeBound)) {
             return fail(ErrorCode::invalidArgument,
                         "Revision node work/change bounds must be finite and non-negative",
                         node.name);
@@ -73,11 +66,9 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
     for (const RevisionNode& node : nodes) {
         summedLocalWork += node.workCost;
         if (!std::isfinite(summedLocalWork))
-            return fail(ErrorCode::resourceExhausted,
-                        "Revision graph local-work sum overflow");
+            return fail(ErrorCode::resourceExhausted, "Revision graph local-work sum overflow");
     }
-    const double fullBaseline =
-        fullWorkBaseline.has_value() ? *fullWorkBaseline : summedLocalWork;
+    const double fullBaseline = fullWorkBaseline.has_value() ? *fullWorkBaseline : summedLocalWork;
     if (!finiteNonNegative(fullBaseline))
         return fail(ErrorCode::invalidArgument,
                     "Revision graph full-work baseline must be finite and non-negative");
@@ -89,8 +80,7 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
     for (std::size_t index = 0; index < edges.size(); ++index) {
         const RevisionEdge& edge = edges[index];
         if (edge.source >= nodes.size() || edge.target >= nodes.size())
-            return fail(ErrorCode::invalidArgument,
-                        "Revision edge endpoint is out of range");
+            return fail(ErrorCode::invalidArgument, "Revision edge endpoint is out of range");
         if (!finiteNonNegative(edge.gain))
             return fail(ErrorCode::invalidArgument,
                         "Revision edge gain must be finite and non-negative");
@@ -113,9 +103,8 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
 
     for (auto& predecessors : result.exactPredecessors_) {
         std::sort(predecessors.begin(), predecessors.end());
-        predecessors.erase(
-            std::unique(predecessors.begin(), predecessors.end()),
-            predecessors.end());
+        predecessors.erase(std::unique(predecessors.begin(), predecessors.end()),
+                           predecessors.end());
     }
 
     result.nodes_ = std::move(nodes);
@@ -125,16 +114,14 @@ RevisionGraph::build(std::vector<RevisionNode> nodes,
 }
 
 Result<std::vector<RevisionNodeId>>
-RevisionGraph::closeExactPredecessors(
-    std::span<const RevisionNodeId> seed) const {
+RevisionGraph::closeExactPredecessors(std::span<const RevisionNodeId> seed) const {
     std::vector<bool> selected(nodes_.size(), false);
     std::vector<RevisionNodeId> stack;
     stack.reserve(seed.size());
 
     for (const RevisionNodeId id : seed) {
         if (id >= nodes_.size())
-            return fail(ErrorCode::invalidArgument,
-                        "Revision cone seed node is out of range");
+            return fail(ErrorCode::invalidArgument, "Revision cone seed node is out of range");
         if (!selected[id]) {
             selected[id] = true;
             stack.push_back(id);
@@ -160,11 +147,10 @@ RevisionGraph::closeExactPredecessors(
     return closure;
 }
 
-Result<RevisionConeCertificate>
-certifyRevisionCone(const RevisionGraph& graph,
-                    std::span<const double> sourceBounds,
-                    std::span<const RevisionNodeId> cone,
-                    std::span<const RevisionQoI> qois) {
+Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
+                                                    std::span<const double> sourceBounds,
+                                                    std::span<const RevisionNodeId> cone,
+                                                    std::span<const RevisionQoI> qois) {
     const std::size_t n = graph.nodeCount();
     if (sourceBounds.size() != n)
         return fail(ErrorCode::invalidArgument,
@@ -183,8 +169,7 @@ certifyRevisionCone(const RevisionGraph& graph,
 
     std::vector<RevisionNodeId> sortedCone(cone.begin(), cone.end());
     std::sort(sortedCone.begin(), sortedCone.end());
-    sortedCone.erase(
-        std::unique(sortedCone.begin(), sortedCone.end()), sortedCone.end());
+    sortedCone.erase(std::unique(sortedCone.begin(), sortedCone.end()), sortedCone.end());
     if (*closed != sortedCone) {
         RevisionConeCertificate rejected;
         rejected.cone = std::move(sortedCone);
@@ -234,14 +219,12 @@ certifyRevisionCone(const RevisionGraph& graph,
         if (edge.edgeClass != RevisionEdgeClass::analytic)
             continue;
         if (inside[edge.source] && !inside[edge.target]) {
-            residual[edge.target] +=
-                edge.gain * graph.node(edge.source).changeBound;
+            residual[edge.target] += edge.gain * graph.node(edge.source).changeBound;
         } else if (!inside[edge.source] && !inside[edge.target]) {
             ++indegree[edge.target];
         }
         if (!std::isfinite(residual[edge.target]))
-            return fail(ErrorCode::resourceExhausted,
-                        "Revision residual bound overflow");
+            return fail(ErrorCode::resourceExhausted, "Revision residual bound overflow");
     }
 
     std::deque<RevisionNodeId> ready;
@@ -257,8 +240,8 @@ certifyRevisionCone(const RevisionGraph& graph,
         ++visited;
 
         for (const RevisionEdge& edge : graph.edges()) {
-            if (edge.edgeClass != RevisionEdgeClass::analytic ||
-                edge.source != source || inside[edge.target])
+            if (edge.edgeClass != RevisionEdgeClass::analytic || edge.source != source ||
+                inside[edge.target])
                 continue;
             residual[edge.target] += edge.gain * residual[source];
             if (!std::isfinite(residual[edge.target]))
@@ -272,8 +255,7 @@ certifyRevisionCone(const RevisionGraph& graph,
     if (visited != certificate.exterior.size()) {
         certificate.stable = false;
         certificate.passes = false;
-        certificate.reason =
-            "analytic exterior contains a cycle; v1 fails closed";
+        certificate.reason = "analytic exterior contains a cycle; v1 fails closed";
         for (const RevisionQoI& qoi : qois)
             certificate.qois.push_back(
                 {qoi.name, std::numeric_limits<double>::infinity(), qoi.epsilon});
@@ -288,8 +270,7 @@ certifyRevisionCone(const RevisionGraph& graph,
         for (const RevisionQoITerm& term : qoi.terms)
             bound += term.weight * residual[term.node];
         if (!std::isfinite(bound))
-            return fail(ErrorCode::resourceExhausted,
-                        "Revision QoI bound overflow", qoi.name);
+            return fail(ErrorCode::resourceExhausted, "Revision QoI bound overflow", qoi.name);
         certificate.qois.push_back({qoi.name, bound, qoi.epsilon});
         certificate.passes = certificate.passes && bound <= qoi.epsilon;
     }
@@ -297,8 +278,7 @@ certifyRevisionCone(const RevisionGraph& graph,
 }
 
 Result<RevisionConeCertificate>
-greedyCertifiedRevisionCone(const RevisionGraph& graph,
-                            std::span<const double> sourceBounds,
+greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> sourceBounds,
                             std::span<const RevisionNodeId> hardClosure,
                             std::span<const RevisionQoI> qois) {
     auto initial = graph.closeExactPredecessors(hardClosure);
@@ -306,8 +286,7 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph,
         return std::unexpected(initial.error());
     std::vector<RevisionNodeId> cone = std::move(*initial);
 
-    auto current =
-        certifyRevisionCone(graph, sourceBounds, cone, qois);
+    auto current = certifyRevisionCone(graph, sourceBounds, cone, qois);
     if (!current)
         return std::unexpected(current.error());
     if (current->passes && current->work < current->fullWork)
@@ -344,8 +323,7 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph,
                     extraWork += graph.node(id).workCost;
             }
 
-            auto tested =
-                certifyRevisionCone(graph, sourceBounds, *closed, qois);
+            auto tested = certifyRevisionCone(graph, sourceBounds, *closed, qois);
             if (!tested)
                 return std::unexpected(tested.error());
 
@@ -356,9 +334,7 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph,
             } else if (std::isfinite(baseScore) && std::isfinite(nextScore)) {
                 const double improvement = baseScore - nextScore;
                 utility = extraWork == 0.0
-                              ? (improvement > 0.0
-                                     ? std::numeric_limits<double>::infinity()
-                                     : 0.0)
+                              ? (improvement > 0.0 ? std::numeric_limits<double>::infinity() : 0.0)
                               : improvement / extraWork;
             }
 
@@ -366,8 +342,7 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph,
             const bool better =
                 !found || (passes && !bestPass) ||
                 (passes == bestPass &&
-                 (utility > bestUtility ||
-                  (utility == bestUtility && tested->work < bestWork)));
+                 (utility > bestUtility || (utility == bestUtility && tested->work < bestWork)));
             if (better) {
                 found = true;
                 bestPass = passes;

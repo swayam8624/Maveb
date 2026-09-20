@@ -30,18 +30,14 @@ struct TemporalRevisionCertificate final {
 /// across the revision. If not, this function requires HARD invalidation and
 /// reports the post-invalidation bound as currentErrorBound.
 [[nodiscard]] Result<TemporalRevisionCertificate>
-certifyTemporalRevision(double currentErrorBound,
-                        double historyErrorBound,
-                        double currentNeighborhoodExtremaErrorBound,
-                        double historyWeight,
+certifyTemporalRevision(double currentErrorBound, double historyErrorBound,
+                        double currentNeighborhoodExtremaErrorBound, double historyWeight,
                         bool validationDecisionStable);
 
 /// Repeated stable-history propagation with no further current-frame
 /// disturbance. After frames steps, an initial history error e0 is bounded by
 /// w^frames e0.
-[[nodiscard]] Result<double>
-temporalHistoryDecayBound(double initialHistoryErrorBound,
-                          double historyWeight,
-                          unsigned frames);
+[[nodiscard]] Result<double> temporalHistoryDecayBound(double initialHistoryErrorBound,
+                                                       double historyWeight, unsigned frames);
 
 } // namespace aether::scene

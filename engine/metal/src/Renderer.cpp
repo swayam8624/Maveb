@@ -287,8 +287,7 @@ void Renderer::draw(MTK::View* view) noexcept {
     }
 
     dispatch_semaphore_wait(frameSemaphore_, DISPATCH_TIME_FOREVER);
-    const std::size_t frameSlot =
-        static_cast<std::size_t>(frameNumber_ % frameContexts_.size());
+    const std::size_t frameSlot = static_cast<std::size_t>(frameNumber_ % frameContexts_.size());
     FrameContext& frame = *frameContexts_[frameSlot];
     frame.beginFrame();
     MTL::CommandBuffer* commandBuffer = commandQueue_->commandBuffer();
@@ -377,18 +376,13 @@ void Renderer::draw(MTK::View* view) noexcept {
                         }
                     }
 
-                    auto certificate =
-                        world_gaussian::certifyGaussianImageRevision(
-                            pendingRevision->beforeChanged,
-                            pendingRevision->afterChanged,
-                            referenceCamera,
-                            pendingRevision->sceneColorUpperBound);
+                    auto certificate = world_gaussian::certifyGaussianImageRevision(
+                        pendingRevision->beforeChanged, pendingRevision->afterChanged,
+                        referenceCamera, pendingRevision->sceneColorUpperBound);
                     if (certificate) {
-                        const auto affected = static_cast<std::uint64_t>(
-                            std::count_if(
-                                certificate->rgbLInfBounds.begin(),
-                                certificate->rgbLInfBounds.end(),
-                                [](double bound) { return bound > 0.0; }));
+                        const auto affected = static_cast<std::uint64_t>(std::count_if(
+                            certificate->rgbLInfBounds.begin(), certificate->rgbLInfBounds.end(),
+                            [](double bound) { return bound > 0.0; }));
                         lastGaussianRevisionCertificateStatistics_ = {
                             .available = true,
                             .invalidationCoversCertifiedSupport = false,
@@ -396,12 +390,9 @@ void Renderer::draw(MTK::View* view) noexcept {
                             .revisionVersion = pendingRevision->version,
                             .changedGaussians = pendingRevision->sourceIndices.size(),
                             .affectedPixels = affected,
-                            .fullFramePixels =
-                                static_cast<std::uint64_t>(width) * height,
-                            .maximumCurrentRgbBound =
-                                certificate->maximumRgbLInfBound,
-                            .sceneColorUpperBound =
-                                pendingRevision->sceneColorUpperBound,
+                            .fullFramePixels = static_cast<std::uint64_t>(width) * height,
+                            .maximumCurrentRgbBound = certificate->maximumRgbLInfBound,
+                            .sceneColorUpperBound = pendingRevision->sceneColorUpperBound,
                             .camera = referenceCamera,
                         };
                         frameGaussianRevisionCertificate = std::move(*certificate);
@@ -414,15 +405,12 @@ void Renderer::draw(MTK::View* view) noexcept {
                             .revisionVersion = pendingRevision->version,
                             .changedGaussians = pendingRevision->sourceIndices.size(),
                             .affectedPixels = 0,
-                            .fullFramePixels =
-                                static_cast<std::uint64_t>(width) * height,
+                            .fullFramePixels = static_cast<std::uint64_t>(width) * height,
                             .maximumCurrentRgbBound = 0.0,
-                            .sceneColorUpperBound =
-                                pendingRevision->sceneColorUpperBound,
+                            .sceneColorUpperBound = pendingRevision->sceneColorUpperBound,
                             .camera = referenceCamera,
                         };
-                        Log::instance().write(
-                            LogLevel::error, certificate.error().describe());
+                        Log::instance().write(LogLevel::error, certificate.error().describe());
                     }
                 } else if (pendingRevision.error().code != ErrorCode::notFound) {
                     forceTemporalFullHistoryInvalidation = true;
@@ -433,14 +421,12 @@ void Renderer::draw(MTK::View* view) noexcept {
                         .revisionVersion = 0,
                         .changedGaussians = 0,
                         .affectedPixels = 0,
-                        .fullFramePixels =
-                            static_cast<std::uint64_t>(width) * height,
+                        .fullFramePixels = static_cast<std::uint64_t>(width) * height,
                         .maximumCurrentRgbBound = 0.0,
                         .sceneColorUpperBound = 0.0,
                         .camera = {},
                     };
-                    Log::instance().write(
-                        LogLevel::error, pendingRevision.error().describe());
+                    Log::instance().write(LogLevel::error, pendingRevision.error().describe());
                 }
 
                 auto encoded =
@@ -1031,8 +1017,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                 maximumMatrixDelta = std::max(
                     maximumMatrixDelta, std::abs(currentViewProjection.columns[column][row] -
                                                  previousViewProjection_.columns[column][row]));
-        const bool baseHistoryUsable =
-            temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
+        const bool baseHistoryUsable = temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
         bool historyUsable = baseHistoryUsable;
         bool regionalInvalidation = false;
         bool haveTemporalInvalidationPlan = false;
@@ -1071,30 +1056,22 @@ void Renderer::draw(MTK::View* view) noexcept {
                 if (lastTemporalInvalidationPlan_.fullFrame) {
                     supportCovered = true;
                 } else if (lastTemporalInvalidationPlan_.empty) {
-                    supportCovered =
-                        lastGaussianRevisionCertificateStatistics_.affectedPixels == 0;
+                    supportCovered = lastGaussianRevisionCertificateStatistics_.affectedPixels == 0;
                 } else {
                     supportCovered = true;
-                    const simd_float4 rect =
-                        lastTemporalInvalidationPlan_.normalizedRect;
-                    const std::size_t width =
-                        frameGaussianRevisionCertificate->width;
-                    const std::size_t height =
-                        frameGaussianRevisionCertificate->height;
+                    const simd_float4 rect = lastTemporalInvalidationPlan_.normalizedRect;
+                    const std::size_t width = frameGaussianRevisionCertificate->width;
+                    const std::size_t height = frameGaussianRevisionCertificate->height;
                     for (std::size_t y = 0; y < height && supportCovered; ++y) {
                         for (std::size_t x = 0; x < width; ++x) {
                             const std::size_t pixel = y * width + x;
-                            if (frameGaussianRevisionCertificate
-                                    ->rgbLInfBounds[pixel] <= 0.0)
+                            if (frameGaussianRevisionCertificate->rgbLInfBounds[pixel] <= 0.0)
                                 continue;
                             const float u =
-                                (static_cast<float>(x) + 0.5F) /
-                                static_cast<float>(width);
+                                (static_cast<float>(x) + 0.5F) / static_cast<float>(width);
                             const float v =
-                                (static_cast<float>(y) + 0.5F) /
-                                static_cast<float>(height);
-                            if (u < rect.x || u > rect.z ||
-                                v < rect.y || v > rect.w) {
+                                (static_cast<float>(y) + 0.5F) / static_cast<float>(height);
+                            if (u < rect.x || u > rect.z || v < rect.y || v > rect.w) {
                                 supportCovered = false;
                                 break;
                             }
@@ -1103,22 +1080,18 @@ void Renderer::draw(MTK::View* view) noexcept {
                 }
             }
 
-            lastGaussianRevisionCertificateStatistics_
-                .invalidationCoversCertifiedSupport = supportCovered;
+            lastGaussianRevisionCertificateStatistics_.invalidationCoversCertifiedSupport =
+                supportCovered;
 
             const bool temporalValidationStable =
-                baseHistoryUsable && supportCovered &&
-                !forceTemporalFullHistoryInvalidation;
-            const double staleHistoryBound =
-                frameGaussianRevisionCertificate->maximumRgbLInfBound;
+                baseHistoryUsable && supportCovered && !forceTemporalFullHistoryInvalidation;
+            const double staleHistoryBound = frameGaussianRevisionCertificate->maximumRgbLInfBound;
             const double historyWeight = temporalValidationStable ? 0.9 : 1.0;
             const double candidateHistoryWork =
                 temporalValidationStable && haveTemporalInvalidationPlan
-                    ? static_cast<double>(
-                          lastTemporalInvalidationPlan_.invalidatedPixels)
-                    : static_cast<double>(
-                          static_cast<std::uint64_t>(sceneTargetWidth_) *
-                          sceneTargetHeight_);
+                    ? static_cast<double>(lastTemporalInvalidationPlan_.invalidatedPixels)
+                    : static_cast<double>(static_cast<std::uint64_t>(sceneTargetWidth_) *
+                                          sceneTargetHeight_);
 
             auto outputGraph = revision::RevisionGraph::build(
                 {
@@ -1128,33 +1101,28 @@ void Renderer::draw(MTK::View* view) noexcept {
                 {});
             bool temporalRepairSelected = true;
             if (outputGraph) {
-                std::vector<double> sourceBounds{
-                    0.0, staleHistoryBound};
+                std::vector<double> sourceBounds{0.0, staleHistoryBound};
                 std::vector<revision::RevisionNodeId> hardClosure{0};
                 if (!temporalValidationStable)
                     hardClosure.push_back(1);
                 const std::vector<revision::RevisionQoI> qois{
-                    {"resolved-rgb-linf",
-                     {{1, historyWeight}},
-                     gaussianRevisionRgbTolerance_},
+                    {"resolved-rgb-linf", {{1, historyWeight}}, gaussianRevisionRgbTolerance_},
                 };
-                auto planned = revision::greedyCertifiedRevisionCone(
-                    *outputGraph, sourceBounds, hardClosure, qois);
+                auto planned = revision::greedyCertifiedRevisionCone(*outputGraph, sourceBounds,
+                                                                     hardClosure, qois);
                 if (planned) {
                     temporalRepairSelected =
                         std::find(planned->cone.begin(), planned->cone.end(),
-                                  revision::RevisionNodeId{1}) !=
-                        planned->cone.end();
+                                  revision::RevisionNodeId{1}) != planned->cone.end();
                     lastGaussianOutputConePlannerStatistics_ = {
                         .available = true,
                         .stable = planned->stable,
                         .passes = planned->passes,
                         .temporalRepairSelected = temporalRepairSelected,
                         .fullRebuild = planned->fullRebuild,
-                        .resolvedRgbBound =
-                            planned->qois.empty()
-                                ? std::numeric_limits<double>::infinity()
-                                : planned->qois.front().bound,
+                        .resolvedRgbBound = planned->qois.empty()
+                                                ? std::numeric_limits<double>::infinity()
+                                                : planned->qois.front().bound,
                         .epsilon = gaussianRevisionRgbTolerance_,
                         .plannerWork = planned->work,
                         .fullWork = planned->fullWork,
@@ -1167,14 +1135,12 @@ void Renderer::draw(MTK::View* view) noexcept {
                         .passes = false,
                         .temporalRepairSelected = true,
                         .fullRebuild = true,
-                        .resolvedRgbBound =
-                            std::numeric_limits<double>::infinity(),
+                        .resolvedRgbBound = std::numeric_limits<double>::infinity(),
                         .epsilon = gaussianRevisionRgbTolerance_,
                         .plannerWork = candidateHistoryWork,
                         .fullWork = candidateHistoryWork,
                     };
-                    Log::instance().write(
-                        LogLevel::error, planned.error().describe());
+                    Log::instance().write(LogLevel::error, planned.error().describe());
                 }
             } else {
                 forceTemporalFullHistoryInvalidation = true;
@@ -1184,18 +1150,15 @@ void Renderer::draw(MTK::View* view) noexcept {
                     .passes = false,
                     .temporalRepairSelected = true,
                     .fullRebuild = true,
-                    .resolvedRgbBound =
-                        std::numeric_limits<double>::infinity(),
+                    .resolvedRgbBound = std::numeric_limits<double>::infinity(),
                     .epsilon = gaussianRevisionRgbTolerance_,
                     .plannerWork = candidateHistoryWork,
                     .fullWork = candidateHistoryWork,
                 };
-                Log::instance().write(
-                    LogLevel::error, outputGraph.error().describe());
+                Log::instance().write(LogLevel::error, outputGraph.error().describe());
             }
 
-            if (!temporalRepairSelected &&
-                temporalValidationStable &&
+            if (!temporalRepairSelected && temporalValidationStable &&
                 !forceTemporalFullHistoryInvalidation) {
                 // CBRC certifies that retaining stale history remains within the
                 // declared output tolerance. Current frame rendering is exact,
@@ -1204,8 +1167,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                 regionalInvalidation = false;
                 invalidationRect = {};
                 const std::uint64_t fullPixels =
-                    static_cast<std::uint64_t>(sceneTargetWidth_) *
-                    sceneTargetHeight_;
+                    static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_;
                 lastTemporalInvalidationPlan_ = {
                     .fullFrame = false,
                     .empty = true,
@@ -1213,15 +1175,13 @@ void Renderer::draw(MTK::View* view) noexcept {
                     .invalidatedPixels = 0,
                     .fullFramePixels = fullPixels,
                 };
-                lastGaussianRevisionCertificateStatistics_
-                    .temporalFullFrameFallback = false;
+                lastGaussianRevisionCertificateStatistics_.temporalFullFrameFallback = false;
             } else if (!supportCovered || forceTemporalFullHistoryInvalidation ||
                        !baseHistoryUsable) {
                 historyUsable = false;
                 regionalInvalidation = false;
                 const std::uint64_t fullPixels =
-                    static_cast<std::uint64_t>(sceneTargetWidth_) *
-                    sceneTargetHeight_;
+                    static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_;
                 lastTemporalInvalidationPlan_ = {
                     .fullFrame = true,
                     .empty = false,
@@ -1229,30 +1189,24 @@ void Renderer::draw(MTK::View* view) noexcept {
                     .invalidatedPixels = fullPixels,
                     .fullFramePixels = fullPixels,
                 };
-                lastGaussianRevisionCertificateStatistics_
-                    .temporalFullFrameFallback = true;
+                lastGaussianRevisionCertificateStatistics_.temporalFullFrameFallback = true;
             } else if (lastTemporalInvalidationPlan_.fullFrame) {
                 historyUsable = false;
                 regionalInvalidation = false;
-                lastGaussianRevisionCertificateStatistics_
-                    .temporalFullFrameFallback = true;
+                lastGaussianRevisionCertificateStatistics_.temporalFullFrameFallback = true;
             } else {
                 // Planner selected temporal repair and the existing regional
                 // plan covers every pixel in certified Gaussian support.
                 historyUsable = true;
-                regionalInvalidation =
-                    !lastTemporalInvalidationPlan_.empty;
-                invalidationRect =
-                    lastTemporalInvalidationPlan_.normalizedRect;
-                lastGaussianRevisionCertificateStatistics_
-                    .temporalFullFrameFallback = false;
+                regionalInvalidation = !lastTemporalInvalidationPlan_.empty;
+                invalidationRect = lastTemporalInvalidationPlan_.normalizedRect;
+                lastGaussianRevisionCertificateStatistics_.temporalFullFrameFallback = false;
             }
         } else if (forceTemporalFullHistoryInvalidation) {
             historyUsable = false;
             regionalInvalidation = false;
             const std::uint64_t fullPixels =
-                static_cast<std::uint64_t>(sceneTargetWidth_) *
-                sceneTargetHeight_;
+                static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_;
             lastTemporalInvalidationPlan_ = {
                 .fullFrame = true,
                 .empty = false,

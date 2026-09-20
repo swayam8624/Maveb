@@ -44,8 +44,7 @@ EntityState observation(std::string name, std::string semantic, float x) {
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::gaussian;
     result.geometrySignature = 10;
     result.appearanceSignature = 20;
@@ -73,8 +72,8 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}};
 
-    const auto selected = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto selected =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     expect(selected.has_value(), "owned Gaussian selection must accept valid world update plan");
     if (!selected)
         return;
@@ -104,15 +103,11 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
            "without ownership, every Gaussian in a dirty metric cell must be selected spatially");
 }
 
-
 void testIndexedSelectionMatchesFullScanAndTracksInspections() {
     GaussianAsset asset;
     asset.gaussians = {
-        gaussian(0.2F, 0.2F, 0.2F),
-        gaussian(0.4F, 0.2F, 0.2F),
-        gaussian(0.6F, 0.2F, 0.2F),
-        gaussian(2.0F, 0.0F, 0.0F),
-        gaussian(5.0F, 5.0F, 5.0F),
+        gaussian(0.2F, 0.2F, 0.2F), gaussian(0.4F, 0.2F, 0.2F), gaussian(0.6F, 0.2F, 0.2F),
+        gaussian(2.0F, 0.0F, 0.0F), gaussian(5.0F, 5.0F, 5.0F),
     };
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}, EntityId{2}};
@@ -122,8 +117,8 @@ void testIndexedSelectionMatchesFullScanAndTracksInspections() {
     if (!index)
         return;
 
-    const auto scanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto scanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
         asset, oneDirtyCell(), *index, &ownership);
     expect(scanned.has_value() && indexed.has_value(),
@@ -148,23 +143,21 @@ void testIndexedSelectionMatchesFullScanAndTracksInspections() {
                stats.storedIndexEntries == asset.gaussians.size(),
            "Gaussian spatial index must contain exactly one entry per primitive");
 
-    const simd_float3 oldPosition{asset.gaussians[4].position[0],
-                                  asset.gaussians[4].position[1],
+    const simd_float3 oldPosition{asset.gaussians[4].position[0], asset.gaussians[4].position[1],
                                   asset.gaussians[4].position[2]};
     const simd_float3 newPosition{0.8F, 0.2F, 0.2F};
     expect(index->relocateGaussian(4, oldPosition, newPosition).has_value(),
            "Gaussian spatial index must update cell-crossing membership");
     asset.gaussians[4].position = {newPosition.x, newPosition.y, newPosition.z};
 
-    const auto rescanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto rescanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     const auto reindexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
         asset, oneDirtyCell(), *index, &ownership);
     expect(rescanned.has_value() && reindexed.has_value() &&
                rescanned->gaussianIndices == reindexed->gaussianIndices,
            "relocated index must remain selection-equivalent to full scan");
 }
-
 
 void testIndexedSelectionScalesWithDirtyPopulation() {
     GaussianAsset asset;
@@ -219,7 +212,6 @@ void testIndexedSelectionScalesWithDirtyPopulation() {
            "large indexed selection must return the exact dirty entity population");
 }
 
-
 void testIndexedSelectionScalesWithDirtyOccupancy() {
     constexpr std::size_t gaussianCount = 20'000;
     GaussianAsset asset;
@@ -230,8 +222,7 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     for (std::size_t index = 0; index < gaussianCount; ++index) {
         const std::size_t cell = index / 10;
         const std::size_t local = index % 10;
-        const float x = static_cast<float>(cell) + 0.05F +
-                        0.08F * static_cast<float>(local);
+        const float x = static_cast<float>(cell) + 0.05F + 0.08F * static_cast<float>(local);
         asset.gaussians.push_back(gaussian(x, 0.1F, 0.1F));
     }
 
@@ -247,8 +238,7 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     if (!spatialIndex)
         return;
 
-    const auto scanned =
-        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan);
+    const auto scanned = aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan);
     const auto indexed =
         aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan, *spatialIndex);
     expect(scanned.has_value() && indexed.has_value(),
@@ -380,10 +370,8 @@ void testPersistentWorldAndGaussianTranslationCommitTogether() {
 void testIndexedPersistentTranslationEliminatesGlobalSelectionScan() {
     PersistentWorldModel model;
     const auto initial = model.ingest(
-        100, {observation("Chair", "chair", 0.0F),
-              observation("Wall", "wall", 1.25F)});
-    expect(initial.has_value(),
-           "indexed persistent transaction fixture must initialize world");
+        100, {observation("Chair", "chair", 0.0F), observation("Wall", "wall", 1.25F)});
+    expect(initial.has_value(), "indexed persistent transaction fixture must initialize world");
     if (!initial)
         return;
 
@@ -397,39 +385,31 @@ void testIndexedPersistentTranslationEliminatesGlobalSelectionScan() {
     ownership.owners = {EntityId{1}, EntityId{1}, EntityId{2}};
 
     for (std::size_t index = 0; index < 100; ++index) {
-        asset.gaussians.push_back(
-            gaussian(50.0F + static_cast<float>(index), 0.0F, 0.0F));
+        asset.gaussians.push_back(gaussian(50.0F + static_cast<float>(index), 0.0F, 0.0F));
         ownership.owners.push_back(EntityId{2});
     }
 
     auto overlay = GaussianOverlaySpatialIndex::build(asset, 0.5F);
-    expect(overlay.has_value(),
-           "indexed persistent transaction overlay must build");
+    expect(overlay.has_value(), "indexed persistent transaction overlay must build");
     if (!overlay)
         return;
 
-    const auto committed =
-        aether::world_gaussian::translatePersistentGaussianEntityIndexed(
-            model, asset, ownership, *overlay, EntityId{1},
-            simd_float3{1.0F, 0.0F, 0.0F}, 200);
-    expect(committed.has_value(),
-           "indexed persistent Gaussian translation must commit");
+    const auto committed = aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+        model, asset, ownership, *overlay, EntityId{1}, simd_float3{1.0F, 0.0F, 0.0F}, 200);
+    expect(committed.has_value(), "indexed persistent Gaussian translation must commit");
     if (!committed)
         return;
 
-    expect(committed->usedOverlayIndex,
-           "indexed persistent transaction must report overlay use");
+    expect(committed->usedOverlayIndex, "indexed persistent transaction must report overlay use");
     expect(committed->overlayIndexValid,
            "overlay must remain valid after exact relocation maintenance");
     expect(committed->translatedGaussians == 2,
            "indexed transaction must translate both owned chair splats");
-    expect(committed->reoptimizationSelection.inspectedGaussians <
-               asset.gaussians.size(),
+    expect(committed->reoptimizationSelection.inspectedGaussians < asset.gaussians.size(),
            "indexed transaction must inspect fewer Gaussians than full scan");
     expect(committed->overlayDiagnostics.dirtyRegionsQueried > 0,
            "indexed transaction must report dirty-region queries");
-    expect(asset.gaussians[0].position[0] == 1.0F &&
-               asset.gaussians[1].position[0] == 1.1F,
+    expect(asset.gaussians[0].position[0] == 1.0F && asset.gaussians[1].position[0] == 1.1F,
            "indexed transaction must advance owned Gaussian positions");
     expect(asset.gaussians[2].position[0] == 1.2F,
            "indexed transaction must preserve stable nearby owner");

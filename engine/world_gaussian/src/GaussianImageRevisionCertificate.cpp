@@ -27,24 +27,20 @@ struct Projected final {
     constexpr std::size_t maximumPixels = 268'435'456;
     if (camera.width == 0 || camera.height == 0 || camera.width > maximumDimension ||
         camera.height > maximumDimension || camera.width > maximumPixels / camera.height ||
-        !std::isfinite(camera.focalX) || !std::isfinite(camera.focalY) ||
-        camera.focalX <= 0.0F || camera.focalY <= 0.0F || camera.nearPlane <= 0.0F ||
-        camera.farPlane <= camera.nearPlane)
+        !std::isfinite(camera.focalX) || !std::isfinite(camera.focalY) || camera.focalX <= 0.0F ||
+        camera.focalY <= 0.0F || camera.nearPlane <= 0.0F || camera.farPlane <= camera.nearPlane)
         return false;
     return std::ranges::none_of(camera.worldToCamera,
                                 [](float value) { return !std::isfinite(value); });
 }
 
 [[nodiscard]] std::array<double, 3>
-transformPoint(const std::array<float, 3>& point,
-               const std::array<float, 16>& transform) noexcept {
+transformPoint(const std::array<float, 3>& point, const std::array<float, 16>& transform) noexcept {
     return {
-        transform[0] * point[0] + transform[1] * point[1] +
-            transform[2] * point[2] + transform[3],
-        transform[4] * point[0] + transform[5] * point[1] +
-            transform[6] * point[2] + transform[7],
-        transform[8] * point[0] + transform[9] * point[1] +
-            transform[10] * point[2] + transform[11],
+        transform[0] * point[0] + transform[1] * point[1] + transform[2] * point[2] + transform[3],
+        transform[4] * point[0] + transform[5] * point[1] + transform[6] * point[2] + transform[7],
+        transform[8] * point[0] + transform[9] * point[1] + transform[10] * point[2] +
+            transform[11],
     };
 }
 
@@ -54,12 +50,9 @@ transformPoint(const std::array<float, 3>& point,
     const double y = q[2];
     const double z = q[3];
     return {{
-        {1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - z * w),
-         2.0 * (x * z + y * w)},
-        {2.0 * (x * y + z * w), 1.0 - 2.0 * (x * x + z * z),
-         2.0 * (y * z - x * w)},
-        {2.0 * (x * z - y * w), 2.0 * (y * z + x * w),
-         1.0 - 2.0 * (x * x + y * y)},
+        {1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - z * w), 2.0 * (x * z + y * w)},
+        {2.0 * (x * y + z * w), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - x * w)},
+        {2.0 * (x * z - y * w), 2.0 * (y * z + x * w), 1.0 - 2.0 * (x * x + y * y)},
     }};
 }
 
@@ -106,25 +99,23 @@ transformPoint(const std::array<float, 3>& point,
     return result;
 }
 
-[[nodiscard]] Matrix3 cameraCovariance(
-    const Matrix3& world, const std::array<float, 16>& transform) noexcept {
+[[nodiscard]] Matrix3 cameraCovariance(const Matrix3& world,
+                                       const std::array<float, 16>& transform) noexcept {
     Matrix3 intermediate{};
     Matrix3 result{};
     for (std::size_t row = 0; row < 3; ++row)
         for (std::size_t column = 0; column < 3; ++column)
             for (std::size_t axis = 0; axis < 3; ++axis)
-                intermediate[row][column] +=
-                    transform[row * 4 + axis] * world[axis][column];
+                intermediate[row][column] += transform[row * 4 + axis] * world[axis][column];
     for (std::size_t row = 0; row < 3; ++row)
         for (std::size_t column = 0; column < 3; ++column)
             for (std::size_t axis = 0; axis < 3; ++axis)
-                result[row][column] +=
-                    intermediate[row][axis] * transform[column * 4 + axis];
+                result[row][column] += intermediate[row][axis] * transform[column * 4 + axis];
     return result;
 }
 
-[[nodiscard]] Result<Projected>
-project(const gaussian::Gaussian& primitive, const gaussian::ReferenceCamera& camera) {
+[[nodiscard]] Result<Projected> project(const gaussian::Gaussian& primitive,
+                                        const gaussian::ReferenceCamera& camera) {
     const auto point = transformPoint(primitive.position, camera.worldToCamera);
     if (point[2] < camera.nearPlane || point[2] > camera.farPlane)
         return fail(ErrorCode::notFound,
@@ -136,15 +127,12 @@ project(const gaussian::Gaussian& primitive, const gaussian::ReferenceCamera& ca
     const Matrix3 cov = cameraCovariance(*worldCovariance, camera.worldToCamera);
 
     const double inverseZ = 1.0 / point[2];
-    const std::array<double, 3> jacobianX{
-        camera.focalX * inverseZ, 0.0,
-        -camera.focalX * point[0] * inverseZ * inverseZ};
-    const std::array<double, 3> jacobianY{
-        0.0, camera.focalY * inverseZ,
-        -camera.focalY * point[1] * inverseZ * inverseZ};
+    const std::array<double, 3> jacobianX{camera.focalX * inverseZ, 0.0,
+                                          -camera.focalX * point[0] * inverseZ * inverseZ};
+    const std::array<double, 3> jacobianY{0.0, camera.focalY * inverseZ,
+                                          -camera.focalY * point[1] * inverseZ * inverseZ};
 
-    auto quadratic = [&](const std::array<double, 3>& lhs,
-                         const std::array<double, 3>& rhs) {
+    auto quadratic = [&](const std::array<double, 3>& lhs, const std::array<double, 3>& rhs) {
         double value{};
         for (std::size_t row = 0; row < 3; ++row)
             for (std::size_t column = 0; column < 3; ++column)
@@ -160,17 +148,16 @@ project(const gaussian::Gaussian& primitive, const gaussian::ReferenceCamera& ca
         return fail(ErrorCode::corruptData,
                     "Gaussian image certificate projected covariance is singular");
 
-    const double discriminant =
-        std::sqrt(std::max(0.0, (a - c) * (a - c) + 4.0 * b * b));
+    const double discriminant = std::sqrt(std::max(0.0, (a - c) * (a - c) + 4.0 * b * b));
     const double maximumEigenvalue = 0.5 * (a + c + discriminant);
     const double radius = 3.0 * std::sqrt(maximumEigenvalue);
     if (!std::isfinite(radius) || radius > 1.0e6)
         return fail(ErrorCode::resourceExhausted,
                     "Gaussian image certificate projected radius is unsafe");
 
-    const double opacity = 1.0 /
-        (1.0 + std::exp(-std::clamp(static_cast<double>(primitive.opacityLogit),
-                                    -30.0, 30.0)));
+    const double opacity =
+        1.0 /
+        (1.0 + std::exp(-std::clamp(static_cast<double>(primitive.opacityLogit), -30.0, 30.0)));
 
     return Projected{
         .centerX = camera.focalX * point[0] * inverseZ + camera.centerX,
@@ -203,27 +190,24 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
             return std::unexpected(projected.error());
         }
 
-        const int minimumX = std::max(
-            0, static_cast<int>(std::floor(projected->centerX - projected->radius)));
-        const int maximumX = std::min(
-            static_cast<int>(camera.width) - 1,
-            static_cast<int>(std::ceil(projected->centerX + projected->radius)));
-        const int minimumY = std::max(
-            0, static_cast<int>(std::floor(projected->centerY - projected->radius)));
-        const int maximumY = std::min(
-            static_cast<int>(camera.height) - 1,
-            static_cast<int>(std::ceil(projected->centerY + projected->radius)));
+        const int minimumX =
+            std::max(0, static_cast<int>(std::floor(projected->centerX - projected->radius)));
+        const int maximumX =
+            std::min(static_cast<int>(camera.width) - 1,
+                     static_cast<int>(std::ceil(projected->centerX + projected->radius)));
+        const int minimumY =
+            std::max(0, static_cast<int>(std::floor(projected->centerY - projected->radius)));
+        const int maximumY =
+            std::min(static_cast<int>(camera.height) - 1,
+                     static_cast<int>(std::ceil(projected->centerY + projected->radius)));
 
         for (int y = minimumY; y <= maximumY; ++y) {
             for (int x = minimumX; x <= maximumX; ++x) {
-                const double dx =
-                    (static_cast<double>(x) + 0.5) - projected->centerX;
-                const double dy =
-                    (static_cast<double>(y) + 0.5) - projected->centerY;
-                const double distance =
-                    projected->inverseA * dx * dx +
-                    2.0 * projected->inverseB * dx * dy +
-                    projected->inverseC * dy * dy;
+                const double dx = (static_cast<double>(x) + 0.5) - projected->centerX;
+                const double dy = (static_cast<double>(y) + 0.5) - projected->centerY;
+                const double distance = projected->inverseA * dx * dx +
+                                        2.0 * projected->inverseB * dx * dy +
+                                        projected->inverseC * dy * dy;
 
                 auto alpha = effectiveGaussianRendererAlpha(projected->opacity, distance);
                 if (!alpha)
@@ -232,8 +216,7 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
                     continue;
 
                 const std::size_t pixel =
-                    static_cast<std::size_t>(y) * camera.width +
-                    static_cast<std::size_t>(x);
+                    static_cast<std::size_t>(y) * camera.width + static_cast<std::size_t>(x);
                 transmittance[pixel] *= 1.0 - *alpha;
             }
         }
@@ -244,16 +227,14 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
     result.height = camera.height;
     result.opacityMass.resize(pixelCount);
     for (std::size_t pixel = 0; pixel < pixelCount; ++pixel)
-        result.opacityMass[pixel] =
-            std::clamp(1.0 - transmittance[pixel], 0.0, 1.0);
+        result.opacityMass[pixel] = std::clamp(1.0 - transmittance[pixel], 0.0, 1.0);
     return result;
 }
 
 Result<GaussianImageRevisionCertificate>
 certifyGaussianImageRevision(const gaussian::GaussianAsset& beforeChanged,
                              const gaussian::GaussianAsset& afterChanged,
-                             const gaussian::ReferenceCamera& camera,
-                             double colorUpperBound) {
+                             const gaussian::ReferenceCamera& camera, double colorUpperBound) {
     if (!std::isfinite(colorUpperBound) || colorUpperBound < 0.0)
         return fail(ErrorCode::invalidArgument,
                     "Gaussian image certificate color upper bound must be finite and non-negative");
@@ -278,8 +259,7 @@ certifyGaussianImageRevision(const gaussian::GaussianAsset& beforeChanged,
             return fail(ErrorCode::resourceExhausted,
                         "Gaussian image certificate RGB bound overflow");
         result.rgbLInfBounds[pixel] = bound;
-        result.maximumRgbLInfBound =
-            std::max(result.maximumRgbLInfBound, bound);
+        result.maximumRgbLInfBound = std::max(result.maximumRgbLInfBound, bound);
     }
     return result;
 }

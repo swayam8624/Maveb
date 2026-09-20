@@ -11,8 +11,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
-#include <iomanip>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -46,10 +46,8 @@ struct Options final {
     std::array<float, 3> background{0.0F, 0.0F, 0.0F};
     std::array<float, 3> cameraWorldPosition{0.0F, 0.0F, 0.0F};
     std::array<float, 16> worldToCamera{
-        1.0F, 0.0F, 0.0F, 0.0F,
-        0.0F, 1.0F, 0.0F, 0.0F,
-        0.0F, 0.0F, 1.0F, 0.0F,
-        0.0F, 0.0F, 0.0F, 1.0F,
+        1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+        0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F,
     };
     double epsilon{0.01};
 };
@@ -79,8 +77,7 @@ struct Options final {
 }
 
 template <std::size_t N>
-[[nodiscard]] std::optional<std::array<float, N>>
-parseFloatCsv(std::string_view csv) {
+[[nodiscard]] std::optional<std::array<float, N>> parseFloatCsv(std::string_view csv) {
     std::array<float, N> result{};
     std::size_t start{};
     for (std::size_t index = 0; index < N; ++index) {
@@ -107,8 +104,7 @@ parseFloatCsv(std::string_view csv) {
     Options options;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
-        const auto requireValue = [&](std::string_view name)
-            -> std::optional<std::string_view> {
+        const auto requireValue = [&](std::string_view name) -> std::optional<std::string_view> {
             if (i + 1 >= argc) {
                 std::cerr << "Missing value for " << name << '\n';
                 return std::nullopt;
@@ -170,11 +166,9 @@ parseFloatCsv(std::string_view csv) {
                 options.width = *parsed;
             else
                 options.height = *parsed;
-        } else if (arg == "--focal-x" || arg == "--focal-y" ||
-                   arg == "--center-x" || arg == "--center-y" ||
-                   arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--background-r" || arg == "--background-g" ||
-                   arg == "--background-b") {
+        } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
+                   arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
+                   arg == "--background-r" || arg == "--background-g" || arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -202,18 +196,17 @@ parseFloatCsv(std::string_view csv) {
             else
                 options.background[2] = static_cast<float>(*parsed);
         } else if (arg == "--help") {
-            std::cout
-                << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
-                   "(--changed 1,4,9 | --detect-changed) [camera options]\n"
-                << "  --input-format ply|aether-bin (default: ply)\n"
-                << "  --detect-changed compares stable source-order before/after records\n"
-                << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
-                << "  --width N --height N --focal-x F --focal-y F\n"
-                << "  --center-x F --center-y F --near F --far F\n"
-                << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
-                << "  --camera-world-position x,y,z\n"
-                << "  --background-r F --background-g F --background-b F\n"
-                << "  --epsilon F\n";
+            std::cout << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
+                         "(--changed 1,4,9 | --detect-changed) [camera options]\n"
+                      << "  --input-format ply|aether-bin (default: ply)\n"
+                      << "  --detect-changed compares stable source-order before/after records\n"
+                      << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
+                      << "  --width N --height N --focal-x F --focal-y F\n"
+                      << "  --center-x F --center-y F --near F --far F\n"
+                      << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
+                      << "  --camera-world-position x,y,z\n"
+                      << "  --background-r F --background-g F --background-b F\n"
+                      << "  --epsilon F\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -224,14 +217,13 @@ parseFloatCsv(std::string_view csv) {
     const bool hasExplicitChanged = !options.changedCsv.empty();
     if (options.beforePath.empty() || options.afterPath.empty() ||
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
-        options.focalX <= 0.0F || options.focalY <= 0.0F ||
-        options.nearPlane <= 0.0F || options.farPlane <= options.nearPlane)
+        options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
+        options.farPlane <= options.nearPlane)
         return std::nullopt;
     return options;
 }
 
-[[nodiscard]] std::optional<std::vector<std::size_t>>
-parseChangedIndices(std::string_view csv) {
+[[nodiscard]] std::optional<std::vector<std::size_t>> parseChangedIndices(std::string_view csv) {
     std::set<std::size_t> unique;
     std::size_t start{};
     while (start < csv.size()) {
@@ -251,14 +243,13 @@ parseChangedIndices(std::string_view csv) {
     return std::vector<std::size_t>(unique.begin(), unique.end());
 }
 
-[[nodiscard]] aether::Result<GaussianAsset>
-loadGaussianState(const std::string& path, std::string_view format) {
+[[nodiscard]] aether::Result<GaussianAsset> loadGaussianState(const std::string& path,
+                                                              std::string_view format) {
     if (format == "ply")
         return aether::gaussian::PlyLoader::load(path);
     if (format != "aether-bin")
         return aether::fail(aether::ErrorCode::invalidArgument,
-                            "Unsupported Gaussian oracle input format",
-                            std::string(format));
+                            "Unsupported Gaussian oracle input format", std::string(format));
 
     std::error_code filesystemError;
     const auto fileBytes = std::filesystem::file_size(path, filesystemError);
@@ -274,11 +265,10 @@ loadGaussianState(const std::string& path, std::string_view format) {
 
     std::vector<std::byte> bytes(static_cast<std::size_t>(fileBytes));
     std::ifstream stream(path, std::ios::binary);
-    stream.read(reinterpret_cast<char*>(bytes.data()),
-                static_cast<std::streamsize>(bytes.size()));
+    stream.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
     if (!stream)
-        return aether::fail(aether::ErrorCode::io,
-                            "Unable to read canonical Gaussian sidecar", path);
+        return aether::fail(aether::ErrorCode::io, "Unable to read canonical Gaussian sidecar",
+                            path);
     auto decoded = aether::gaussian::GaussianCodec::decode(bytes);
     if (decoded)
         decoded->name = std::filesystem::path(path).stem().string();
@@ -286,18 +276,16 @@ loadGaussianState(const std::string& path, std::string_view format) {
 }
 
 [[nodiscard]] bool sameGaussian(const Gaussian& a, const Gaussian& b) noexcept {
-    return a.position == b.position && a.logScale == b.logScale &&
-           a.rotation == b.rotation && a.opacityLogit == b.opacityLogit &&
-           a.dc == b.dc && a.rest == b.rest && a.restCount == b.restCount;
+    return a.position == b.position && a.logScale == b.logScale && a.rotation == b.rotation &&
+           a.opacityLogit == b.opacityLogit && a.dc == b.dc && a.rest == b.rest &&
+           a.restCount == b.restCount;
 }
 
-[[nodiscard]] double sceneColorCap(const GaussianAsset& before,
-                                   const GaussianAsset& after) {
+[[nodiscard]] double sceneColorCap(const GaussianAsset& before, const GaussianAsset& after) {
     double cap = 1.0; // reference background is clamped to [0,1].
     const auto accumulate = [&](const GaussianAsset& asset) -> bool {
         for (const Gaussian& primitive : asset.gaussians) {
-            auto bound =
-                aether::world_gaussian::gaussianRendererColorUpperBound(primitive);
+            auto bound = aether::world_gaussian::gaussianRendererColorUpperBound(primitive);
             if (!bound)
                 return false;
             for (const double channel : *bound)
@@ -415,9 +403,8 @@ int main(int argc, char** argv) try {
         std::cerr << "Unable to construct conservative scene color cap\n";
         return EXIT_FAILURE;
     }
-    auto certificate =
-        aether::world_gaussian::certifyGaussianImageRevision(
-            beforeChanged, afterChanged, camera, colorCap);
+    auto certificate = aether::world_gaussian::certifyGaussianImageRevision(
+        beforeChanged, afterChanged, camera, colorCap);
     if (!certificate) {
         std::cerr << certificate.error().describe() << '\n';
         return EXIT_FAILURE;
@@ -435,10 +422,9 @@ int main(int argc, char** argv) try {
     for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
         double actual{};
         for (std::size_t channel = 0; channel < 3; ++channel) {
-            actual = std::max(
-                actual,
-                std::abs(static_cast<double>(oldImage->color[pixel][channel]) -
-                         static_cast<double>(newImage->color[pixel][channel])));
+            actual =
+                std::max(actual, std::abs(static_cast<double>(oldImage->color[pixel][channel]) -
+                                          static_cast<double>(newImage->color[pixel][channel])));
         }
         const double bound = certificate->rgbLInfBounds[pixel];
         if (!actualResiduals.empty())
@@ -446,10 +432,8 @@ int main(int argc, char** argv) try {
         maximumActual = std::max(maximumActual, actual);
         maximumBound = std::max(maximumBound, bound);
         affectedPixels += static_cast<std::size_t>(bound > 0.0);
-        certificateViolations +=
-            static_cast<std::size_t>(actual > bound + 2.0e-6);
-        toleranceViolations +=
-            static_cast<std::size_t>(actual > options->epsilon + 2.0e-6);
+        certificateViolations += static_cast<std::size_t>(actual > bound + 2.0e-6);
+        toleranceViolations += static_cast<std::size_t>(actual > options->epsilon + 2.0e-6);
     }
 
     if (!options->spatialOutputPath.empty()) {
@@ -489,47 +473,39 @@ int main(int argc, char** argv) try {
         std::error_code publishError;
         std::filesystem::rename(temporary, outputPath, publishError);
         if (publishError) {
-            std::cerr << "Unable to publish spatial evidence output: "
-                      << publishError.message() << '\n';
+            std::cerr << "Unable to publish spatial evidence output: " << publishError.message()
+                      << '\n';
             std::filesystem::remove(temporary, publishError);
             return EXIT_FAILURE;
         }
     }
 
-    const double effectivity =
-        maximumBound / std::max(maximumActual, 1.0e-15);
+    const double effectivity = maximumBound / std::max(maximumActual, 1.0e-15);
     const double affectedFraction =
-        static_cast<double>(affectedPixels) /
-        static_cast<double>(oldImage->color.size());
+        static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
 
-    std::cout << std::setprecision(17)
-              << "{"
+    std::cout << std::setprecision(17) << "{"
               << "\"schemaVersion\":1,"
               << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
               << "\"method\":\"CBRC\","
               << "\"totalGaussians\":" << before->gaussians.size() << ','
-              << "\"changedGaussians\":" << changed->size() << ','
-              << "\"changedFraction\":"
+              << "\"changedGaussians\":" << changed->size() << ',' << "\"changedFraction\":"
               << static_cast<double>(changed->size()) /
-                     static_cast<double>(before->gaussians.size()) << ','
-              << "\"affectedPixels\":" << affectedPixels << ','
+                     static_cast<double>(before->gaussians.size())
+              << ',' << "\"affectedPixels\":" << affectedPixels << ','
               << "\"affectedPixelFraction\":" << affectedFraction << ','
               << "\"spatialEvidenceWritten\":"
               << (!options->spatialOutputPath.empty() ? "true" : "false") << ','
-              << "\"colorUpperBound\":" << colorCap << ','
-              << "\"qois\":{\"rgb_linf\":{"
-              << "\"epsilon\":" << options->epsilon << ','
-              << "\"certified_bound\":" << maximumBound << ','
-              << "\"measured_full_reference_error\":" << maximumActual
-              << "}},"
+              << "\"colorUpperBound\":" << colorCap << ',' << "\"qois\":{\"rgb_linf\":{"
+              << "\"epsilon\":" << options->epsilon << ',' << "\"certified_bound\":" << maximumBound
+              << ',' << "\"measured_full_reference_error\":" << maximumActual << "}},"
               << "\"effectivity\":" << effectivity << ','
               << "\"certificateViolationPixels\":" << certificateViolations << ','
               << "\"toleranceViolationPixels\":" << toleranceViolations << ','
               << "\"certified\":" << (certified ? "true" : "false") << ','
-              << "\"withinTolerance\":" << (withinTolerance ? "true" : "false")
-              << "}\n";
+              << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << "}\n";
 
     if (!certified)
         return 4;

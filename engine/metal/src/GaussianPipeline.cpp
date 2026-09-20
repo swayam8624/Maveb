@@ -139,8 +139,7 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
     std::vector<AetherGaussianGpu> converted(asset.gaussians.size());
     for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
         const gaussian::Gaussian& source = asset.gaussians[index];
-        auto colorBound =
-            world_gaussian::gaussianRendererColorUpperBound(source);
+        auto colorBound = world_gaussian::gaussianRendererColorUpperBound(source);
         if (!colorBound)
             return std::unexpected(colorBound.error());
         for (const double channel : *colorBound)
@@ -161,8 +160,7 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
     std::array<MetalPtr<MTL::Buffer>, gaussianSourceBufferCount_> gaussianSources;
     for (std::size_t slot = 0; slot < gaussianSources.size(); ++slot) {
         auto source = makeBuffer(device_.get(), converted.size() * sizeof(AetherGaussianGpu),
-                                 MTL::ResourceStorageModeShared,
-                                 "Versioned Canonical Gaussians");
+                                 MTL::ResourceStorageModeShared, "Versioned Canonical Gaussians");
         if (!source)
             return std::unexpected(source.error());
         std::memcpy((*source)->contents(), converted.data(),
@@ -248,8 +246,7 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
         return std::unexpected(published.error());
 
     if (!commandBuffer || !gaussianSources_[frameSlot] || !color || !depth || !ids ||
-        color->width() == 0 ||
-        color->height() == 0 || depth->width() != color->width() ||
+        color->width() == 0 || color->height() == 0 || depth->width() != color->width() ||
         depth->height() != color->height() || ids->width() != color->width() ||
         ids->height() != color->height() || depth->pixelFormat() != MTL::PixelFormatR32Float ||
         ids->pixelFormat() != MTL::PixelFormatR32Uint) {

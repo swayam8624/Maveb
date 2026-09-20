@@ -14,21 +14,17 @@ namespace {
     return std::isfinite(value) && value >= 0.0;
 }
 
-[[nodiscard]] Result<double> checkedCost(double units, double coefficient,
-                                         const char* label) {
+[[nodiscard]] Result<double> checkedCost(double units, double coefficient, const char* label) {
     if (!finiteNonNegative(units) || !finiteNonNegative(coefficient))
         return fail(ErrorCode::invalidArgument,
-                    "CBRC captured-world cost input must be finite and non-negative",
-                    label);
+                    "CBRC captured-world cost input must be finite and non-negative", label);
     const double value = units * coefficient;
     if (!std::isfinite(value))
-        return fail(ErrorCode::resourceExhausted,
-                    "CBRC captured-world cost overflow", label);
+        return fail(ErrorCode::resourceExhausted, "CBRC captured-world cost overflow", label);
     return value;
 }
 
-void appendUnique(std::vector<revision::RevisionNodeId>& values,
-                  revision::RevisionNodeId value) {
+void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::RevisionNodeId value) {
     if (std::find(values.begin(), values.end(), value) == values.end())
         values.push_back(value);
 }
@@ -42,15 +38,12 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC cost model requires a frozen version");
     if (!finiteNonNegative(input.gaussianCurrentRgbBound) ||
-        !finiteNonNegative(input.epsilonRgbLInf) ||
-        !std::isfinite(input.temporalHistoryWeight) ||
-        input.temporalHistoryWeight < 0.0 ||
-        input.temporalHistoryWeight > 1.0) {
+        !finiteNonNegative(input.epsilonRgbLInf) || !std::isfinite(input.temporalHistoryWeight) ||
+        input.temporalHistoryWeight < 0.0 || input.temporalHistoryWeight > 1.0) {
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC certificate parameters are invalid");
     }
-    if (input.mesher.dirtyBlocksInput > 0 &&
-        !input.mesher.fullReferenceWorkAvailable) {
+    if (input.mesher.dirtyBlocksInput > 0 && !input.mesher.fullReferenceWorkAvailable) {
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC mesh work requires a full-reference baseline");
     }
@@ -65,121 +58,100 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
                     "Captured-world CBRC incremental work exceeds full baseline");
     }
 
-    auto observationCost = checkedCost(
-        static_cast<double>(input.observationsInspected),
-        costs.observationMs, "observations");
+    auto observationCost = checkedCost(static_cast<double>(input.observationsInspected),
+                                       costs.observationMs, "observations");
     if (!observationCost)
         return std::unexpected(observationCost.error());
 
-    auto tsdfCost = checkedCost(
-        static_cast<double>(input.mesher.dirtyBlocksInput),
-        costs.tsdfBlockMs, "tsdf");
+    auto tsdfCost =
+        checkedCost(static_cast<double>(input.mesher.dirtyBlocksInput), costs.tsdfBlockMs, "tsdf");
     if (!tsdfCost)
         return std::unexpected(tsdfCost.error());
 
-    auto meshCellCost = checkedCost(
-        static_cast<double>(input.mesher.ownerCellsRegenerated),
-        costs.meshCellMs, "mesh-cells");
+    auto meshCellCost = checkedCost(static_cast<double>(input.mesher.ownerCellsRegenerated),
+                                    costs.meshCellMs, "mesh-cells");
     if (!meshCellCost)
         return std::unexpected(meshCellCost.error());
-    auto meshPatchCost = checkedCost(
-        static_cast<double>(input.mesher.ownerPatchesRegenerated),
-        costs.meshPatchMs, "mesh-patches");
+    auto meshPatchCost = checkedCost(static_cast<double>(input.mesher.ownerPatchesRegenerated),
+                                     costs.meshPatchMs, "mesh-patches");
     if (!meshPatchCost)
         return std::unexpected(meshPatchCost.error());
 
-    auto textureCost = checkedCost(
-        static_cast<double>(input.dirtyTexturePages),
-        costs.texturePageMs, "texture-pages");
+    auto textureCost = checkedCost(static_cast<double>(input.dirtyTexturePages),
+                                   costs.texturePageMs, "texture-pages");
     if (!textureCost)
         return std::unexpected(textureCost.error());
 
-    auto materialCost = checkedCost(
-        static_cast<double>(input.materialStatesUpdated),
-        costs.materialStateMs, "material-state");
+    auto materialCost = checkedCost(static_cast<double>(input.materialStatesUpdated),
+                                    costs.materialStateMs, "material-state");
     if (!materialCost)
         return std::unexpected(materialCost.error());
 
-    auto gaussianInspectionCost = checkedCost(
-        static_cast<double>(input.gaussiansInspected),
-        costs.gaussianInspectionMs, "gaussian-inspection");
+    auto gaussianInspectionCost = checkedCost(static_cast<double>(input.gaussiansInspected),
+                                              costs.gaussianInspectionMs, "gaussian-inspection");
     if (!gaussianInspectionCost)
         return std::unexpected(gaussianInspectionCost.error());
-    auto gaussianUpdateCost = checkedCost(
-        static_cast<double>(input.gaussiansUpdated),
-        costs.gaussianUpdateMs, "gaussian-update");
+    auto gaussianUpdateCost = checkedCost(static_cast<double>(input.gaussiansUpdated),
+                                          costs.gaussianUpdateMs, "gaussian-update");
     if (!gaussianUpdateCost)
         return std::unexpected(gaussianUpdateCost.error());
 
-    auto publicationCost = checkedCost(
-        static_cast<double>(input.gpuPublicationBytes),
-        costs.gpuPublicationByteMs, "gpu-publication");
+    auto publicationCost = checkedCost(static_cast<double>(input.gpuPublicationBytes),
+                                       costs.gpuPublicationByteMs, "gpu-publication");
     if (!publicationCost)
         return std::unexpected(publicationCost.error());
 
-    auto temporalCost = checkedCost(
-        static_cast<double>(input.temporalPixelsInvalidated),
-        costs.temporalPixelMs, "temporal-history");
+    auto temporalCost = checkedCost(static_cast<double>(input.temporalPixelsInvalidated),
+                                    costs.temporalPixelMs, "temporal-history");
     if (!temporalCost)
         return std::unexpected(temporalCost.error());
 
-    auto fullObservationCost = checkedCost(
-        static_cast<double>(input.fullObservations),
-        costs.observationMs, "full-observations");
+    auto fullObservationCost = checkedCost(static_cast<double>(input.fullObservations),
+                                           costs.observationMs, "full-observations");
     if (!fullObservationCost)
         return std::unexpected(fullObservationCost.error());
-    auto fullTsdfCost = checkedCost(
-        static_cast<double>(input.mesher.snapshotBlocksScanned),
-        costs.tsdfBlockMs, "full-tsdf");
+    auto fullTsdfCost = checkedCost(static_cast<double>(input.mesher.snapshotBlocksScanned),
+                                    costs.tsdfBlockMs, "full-tsdf");
     if (!fullTsdfCost)
         return std::unexpected(fullTsdfCost.error());
-    auto fullMeshCellCost = checkedCost(
-        static_cast<double>(input.mesher.fullReferenceCells),
-        costs.meshCellMs, "full-mesh-cells");
+    auto fullMeshCellCost = checkedCost(static_cast<double>(input.mesher.fullReferenceCells),
+                                        costs.meshCellMs, "full-mesh-cells");
     if (!fullMeshCellCost)
         return std::unexpected(fullMeshCellCost.error());
-    auto fullMeshPatchCost = checkedCost(
-        static_cast<double>(input.mesher.snapshotBlocksScanned),
-        costs.meshPatchMs, "full-mesh-patches");
+    auto fullMeshPatchCost = checkedCost(static_cast<double>(input.mesher.snapshotBlocksScanned),
+                                         costs.meshPatchMs, "full-mesh-patches");
     if (!fullMeshPatchCost)
         return std::unexpected(fullMeshPatchCost.error());
-    auto fullTextureCost = checkedCost(
-        static_cast<double>(input.fullTexturePages),
-        costs.texturePageMs, "full-texture-pages");
+    auto fullTextureCost = checkedCost(static_cast<double>(input.fullTexturePages),
+                                       costs.texturePageMs, "full-texture-pages");
     if (!fullTextureCost)
         return std::unexpected(fullTextureCost.error());
-    auto fullMaterialCost = checkedCost(
-        static_cast<double>(input.fullMaterialStates),
-        costs.materialStateMs, "full-material-state");
+    auto fullMaterialCost = checkedCost(static_cast<double>(input.fullMaterialStates),
+                                        costs.materialStateMs, "full-material-state");
     if (!fullMaterialCost)
         return std::unexpected(fullMaterialCost.error());
-    auto fullGaussianInspectionCost = checkedCost(
-        static_cast<double>(input.fullGaussians),
-        costs.gaussianInspectionMs, "full-gaussian-inspection");
+    auto fullGaussianInspectionCost =
+        checkedCost(static_cast<double>(input.fullGaussians), costs.gaussianInspectionMs,
+                    "full-gaussian-inspection");
     if (!fullGaussianInspectionCost)
         return std::unexpected(fullGaussianInspectionCost.error());
-    auto fullGaussianUpdateCost = checkedCost(
-        static_cast<double>(input.fullGaussians),
-        costs.gaussianUpdateMs, "full-gaussian-update");
+    auto fullGaussianUpdateCost = checkedCost(static_cast<double>(input.fullGaussians),
+                                              costs.gaussianUpdateMs, "full-gaussian-update");
     if (!fullGaussianUpdateCost)
         return std::unexpected(fullGaussianUpdateCost.error());
-    auto fullPublicationCost = checkedCost(
-        static_cast<double>(input.fullGpuPublicationBytes),
-        costs.gpuPublicationByteMs, "full-gpu-publication");
+    auto fullPublicationCost = checkedCost(static_cast<double>(input.fullGpuPublicationBytes),
+                                           costs.gpuPublicationByteMs, "full-gpu-publication");
     if (!fullPublicationCost)
         return std::unexpected(fullPublicationCost.error());
-    auto fullTemporalCost = checkedCost(
-        static_cast<double>(input.fullTemporalPixels),
-        costs.temporalPixelMs, "full-temporal-history");
+    auto fullTemporalCost = checkedCost(static_cast<double>(input.fullTemporalPixels),
+                                        costs.temporalPixelMs, "full-temporal-history");
     if (!fullTemporalCost)
         return std::unexpected(fullTemporalCost.error());
 
-    const double fullWorkBaseline =
-        *fullObservationCost + *fullTsdfCost +
-        *fullMeshCellCost + *fullMeshPatchCost +
-        *fullTextureCost + *fullMaterialCost +
-        *fullGaussianInspectionCost + *fullGaussianUpdateCost +
-        *fullPublicationCost + *fullTemporalCost;
+    const double fullWorkBaseline = *fullObservationCost + *fullTsdfCost + *fullMeshCellCost +
+                                    *fullMeshPatchCost + *fullTextureCost + *fullMaterialCost +
+                                    *fullGaussianInspectionCost + *fullGaussianUpdateCost +
+                                    *fullPublicationCost + *fullTemporalCost;
     if (!std::isfinite(fullWorkBaseline))
         return fail(ErrorCode::resourceExhausted,
                     "Captured-world CBRC full-work baseline overflow");
@@ -192,23 +164,17 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         return id;
     };
 
-    const auto observation =
-        addNode("observation-repair", *observationCost, 0.0);
+    const auto observation = addNode("observation-repair", *observationCost, 0.0);
     const auto tsdf = addNode("tsdf-block-repair", *tsdfCost, 0.0);
-    const auto mesh = addNode("mesh-patch-repair",
-                              *meshCellCost + *meshPatchCost, 0.0);
+    const auto mesh = addNode("mesh-patch-repair", *meshCellCost + *meshPatchCost, 0.0);
     const auto texture = addNode("texture-page-repair", *textureCost, 0.0);
-    const auto material =
-        addNode("material-state-repair", *materialCost, 0.0);
-    const auto gaussian = addNode(
-        "gaussian-revision-repair",
-        *gaussianInspectionCost + *gaussianUpdateCost,
-        input.gaussianCurrentRgbBound);
-    const auto gpuPublication =
-        addNode("gpu-publication", *publicationCost, 0.0);
+    const auto material = addNode("material-state-repair", *materialCost, 0.0);
+    const auto gaussian =
+        addNode("gaussian-revision-repair", *gaussianInspectionCost + *gaussianUpdateCost,
+                input.gaussianCurrentRgbBound);
+    const auto gpuPublication = addNode("gpu-publication", *publicationCost, 0.0);
     const auto currentImage = addNode("current-image-qoi-state", 0.0, 0.0);
-    const auto temporalHistory =
-        addNode("temporal-history-repair", *temporalCost, 0.0);
+    const auto temporalHistory = addNode("temporal-history-repair", *temporalCost, 0.0);
     const auto resolvedImage = addNode("resolved-image-qoi", 0.0, 0.0);
 
     std::vector<revision::RevisionEdge> edges;
@@ -216,46 +182,36 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
 
     // Exact structural relations. The hardClosure below carries the forward
     // domain-specific invalidation; these edges retain predecessor consistency.
+    edges.push_back({observation, tsdf, revision::RevisionEdgeClass::hard, 0.0,
+                     "observation-tsdf-structural-v1"});
     edges.push_back(
-        {observation, tsdf, revision::RevisionEdgeClass::hard, 0.0,
-         "observation-tsdf-structural-v1"});
+        {tsdf, mesh, revision::RevisionEdgeClass::hard, 0.0, "tsdf-mesh-exact-closure-v0"});
     edges.push_back(
-        {tsdf, mesh, revision::RevisionEdgeClass::hard, 0.0,
-         "tsdf-mesh-exact-closure-v0"});
+        {mesh, texture, revision::RevisionEdgeClass::hard, 0.0, "persistent-texture-pages-v1"});
     edges.push_back(
-        {mesh, texture, revision::RevisionEdgeClass::hard, 0.0,
-         "persistent-texture-pages-v1"});
-    edges.push_back(
-        {texture, material, revision::RevisionEdgeClass::hard, 0.0,
-         "texture-material-binding-v1"});
-    edges.push_back(
-        {gaussian, gpuPublication, revision::RevisionEdgeClass::hard, 0.0,
-         "gaussian-source-publication-v1"});
+        {texture, material, revision::RevisionEdgeClass::hard, 0.0, "texture-material-binding-v1"});
+    edges.push_back({gaussian, gpuPublication, revision::RevisionEdgeClass::hard, 0.0,
+                     "gaussian-source-publication-v1"});
 
     // Certified soft output propagation.
-    edges.push_back(
-        {gaussian, currentImage, revision::RevisionEdgeClass::analytic, 1.0,
-         "gaussian-image-transmittance-v1"});
+    edges.push_back({gaussian, currentImage, revision::RevisionEdgeClass::analytic, 1.0,
+                     "gaussian-image-transmittance-v1"});
 
     const double currentWeight =
         input.temporalValidationStable ? 1.0 - input.temporalHistoryWeight : 1.0;
-    edges.push_back(
-        {currentImage, resolvedImage, revision::RevisionEdgeClass::analytic,
-         currentWeight, "temporal-current-blend-v1"});
+    edges.push_back({currentImage, resolvedImage, revision::RevisionEdgeClass::analytic,
+                     currentWeight, "temporal-current-blend-v1"});
 
     if (input.temporalValidationStable) {
-        edges.push_back(
-            {temporalHistory, resolvedImage,
-             revision::RevisionEdgeClass::analytic,
-             input.temporalHistoryWeight, "temporal-history-blend-v1"});
+        edges.push_back({temporalHistory, resolvedImage, revision::RevisionEdgeClass::analytic,
+                         input.temporalHistoryWeight, "temporal-history-blend-v1"});
     } else {
-        edges.push_back(
-            {temporalHistory, resolvedImage, revision::RevisionEdgeClass::hard,
-             0.0, "temporal-validation-discontinuity-v1"});
+        edges.push_back({temporalHistory, resolvedImage, revision::RevisionEdgeClass::hard, 0.0,
+                         "temporal-validation-discontinuity-v1"});
     }
 
-    auto graph = revision::RevisionGraph::build(
-        std::move(nodes), std::move(edges), fullWorkBaseline);
+    auto graph =
+        revision::RevisionGraph::build(std::move(nodes), std::move(edges), fullWorkBaseline);
     if (!graph)
         return std::unexpected(graph.error());
 
@@ -301,20 +257,18 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
             appendUnique(result.hardClosure, gpuPublication);
     }
 
-    if (!input.temporalValidationStable &&
-        input.temporalPixelsInvalidated > 0) {
+    if (!input.temporalValidationStable && input.temporalPixelsInvalidated > 0) {
         appendUnique(result.hardClosure, temporalHistory);
     }
 
     // If there is a direct current-image disturbance not already represented
     // by a repaired Gaussian node, it belongs in sourceBounds. The current v1
     // adapter has no such external image source, so the vector stays zero.
-    result.qois.push_back(
-        revision::RevisionQoI{
-            .name = "resolved-rgb-linf",
-            .terms = {{resolvedImage, 1.0}},
-            .epsilon = input.epsilonRgbLInf,
-        });
+    result.qois.push_back(revision::RevisionQoI{
+        .name = "resolved-rgb-linf",
+        .terms = {{resolvedImage, 1.0}},
+        .epsilon = input.epsilonRgbLInf,
+    });
 
     return result;
 }
@@ -325,8 +279,8 @@ planCapturedWorldRevision(const CapturedWorldRevisionInput& input,
     auto built = buildCapturedWorldRevisionGraph(input, costs);
     if (!built)
         return std::unexpected(built.error());
-    return revision::greedyCertifiedRevisionCone(
-        built->graph, built->sourceBounds, built->hardClosure, built->qois);
+    return revision::greedyCertifiedRevisionCone(built->graph, built->sourceBounds,
+                                                 built->hardClosure, built->qois);
 }
 
 } // namespace aether::cbrc

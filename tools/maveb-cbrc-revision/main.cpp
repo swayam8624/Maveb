@@ -52,10 +52,8 @@ struct Options final {
     float farPlane{10'000.0F};
     std::array<float, 3> cameraWorldPosition{};
     std::array<float, 16> worldToCamera{
-        1.0F, 0.0F, 0.0F, 0.0F,
-        0.0F, 1.0F, 0.0F, 0.0F,
-        0.0F, 0.0F, 1.0F, 0.0F,
-        0.0F, 0.0F, 0.0F, 1.0F,
+        1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
+        0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F,
     };
     double epsilon{1.0 / 255.0};
     double historyWeight{0.9};
@@ -87,8 +85,7 @@ struct Options final {
 }
 
 template <std::size_t N>
-[[nodiscard]] std::optional<std::array<float, N>>
-parseFloatCsv(std::string_view csv) {
+[[nodiscard]] std::optional<std::array<float, N>> parseFloatCsv(std::string_view csv) {
     std::array<float, N> result{};
     std::size_t start{};
     for (std::size_t index = 0; index < N; ++index) {
@@ -115,8 +112,7 @@ parseFloatCsv(std::string_view csv) {
     Options options;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
-        const auto requireValue = [&](std::string_view name)
-            -> std::optional<std::string_view> {
+        const auto requireValue = [&](std::string_view name) -> std::optional<std::string_view> {
             if (i + 1 >= argc) {
                 std::cerr << "Missing value for " << name << '\n';
                 return std::nullopt;
@@ -134,8 +130,8 @@ parseFloatCsv(std::string_view csv) {
             if (!value)
                 return std::nullopt;
             options.outputDir = *value;
-        } else if (arg == "--entity" || arg == "--timestamp" ||
-                   arg == "--width" || arg == "--height") {
+        } else if (arg == "--entity" || arg == "--timestamp" || arg == "--width" ||
+                   arg == "--height") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -175,10 +171,9 @@ parseFloatCsv(std::string_view csv) {
             if (!parsed)
                 return std::nullopt;
             options.cameraWorldPosition = *parsed;
-        } else if (arg == "--focal-x" || arg == "--focal-y" ||
-                   arg == "--center-x" || arg == "--center-y" ||
-                   arg == "--near" || arg == "--far" ||
-                   arg == "--epsilon" || arg == "--history-weight") {
+        } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
+                   arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
+                   arg == "--history-weight") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -204,13 +199,12 @@ parseFloatCsv(std::string_view csv) {
         } else if (arg == "--history-unstable") {
             options.historyStable = false;
         } else if (arg == "--help") {
-            std::cout
-                << "Usage: maveb-cbrc-revision --archive WORLD --entity ID "
-                   "--target x,y,z --timestamp NS --output-dir DIR [camera options]\n"
-                << "  --width N --height N --focal-x F --focal-y F\n"
-                << "  --center-x F --center-y F --near F --far F\n"
-                << "  --world-to-camera m00,...,m33 --camera-world-position x,y,z\n"
-                << "  --epsilon E --history-weight W --history-unstable\n";
+            std::cout << "Usage: maveb-cbrc-revision --archive WORLD --entity ID "
+                         "--target x,y,z --timestamp NS --output-dir DIR [camera options]\n"
+                      << "  --width N --height N --focal-x F --focal-y F\n"
+                      << "  --center-x F --center-y F --near F --far F\n"
+                      << "  --world-to-camera m00,...,m33 --camera-world-position x,y,z\n"
+                      << "  --epsilon E --history-weight W --history-unstable\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -230,44 +224,41 @@ parseFloatCsv(std::string_view csv) {
     return options;
 }
 
-[[nodiscard]] std::filesystem::path gaussianSidecar(
-    const std::filesystem::path& archive, std::uint64_t revision) {
+[[nodiscard]] std::filesystem::path gaussianSidecar(const std::filesystem::path& archive,
+                                                    std::uint64_t revision) {
     return archive.string() + ".gaussians.r" + std::to_string(revision) + ".bin";
 }
 
-[[nodiscard]] std::filesystem::path ownershipSidecar(
-    const std::filesystem::path& archive, std::uint64_t revision) {
+[[nodiscard]] std::filesystem::path ownershipSidecar(const std::filesystem::path& archive,
+                                                     std::uint64_t revision) {
     return archive.string() + ".ownership.r" + std::to_string(revision) + ".bin";
 }
 
-[[nodiscard]] aether::Result<std::vector<std::byte>>
-readBytes(const std::filesystem::path& path) {
+[[nodiscard]] aether::Result<std::vector<std::byte>> readBytes(const std::filesystem::path& path) {
     std::error_code error;
     const auto size = std::filesystem::file_size(path, error);
     constexpr std::uintmax_t maximumBytes = 32ULL * 1024ULL * 1024ULL * 1024ULL;
     if (error)
-        return aether::fail(aether::ErrorCode::notFound,
-                            "Unable to inspect CBRC sidecar", path.string());
-    if (size == 0 || size > maximumBytes ||
-        size > std::numeric_limits<std::size_t>::max()) {
-        return aether::fail(aether::ErrorCode::resourceExhausted,
-                            "CBRC sidecar size is invalid", path.string());
+        return aether::fail(aether::ErrorCode::notFound, "Unable to inspect CBRC sidecar",
+                            path.string());
+    if (size == 0 || size > maximumBytes || size > std::numeric_limits<std::size_t>::max()) {
+        return aether::fail(aether::ErrorCode::resourceExhausted, "CBRC sidecar size is invalid",
+                            path.string());
     }
     std::vector<std::byte> result(static_cast<std::size_t>(size));
     std::ifstream stream(path, std::ios::binary);
     stream.read(reinterpret_cast<char*>(result.data()),
                 static_cast<std::streamsize>(result.size()));
     if (!stream)
-        return aether::fail(aether::ErrorCode::io,
-                            "Unable to read CBRC sidecar", path.string());
+        return aether::fail(aether::ErrorCode::io, "Unable to read CBRC sidecar", path.string());
     return result;
 }
 
-[[nodiscard]] aether::Result<void>
-atomicWrite(const std::filesystem::path& path, std::span<const std::byte> bytes) {
+[[nodiscard]] aether::Result<void> atomicWrite(const std::filesystem::path& path,
+                                               std::span<const std::byte> bytes) {
     if (bytes.empty())
-        return aether::fail(aether::ErrorCode::invalidArgument,
-                            "Cannot persist empty CBRC sidecar", path.string());
+        return aether::fail(aether::ErrorCode::invalidArgument, "Cannot persist empty CBRC sidecar",
+                            path.string());
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     stream.write(reinterpret_cast<const char*>(bytes.data()),
@@ -276,21 +267,19 @@ atomicWrite(const std::filesystem::path& path, std::span<const std::byte> bytes)
     if (!stream) {
         std::error_code ignored;
         std::filesystem::remove(temporary, ignored);
-        return aether::fail(aether::ErrorCode::io,
-                            "Unable to write CBRC sidecar", path.string());
+        return aether::fail(aether::ErrorCode::io, "Unable to write CBRC sidecar", path.string());
     }
     std::error_code error;
     std::filesystem::rename(temporary, path, error);
     if (error) {
         std::filesystem::remove(temporary, error);
-        return aether::fail(aether::ErrorCode::io,
-                            "Unable to publish CBRC sidecar", error.message());
+        return aether::fail(aether::ErrorCode::io, "Unable to publish CBRC sidecar",
+                            error.message());
     }
     return {};
 }
 
-[[nodiscard]] bool writeText(const std::filesystem::path& path,
-                             std::string_view text) {
+[[nodiscard]] bool writeText(const std::filesystem::path& path, std::string_view text) {
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::trunc);
     stream << text;
@@ -325,8 +314,7 @@ atomicWrite(const std::filesystem::path& path, std::span<const std::byte> bytes)
 [[nodiscard]] double sceneColorCap(const GaussianAsset& asset) {
     double cap = 1.0;
     for (const auto& primitive : asset.gaussians) {
-        auto bound =
-            aether::world_gaussian::gaussianRendererColorUpperBound(primitive);
+        auto bound = aether::world_gaussian::gaussianRendererColorUpperBound(primitive);
         if (!bound)
             return std::numeric_limits<double>::quiet_NaN();
         for (const double channel : *bound)
@@ -347,8 +335,8 @@ struct SupportPlan final {
     std::array<double, 4> normalizedRect{};
 };
 
-[[nodiscard]] SupportPlan supportPlan(
-    const aether::world_gaussian::GaussianImageRevisionCertificate& certificate) {
+[[nodiscard]] SupportPlan
+supportPlan(const aether::world_gaussian::GaussianImageRevisionCertificate& certificate) {
     SupportPlan result;
     std::size_t minX = certificate.width;
     std::size_t minY = certificate.height;
@@ -374,8 +362,8 @@ struct SupportPlan final {
     const std::size_t width = maxX - minX + 1;
     const std::size_t height = maxY - minY + 1;
     result.pixels = static_cast<std::uint64_t>(width) * height;
-    result.fullFrame = result.pixels ==
-        static_cast<std::uint64_t>(certificate.width) * certificate.height;
+    result.fullFrame =
+        result.pixels == static_cast<std::uint64_t>(certificate.width) * certificate.height;
     result.normalizedRect = {
         static_cast<double>(minX) / certificate.width,
         static_cast<double>(minY) / certificate.height,
@@ -420,14 +408,12 @@ int main(int argc, char** argv) try {
         std::cerr << asset.error().describe() << '\n';
         return EXIT_FAILURE;
     }
-    auto ownershipBytes =
-        readBytes(ownershipSidecar(options->archive, previousRevision));
+    auto ownershipBytes = readBytes(ownershipSidecar(options->archive, previousRevision));
     if (!ownershipBytes) {
         std::cerr << ownershipBytes.error().describe() << '\n';
         return EXIT_FAILURE;
     }
-    auto ownership =
-        aether::world_gaussian::GaussianOwnershipCodec::decode(*ownershipBytes);
+    auto ownership = aether::world_gaussian::GaussianOwnershipCodec::decode(*ownershipBytes);
     if (!ownership) {
         std::cerr << ownership.error().describe() << '\n';
         return EXIT_FAILURE;
@@ -466,10 +452,9 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
-    auto edited =
-        aether::world_gaussian::translatePersistentGaussianEntityIndexed(
-            *world, *asset, *ownership, *overlay, EntityId{options->entity},
-            options->target, options->timestamp);
+    auto edited = aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+        *world, *asset, *ownership, *overlay, EntityId{options->entity}, options->target,
+        options->timestamp);
     if (!edited) {
         std::cerr << edited.error().describe() << '\n';
         return EXIT_FAILURE;
@@ -493,45 +478,39 @@ int main(int argc, char** argv) try {
     camera.cameraWorldPosition = options->cameraWorldPosition;
     camera.worldToCamera = options->worldToCamera;
 
-    auto certificate =
-        aether::world_gaussian::certifyGaussianImageRevision(
-            beforeChanged, afterChanged, camera, colorCap);
+    auto certificate = aether::world_gaussian::certifyGaussianImageRevision(
+        beforeChanged, afterChanged, camera, colorCap);
     if (!certificate) {
         std::cerr << certificate.error().describe() << '\n';
         return EXIT_FAILURE;
     }
     const auto support = supportPlan(*certificate);
-    const std::uint64_t fullPixels =
-        static_cast<std::uint64_t>(camera.width) * camera.height;
+    const std::uint64_t fullPixels = static_cast<std::uint64_t>(camera.width) * camera.height;
 
     const double localHistoryRepairWork =
-        options->historyStable
-            ? static_cast<double>(support.empty ? 0 : support.pixels)
-            : static_cast<double>(fullPixels);
+        options->historyStable ? static_cast<double>(support.empty ? 0 : support.pixels)
+                               : static_cast<double>(fullPixels);
     const double fullHistoryRepairWork = static_cast<double>(fullPixels);
     auto plannerGraph = aether::revision::RevisionGraph::build(
         {
             {"exact-current-frame", 0.0, 0.0},
             {"temporal-history-repair", localHistoryRepairWork, 0.0},
         },
-        {},
-        fullHistoryRepairWork);
+        {}, fullHistoryRepairWork);
     if (!plannerGraph) {
         std::cerr << plannerGraph.error().describe() << '\n';
         return EXIT_FAILURE;
     }
-    std::vector<double> sourceBounds{
-        0.0, certificate->maximumRgbLInfBound};
+    std::vector<double> sourceBounds{0.0, certificate->maximumRgbLInfBound};
     std::vector<aether::revision::RevisionNodeId> hard{0};
     if (!options->historyStable)
         hard.push_back(1);
-    const double historyWeight =
-        options->historyStable ? options->historyWeight : 1.0;
+    const double historyWeight = options->historyStable ? options->historyWeight : 1.0;
     const std::vector<aether::revision::RevisionQoI> qois{
         {"resolved-rgb-linf", {{1, historyWeight}}, options->epsilon},
     };
-    auto planned = aether::revision::greedyCertifiedRevisionCone(
-        *plannerGraph, sourceBounds, hard, qois);
+    auto planned =
+        aether::revision::greedyCertifiedRevisionCone(*plannerGraph, sourceBounds, hard, qois);
     if (!planned) {
         std::cerr << planned.error().describe() << '\n';
         return EXIT_FAILURE;
@@ -557,8 +536,7 @@ int main(int argc, char** argv) try {
     const auto afterGaussianPath = gaussianSidecar(options->archive, revision);
     const auto afterOwnershipPath = ownershipSidecar(options->archive, revision);
     auto encodedGaussians = aether::gaussian::GaussianCodec::encode(*asset);
-    auto encodedOwnership =
-        aether::world_gaussian::GaussianOwnershipCodec::encode(*ownership);
+    auto encodedOwnership = aether::world_gaussian::GaussianOwnershipCodec::encode(*ownership);
     if (!encodedGaussians || !encodedOwnership) {
         std::cerr << "Unable to encode persistent CBRC revision sidecars\n";
         return EXIT_FAILURE;
@@ -579,101 +557,70 @@ int main(int argc, char** argv) try {
     std::error_code directoryError;
     std::filesystem::create_directories(options->outputDir, directoryError);
     if (directoryError) {
-        std::cerr << "Unable to create output directory: "
-                  << directoryError.message() << '\n';
+        std::cerr << "Unable to create output directory: " << directoryError.message() << '\n';
         return EXIT_FAILURE;
     }
 
     const std::uint64_t touchedBytes =
-        static_cast<std::uint64_t>(owned.size()) *
-        aether::gaussian::GaussianCodec::recordBytes;
-    const std::uint64_t fullPublicationBytes =
-        static_cast<std::uint64_t>(asset->gaussians.size()) *
-        aether::gaussian::GaussianCodec::recordBytes;
+        static_cast<std::uint64_t>(owned.size()) * aether::gaussian::GaussianCodec::recordBytes;
+    const std::uint64_t fullPublicationBytes = static_cast<std::uint64_t>(asset->gaussians.size()) *
+                                               aether::gaussian::GaussianCodec::recordBytes;
 
     std::ostringstream translation;
-    translation << std::setprecision(17)
-                << "{"
-                << "\"schemaVersion\":1,"
-                << "\"previousRevision\":" << previousRevision << ','
-                << "\"revision\":" << revision << ','
-                << "\"gaussianCount\":" << asset->gaussians.size() << ','
-                << "\"beforeGaussianSidecar\":\""
-                << jsonEscape(gaussianSidecar(options->archive, previousRevision).string())
-                << "\","
-                << "\"afterGaussianSidecar\":\""
-                << jsonEscape(afterGaussianPath.string()) << "\","
-                << "\"gaussianInputFormat\":\"aether-bin\","
-                << "\"translatedGaussians\":" << edited->translatedGaussians << ','
-                << "\"gaussiansInspected\":"
-                << edited->reoptimizationSelection.inspectedGaussians << ','
-                << "\"usedOverlayIndex\":"
-                << (edited->usedOverlayIndex ? "true" : "false") << ','
-                << "\"overlayIndexValid\":"
-                << (edited->overlayIndexValid ? "true" : "false") << ','
-                << "\"overlayIndexCompacted\":"
-                << (edited->overlayIndexCompacted ? "true" : "false") << ','
-                << "\"overlayDirtyRegionsQueried\":"
-                << edited->overlayDiagnostics.dirtyRegionsQueried << ','
-                << "\"overlayBaseEntriesVisited\":"
-                << edited->overlayDiagnostics.baseEntriesVisited << ','
-                << "\"overlayStaleBaseEntriesSkipped\":"
-                << edited->overlayDiagnostics.staleBaseEntriesSkipped << ','
-                << "\"overlayDeltaEntriesVisited\":"
-                << edited->overlayDiagnostics.deltaEntriesVisited << ','
-                << "\"reoptimizationGaussians\":"
-                << edited->reoptimizationSelection.gaussianIndices.size() << ','
-                << "\"protectedStableGaussians\":"
-                << edited->reoptimizationSelection.rejectedStableOwnedGaussians << ','
-                << "\"conservativeBoundaryGaussians\":"
-                << edited->reoptimizationSelection.conservativeUnownedMatches << ','
-                << "\"dirtyRegionCount\":"
-                << edited->worldEdit.selectiveUpdate.dirtyRegions.size() << ','
-                << "\"persisted\":true,"
-                << "\"persistenceError\":\"\""
-                << "}\n";
+    translation
+        << std::setprecision(17) << "{"
+        << "\"schemaVersion\":1,"
+        << "\"previousRevision\":" << previousRevision << ',' << "\"revision\":" << revision << ','
+        << "\"gaussianCount\":" << asset->gaussians.size() << ',' << "\"beforeGaussianSidecar\":\""
+        << jsonEscape(gaussianSidecar(options->archive, previousRevision).string()) << "\","
+        << "\"afterGaussianSidecar\":\"" << jsonEscape(afterGaussianPath.string()) << "\","
+        << "\"gaussianInputFormat\":\"aether-bin\","
+        << "\"translatedGaussians\":" << edited->translatedGaussians << ','
+        << "\"gaussiansInspected\":" << edited->reoptimizationSelection.inspectedGaussians << ','
+        << "\"usedOverlayIndex\":" << (edited->usedOverlayIndex ? "true" : "false") << ','
+        << "\"overlayIndexValid\":" << (edited->overlayIndexValid ? "true" : "false") << ','
+        << "\"overlayIndexCompacted\":" << (edited->overlayIndexCompacted ? "true" : "false") << ','
+        << "\"overlayDirtyRegionsQueried\":" << edited->overlayDiagnostics.dirtyRegionsQueried
+        << ',' << "\"overlayBaseEntriesVisited\":" << edited->overlayDiagnostics.baseEntriesVisited
+        << ',' << "\"overlayStaleBaseEntriesSkipped\":"
+        << edited->overlayDiagnostics.staleBaseEntriesSkipped << ','
+        << "\"overlayDeltaEntriesVisited\":" << edited->overlayDiagnostics.deltaEntriesVisited
+        << ','
+        << "\"reoptimizationGaussians\":" << edited->reoptimizationSelection.gaussianIndices.size()
+        << ',' << "\"protectedStableGaussians\":"
+        << edited->reoptimizationSelection.rejectedStableOwnedGaussians << ','
+        << "\"conservativeBoundaryGaussians\":"
+        << edited->reoptimizationSelection.conservativeUnownedMatches << ','
+        << "\"dirtyRegionCount\":" << edited->worldEdit.selectiveUpdate.dirtyRegions.size() << ','
+        << "\"persisted\":true,"
+        << "\"persistenceError\":\"\""
+        << "}\n";
 
-    const std::uint64_t affectedCount =
-        static_cast<std::uint64_t>(std::count_if(
-            certificate->rgbLInfBounds.begin(),
-            certificate->rgbLInfBounds.end(),
-            [](double value) { return value > 0.0; }));
+    const std::uint64_t affectedCount = static_cast<std::uint64_t>(
+        std::count_if(certificate->rgbLInfBounds.begin(), certificate->rgbLInfBounds.end(),
+                      [](double value) { return value > 0.0; }));
     const double affectedRatio =
-        fullPixels == 0
-            ? 0.0
-            : static_cast<double>(affectedCount) /
-                  static_cast<double>(fullPixels);
-    const double resolvedBound =
-        planned->qois.empty()
-            ? std::numeric_limits<double>::infinity()
-            : planned->qois.front().bound;
+        fullPixels == 0 ? 0.0
+                        : static_cast<double>(affectedCount) / static_cast<double>(fullPixels);
+    const double resolvedBound = planned->qois.empty() ? std::numeric_limits<double>::infinity()
+                                                       : planned->qois.front().bound;
 
     std::ostringstream cert;
-    cert << std::setprecision(17)
-         << "{"
+    cert << std::setprecision(17) << "{"
          << "\"schemaVersion\":1,"
          << "\"available\":true,"
          << "\"revisionVersion\":" << revision << ','
          << "\"changedGaussians\":" << edited->translatedGaussians << ','
-         << "\"affectedPixels\":" << affectedCount << ','
-         << "\"fullFramePixels\":" << fullPixels << ','
-         << "\"affectedPixelRatio\":" << affectedRatio << ','
-         << "\"maximumCurrentRgbBound\":"
-         << certificate->maximumRgbLInfBound << ','
-         << "\"sceneColorUpperBound\":" << colorCap << ','
-         << "\"camera\":{"
-         << "\"width\":" << camera.width << ','
-         << "\"height\":" << camera.height << ','
-         << "\"focalX\":" << camera.focalX << ','
-         << "\"focalY\":" << camera.focalY << ','
-         << "\"centerX\":" << camera.centerX << ','
-         << "\"centerY\":" << camera.centerY << ','
-         << "\"near\":" << camera.nearPlane << ','
-         << "\"far\":" << camera.farPlane << ','
-         << "\"cameraWorldPosition\":["
-         << camera.cameraWorldPosition[0] << ','
-         << camera.cameraWorldPosition[1] << ','
-         << camera.cameraWorldPosition[2] << "],"
+         << "\"affectedPixels\":" << affectedCount << ',' << "\"fullFramePixels\":" << fullPixels
+         << ',' << "\"affectedPixelRatio\":" << affectedRatio << ','
+         << "\"maximumCurrentRgbBound\":" << certificate->maximumRgbLInfBound << ','
+         << "\"sceneColorUpperBound\":" << colorCap << ',' << "\"camera\":{"
+         << "\"width\":" << camera.width << ',' << "\"height\":" << camera.height << ','
+         << "\"focalX\":" << camera.focalX << ',' << "\"focalY\":" << camera.focalY << ','
+         << "\"centerX\":" << camera.centerX << ',' << "\"centerY\":" << camera.centerY << ','
+         << "\"near\":" << camera.nearPlane << ',' << "\"far\":" << camera.farPlane << ','
+         << "\"cameraWorldPosition\":[" << camera.cameraWorldPosition[0] << ','
+         << camera.cameraWorldPosition[1] << ',' << camera.cameraWorldPosition[2] << "],"
          << "\"worldToCamera\":[";
     for (std::size_t i = 0; i < camera.worldToCamera.size(); ++i) {
         if (i)
@@ -681,50 +628,37 @@ int main(int argc, char** argv) try {
         cert << camera.worldToCamera[i];
     }
     cert << "]},"
-         << "\"invalidationCoversCertifiedSupport\":"
-         << (repairHistory ? "true" : "false") << ','
-         << "\"temporalFullFrameFallback\":"
-         << (temporal.fullFrame ? "true" : "false") << ','
+         << "\"invalidationCoversCertifiedSupport\":" << (repairHistory ? "true" : "false") << ','
+         << "\"temporalFullFrameFallback\":" << (temporal.fullFrame ? "true" : "false") << ','
          << "\"outputConePlanner\":{"
          << "\"available\":true,"
          << "\"stable\":" << (planned->stable ? "true" : "false") << ','
          << "\"passes\":" << (planned->passes ? "true" : "false") << ','
-         << "\"temporalRepairSelected\":"
-         << (repairHistory ? "true" : "false") << ','
+         << "\"temporalRepairSelected\":" << (repairHistory ? "true" : "false") << ','
          << "\"fullRepair\":" << (planned->fullRebuild ? "true" : "false") << ','
-         << "\"resolvedRgbBound\":" << resolvedBound << ','
-         << "\"epsilon\":" << options->epsilon << ','
-         << "\"plannerWork\":" << planned->work << ','
-         << "\"fullWork\":" << planned->fullWork
-         << "},"
+         << "\"resolvedRgbBound\":" << resolvedBound << ',' << "\"epsilon\":" << options->epsilon
+         << ',' << "\"plannerWork\":" << planned->work << ','
+         << "\"fullWork\":" << planned->fullWork << "},"
          << "\"publication\":{"
-         << "\"touchedRecords\":" << owned.size() << ','
-         << "\"contiguousRanges\":0,"
+         << "\"touchedRecords\":" << owned.size() << ',' << "\"contiguousRanges\":0,"
          << "\"touchedBytes\":" << touchedBytes << ','
-         << "\"fullBufferBytes\":" << fullPublicationBytes << ','
-         << "\"byteRatio\":"
+         << "\"fullBufferBytes\":" << fullPublicationBytes << ',' << "\"byteRatio\":"
          << (fullPublicationBytes == 0
                  ? 0.0
-                 : static_cast<double>(touchedBytes) /
-                       static_cast<double>(fullPublicationBytes)) << ','
-         << "\"frameSlotsQuiesced\":0,"
-         << "\"globalTemporalHistoryInvalidated\":"
-         << (temporal.fullFrame ? "true" : "false")
+                 : static_cast<double>(touchedBytes) / static_cast<double>(fullPublicationBytes))
+         << ',' << "\"frameSlotsQuiesced\":0,"
+         << "\"globalTemporalHistoryInvalidated\":" << (temporal.fullFrame ? "true" : "false")
          << "},"
          << "\"temporal\":{"
          << "\"fullFrame\":" << (temporal.fullFrame ? "true" : "false") << ','
          << "\"empty\":" << (temporal.empty ? "true" : "false") << ','
          << "\"invalidatedPixels\":" << temporal.pixels << ','
-         << "\"fullFramePixels\":" << fullPixels << ','
-         << "\"pixelRatio\":"
+         << "\"fullFramePixels\":" << fullPixels << ',' << "\"pixelRatio\":"
          << (fullPixels == 0
                  ? 0.0
-                 : static_cast<double>(temporal.pixels) /
-                       static_cast<double>(fullPixels)) << ','
-         << "\"normalizedRect\":["
-         << temporal.normalizedRect[0] << ','
-         << temporal.normalizedRect[1] << ','
-         << temporal.normalizedRect[2] << ','
+                 : static_cast<double>(temporal.pixels) / static_cast<double>(fullPixels))
+         << ',' << "\"normalizedRect\":[" << temporal.normalizedRect[0] << ','
+         << temporal.normalizedRect[1] << ',' << temporal.normalizedRect[2] << ','
          << temporal.normalizedRect[3] << "]"
          << "},"
          << "\"evidenceMode\":\"headless-reference-certificate\""
@@ -732,20 +666,15 @@ int main(int argc, char** argv) try {
 
     const auto translationPath = options->outputDir / "translation.json";
     const auto certificatePath = options->outputDir / "certificate.json";
-    if (!writeText(translationPath, translation.str()) ||
-        !writeText(certificatePath, cert.str())) {
+    if (!writeText(translationPath, translation.str()) || !writeText(certificatePath, cert.str())) {
         std::cerr << "Unable to publish CBRC evidence JSON\n";
         return EXIT_FAILURE;
     }
 
-    std::cout << "{\"translation\":\""
-              << jsonEscape(translationPath.string())
-              << "\",\"certificate\":\""
-              << jsonEscape(certificatePath.string())
+    std::cout << "{\"translation\":\"" << jsonEscape(translationPath.string())
+              << "\",\"certificate\":\"" << jsonEscape(certificatePath.string())
               << "\",\"revision\":" << revision
-              << ",\"temporalRepairSelected\":"
-              << (repairHistory ? "true" : "false")
-              << "}\n";
+              << ",\"temporalRepairSelected\":" << (repairHistory ? "true" : "false") << "}\n";
     return EXIT_SUCCESS;
 } catch (const std::exception& error) {
     std::cerr << "CBRC revision exception: " << error.what() << '\n';

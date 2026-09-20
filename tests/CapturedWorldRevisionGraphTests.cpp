@@ -67,23 +67,19 @@ bool contains(const std::vector<aether::revision::RevisionNodeId>& values,
 }
 
 void testStructuralHardClosureRegistersCrossLayerWork() {
-    auto built =
-        aether::cbrc::buildCapturedWorldRevisionGraph(input(), costs());
+    auto built = aether::cbrc::buildCapturedWorldRevisionGraph(input(), costs());
     expect(built.has_value(), "captured-world graph must build");
     if (!built)
         return;
     expect(contains(built->hardClosure, built->observation),
            "changed observations must be in exact hard closure");
-    expect(contains(built->hardClosure, built->tsdf),
-           "dirty TSDF must be in exact hard closure");
-    expect(contains(built->hardClosure, built->mesh),
-           "dirty TSDF must force exact mesh repair");
+    expect(contains(built->hardClosure, built->tsdf), "dirty TSDF must be in exact hard closure");
+    expect(contains(built->hardClosure, built->mesh), "dirty TSDF must force exact mesh repair");
     expect(contains(built->hardClosure, built->texture),
            "dirty mesh-linked texture pages must be structural repair");
     expect(contains(built->hardClosure, built->material),
            "dirty material binding must be structural repair");
-    expect(contains(built->hardClosure, built->gaussian),
-           "Gaussian edit must be in hard closure");
+    expect(contains(built->hardClosure, built->gaussian), "Gaussian edit must be in hard closure");
     expect(contains(built->hardClosure, built->gpuPublication),
            "Gaussian edit must force exact GPU publication");
     expect(!contains(built->hardClosure, built->temporalHistory),
@@ -93,8 +89,7 @@ void testStructuralHardClosureRegistersCrossLayerWork() {
 void testUnstableTemporalValidationPromotesHistoryToHard() {
     auto value = input();
     value.temporalValidationStable = false;
-    auto built =
-        aether::cbrc::buildCapturedWorldRevisionGraph(value, costs());
+    auto built = aether::cbrc::buildCapturedWorldRevisionGraph(value, costs());
     expect(built.has_value(), "unstable temporal graph must still build");
     if (!built)
         return;
@@ -116,8 +111,7 @@ void testPlannerProducesCertifiedResult() {
 void testIncrementalWorkCannotExceedFullBaseline() {
     auto value = input();
     value.gaussiansUpdated = value.fullGaussians + 1;
-    auto result =
-        aether::cbrc::buildCapturedWorldRevisionGraph(value, costs());
+    auto result = aether::cbrc::buildCapturedWorldRevisionGraph(value, costs());
     expect(!result.has_value(),
            "captured-world adapter must reject impossible locality accounting");
 }
@@ -125,8 +119,7 @@ void testIncrementalWorkCannotExceedFullBaseline() {
 void testMissingFrozenCostVersionFailsClosed() {
     auto model = costs();
     model.version.clear();
-    auto result =
-        aether::cbrc::buildCapturedWorldRevisionGraph(input(), model);
+    auto result = aether::cbrc::buildCapturedWorldRevisionGraph(input(), model);
     expect(!result.has_value(), "unversioned cost model must fail closed");
 }
 

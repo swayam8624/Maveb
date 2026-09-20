@@ -86,8 +86,7 @@ struct GaussianRevisionCertificateStatistics final {
     [[nodiscard]] double affectedPixelRatio() const noexcept {
         if (fullFramePixels == 0)
             return 0.0;
-        return static_cast<double>(affectedPixels) /
-               static_cast<double>(fullFramePixels);
+        return static_cast<double>(affectedPixels) / static_cast<double>(fullFramePixels);
     }
 };
 

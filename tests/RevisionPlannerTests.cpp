@@ -1,11 +1,11 @@
 #include <aether/revision/RevisionPlanner.hpp>
 
-#include <stdexcept>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace {
@@ -119,8 +119,7 @@ void testGreedyExpansionCanAvoidFullRebuild() {
     expect(result->passes, "greedy result must certify QoI");
     expect(!result->fullRebuild,
            "greedy planner should repair cheap coupled node rather than full rebuild");
-    expect(result->work < result->fullWork,
-           "greedy certified cone must save frozen scalar work");
+    expect(result->work < result->fullWork, "greedy certified cone must save frozen scalar work");
 }
 
 void testFullFallbackWhenOnlyOutputRepairCanPass() {
@@ -133,8 +132,7 @@ void testFullFallbackWhenOnlyOutputRepairCanPass() {
     if (!result)
         return;
     expect(result->passes, "full rebuild fallback must always certify zero residual");
-    expect(result->fullRebuild,
-           "zero epsilon should force full rebuild in this chain");
+    expect(result->fullRebuild, "zero epsilon should force full rebuild in this chain");
 }
 
 void testInvalidAnalyticEdgeWithoutProvenanceRejected() {
@@ -146,8 +144,7 @@ void testInvalidAnalyticEdgeWithoutProvenanceRejected() {
         {
             {0, 1, RevisionEdgeClass::analytic, 0.5, ""},
         });
-    expect(!graph.has_value(),
-           "analytic edge without bound provenance must fail closed");
+    expect(!graph.has_value(), "analytic edge without bound provenance must fail closed");
 }
 
 } // namespace

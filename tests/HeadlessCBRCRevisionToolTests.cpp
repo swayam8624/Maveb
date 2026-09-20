@@ -3,13 +3,13 @@
 #include <aether/world_gaussian/GaussianOwnershipCodec.hpp>
 
 #include <chrono>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <span>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -24,8 +24,7 @@ void expect(bool condition, const char* message) {
     }
 }
 
-bool writeBytes(const std::filesystem::path& path,
-                std::span<const std::byte> bytes) {
+bool writeBytes(const std::filesystem::path& path, std::span<const std::byte> bytes) {
     std::ofstream stream(path, std::ios::binary | std::ios::trunc);
     stream.write(reinterpret_cast<const char*>(bytes.data()),
                  static_cast<std::streamsize>(bytes.size()));
@@ -84,8 +83,7 @@ int main(int argc, char** argv) noexcept {
             return EXIT_FAILURE;
         }
         const std::filesystem::path tool = argv[1];
-        const auto stamp =
-            std::chrono::steady_clock::now().time_since_epoch().count();
+        const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
         const auto root = std::filesystem::temp_directory_path() /
                           ("maveb-cbrc-revision-test-" + std::to_string(stamp));
         std::filesystem::create_directories(root);
@@ -117,8 +115,7 @@ int main(int argc, char** argv) noexcept {
         };
 
         auto encodedGaussians = aether::gaussian::GaussianCodec::encode(asset);
-        auto encodedOwnership =
-            aether::world_gaussian::GaussianOwnershipCodec::encode(ownership);
+        auto encodedOwnership = aether::world_gaussian::GaussianOwnershipCodec::encode(ownership);
         expect(encodedGaussians.has_value() && encodedOwnership.has_value(),
                "fixture sidecars must encode");
         if (!encodedGaussians || !encodedOwnership)
@@ -129,13 +126,11 @@ int main(int argc, char** argv) noexcept {
                "fixture ownership sidecar must write");
 
         std::ostringstream command;
-        command << '"' << tool.string() << '"'
-                << " --archive " << '"' << archive.string() << '"'
+        command << '"' << tool.string() << '"' << " --archive " << '"' << archive.string() << '"'
                 << " --entity 1"
                 << " --target 0.2,0,3"
                 << " --timestamp 200"
-                << " --output-dir " << '"' << output.string() << '"'
-                << " --width 64 --height 64"
+                << " --output-dir " << '"' << output.string() << '"' << " --width 64 --height 64"
                 << " --focal-x 70 --focal-y 70"
                 << " --center-x 32 --center-y 32"
                 << " --epsilon 1.0";
@@ -163,8 +158,7 @@ int main(int argc, char** argv) noexcept {
                "certificate evidence must include planner decision");
 
         auto reloaded = aether::world::PersistentWorldModel::load(archive);
-        expect(reloaded.has_value() && reloaded->latest() &&
-                   reloaded->latest()->revision == 2,
+        expect(reloaded.has_value() && reloaded->latest() && reloaded->latest()->revision == 2,
                "headless CBRC tool must commit revision 2");
 
         std::error_code ignored;

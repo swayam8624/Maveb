@@ -13,7 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)loadWorldArchiveAtURL:(NSURL*)archiveURL error:(NSError* _Nullable* _Nullable)error;
 
 /// Imports an initial Gaussian PLY for the loaded world, assigns stable entity ownership, and makes
-/// it the live captured scene. Subsequent saves use deterministic sidecars beside the world archive.
+/// it the live captured scene. Subsequent saves use deterministic sidecars beside the world
+/// archive.
 - (BOOL)loadGaussianPLYAtURL:(NSURL*)plyURL error:(NSError* _Nullable* _Nullable)error;
 
 /// Persists the current world revision chain, edited Gaussian field, and ownership map.
@@ -24,12 +25,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData* _Nullable)ownershipJSONWithError:(NSError* _Nullable* _Nullable)error;
 /// Post-frame CBRC evidence for the most recently certified Gaussian revision.
 - (NSData* _Nullable)revisionCertificateJSONWithError:(NSError* _Nullable* _Nullable)error;
-- (BOOL)setRevisionRgbTolerance:(double)epsilon
-                          error:(NSError* _Nullable* _Nullable)error;
+- (BOOL)setRevisionRgbTolerance:(double)epsilon error:(NSError* _Nullable* _Nullable)error;
 
 /// Moves one stable persistent entity and all Gaussian primitives owned by it. The GPU subset is
-/// preflighted before the World+CPU-Gaussian transaction commits, then published to Metal only after
-/// all engine invariants pass.
+/// preflighted before the World+CPU-Gaussian transaction commits, then published to Metal only
+/// after all engine invariants pass.
 - (NSData* _Nullable)translateEntity:(uint64_t)entityId
                                    x:(float)x
                                    y:(float)y
@@ -39,21 +39,23 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 /// Exact C entry points keep Swift 6 independent from Objective-C selector import heuristics.
-FOUNDATION_EXPORT BOOL AetherPersistentLoadWorld(
-    AetherPersistentGaussianView* view, NSURL* archiveURL, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT BOOL AetherPersistentLoadGaussianPLY(
-    AetherPersistentGaussianView* view, NSURL* plyURL, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT BOOL AetherPersistentSaveState(
-    AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentLoadWorld(AetherPersistentGaussianView* view,
+                                                 NSURL* archiveURL,
+                                                 NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentLoadGaussianPLY(AetherPersistentGaussianView* view,
+                                                       NSURL* plyURL,
+                                                       NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentSaveState(AetherPersistentGaussianView* view,
+                                                 NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentEntitiesJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentOwnershipJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentRevisionCertificateJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT BOOL AetherPersistentSetRevisionRgbTolerance(
-    AetherPersistentGaussianView* view, double epsilon,
-    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentSetRevisionRgbTolerance(AetherPersistentGaussianView* view,
+                                                               double epsilon,
+                                                               NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentTranslateEntity(
     AetherPersistentGaussianView* view, uint64_t entityId, float x, float y, float z,
     uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);

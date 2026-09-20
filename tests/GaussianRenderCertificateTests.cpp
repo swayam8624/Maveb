@@ -27,8 +27,7 @@ struct Layer final {
     double depth{};
 };
 
-std::array<double, 3> render(std::vector<Layer> layers,
-                             const std::array<double, 3>& background) {
+std::array<double, 3> render(std::vector<Layer> layers, const std::array<double, 3>& background) {
     std::sort(layers.begin(), layers.end(),
               [](const Layer& a, const Layer& b) { return a.depth < b.depth; });
     double transmittance = 1.0;
@@ -55,19 +54,16 @@ void testEffectiveAlphaMirrorsShaderThresholds() {
     expect(outside && *outside == 0.0, "distance beyond 3-sigma ellipse must contribute zero");
 
     auto clamped = aether::world_gaussian::effectiveGaussianRendererAlpha(1.0, 0.0);
-    expect(clamped && std::abs(*clamped - 0.99) < 1.0e-12,
-           "renderer alpha must clamp to 0.99");
+    expect(clamped && std::abs(*clamped - 0.99) < 1.0e-12, "renderer alpha must clamp to 0.99");
 
     auto threshold = aether::world_gaussian::effectiveGaussianRendererAlpha(0.001, 0.0);
-    expect(threshold && *threshold == 0.0,
-           "sub-1/255 renderer alpha must be treated as zero");
+    expect(threshold && *threshold == 0.0, "sub-1/255 renderer alpha must be treated as zero");
 }
 
 void testOpacityMassIncludesBackgroundVisibilityChange() {
     const std::array before{0.5};
     const std::array<double, 0> after{};
-    auto cert =
-        aether::world_gaussian::certifyGaussianPixelRevision(before, after, 1.0);
+    auto cert = aether::world_gaussian::certifyGaussianPixelRevision(before, after, 1.0);
     expect(cert.has_value(), "single-splat certificate must succeed");
     if (!cert)
         return;
@@ -120,8 +116,8 @@ void testRandomizedInterleavingsStayBelowCertificate() {
             });
         }
 
-        std::array<double, 3> background{
-            colorCap * unit(rng), colorCap * unit(rng), colorCap * unit(rng)};
+        std::array<double, 3> background{colorCap * unit(rng), colorCap * unit(rng),
+                                         colorCap * unit(rng)};
 
         auto before = unchanged;
         before.insert(before.end(), beforeEdited.begin(), beforeEdited.end());
@@ -129,8 +125,8 @@ void testRandomizedInterleavingsStayBelowCertificate() {
         after.insert(after.end(), afterEdited.begin(), afterEdited.end());
 
         const double actual = linf(render(before, background), render(after, background));
-        auto cert = aether::world_gaussian::certifyGaussianPixelRevision(
-            beforeAlphas, afterAlphas, colorCap);
+        auto cert = aether::world_gaussian::certifyGaussianPixelRevision(beforeAlphas, afterAlphas,
+                                                                         colorCap);
         expect(cert.has_value(), "randomized certificate must succeed");
         if (!cert)
             return;

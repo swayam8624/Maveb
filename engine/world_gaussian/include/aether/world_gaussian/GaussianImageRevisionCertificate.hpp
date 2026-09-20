@@ -43,7 +43,6 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
 [[nodiscard]] Result<GaussianImageRevisionCertificate>
 certifyGaussianImageRevision(const gaussian::GaussianAsset& beforeChanged,
                              const gaussian::GaussianAsset& afterChanged,
-                             const gaussian::ReferenceCamera& camera,
-                             double colorUpperBound);
+                             const gaussian::ReferenceCamera& camera, double colorUpperBound);
 
 } // namespace aether::world_gaussian

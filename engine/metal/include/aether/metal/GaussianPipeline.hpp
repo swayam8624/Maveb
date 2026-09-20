@@ -68,9 +68,8 @@ class GaussianPipeline final {
 
     /// Validates a source-order subset translation against canonical CPU state without mutating
     /// any in-flight frame-slot source buffer.
-    [[nodiscard]] Result<void>
-    validateTranslation(std::span<const std::uint32_t> gaussianIndices,
-                        simd_float3 translationDelta) const;
+    [[nodiscard]] Result<void> validateTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                                   simd_float3 translationDelta) const;
 
     /// Returns a conservative 3-sigma world AABB covering selected splats before and after
     /// applying the proposed translation. Used to invalidate only affected temporal history.

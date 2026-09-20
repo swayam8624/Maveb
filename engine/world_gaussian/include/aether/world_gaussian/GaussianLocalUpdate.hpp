@@ -1,11 +1,11 @@
 #pragma once
 
 #include <aether/gaussian/GaussianAsset.hpp>
-#include <aether/world_gaussian/GaussianSpatialIndex.hpp>
-#include <aether/world_gaussian/GaussianOverlaySpatialIndex.hpp>
 #include <aether/world/LocalityLedger.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
 #include <aether/world/WorldModel.hpp>
+#include <aether/world_gaussian/GaussianOverlaySpatialIndex.hpp>
+#include <aether/world_gaussian/GaussianSpatialIndex.hpp>
 
 #include <cstddef>
 #include <vector>
@@ -35,9 +35,10 @@ struct GaussianLocalUpdateSelection final {
 
 /// Records the selector's primitive-inspection work against the exact full-scene scan baseline.
 /// This does not record gaussiansUpdated because selection is only eligibility for later work.
-[[nodiscard]] Result<void> recordGaussianSelectionLocality(
-    const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
-    world::LocalityLedger& ledger);
+[[nodiscard]] Result<void>
+recordGaussianSelectionLocality(const gaussian::GaussianAsset& asset,
+                                const GaussianLocalUpdateSelection& selection,
+                                world::LocalityLedger& ledger);
 
 struct GaussianOverlaySelectionDiagnostics final {
     std::size_t dirtyRegionsQueried{};
@@ -70,8 +71,8 @@ struct PersistentGaussianTranslationResult final {
 /// primitives that occupy dirty RegionKey buckets.
 [[nodiscard]] Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdateIndexed(
     const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
-    const GaussianSpatialIndex& spatialIndex,
-    const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
+    const GaussianSpatialIndex& spatialIndex, const GaussianEntityOwnership* ownership = nullptr,
+    GaussianLocalUpdatePolicy policy = {});
 
 /// Compact base+delta indexed equivalent used to test revision-local spatial maintenance.
 /// The selected primitive set and ownership semantics must remain identical to the scan oracle.
@@ -104,13 +105,10 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
 /// transaction. If incremental index maintenance fails, it is rebuilt from the
 /// post-edit asset; if that rebuild also fails, the returned flag marks the
 /// index invalid so callers must drop it and fall back to the scan path.
-[[nodiscard]] Result<PersistentGaussianTranslationResult>
-translatePersistentGaussianEntityIndexed(
+[[nodiscard]] Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntityIndexed(
     world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
     const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
-    world::EntityId entity, simd_float3 targetWorldTranslation,
-    world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy = {},
-    GaussianLocalUpdatePolicy gaussianPolicy = {});
-
+    world::EntityId entity, simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
+    world::WorldEditPolicy worldPolicy = {}, GaussianLocalUpdatePolicy gaussianPolicy = {});
 
 } // namespace aether::world_gaussian

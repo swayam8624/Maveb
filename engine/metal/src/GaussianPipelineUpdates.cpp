@@ -11,8 +11,7 @@
 namespace aether::metal {
 namespace {
 
-[[nodiscard]] Result<gaussian::Gaussian>
-decodeCanonicalGaussian(const AetherGaussianGpu& source) {
+[[nodiscard]] Result<gaussian::Gaussian> decodeCanonicalGaussian(const AetherGaussianGpu& source) {
     gaussian::Gaussian result;
     result.position = {
         source.positionOpacity.x,
@@ -33,22 +32,17 @@ decodeCanonicalGaussian(const AetherGaussianGpu& source) {
     };
     result.dc = {source.dc.x, source.dc.y, source.dc.z};
 
-    const double restCountValue =
-        static_cast<double>(source.logScaleRestCount.w);
+    const double restCountValue = static_cast<double>(source.logScaleRestCount.w);
     if (!std::isfinite(restCountValue))
-        return fail(ErrorCode::corruptData,
-                    "Canonical Gaussian rest count is non-finite");
+        return fail(ErrorCode::corruptData, "Canonical Gaussian rest count is non-finite");
     const auto rounded = static_cast<std::size_t>(std::llround(restCountValue));
     if (std::abs(restCountValue - static_cast<double>(rounded)) > 1.0e-4 ||
         (rounded != 0 && rounded != 9 && rounded != 24 && rounded != 45)) {
-        return fail(ErrorCode::corruptData,
-                    "Canonical Gaussian rest count is invalid");
+        return fail(ErrorCode::corruptData, "Canonical Gaussian rest count is invalid");
     }
     result.restCount = rounded;
-    for (std::size_t coefficient = 0; coefficient < result.rest.size();
-         ++coefficient) {
-        result.rest[coefficient] =
-            source.shRest[coefficient / 4][coefficient % 4];
+    for (std::size_t coefficient = 0; coefficient < result.rest.size(); ++coefficient) {
+        result.rest[coefficient] = source.shRest[coefficient / 4][coefficient % 4];
     }
     return result;
 }
@@ -60,9 +54,8 @@ decodeCanonicalGaussian(const AetherGaussianGpu& source) {
 } // namespace
 
 Result<void>
-GaussianPipeline::validateTranslationLocked(
-    std::span<const std::uint32_t> gaussianIndices,
-    simd_float3 translationDelta) const {
+GaussianPipeline::validateTranslationLocked(std::span<const std::uint32_t> gaussianIndices,
+                                            simd_float3 translationDelta) const {
     if (canonicalGaussians_.empty() || gaussianCount_ == 0)
         return fail(ErrorCode::notFound, "Gaussian translation requires a loaded GPU scene");
     if (!std::isfinite(translationDelta.x) || !std::isfinite(translationDelta.y) ||
@@ -75,8 +68,7 @@ GaussianPipeline::validateTranslationLocked(
     std::vector<std::uint32_t> sorted(gaussianIndices.begin(), gaussianIndices.end());
     std::sort(sorted.begin(), sorted.end());
     if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end()) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian GPU translation indices must be unique");
+        return fail(ErrorCode::invalidArgument, "Gaussian GPU translation indices must be unique");
     }
     if (sorted.back() >= gaussianCount_)
         return fail(ErrorCode::invalidArgument, "Gaussian GPU translation index is out of range");
@@ -93,10 +85,8 @@ GaussianPipeline::validateTranslationLocked(
     return {};
 }
 
-Result<void>
-GaussianPipeline::validateTranslation(
-    std::span<const std::uint32_t> gaussianIndices,
-    simd_float3 translationDelta) const {
+Result<void> GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                                   simd_float3 translationDelta) const {
     std::scoped_lock lock(publicationMutex_);
     return validateTranslationLocked(gaussianIndices, translationDelta);
 }
@@ -123,8 +113,7 @@ GaussianPipeline::translationBounds(std::span<const std::uint32_t> gaussianIndic
                       primitive.logScaleRestCount.z});
         const float radius = 3.0F * std::exp(maximumLogScale);
         if (!std::isfinite(radius))
-            return fail(ErrorCode::resourceExhausted,
-                        "Gaussian edit bound radius is non-finite");
+            return fail(ErrorCode::resourceExhausted, "Gaussian edit bound radius is non-finite");
 
         const simd_float3 oldCenter{
             primitive.positionOpacity.x,
@@ -142,15 +131,14 @@ GaussianPipeline::translationBounds(std::span<const std::uint32_t> gaussianIndic
     return result;
 }
 
-Result<void>
-GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
-                            simd_float3 translationDelta) {
+Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
+                                         simd_float3 translationDelta) {
     std::scoped_lock lock(publicationMutex_);
     if (auto validation = validateTranslationLocked(gaussianIndices, translationDelta); !validation)
         return std::unexpected(validation.error());
 
-    auto publication = gaussian::planGaussianPublication(
-        gaussianIndices, gaussianCount_, sizeof(AetherGaussianGpu));
+    auto publication = gaussian::planGaussianPublication(gaussianIndices, gaussianCount_,
+                                                         sizeof(AetherGaussianGpu));
     if (!publication)
         return std::unexpected(publication.error());
 
@@ -164,8 +152,7 @@ GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
         return {};
 
     if (currentVersion_ == std::numeric_limits<std::uint64_t>::max())
-        return fail(ErrorCode::resourceExhausted,
-                    "Gaussian publication version counter exhausted");
+        return fail(ErrorCode::resourceExhausted, "Gaussian publication version counter exhausted");
 
     std::vector<std::uint32_t> sorted(gaussianIndices.begin(), gaussianIndices.end());
     std::sort(sorted.begin(), sorted.end());
@@ -182,12 +169,10 @@ GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
     return {};
 }
 
-Result<GaussianRevisionSnapshot>
-GaussianPipeline::pendingRevisionSnapshot() const {
+Result<GaussianRevisionSnapshot> GaussianPipeline::pendingRevisionSnapshot() const {
     std::scoped_lock lock(publicationMutex_);
     if (pendingRevisionBefore_.empty())
-        return fail(ErrorCode::notFound,
-                    "Gaussian revision snapshot has no pending edits");
+        return fail(ErrorCode::notFound, "Gaussian revision snapshot has no pending edits");
 
     std::vector<std::uint32_t> indices;
     indices.reserve(pendingRevisionBefore_.size());
@@ -207,8 +192,7 @@ GaussianPipeline::pendingRevisionSnapshot() const {
     std::size_t degree{};
     for (const std::uint32_t index : indices) {
         const auto beforeIt = pendingRevisionBefore_.find(index);
-        if (beforeIt == pendingRevisionBefore_.end() ||
-            index >= canonicalGaussians_.size()) {
+        if (beforeIt == pendingRevisionBefore_.end() || index >= canonicalGaussians_.size()) {
             return fail(ErrorCode::corruptData,
                         "Gaussian revision journal contains an invalid source index");
         }
@@ -220,9 +204,8 @@ GaussianPipeline::pendingRevisionSnapshot() const {
         if (!after)
             return std::unexpected(after.error());
 
-        degree = std::max(
-            degree, std::max(shDegree(before->restCount),
-                             shDegree(after->restCount)));
+        degree =
+            std::max(degree, std::max(shDegree(before->restCount), shDegree(after->restCount)));
         snapshot.beforeChanged.gaussians.push_back(std::move(*before));
         snapshot.afterChanged.gaussians.push_back(std::move(*after));
     }
@@ -251,8 +234,7 @@ Result<void> GaussianPipeline::publishFrameSlot(std::size_t frameSlot) {
     if (!gaussianSources_[frameSlot] || canonicalGaussians_.empty() || gaussianCount_ == 0)
         return fail(ErrorCode::notFound, "Gaussian frame publication requires a loaded scene");
 
-    const std::size_t fullBytes =
-        canonicalGaussians_.size() * sizeof(AetherGaussianGpu);
+    const std::size_t fullBytes = canonicalGaussians_.size() * sizeof(AetherGaussianGpu);
     if (sourceVersions_[frameSlot] == currentVersion_) {
         lastFramePublicationStatistics_ = {
             .touchedRecords = 0,
@@ -272,8 +254,8 @@ Result<void> GaussianPipeline::publishFrameSlot(std::size_t frameSlot) {
     std::sort(changed.begin(), changed.end());
     changed.erase(std::unique(changed.begin(), changed.end()), changed.end());
 
-    auto plan = gaussian::planGaussianPublication(
-        changed, gaussianCount_, sizeof(AetherGaussianGpu));
+    auto plan =
+        gaussian::planGaussianPublication(changed, gaussianCount_, sizeof(AetherGaussianGpu));
     if (!plan)
         return std::unexpected(plan.error());
     if (changed.empty()) {
@@ -281,11 +263,9 @@ Result<void> GaussianPipeline::publishFrameSlot(std::size_t frameSlot) {
                     "Gaussian publication journal lost a required frame-slot update");
     }
 
-    auto* destination =
-        static_cast<std::byte*>(gaussianSources_[frameSlot]->contents());
+    auto* destination = static_cast<std::byte*>(gaussianSources_[frameSlot]->contents());
     if (!destination)
-        return fail(ErrorCode::metal,
-                    "Gaussian frame source buffer is not CPU-addressable");
+        return fail(ErrorCode::metal, "Gaussian frame source buffer is not CPU-addressable");
 
     for (const gaussian::GaussianPublicationRange& range : plan->ranges) {
         const std::size_t first = static_cast<std::size_t>(range.firstIndex);

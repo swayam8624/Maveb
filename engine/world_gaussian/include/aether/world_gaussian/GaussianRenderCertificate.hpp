@@ -24,8 +24,8 @@ struct GaussianPixelRevisionCertificate final {
 ///   alpha < 1/255       -> no contribution
 ///
 /// peakOpacity is the sigmoid-decoded Gaussian opacity in [0,1].
-[[nodiscard]] Result<double>
-effectiveGaussianRendererAlpha(double peakOpacity, double squaredMahalanobis);
+[[nodiscard]] Result<double> effectiveGaussianRendererAlpha(double peakOpacity,
+                                                            double squaredMahalanobis);
 
 /// Returns a conservative upper bound on every RGB channel produced by the
 /// renderer's spherical-harmonic color evaluation for this Gaussian, over all
@@ -59,7 +59,6 @@ gaussianRendererColorUpperBound(const gaussian::Gaussian& primitive);
 /// unchanged content behind the edited splats.
 [[nodiscard]] Result<GaussianPixelRevisionCertificate>
 certifyGaussianPixelRevision(std::span<const double> beforeEffectiveAlphas,
-                             std::span<const double> afterEffectiveAlphas,
-                             double colorUpperBound);
+                             std::span<const double> afterEffectiveAlphas, double colorUpperBound);
 
 } // namespace aether::world_gaussian

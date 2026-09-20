@@ -23,8 +23,7 @@ double clamp(double value, double low, double high) {
 }
 
 void testProductionNinetyPercentHistoryWeight() {
-    auto certificate = aether::scene::certifyTemporalRevision(
-        0.02, 0.01, 0.03, 0.9, true);
+    auto certificate = aether::scene::certifyTemporalRevision(0.02, 0.01, 0.03, 0.9, true);
     expect(certificate.has_value(), "stable temporal certificate must succeed");
     if (!certificate)
         return;
@@ -35,12 +34,10 @@ void testProductionNinetyPercentHistoryWeight() {
 }
 
 void testUnstableValidationRequiresHardInvalidation() {
-    auto certificate = aether::scene::certifyTemporalRevision(
-        0.02, 0.9, 0.9, 0.9, false);
+    auto certificate = aether::scene::certifyTemporalRevision(0.02, 0.9, 0.9, 0.9, false);
     expect(certificate.has_value() && certificate->requiresHardInvalidation,
            "unstable reprojection/disocclusion must become HARD invalidation");
-    expect(certificate.has_value() &&
-               std::abs(certificate->resolvedOutputBound - 0.02) < 1.0e-12,
+    expect(certificate.has_value() && std::abs(certificate->resolvedOutputBound - 0.02) < 1.0e-12,
            "post-invalidation output bound must reduce to current-frame bound");
 }
 
@@ -64,18 +61,16 @@ void testRandomizedClampAndBlendBound() {
             std::swap(newLow, newHigh);
 
         const double w = unit(rng);
-        const double oldResolved =
-            (1.0 - w) * oldCurrent + w * clamp(oldHistory, oldLow, oldHigh);
-        const double newResolved =
-            (1.0 - w) * newCurrent + w * clamp(newHistory, newLow, newHigh);
+        const double oldResolved = (1.0 - w) * oldCurrent + w * clamp(oldHistory, oldLow, oldHigh);
+        const double newResolved = (1.0 - w) * newCurrent + w * clamp(newHistory, newLow, newHigh);
 
         const double currentBound = std::abs(newCurrent - oldCurrent);
         const double historyBound = std::abs(newHistory - oldHistory);
         const double neighborhoodBound =
             std::max(std::abs(newLow - oldLow), std::abs(newHigh - oldHigh));
 
-        auto certificate = aether::scene::certifyTemporalRevision(
-            currentBound, historyBound, neighborhoodBound, w, true);
+        auto certificate = aether::scene::certifyTemporalRevision(currentBound, historyBound,
+                                                                  neighborhoodBound, w, true);
         expect(certificate.has_value(), "randomized temporal certificate must succeed");
         if (!certificate)
             return;
