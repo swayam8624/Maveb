@@ -63,6 +63,68 @@ class CBRCPaperArtifactsTests(unittest.TestCase):
             for number in (1, 2, 3, 4, 5, 6, 8):
                 self.assertTrue(any(output.glob(f"F{number}_*.svg")))
 
+    def test_method_comparison_tables_emit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            records = [
+                {
+                    "case_id": "a",
+                    "scene_id": "scene",
+                    "coupling_regime": "low",
+                    "baselines": {
+                        "CBRC": {
+                            "passes": True,
+                            "usedFullRebuild": False,
+                            "workRatioFull": 0.25,
+                            "work": 25.0,
+                            "fullWork": 100.0,
+                        }
+                    },
+                    "ablations": {
+                        "ABLATE_NO_FALLBACK": {
+                            "passes": False,
+                            "usedFullRebuild": False,
+                            "workRatioFull": 0.1,
+                            "work": 10.0,
+                            "fullWork": 100.0,
+                        }
+                    },
+                },
+                {
+                    "case_id": "b",
+                    "scene_id": "scene",
+                    "coupling_regime": "high",
+                    "baselines": {
+                        "CBRC": {
+                            "passes": True,
+                            "usedFullRebuild": True,
+                            "workRatioFull": 1.0,
+                            "work": 100.0,
+                            "fullWork": 100.0,
+                        }
+                    },
+                    "ablations": {
+                        "ABLATE_NO_FALLBACK": {
+                            "passes": True,
+                            "usedFullRebuild": False,
+                            "workRatioFull": 0.2,
+                            "work": 20.0,
+                            "fullWork": 100.0,
+                        }
+                    },
+                },
+            ]
+            summary = mod.method_comparison_tables(records, output)
+            self.assertEqual(summary["baselines"]["CBRC"]["pass_rate"], 1.0)
+            self.assertEqual(
+                summary["baselines"]["CBRC"]["full_rebuild_rate"], 0.5
+            )
+            self.assertEqual(
+                summary["baselines"]["CBRC"]["median_work_ratio_full"], 0.625
+            )
+            self.assertTrue((output / "T1_method_case_results.csv").exists())
+            self.assertTrue((output / "T2_method_summary.csv").exists())
+
     def test_spatial_figure_emits(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
