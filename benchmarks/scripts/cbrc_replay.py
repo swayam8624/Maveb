@@ -32,6 +32,20 @@ def require_number(data: dict[str, Any], key: str, *, positive: bool = False) ->
 def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
     camera = manifest["camera"]
     background = camera.get("background", [0.0, 0.0, 0.0])
+    camera_world_position = camera.get("camera_world_position", [0.0, 0.0, 0.0])
+    world_to_camera = camera.get(
+        "world_to_camera",
+        [
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        ],
+    )
+    if len(camera_world_position) != 3:
+        raise ValueError("camera_world_position must contain 3 values")
+    if len(world_to_camera) != 16:
+        raise ValueError("world_to_camera must contain 16 row-major values")
     changed = manifest["changed_indices"]
     if not isinstance(changed, list) or not changed:
         raise ValueError("changed_indices must be a non-empty list")
@@ -49,6 +63,10 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
         "--center-y", str(float(camera["center_y"])),
         "--near", str(float(camera.get("near", 0.01))),
         "--far", str(float(camera.get("far", 10000.0))),
+        "--world-to-camera", ",".join(str(float(v)) for v in world_to_camera),
+        "--camera-world-position", ",".join(
+            str(float(v)) for v in camera_world_position
+        ),
         "--epsilon", str(float(manifest["epsilon_rgb_linf"])),
         "--background-r", str(float(background[0])),
         "--background-g", str(float(background[1])),
