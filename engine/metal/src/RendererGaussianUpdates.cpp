@@ -59,8 +59,15 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     if (!translated)
         return std::unexpected(translated.error());
 
+    lastGaussianEditPublicationStatistics_ = {
+        .sourceBuffer = gaussianPipeline_->publicationStatistics(),
+        .frameSlotsQuiesced = frameContexts_.size(),
+        .globalTemporalHistoryInvalidated = true,
+    };
+
     // Reprojection after an authored spatial edit must not blend against history generated from
-    // the pre-edit geometry.
+    // the pre-edit geometry. This global invalidation is intentionally preserved as the correctness
+    // baseline; the temporal-locality research branch must beat it without introducing ghosting.
     temporalHistoryValid_ = false;
     return {};
 }
