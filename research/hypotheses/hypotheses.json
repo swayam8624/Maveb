@@ -648,7 +648,12 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-infrastructure",
+      "latest_evidence": [
+        "TextureBaker globally rasterizes cameras, searches triangle-camera candidates, computes global exposure target, and uses ordinal atlas layout.",
+        "atlas-uv-churn-v0 shows local triangle insertion/removal can churn 50-100% of unchanged UV addresses."
+      ],
+      "next_action": "Prototype stable patch/page texture addressing before any incremental texture-repair claim."
     },
     {
       "hypothesis_id": "H026",
@@ -1357,7 +1362,12 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-correctness-infrastructure",
+      "latest_evidence": [
+        "PR #28 ingestion drops unmatched previous entities from the next snapshot.",
+        "observability-gated-deletion-v0: 392 false removals and 312 identity churn events under moving partial coverage vs 0/0 with observability gating."
+      ],
+      "next_action": "Add explicit observation coverage and contradiction semantics before real deletion/reappearance experiments."
     },
     {
       "hypothesis_id": "H054",
@@ -2082,7 +2092,13 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-metal-probe",
+      "latest_evidence": [
+        "GaussianPipeline::load rebuilds full Gaussian buffers.",
+        "renderer-locality-audit-v0 quantifies 256-byte canonical Gaussian record and ~344 MB per-Gaussian allocation footprint at 1M splats before sort buffers.",
+        "stable-slot traffic accounting shows enough theoretical byte leverage for same-cardinality patch updates."
+      ],
+      "next_action": "Implement same-cardinality partial canonical-record updates and measure on M2 Pro."
     },
     {
       "hypothesis_id": "H083",
@@ -2307,7 +2323,12 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-infrastructure",
+      "latest_evidence": [
+        "WorldArchive currently rewrites full history of full snapshots.",
+        "world-archive-delta-accounting-v0 shows large mechanical scaling leverage for checkpoint+delta history under sparse changes."
+      ],
+      "next_action": "Implement append-only revision journal + periodic checkpoints; verify exact revision reconstruction."
     },
     {
       "hypothesis_id": "H092",
@@ -2332,7 +2353,11 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "latest_evidence": [
+        "Full-history archive audit establishes avoidable duplication; content-addressed reuse remains untested."
+      ],
+      "next_action": "Only test after delta journal exists; do not build ahead of measured need."
     },
     {
       "hypothesis_id": "H093",
