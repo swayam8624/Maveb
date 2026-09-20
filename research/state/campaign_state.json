@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T22:05+05:30",
+  "updatedAt": "2026-09-20T22:07+05:30",
   "branches": {
     "discovery": {
       "name": "research/maveb-discovery",
@@ -29,7 +29,7 @@
     }
   },
   "corpus": {
-    "papers": 53,
+    "papers": 52,
     "repositoryImplementations": 18,
     "hypotheses": 119,
     "finalFilter": {
