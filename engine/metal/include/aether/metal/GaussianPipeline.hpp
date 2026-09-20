@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <span>
+#include <unordered_map>
 #include <vector>
 
 namespace aether::metal {
@@ -29,6 +30,14 @@ struct GaussianPipelineStatistics final {
 struct GaussianEditBounds final {
     simd_float3 minimum{};
     simd_float3 maximum{};
+};
+
+struct GaussianRevisionSnapshot final {
+    std::uint64_t version{};
+    std::vector<std::uint32_t> sourceIndices;
+    gaussian::GaussianAsset beforeChanged;
+    gaussian::GaussianAsset afterChanged;
+    double sceneColorUpperBound{1.0};
 };
 
 struct GaussianPublicationStatistics final {
@@ -97,6 +106,15 @@ class GaussianPipeline final {
         return lastFramePublicationStatistics_;
     }
 
+    /// Net source-order revision since the last consumed certificate. For an
+    /// index edited multiple times, beforeChanged preserves its first pre-edit
+    /// value while afterChanged reflects the latest canonical value.
+    [[nodiscard]] Result<GaussianRevisionSnapshot> pendingRevisionSnapshot() const;
+
+    /// Consume only after a frame-level certificate/fallback decision has been
+    /// durably recorded. GPU publication journaling is independent.
+    void clearPendingRevisionSnapshot() noexcept;
+
   private:
     GaussianPipeline(MTL::Device* device, std::uint32_t maximumTileEntries);
     [[nodiscard]] Result<void> buildPipelines(MTL::Library* library);
@@ -124,6 +142,8 @@ class GaussianPipeline final {
     std::uint32_t rangeCapacity_{};
     std::array<MetalPtr<MTL::Buffer>, gaussianSourceBufferCount_> gaussianSources_;
     std::vector<AetherGaussianGpu> canonicalGaussians_;
+    std::unordered_map<std::uint32_t, AetherGaussianGpu> pendingRevisionBefore_;
+    double sceneColorUpperBound_{1.0};
     std::array<std::uint64_t, gaussianSourceBufferCount_> sourceVersions_{};
     std::uint64_t currentVersion_{};
     std::vector<PublicationPatch> publicationJournal_;
