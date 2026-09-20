@@ -7,24 +7,110 @@
   "require_high_coupling": true,
   "cases": [
     {
-      "id": "replace-local-low-coupling",
+      "id": "real-local-01",
       "scene_id": "replace-scene",
-      "translation": "/absolute/path/translation.json",
-      "certificate": "/absolute/path/certificate.json",
       "epsilon": 0.01,
       "coupling_regime": "low",
       "edit_class": "gaussian",
-      "work_cost_model": "/absolute/path/frozen-work-cost.json"
+      "work_cost_model": "/absolute/path/frozen-work-cost.json",
+      "revision": {
+        "archive": "/absolute/path/world.aetherworld",
+        "entity": 1,
+        "target": [
+          0.05,
+          0,
+          0
+        ],
+        "timestamp": 1000000001,
+        "history_stable": true,
+        "history_weight": 0.9,
+        "camera": {
+          "width": 1280,
+          "height": 720,
+          "focal_x": 900,
+          "focal_y": 900,
+          "center_x": 640,
+          "center_y": 360,
+          "near": 0.01,
+          "far": 10000,
+          "camera_world_position": [
+            0,
+            0,
+            0
+          ],
+          "world_to_camera": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
     },
     {
-      "id": "replace-adversarial-full",
+      "id": "real-adversarial-full",
       "scene_id": "replace-scene",
-      "translation": "/absolute/path/translation-adversarial.json",
-      "certificate": "/absolute/path/certificate-adversarial.json",
       "epsilon": 0.001,
       "coupling_regime": "adversarial",
       "edit_class": "gaussian",
-      "work_cost_model": "/absolute/path/frozen-work-cost.json"
+      "work_cost_model": "/absolute/path/frozen-work-cost.json",
+      "revision": {
+        "archive": "/absolute/path/world-for-adversarial.aetherworld",
+        "entity": 1,
+        "target": [
+          1,
+          0,
+          0
+        ],
+        "timestamp": 1000000002,
+        "history_stable": false,
+        "history_weight": 0.9,
+        "camera": {
+          "width": 1280,
+          "height": 720,
+          "focal_x": 900,
+          "focal_y": 900,
+          "center_x": 640,
+          "center_y": 360,
+          "near": 0.01,
+          "far": 10000,
+          "camera_world_position": [
+            0,
+            0,
+            0
+          ],
+          "world_to_camera": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        }
+      }
     }
   ]
 }
