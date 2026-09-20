@@ -201,6 +201,7 @@ def finalize_row(
             manifest.get("execution_mode", "planner-selected-cone")
         ),
         "graph_scope": str(manifest.get("graph_scope", "heterogeneous-world")),
+        "selection_mode": str(manifest.get("selection_mode", "unspecified")),
         "edit_class": str(manifest.get("edit_class", "gaussian")),
         "coupling_regime": str(manifest.get("coupling_regime", "unknown")),
         "changed_fraction": float(oracle["changedFraction"]),
