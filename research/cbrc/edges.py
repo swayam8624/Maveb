@@ -120,6 +120,52 @@ def hard_forward_closure(
     return closure
 
 
+def required_repair_closure(
+    node_count: int,
+    edges: Iterable[RevisionEdge],
+    physical_sources: Iterable[int],
+    true_change_bounds: Iterable[float],
+) -> set[int]:
+    """Return the fail-closed repair seed for one revision.
+
+    This handles the soft->hard boundary that a pure physical-source hard
+    closure misses. If an active state can change and feeds a HARD/EMPIRICAL
+    successor that can also change, that exact successor must be repaired.
+    Active predecessor closure then pulls in every changed dependency required
+    to compute those repaired states correctly.
+
+    A target whose true-change bound is exactly zero is not forced into repair:
+    before and after are identical for that state.
+    """
+    edge_list = validate_edges(node_count, edges)
+    bounds = np.asarray(list(true_change_bounds), dtype=float).reshape(-1)
+    if bounds.shape != (node_count,):
+        raise ValueError(f"true_change_bounds must have shape ({node_count},)")
+    if not np.all(np.isfinite(bounds)) or np.any(bounds < 0.0):
+        raise ValueError("true_change_bounds must be finite and non-negative")
+    active = bounds > 0.0
+
+    required = hard_forward_closure(node_count, edge_list, physical_sources)
+
+    predecessors = dependency_predecessors(node_count, edge_list)
+    for edge in edge_list:
+        if (
+            edge.edge_class in (EdgeClass.HARD, EdgeClass.EMPIRICAL)
+            and active[edge.src]
+            and active[edge.dst]
+        ):
+            required.add(edge.dst)
+
+    stack = list(required)
+    while stack:
+        v = stack.pop()
+        for u in predecessors[v]:
+            if active[u] and u not in required:
+                required.add(u)
+                stack.append(u)
+    return required
+
+
 def empirical_priority(
     node_count: int, edges: Iterable[RevisionEdge]
 ) -> np.ndarray:

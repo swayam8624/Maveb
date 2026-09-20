@@ -69,6 +69,24 @@ Compute the exact hard closure H(Delta). All members of H must be repaired.
 CBRC is applied only to the remaining continuous/approximate influence outside H. This prevents a
 small numerical tolerance from silently weakening discrete correctness.
 
+### Soft-to-hard boundary rule
+
+The hard closure cannot be computed from physical source nodes alone. A revision may travel first
+through a bounded soft edge and then reach an exact dependency. Suppose a state u has a non-zero
+true-change bound and an exact/empirical-only edge u -> v, and v also has a non-zero true-change
+bound. Leaving v stale would violate the exact-state contract even if the influence that reached u
+was small.
+
+Therefore the required repair seed is closed under:
+
+1. ordinary forward HARD/EMPIRICAL propagation from physical sources;
+2. every HARD/EMPIRICAL edge whose source and target both have non-zero true-change bounds; and
+3. active predecessor closure for all states thereby forced into repair.
+
+This prevents a soft -> hard transition from disappearing merely because hard edges are intentionally
+absent from the approximate transfer matrix K. A hard target whose certified true-change bound is
+exactly zero need not be repaired because its before and full-after states coincide.
+
 ## 4. Local gain operator
 
 For each soft dependency u -> v define a safe local gain
