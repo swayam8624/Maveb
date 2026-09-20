@@ -6,6 +6,7 @@ add_library(AetherScene STATIC
     src/ImageBasedLighting.cpp
     src/Scene.cpp
     src/TemporalInvalidation.cpp
+    src/TemporalRevisionCertificate.cpp
     src/Shadows.cpp
     src/Transform.cpp
 )
