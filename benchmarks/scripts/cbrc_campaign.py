@@ -39,10 +39,15 @@ def capture_case(
     *,
     revision_tool: Path,
     case_dir: Path,
-) -> tuple[Path, Path]:
+) -> tuple[Path, Path, Path | None]:
     revision = case.get("revision")
     if not isinstance(revision, dict):
-        return Path(case["translation"]), Path(case["certificate"])
+        native = case.get("native_planner_certificate")
+        return (
+            Path(case["translation"]),
+            Path(case["certificate"]),
+            None if native is None else Path(native),
+        )
 
     archive = Path(revision["archive"])
     target = revision.get("target")
@@ -97,9 +102,16 @@ def capture_case(
     run(command)
     translation = capture_dir / "translation.json"
     certificate = capture_dir / "certificate.json"
-    if not translation.exists() or not certificate.exists():
-        raise RuntimeError(f"case {case['id']} did not produce capture evidence")
-    return translation, certificate
+    native_planner = capture_dir / "native-planner-certificate.json"
+    if (
+        not translation.exists()
+        or not certificate.exists()
+        or not native_planner.exists()
+    ):
+        raise RuntimeError(
+            f"case {case['id']} did not produce complete capture evidence"
+        )
+    return translation, certificate, native_planner
 
 
 def baseline_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -236,13 +248,18 @@ def main() -> int:
                 raise ValueError(
                     f"case {case_id} requests headless capture but --revision-tool is missing"
                 )
-            translation, certificate = capture_case(
+            translation, certificate, native_planner = capture_case(
                 case,
                 revision_tool=args.revision_tool,
                 case_dir=case_dir,
             )
         else:
-            translation, certificate = Path(case["translation"]), Path(case["certificate"])
+            native_value = case.get("native_planner_certificate")
+            translation = Path(case["translation"])
+            certificate = Path(case["certificate"])
+            native_planner = (
+                None if native_value is None else Path(native_value)
+            )
 
         command = [
             sys.executable,
@@ -257,6 +274,10 @@ def main() -> int:
         ]
         if case.get("work_cost_model"):
             command.extend(["--work-cost-model", str(Path(case["work_cost_model"]))])
+        if native_planner is not None:
+            command.extend(
+                ["--native-planner-certificate", str(native_planner)]
+            )
         run(command)
 
         manifest_payload = json.loads((case_dir / "replay-manifest.json").read_text())
