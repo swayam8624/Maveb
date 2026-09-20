@@ -49,14 +49,22 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC certificate parameters are invalid");
     }
-    if (input.gaussiansInspected > input.fullGaussians ||
+    if (input.observationsInspected > input.fullObservations ||
+        input.dirtyTexturePages > input.fullTexturePages ||
+        input.materialStatesUpdated > input.fullMaterialStates ||
+        input.gaussiansInspected > input.fullGaussians ||
         input.gaussiansUpdated > input.fullGaussians ||
         input.gpuPublicationBytes > input.fullGpuPublicationBytes ||
-        input.temporalPixelsInvalidated > input.fullTemporalPixels ||
-        input.dirtyTexturePages > input.fullTexturePages) {
+        input.temporalPixelsInvalidated > input.fullTemporalPixels) {
         return fail(ErrorCode::invalidArgument,
                     "Captured-world CBRC incremental work exceeds full baseline");
     }
+
+    auto observationCost = checkedCost(
+        static_cast<double>(input.observationsInspected),
+        costs.observationMs, "observations");
+    if (!observationCost)
+        return std::unexpected(observationCost.error());
 
     auto tsdfCost = checkedCost(
         static_cast<double>(input.mesher.dirtyBlocksInput),
@@ -80,6 +88,12 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         costs.texturePageMs, "texture-pages");
     if (!textureCost)
         return std::unexpected(textureCost.error());
+
+    auto materialCost = checkedCost(
+        static_cast<double>(input.materialStatesUpdated),
+        costs.materialStateMs, "material-state");
+    if (!materialCost)
+        return std::unexpected(materialCost.error());
 
     auto gaussianInspectionCost = checkedCost(
         static_cast<double>(input.gaussiansInspected),
@@ -105,17 +119,21 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
         return std::unexpected(temporalCost.error());
 
     std::vector<revision::RevisionNode> nodes;
-    nodes.reserve(8);
+    nodes.reserve(10);
     const auto addNode = [&](std::string name, double work, double changeBound) {
         const auto id = static_cast<revision::RevisionNodeId>(nodes.size());
         nodes.push_back({std::move(name), work, changeBound});
         return id;
     };
 
+    const auto observation =
+        addNode("observation-repair", *observationCost, 0.0);
     const auto tsdf = addNode("tsdf-block-repair", *tsdfCost, 0.0);
     const auto mesh = addNode("mesh-patch-repair",
                               *meshCellCost + *meshPatchCost, 0.0);
     const auto texture = addNode("texture-page-repair", *textureCost, 0.0);
+    const auto material =
+        addNode("material-state-repair", *materialCost, 0.0);
     const auto gaussian = addNode(
         "gaussian-revision-repair",
         *gaussianInspectionCost + *gaussianUpdateCost,
@@ -128,16 +146,22 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     const auto resolvedImage = addNode("resolved-image-qoi", 0.0, 0.0);
 
     std::vector<revision::RevisionEdge> edges;
-    edges.reserve(8);
+    edges.reserve(12);
 
     // Exact structural relations. The hardClosure below carries the forward
     // domain-specific invalidation; these edges retain predecessor consistency.
+    edges.push_back(
+        {observation, tsdf, revision::RevisionEdgeClass::hard, 0.0,
+         "observation-tsdf-structural-v1"});
     edges.push_back(
         {tsdf, mesh, revision::RevisionEdgeClass::hard, 0.0,
          "tsdf-mesh-exact-closure-v0"});
     edges.push_back(
         {mesh, texture, revision::RevisionEdgeClass::hard, 0.0,
          "persistent-texture-pages-v1"});
+    edges.push_back(
+        {texture, material, revision::RevisionEdgeClass::hard, 0.0,
+         "texture-material-binding-v1"});
     edges.push_back(
         {gaussian, gpuPublication, revision::RevisionEdgeClass::hard, 0.0,
          "gaussian-source-publication-v1"});
@@ -170,12 +194,14 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
 
     CapturedWorldGraphBuild result{
         .graph = std::move(*graph),
-        .sourceBounds = std::vector<double>(8, 0.0),
+        .sourceBounds = std::vector<double>(10, 0.0),
         .hardClosure = {},
         .qois = {},
+        .observation = observation,
         .tsdf = tsdf,
         .mesh = mesh,
         .texture = texture,
+        .material = material,
         .gaussian = gaussian,
         .gpuPublication = gpuPublication,
         .currentImage = currentImage,
@@ -184,13 +210,22 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     };
 
     // Domain-specific exact forward invalidation.
+    if (input.observationsInspected > 0)
+        appendUnique(result.hardClosure, observation);
+
     if (input.mesher.dirtyBlocksInput > 0) {
         appendUnique(result.hardClosure, tsdf);
         appendUnique(result.hardClosure, mesh);
         if (input.dirtyTexturePages > 0)
             appendUnique(result.hardClosure, texture);
+        if (input.materialStatesUpdated > 0)
+            appendUnique(result.hardClosure, material);
     } else if (input.dirtyTexturePages > 0) {
         appendUnique(result.hardClosure, texture);
+        if (input.materialStatesUpdated > 0)
+            appendUnique(result.hardClosure, material);
+    } else if (input.materialStatesUpdated > 0) {
+        appendUnique(result.hardClosure, material);
     }
 
     if (input.gaussiansUpdated > 0 || input.gaussiansInspected > 0) {
