@@ -92,6 +92,39 @@ class CBRCCertificateTests(unittest.TestCase):
         self.assertTrue(cert.used_full_rebuild)
         self.assertEqual(cert.work, cert.full_work)
 
+    def test_independent_full_work_baseline_controls_fallback(self):
+        K = np.zeros((2, 2))
+        cert = greedy_minimum_work_cone(
+            K_cert=K,
+            source=np.array([0.0, 1.0]),
+            true_change_bound=np.zeros(2),
+            hard_closure={0},
+            exact_predecessors=[set(), set()],
+            work=np.array([7.0, 8.0]),
+            qois=[QoI("out", np.array([[0.0, 1.0]]), 0.0)],
+            full_work_baseline=5.0,
+        )
+        self.assertTrue(cert.used_full_rebuild)
+        self.assertEqual(cert.work, 5.0)
+        self.assertEqual(cert.full_work, 5.0)
+
+    def test_zero_work_node_can_break_unsafe_exterior(self):
+        K = np.zeros((3, 3))
+        K[2, 1] = 1.0
+        cert = greedy_minimum_work_cone(
+            K_cert=K,
+            source=np.array([0.0, 1.0, 0.0]),
+            true_change_bound=np.zeros(3),
+            hard_closure={0},
+            exact_predecessors=[set(), set(), set()],
+            work=np.array([1.0, 0.0, 10.0]),
+            qois=[QoI("out", np.array([[0.0, 0.0, 1.0]]), 0.0)],
+            full_work_baseline=11.0,
+        )
+        self.assertTrue(cert.passes)
+        self.assertFalse(cert.used_full_rebuild)
+        self.assertIn(1, cert.cone)
+
     def test_effectivity(self):
         self.assertEqual(effectivity(0.2, 0.1), 2.0)
 
