@@ -154,6 +154,7 @@ def certify_cone(
     exact_predecessors: Sequence[set[int]],
     work: np.ndarray | Sequence[float],
     qois: Sequence[QoI],
+    full_work_baseline: float | None = None,
 ) -> Certificate:
     """Certify a candidate repair cone against the full-after output contract."""
 
@@ -162,6 +163,12 @@ def certify_cone(
     b = validate_vector(source, n, name="source")
     z = validate_vector(true_change_bound, n, name="true_change_bound")
     c = validate_vector(work, n, name="work")
+    if full_work_baseline is None:
+        full_work = float(c.sum())
+    else:
+        full_work = float(full_work_baseline)
+        if not np.isfinite(full_work) or full_work < 0:
+            raise ValueError("full_work_baseline must be finite and non-negative")
 
     C = set(int(v) for v in cone)
     if any(v < 0 or v >= n for v in C):
@@ -176,7 +183,7 @@ def certify_cone(
             bound_by_qoi={q.name: float("inf") for q in qois},
             passes=False,
             work=float(c[list(C)].sum()) if C else 0.0,
-            full_work=float(c.sum()),
+            full_work=full_work,
             used_full_rebuild=False,
             transient_amplification=None,
             susceptibility=None,
@@ -185,8 +192,6 @@ def certify_cone(
     O = sorted(set(range(n)) - C)
     Cidx = sorted(C)
     local_work = float(c[Cidx].sum()) if Cidx else 0.0
-    full_work = float(c.sum())
-
     if not O:
         return Certificate(
             cone=tuple(Cidx),
@@ -264,6 +269,7 @@ def greedy_minimum_work_cone(
     exact_predecessors: Sequence[set[int]],
     work: np.ndarray | Sequence[float],
     qois: Sequence[QoI],
+    full_work_baseline: float | None = None,
 ) -> Certificate:
     """Greedy certified expansion with a principled full-rebuild fallback.
 
@@ -294,6 +300,7 @@ def greedy_minimum_work_cone(
         exact_predecessors=exact_predecessors,
         work=c,
         qois=qois,
+        full_work_baseline=full_work_baseline,
     )
     if current.passes and current.work < current.full_work:
         return current
@@ -307,8 +314,6 @@ def greedy_minimum_work_cone(
             candidate_C = predecessor_closure(C | {v}, exact_predecessors, n)
             extra = candidate_C - C
             extra_work = float(c[list(extra)].sum())
-            if extra_work <= 0:
-                continue
 
             cert = certify_cone(
                 K_cert=K,
@@ -318,9 +323,22 @@ def greedy_minimum_work_cone(
                 exact_predecessors=exact_predecessors,
                 work=c,
                 qois=qois,
+                full_work_baseline=full_work_baseline,
             )
-            improvement = base_violation - score(cert)
-            utility = improvement / extra_work
+            next_violation = score(cert)
+            if np.isinf(base_violation) and np.isfinite(next_violation):
+                utility = float("inf")
+            elif np.isfinite(base_violation) and np.isfinite(next_violation):
+                improvement = base_violation - next_violation
+                utility = (
+                    float("inf")
+                    if extra_work == 0.0 and improvement > 0.0
+                    else 0.0
+                    if extra_work == 0.0
+                    else improvement / extra_work
+                )
+            else:
+                utility = float("-inf")
             key = (1 if cert.passes else 0, utility, -cert.work)
             if best is None or key > best[0]:
                 best = (key, candidate_C, cert)
@@ -343,6 +361,7 @@ def greedy_minimum_work_cone(
         exact_predecessors=exact_predecessors,
         work=c,
         qois=qois,
+        full_work_baseline=full_work_baseline,
     )
 
 
