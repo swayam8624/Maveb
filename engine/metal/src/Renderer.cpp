@@ -934,7 +934,35 @@ void Renderer::draw(MTK::View* view) noexcept {
                 maximumMatrixDelta = std::max(
                     maximumMatrixDelta, std::abs(currentViewProjection.columns[column][row] -
                                                  previousViewProjection_.columns[column][row]));
-        const bool historyUsable = temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
+        bool historyUsable = temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
+        bool regionalInvalidation = false;
+        simd_float4 invalidationRect{};
+        if (pendingTemporalInvalidationBounds_) {
+            auto plan = scene::planTemporalInvalidation(
+                *pendingTemporalInvalidationBounds_, currentViewProjection,
+                static_cast<std::uint32_t>(sceneTargetWidth_),
+                static_cast<std::uint32_t>(sceneTargetHeight_), 8);
+            if (!plan) {
+                historyUsable = false;
+                lastTemporalInvalidationPlan_ = {
+                    .fullFrame = true,
+                    .empty = false,
+                    .normalizedRect = {0.0F, 0.0F, 1.0F, 1.0F},
+                    .invalidatedPixels =
+                        static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_,
+                    .fullFramePixels =
+                        static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_,
+                };
+            } else {
+                lastTemporalInvalidationPlan_ = *plan;
+                if (plan->fullFrame) {
+                    historyUsable = false;
+                } else if (!plan->empty && historyUsable) {
+                    regionalInvalidation = true;
+                    invalidationRect = plan->normalizedRect;
+                }
+            }
+        }
         auto* temporalPass = MTL::RenderPassDescriptor::renderPassDescriptor();
         auto* temporalColor = temporalPass->colorAttachments()->object(0);
         temporalColor->setTexture(temporalColorHistory_[outputIndex].get());
@@ -952,7 +980,9 @@ void Renderer::draw(MTK::View* view) noexcept {
             AetherTemporalUniforms temporal{};
             temporal.inverseCurrentViewProjection = simd_inverse(currentViewProjection);
             temporal.previousViewProjection = previousViewProjection_;
-            temporal.historyParameters = {historyUsable ? 1.0F : 0.0F, 0.9F, 0.002F, 0.0F};
+            temporal.historyParameters = {historyUsable ? 1.0F : 0.0F, 0.9F, 0.002F,
+                                          regionalInvalidation ? 1.0F : 0.0F};
+            temporal.invalidationRect = invalidationRect;
             temporalEncoder->setFragmentBytes(&temporal, sizeof(temporal), 0);
             temporalEncoder->setFragmentTexture(sceneHdrColor_.get(), 0);
             temporalEncoder->setFragmentTexture(sceneDepth_.get(), 1);
@@ -966,6 +996,7 @@ void Renderer::draw(MTK::View* view) noexcept {
             presentationSource = temporalColorHistory_[outputIndex].get();
             previousViewProjection_ = currentViewProjection;
             temporalHistoryValid_ = true;
+            pendingTemporalInvalidationBounds_.reset();
         }
     }
     bool bloomReady = false;
