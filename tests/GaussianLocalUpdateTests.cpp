@@ -262,6 +262,36 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
            "indexed selection must demonstrate at least three orders of magnitude inspection reduction in sparse fixture");
 }
 
+void testSelectionLocalityLedgerUsesFullScanBaseline() {
+    GaussianAsset asset;
+    asset.gaussians = {
+        gaussian(0.1F, 0.1F, 0.1F),
+        gaussian(0.2F, 0.1F, 0.1F),
+        gaussian(4.1F, 0.1F, 0.1F),
+        gaussian(8.1F, 0.1F, 0.1F),
+    };
+
+    auto spatialIndex = GaussianSpatialIndex::build(asset, oneDirtyCell().cellSizeMeters);
+    expect(spatialIndex.has_value(), "locality-ledger fixture spatial index must build");
+    if (!spatialIndex)
+        return;
+
+    const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
+        asset, oneDirtyCell(), *spatialIndex);
+    expect(indexed.has_value(), "locality-ledger fixture selection must succeed");
+    if (!indexed)
+        return;
+
+    aether::world::LocalityLedger ledger;
+    expect(aether::world_gaussian::recordGaussianSelectionLocality(asset, *indexed, ledger)
+               .has_value(),
+           "Gaussian selector must record unit-safe locality evidence");
+    const auto counter = ledger.counter(aether::world::LocalityDomain::gaussiansInspected);
+    expect(counter.incremental == indexed->inspectedGaussians &&
+               counter.full == asset.gaussians.size(),
+           "Gaussian locality ledger must use actual inspections over full-scene scan count");
+}
+
 void testOwnedTranslationIsTransactional() {
     GaussianAsset asset;
     asset.gaussians = {
@@ -364,6 +394,7 @@ int main() noexcept {
         testOwnershipProtectsStableSplatsInDirtyCells();
         testIndexedSelectionMatchesFullScanAndTracksInspections();
         testIndexedSelectionScalesWithDirtyOccupancy();
+        testSelectionLocalityLedgerUsesFullScanBaseline();
         testIndexedSelectionScalesWithDirtyPopulation();
         testOwnedTranslationIsTransactional();
         testPersistentWorldAndGaussianTranslationCommitTogether();
