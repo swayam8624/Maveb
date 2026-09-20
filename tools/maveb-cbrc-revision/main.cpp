@@ -1,5 +1,6 @@
 #include <aether/gaussian/GaussianCodec.hpp>
 #include <aether/gaussian/ReferenceRasterizer.hpp>
+#include <aether/revision/RevisionCertificateJson.hpp>
 #include <aether/revision/RevisionPlanner.hpp>
 #include <aether/world/WorldModel.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
@@ -515,6 +516,18 @@ int main(int argc, char** argv) try {
         std::cerr << planned.error().describe() << '\n';
         return EXIT_FAILURE;
     }
+    auto nativePlannerCertificate =
+        aether::revision::serializeRevisionCertificateJson(
+            *plannerGraph, *planned,
+            {
+                .graphVersion = "gaussian-output-cone-v2",
+                .boundVersion = "gaussian-image+temporal-v1",
+                .costModelVersion = "temporal-pixel-work-v1",
+            });
+    if (!nativePlannerCertificate) {
+        std::cerr << nativePlannerCertificate.error().describe() << '\n';
+        return EXIT_FAILURE;
+    }
     const bool repairHistory = contains(planned->cone, 1);
 
     SupportPlan temporal;
@@ -669,13 +682,19 @@ int main(int argc, char** argv) try {
 
     const auto translationPath = options->outputDir / "translation.json";
     const auto certificatePath = options->outputDir / "certificate.json";
-    if (!writeText(translationPath, translation.str()) || !writeText(certificatePath, cert.str())) {
+    const auto nativePlannerPath =
+        options->outputDir / "native-planner-certificate.json";
+    if (!writeText(translationPath, translation.str()) ||
+        !writeText(certificatePath, cert.str()) ||
+        !writeText(nativePlannerPath, *nativePlannerCertificate)) {
         std::cerr << "Unable to publish CBRC evidence JSON\n";
         return EXIT_FAILURE;
     }
 
     std::cout << "{\"translation\":\"" << jsonEscape(translationPath.string())
               << "\",\"certificate\":\"" << jsonEscape(certificatePath.string())
+              << "\",\"nativePlannerCertificate\":\""
+              << jsonEscape(nativePlannerPath.string())
               << "\",\"revision\":" << revision
               << ",\"temporalRepairSelected\":" << (repairHistory ? "true" : "false") << "}\n";
     return EXIT_SUCCESS;
