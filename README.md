@@ -52,6 +52,12 @@ verified, shippable milestones. The current foundation contains:
   Tanks & Temples, uCO3D, ARKitScenes, DTU and reference subsets. It records real tool commands,
   dataset/adaptor status, video preprocessing, camera-aligned geometry metrics and generated outputs
   without vendoring dataset bytes.
+- [Criticality-Bounded Revision Cones (CBRC)](docs/research/CBRC.md), a fail-closed
+  persistent-world revision planner with typed HARD/ANALYTIC/EMPIRICAL dependencies, native sparse
+  planning, Gaussian/temporal analytic certificates, heterogeneous locality/work accounting,
+  automatic FULL fallback, independent oracle replay, baselines/ablations, and reproducible campaign
+  artifacts. The implementation is complete; real captured-scene performance evidence remains an
+  experiment gate, not an implementation claim.
 
 The project does **not** yet claim production Gaussian rendering or relighting. See
 [the roadmap](docs/ROADMAP.md) for implemented and pending exit gates.
@@ -148,6 +154,18 @@ The benchmark performs warmup frames, waits for each real Metal command buffer, 
 median/p95 time plus allocation and Gaussian workload counters. See
 [the benchmark contract](docs/BENCHMARKING.md). Serial kernels are compatibility fallbacks only, and
 tiny-fixture timings are never used as release performance claims.
+
+## Certified persistent-world revisions (CBRC)
+
+The CBRC implementation and operator documentation live at
+[docs/research/CBRC.md](docs/research/CBRC.md). The exact v1 completion boundary is recorded in
+[research/design/CBRC_IMPLEMENTATION_STATUS.md](research/design/CBRC_IMPLEMENTATION_STATUS.md), and
+the reproducible experiment procedure is
+[research/results/CBRC_EXPERIMENT_RUNBOOK.md](research/results/CBRC_EXPERIMENT_RUNBOOK.md).
+
+CBRC deliberately distinguishes implementation correctness from measured research evidence.
+Fixtures, randomized theorem probes and synthetic matrices exercise the machinery; final speedup,
+effectivity and crossover claims require a frozen real-scene campaign.
 
 ## Repository history
 
