@@ -24,7 +24,9 @@ def first_existing(root:Path,candidates:Iterable[str])->Path|None:
 
 def numeric_key(path:Path)->tuple:
     parts=re.findall(r"\d+(?:\.\d+)?",path.stem)
-    return tuple(float(v) for v in parts) if parts else (path.stem,)
+    if parts:
+        return (0, *(float(v) for v in parts), path.stem)
+    return (1, path.stem)
 
 def pair_frames(rgb:list[Path],depth:list[Path])->list[tuple[Path,Path]]:
     depth_by_stem={p.stem:p for p in depth}
