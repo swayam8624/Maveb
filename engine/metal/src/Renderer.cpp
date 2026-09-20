@@ -11,6 +11,7 @@
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
 #include <aether/scene/Camera.hpp>
+#include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <Foundation/Foundation.hpp>
@@ -320,6 +321,9 @@ void Renderer::draw(MTK::View* view) noexcept {
     }
     const std::uint64_t jitterIndex = frameNumber_ % 8U + 1U;
     const simd_float2 jitterPixels{halton(jitterIndex, 2U) - 0.5F, halton(jitterIndex, 3U) - 0.5F};
+    std::optional<world_gaussian::GaussianImageRevisionCertificate>
+        frameGaussianRevisionCertificate;
+    bool forceTemporalFullHistoryInvalidation = false;
     bool presentGaussians = false;
     if (gaussianPipeline_) {
         {
@@ -348,11 +352,100 @@ void Renderer::draw(MTK::View* view) noexcept {
                 gaussianCamera.cameraWorldPosition = {cameraPosition.x, cameraPosition.y,
                                                       cameraPosition.z, 1.0F};
                 gaussianCamera.debugOptions = {gaussianDebugMode_, 0U, 0U, 0U};
+
+                auto pendingRevision = gaussianPipeline_->pendingRevisionSnapshot();
+                if (pendingRevision) {
+                    gaussian::ReferenceCamera referenceCamera;
+                    referenceCamera.width = width;
+                    referenceCamera.height = height;
+                    referenceCamera.focalX = gaussianCamera.focalCenter.x;
+                    referenceCamera.focalY = gaussianCamera.focalCenter.y;
+                    referenceCamera.centerX = gaussianCamera.focalCenter.z;
+                    referenceCamera.centerY = gaussianCamera.focalCenter.w;
+                    referenceCamera.nearPlane = gaussianCamera.depthViewport.x;
+                    referenceCamera.farPlane = gaussianCamera.depthViewport.y;
+                    referenceCamera.cameraWorldPosition = {
+                        gaussianCamera.cameraWorldPosition.x,
+                        gaussianCamera.cameraWorldPosition.y,
+                        gaussianCamera.cameraWorldPosition.z,
+                    };
+                    for (std::size_t row = 0; row < 4; ++row) {
+                        for (std::size_t column = 0; column < 4; ++column) {
+                            referenceCamera.worldToCamera[row * 4 + column] =
+                                positiveZView.columns[column][row];
+                        }
+                    }
+
+                    auto certificate =
+                        world_gaussian::certifyGaussianImageRevision(
+                            pendingRevision->beforeChanged,
+                            pendingRevision->afterChanged,
+                            referenceCamera,
+                            pendingRevision->sceneColorUpperBound);
+                    if (certificate) {
+                        const auto affected = static_cast<std::uint64_t>(
+                            std::count_if(
+                                certificate->rgbLInfBounds.begin(),
+                                certificate->rgbLInfBounds.end(),
+                                [](double bound) { return bound > 0.0; }));
+                        lastGaussianRevisionCertificateStatistics_ = {
+                            .available = true,
+                            .invalidationCoversCertifiedSupport = false,
+                            .temporalFullFrameFallback = false,
+                            .revisionVersion = pendingRevision->version,
+                            .changedGaussians = pendingRevision->sourceIndices.size(),
+                            .affectedPixels = affected,
+                            .fullFramePixels =
+                                static_cast<std::uint64_t>(width) * height,
+                            .maximumCurrentRgbBound =
+                                certificate->maximumRgbLInfBound,
+                            .sceneColorUpperBound =
+                                pendingRevision->sceneColorUpperBound,
+                        };
+                        frameGaussianRevisionCertificate = std::move(*certificate);
+                    } else {
+                        forceTemporalFullHistoryInvalidation = true;
+                        lastGaussianRevisionCertificateStatistics_ = {
+                            .available = false,
+                            .invalidationCoversCertifiedSupport = false,
+                            .temporalFullFrameFallback = true,
+                            .revisionVersion = pendingRevision->version,
+                            .changedGaussians = pendingRevision->sourceIndices.size(),
+                            .affectedPixels = 0,
+                            .fullFramePixels =
+                                static_cast<std::uint64_t>(width) * height,
+                            .maximumCurrentRgbBound = 0.0,
+                            .sceneColorUpperBound =
+                                pendingRevision->sceneColorUpperBound,
+                        };
+                        Log::instance().write(
+                            LogLevel::error, certificate.error().describe());
+                    }
+                } else if (pendingRevision.error().code != ErrorCode::notFound) {
+                    forceTemporalFullHistoryInvalidation = true;
+                    lastGaussianRevisionCertificateStatistics_ = {
+                        .available = false,
+                        .invalidationCoversCertifiedSupport = false,
+                        .temporalFullFrameFallback = true,
+                        .revisionVersion = 0,
+                        .changedGaussians = 0,
+                        .affectedPixels = 0,
+                        .fullFramePixels =
+                            static_cast<std::uint64_t>(width) * height,
+                        .maximumCurrentRgbBound = 0.0,
+                        .sceneColorUpperBound = 0.0,
+                    };
+                    Log::instance().write(
+                        LogLevel::error, pendingRevision.error().describe());
+                }
+
                 auto encoded =
                     gaussianPipeline_->encode(commandBuffer, gaussianCamera, gaussianColor_.get(),
                                               gaussianDepth_.get(), gaussianIds_.get(), frameSlot);
                 if (encoded) {
                     presentGaussians = true;
+                    if (frameGaussianRevisionCertificate)
+                        gaussianPipeline_->clearPendingRevisionSnapshot();
                 } else {
                     Log::instance().write(LogLevel::error, encoded.error().describe());
                 }
@@ -936,6 +1029,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                                                  previousViewProjection_.columns[column][row]));
         bool historyUsable = temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
         bool regionalInvalidation = false;
+        bool haveTemporalInvalidationPlan = false;
         simd_float4 invalidationRect{};
         if (pendingTemporalInvalidationBounds_) {
             auto plan = scene::planTemporalInvalidation(
@@ -943,6 +1037,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                 static_cast<std::uint32_t>(sceneTargetWidth_),
                 static_cast<std::uint32_t>(sceneTargetHeight_), 8);
             if (!plan) {
+                haveTemporalInvalidationPlan = true;
                 historyUsable = false;
                 lastTemporalInvalidationPlan_ = {
                     .fullFrame = true,
@@ -954,6 +1049,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                         static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_,
                 };
             } else {
+                haveTemporalInvalidationPlan = true;
                 lastTemporalInvalidationPlan_ = *plan;
                 if (plan->fullFrame) {
                     historyUsable = false;
@@ -963,6 +1059,81 @@ void Renderer::draw(MTK::View* view) noexcept {
                 }
             }
         }
+        if (frameGaussianRevisionCertificate) {
+            bool supportCovered = false;
+            if (haveTemporalInvalidationPlan) {
+                if (lastTemporalInvalidationPlan_.fullFrame) {
+                    supportCovered = true;
+                } else if (lastTemporalInvalidationPlan_.empty) {
+                    supportCovered =
+                        lastGaussianRevisionCertificateStatistics_.affectedPixels == 0;
+                } else {
+                    supportCovered = true;
+                    const simd_float4 rect =
+                        lastTemporalInvalidationPlan_.normalizedRect;
+                    const std::size_t width =
+                        frameGaussianRevisionCertificate->width;
+                    const std::size_t height =
+                        frameGaussianRevisionCertificate->height;
+                    for (std::size_t y = 0; y < height && supportCovered; ++y) {
+                        for (std::size_t x = 0; x < width; ++x) {
+                            const std::size_t pixel = y * width + x;
+                            if (frameGaussianRevisionCertificate
+                                    ->rgbLInfBounds[pixel] <= 0.0)
+                                continue;
+                            const float u =
+                                (static_cast<float>(x) + 0.5F) /
+                                static_cast<float>(width);
+                            const float v =
+                                (static_cast<float>(y) + 0.5F) /
+                                static_cast<float>(height);
+                            if (u < rect.x || u > rect.z ||
+                                v < rect.y || v > rect.w) {
+                                supportCovered = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            lastGaussianRevisionCertificateStatistics_
+                .invalidationCoversCertifiedSupport = supportCovered;
+            if (!supportCovered || forceTemporalFullHistoryInvalidation) {
+                historyUsable = false;
+                regionalInvalidation = false;
+                const std::uint64_t fullPixels =
+                    static_cast<std::uint64_t>(sceneTargetWidth_) *
+                    sceneTargetHeight_;
+                lastTemporalInvalidationPlan_ = {
+                    .fullFrame = true,
+                    .empty = false,
+                    .normalizedRect = {0.0F, 0.0F, 1.0F, 1.0F},
+                    .invalidatedPixels = fullPixels,
+                    .fullFramePixels = fullPixels,
+                };
+                lastGaussianRevisionCertificateStatistics_
+                    .temporalFullFrameFallback = true;
+            } else if (!historyUsable ||
+                       lastTemporalInvalidationPlan_.fullFrame) {
+                lastGaussianRevisionCertificateStatistics_
+                    .temporalFullFrameFallback = true;
+            }
+        } else if (forceTemporalFullHistoryInvalidation) {
+            historyUsable = false;
+            regionalInvalidation = false;
+            const std::uint64_t fullPixels =
+                static_cast<std::uint64_t>(sceneTargetWidth_) *
+                sceneTargetHeight_;
+            lastTemporalInvalidationPlan_ = {
+                .fullFrame = true,
+                .empty = false,
+                .normalizedRect = {0.0F, 0.0F, 1.0F, 1.0F},
+                .invalidatedPixels = fullPixels,
+                .fullFramePixels = fullPixels,
+            };
+        }
+
         auto* temporalPass = MTL::RenderPassDescriptor::renderPassDescriptor();
         auto* temporalColor = temporalPass->colorAttachments()->object(0);
         temporalColor->setTexture(temporalColorHistory_[outputIndex].get());
