@@ -634,15 +634,14 @@ int main(int argc, char** argv) try {
          << "\"available\":true,"
          << "\"stable\":" << (planned->stable ? "true" : "false") << ','
          << "\"passes\":" << (planned->passes ? "true" : "false") << ','
-         << "\"temporalValidationStable\":"
-         << (options->historyStable ? "true" : "false") << ','
+         << "\"temporalValidationStable\":" << (options->historyStable ? "true" : "false") << ','
          << "\"temporalRepairSelected\":" << (repairHistory ? "true" : "false") << ','
          << "\"fullRepair\":" << (planned->fullRebuild ? "true" : "false") << ','
          << "\"resolvedRgbBound\":" << resolvedBound << ',' << "\"epsilon\":" << options->epsilon
          << ',' << "\"historyWeight\":" << historyWeight << ','
          << "\"temporalRepairWork\":" << localHistoryRepairWork << ','
-         << "\"plannerWork\":" << planned->work << ','
-         << "\"fullWork\":" << planned->fullWork << "},"
+         << "\"plannerWork\":" << planned->work << ',' << "\"fullWork\":" << planned->fullWork
+         << "},"
          << "\"publication\":{"
          << "\"touchedRecords\":" << owned.size() << ',' << "\"contiguousRanges\":0,"
          << "\"touchedBytes\":" << touchedBytes << ','

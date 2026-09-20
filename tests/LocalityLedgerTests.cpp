@@ -42,12 +42,10 @@ void testIndependentRatiosAndJson() {
     expect(json->find("\"gaussiansInspected\":{\"incremental\":10,\"full\":1000") !=
                std::string::npos,
            "serialized ledger must preserve raw Gaussian counters");
-    expect(json->find(
-               "\"textureTexelsWritten\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
+    expect(json->find("\"textureTexelsWritten\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
                std::string::npos,
            "not-applicable domains must serialize with null ratio");
-    expect(json->find(
-               "\"materialStatesUpdated\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
+    expect(json->find("\"materialStatesUpdated\":{\"incremental\":0,\"full\":0,\"ratio\":null}") !=
                std::string::npos,
            "material-state domain must serialize independently");
 }
@@ -69,9 +67,11 @@ void testZeroFullBaselineFailsClosed() {
 
 void testOverflowFailsClosed() {
     LocalityLedger ledger;
-    expect(ledger.addFull(LocalityDomain::archiveBytesWritten,
-                          std::numeric_limits<std::uint64_t>::max()).has_value(),
-           "maximum representable counter value must be accepted once");
+    expect(
+        ledger
+            .addFull(LocalityDomain::archiveBytesWritten, std::numeric_limits<std::uint64_t>::max())
+            .has_value(),
+        "maximum representable counter value must be accepted once");
     expect(!ledger.addFull(LocalityDomain::archiveBytesWritten, 1).has_value(),
            "counter overflow must return a bounded structured failure");
 }
@@ -79,16 +79,11 @@ void testOverflowFailsClosed() {
 void testS1CoreCoverageRequiresEveryHeadlineLayer() {
     LocalityLedger ledger;
     constexpr std::array required{
-        LocalityDomain::observationsInspected,
-        LocalityDomain::tsdfBlocksRead,
-        LocalityDomain::tsdfBlocksWritten,
-        LocalityDomain::meshCellsRegenerated,
-        LocalityDomain::gaussiansInspected,
-        LocalityDomain::gaussiansUpdated,
-        LocalityDomain::texturePagesUpdated,
-        LocalityDomain::textureTexelsWritten,
-        LocalityDomain::materialStatesUpdated,
-        LocalityDomain::gpuPublicationBytes,
+        LocalityDomain::observationsInspected,     LocalityDomain::tsdfBlocksRead,
+        LocalityDomain::tsdfBlocksWritten,         LocalityDomain::meshCellsRegenerated,
+        LocalityDomain::gaussiansInspected,        LocalityDomain::gaussiansUpdated,
+        LocalityDomain::texturePagesUpdated,       LocalityDomain::textureTexelsWritten,
+        LocalityDomain::materialStatesUpdated,     LocalityDomain::gpuPublicationBytes,
         LocalityDomain::temporalPixelsInvalidated,
     };
 
@@ -112,8 +107,7 @@ void testS1CoreCoverageRequiresEveryHeadlineLayer() {
 void testInvalidDomainFailsClosed() {
     LocalityLedger ledger;
     const auto invalid = static_cast<LocalityDomain>(255);
-    expect(!ledger.set(invalid, 0, 0).has_value(),
-           "invalid locality domain must be rejected");
+    expect(!ledger.set(invalid, 0, 0).has_value(), "invalid locality domain must be rejected");
     expect(aether::world::localityDomainName(invalid) == "invalid",
            "invalid locality domain must have deterministic diagnostic name");
 }

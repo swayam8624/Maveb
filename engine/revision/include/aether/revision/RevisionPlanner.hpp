@@ -86,8 +86,7 @@ class RevisionGraph final {
     [[nodiscard]] double fullWorkBaseline() const noexcept {
         return fullWorkBaseline_;
     }
-    [[nodiscard]] std::span<const std::size_t>
-    analyticOutgoing(RevisionNodeId id) const noexcept {
+    [[nodiscard]] std::span<const std::size_t> analyticOutgoing(RevisionNodeId id) const noexcept {
         return analyticOutgoing_[id];
     }
 

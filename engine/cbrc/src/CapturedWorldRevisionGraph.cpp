@@ -14,11 +14,10 @@ namespace {
     return std::isfinite(value) && value >= 0.0;
 }
 
-[[nodiscard]] Result<std::size_t> checkedSize(std::uint64_t value,
-                                               const char* label) {
+[[nodiscard]] Result<std::size_t> checkedSize(std::uint64_t value, const char* label) {
     if (value > std::numeric_limits<std::size_t>::max())
-        return fail(ErrorCode::resourceExhausted,
-                    "CBRC locality counter exceeds size_t range", label);
+        return fail(ErrorCode::resourceExhausted, "CBRC locality counter exceeds size_t range",
+                    label);
     return static_cast<std::size_t>(value);
 }
 
@@ -42,29 +41,20 @@ void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::Revis
 Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
     const world::LocalityLedger& ledger,
     const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
-    double gaussianCurrentRgbBound, double temporalHistoryWeight,
-    bool temporalValidationStable, double epsilonRgbLInf) {
+    double gaussianCurrentRgbBound, double temporalHistoryWeight, bool temporalValidationStable,
+    double epsilonRgbLInf) {
     if (auto validation = ledger.validateS1CoreCoverage(); !validation)
         return std::unexpected(validation.error());
 
-    const auto observations =
-        ledger.counter(world::LocalityDomain::observationsInspected);
-    const auto meshCells =
-        ledger.counter(world::LocalityDomain::meshCellsRegenerated);
-    const auto meshPatches =
-        ledger.counter(world::LocalityDomain::meshPatchesRegenerated);
-    const auto texturePages =
-        ledger.counter(world::LocalityDomain::texturePagesUpdated);
-    const auto materials =
-        ledger.counter(world::LocalityDomain::materialStatesUpdated);
-    const auto gaussiansInspected =
-        ledger.counter(world::LocalityDomain::gaussiansInspected);
-    const auto gaussiansUpdated =
-        ledger.counter(world::LocalityDomain::gaussiansUpdated);
-    const auto publication =
-        ledger.counter(world::LocalityDomain::gpuPublicationBytes);
-    const auto temporal =
-        ledger.counter(world::LocalityDomain::temporalPixelsInvalidated);
+    const auto observations = ledger.counter(world::LocalityDomain::observationsInspected);
+    const auto meshCells = ledger.counter(world::LocalityDomain::meshCellsRegenerated);
+    const auto meshPatches = ledger.counter(world::LocalityDomain::meshPatchesRegenerated);
+    const auto texturePages = ledger.counter(world::LocalityDomain::texturePagesUpdated);
+    const auto materials = ledger.counter(world::LocalityDomain::materialStatesUpdated);
+    const auto gaussiansInspected = ledger.counter(world::LocalityDomain::gaussiansInspected);
+    const auto gaussiansUpdated = ledger.counter(world::LocalityDomain::gaussiansUpdated);
+    const auto publication = ledger.counter(world::LocalityDomain::gpuPublicationBytes);
+    const auto temporal = ledger.counter(world::LocalityDomain::temporalPixelsInvalidated);
 
     if (meshCells.incremental != mesher.ownerCellsRegenerated ||
         meshCells.full != mesher.fullReferenceCells) {
@@ -80,25 +70,20 @@ Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
                     "CBRC Gaussian full baselines disagree across inspection/update domains");
     }
 
-    auto observationIncremental =
-        checkedSize(observations.incremental, "observations.incremental");
+    auto observationIncremental = checkedSize(observations.incremental, "observations.incremental");
     auto observationFull = checkedSize(observations.full, "observations.full");
-    auto textureIncremental =
-        checkedSize(texturePages.incremental, "texturePages.incremental");
+    auto textureIncremental = checkedSize(texturePages.incremental, "texturePages.incremental");
     auto textureFull = checkedSize(texturePages.full, "texturePages.full");
-    auto materialIncremental =
-        checkedSize(materials.incremental, "materials.incremental");
+    auto materialIncremental = checkedSize(materials.incremental, "materials.incremental");
     auto materialFull = checkedSize(materials.full, "materials.full");
     auto gaussianInspectionIncremental =
         checkedSize(gaussiansInspected.incremental, "gaussiansInspected.incremental");
     auto gaussianUpdateIncremental =
         checkedSize(gaussiansUpdated.incremental, "gaussiansUpdated.incremental");
-    auto gaussianFull =
-        checkedSize(gaussiansInspected.full, "gaussians.full");
-    if (!observationIncremental || !observationFull || !textureIncremental ||
-        !textureFull || !materialIncremental || !materialFull ||
-        !gaussianInspectionIncremental || !gaussianUpdateIncremental ||
-        !gaussianFull) {
+    auto gaussianFull = checkedSize(gaussiansInspected.full, "gaussians.full");
+    if (!observationIncremental || !observationFull || !textureIncremental || !textureFull ||
+        !materialIncremental || !materialFull || !gaussianInspectionIncremental ||
+        !gaussianUpdateIncremental || !gaussianFull) {
         const Error* error = nullptr;
         if (!observationIncremental)
             error = &observationIncremental.error();

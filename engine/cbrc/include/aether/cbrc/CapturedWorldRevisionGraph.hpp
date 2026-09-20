@@ -95,13 +95,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
 /// planner-input counters consumed by buildCapturedWorldRevisionGraph.
 /// Mesher counters are cross-checked against ledger mesh evidence so runtime
 /// instrumentation and planner accounting cannot silently diverge.
-[[nodiscard]] Result<CapturedWorldRevisionInput>
-capturedWorldRevisionInputFromEvidence(
+[[nodiscard]] Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
     const world::LocalityLedger& ledger,
     const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
-    double gaussianCurrentRgbBound,
-    double temporalHistoryWeight,
-    bool temporalValidationStable,
+    double gaussianCurrentRgbBound, double temporalHistoryWeight, bool temporalValidationStable,
     double epsilonRgbLInf);
 
 [[nodiscard]] Result<revision::RevisionConeCertificate>

@@ -172,8 +172,7 @@ void testIndependentFullBaselineControlsFallbackAccounting() {
             {"local-a", 7.0, 0.0},
             {"local-b", 8.0, 0.0},
         },
-        {},
-        5.0);
+        {}, 5.0);
     expect(graph.has_value(), "graph with independent full baseline must build");
     if (!graph)
         return;
@@ -186,8 +185,7 @@ void testIndependentFullBaselineControlsFallbackAccounting() {
     if (!result)
         return;
     expect(result->fullRebuild, "cheaper independent FULL baseline must win");
-    expect(std::abs(result->work - 5.0) < 1e-12 &&
-               std::abs(result->fullWork - 5.0) < 1e-12,
+    expect(std::abs(result->work - 5.0) < 1e-12 && std::abs(result->fullWork - 5.0) < 1e-12,
            "FULL fallback work must equal independent full baseline");
 }
 
@@ -197,8 +195,7 @@ void testCompleteRepairConeCanRemainLocal() {
             {"current-frame", 0.0, 0.0},
             {"history-region", 25.0, 0.0},
         },
-        {},
-        100.0);
+        {}, 100.0);
     expect(graph.has_value(), "regional full-cone graph must build");
     if (!graph)
         return;
@@ -213,8 +210,7 @@ void testCompleteRepairConeCanRemainLocal() {
     expect(result->passes, "regional complete cone must certify zero residual");
     expect(!result->fullRebuild,
            "complete abstract cone must remain local when cheaper than full baseline");
-    expect(std::abs(result->work - 25.0) < 1e-12 &&
-               std::abs(result->fullWork - 100.0) < 1e-12,
+    expect(std::abs(result->work - 25.0) < 1e-12 && std::abs(result->fullWork - 100.0) < 1e-12,
            "regional repair work must stay distinct from full rebuild baseline");
 }
 

@@ -1087,9 +1087,8 @@ void Renderer::draw(MTK::View* view) noexcept {
                 baseHistoryUsable && supportCovered && !forceTemporalFullHistoryInvalidation;
             const double staleHistoryBound = frameGaussianRevisionCertificate->maximumRgbLInfBound;
             const double historyWeight = temporalValidationStable ? 0.9 : 1.0;
-            const double fullHistoryWork =
-                static_cast<double>(static_cast<std::uint64_t>(sceneTargetWidth_) *
-                                    sceneTargetHeight_);
+            const double fullHistoryWork = static_cast<double>(
+                static_cast<std::uint64_t>(sceneTargetWidth_) * sceneTargetHeight_);
             const double candidateHistoryWork =
                 temporalValidationStable && haveTemporalInvalidationPlan
                     ? static_cast<double>(lastTemporalInvalidationPlan_.invalidatedPixels)
@@ -1100,8 +1099,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                     {"gaussian-current-frame-repaired", 0.0, 0.0},
                     {"temporal-history-repair", candidateHistoryWork, 0.0},
                 },
-                {},
-                fullHistoryWork);
+                {}, fullHistoryWork);
             bool temporalRepairSelected = true;
             if (outputGraph) {
                 std::vector<double> sourceBounds{0.0, staleHistoryBound};

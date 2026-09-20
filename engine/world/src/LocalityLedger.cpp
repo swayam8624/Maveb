@@ -132,16 +132,11 @@ Result<void> LocalityLedger::validateS1CoreCoverage() const {
         return std::unexpected(validation.error());
 
     constexpr std::array required{
-        LocalityDomain::observationsInspected,
-        LocalityDomain::tsdfBlocksRead,
-        LocalityDomain::tsdfBlocksWritten,
-        LocalityDomain::meshCellsRegenerated,
-        LocalityDomain::gaussiansInspected,
-        LocalityDomain::gaussiansUpdated,
-        LocalityDomain::texturePagesUpdated,
-        LocalityDomain::textureTexelsWritten,
-        LocalityDomain::materialStatesUpdated,
-        LocalityDomain::gpuPublicationBytes,
+        LocalityDomain::observationsInspected,     LocalityDomain::tsdfBlocksRead,
+        LocalityDomain::tsdfBlocksWritten,         LocalityDomain::meshCellsRegenerated,
+        LocalityDomain::gaussiansInspected,        LocalityDomain::gaussiansUpdated,
+        LocalityDomain::texturePagesUpdated,       LocalityDomain::textureTexelsWritten,
+        LocalityDomain::materialStatesUpdated,     LocalityDomain::gpuPublicationBytes,
         LocalityDomain::temporalPixelsInvalidated,
     };
     for (const LocalityDomain domain : required) {
@@ -166,8 +161,8 @@ Result<std::string> LocalityLedger::toJson() const {
             output << ',';
         const auto domain = static_cast<LocalityDomain>(index);
         const auto& value = counters_[index];
-        output << '\"' << localityDomainName(domain) << "\":{\"incremental\":"
-               << value.incremental << ",\"full\":" << value.full << ",\"ratio\":";
+        output << '\"' << localityDomainName(domain) << "\":{\"incremental\":" << value.incremental
+               << ",\"full\":" << value.full << ",\"ratio\":";
         if (const auto ratio = value.ratio())
             output << *ratio;
         else
