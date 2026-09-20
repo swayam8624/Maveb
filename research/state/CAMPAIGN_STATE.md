@@ -44,7 +44,7 @@ The locked line now contains:
 
 ## Corpus and filter
 
-- Literature corpus: **53 papers**
+- Literature corpus: **52 papers**
 - Mined implementations: **18 repositories**
 - Hypotheses: **119**
 - Locked headline hypotheses: **5**
