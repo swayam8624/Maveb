@@ -119,9 +119,9 @@ class Renderer final {
     validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
                                 simd_float3 translationDelta) const;
 
-    /// Waits until every in-flight frame has released the shared Gaussian buffer, applies one
-    /// transactional source-order subset translation, invalidates temporal history, then resumes
-    /// frame submission. This is the renderer seam used by persistent local Gaussian edits.
+    /// Applies one transactional source-order subset translation to canonical CPU Gaussian state.
+    /// GPU publication is deferred to each recycled frame slot, avoiding global frame quiescence.
+    /// Temporal history remains globally invalidated on this publication-only research branch.
     [[nodiscard]] Result<void> translateGaussians(std::span<const std::uint32_t> gaussianIndices,
                                                   simd_float3 translationDelta);
 
