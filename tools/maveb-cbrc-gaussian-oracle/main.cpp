@@ -29,6 +29,7 @@ struct Options final {
     std::string beforePath;
     std::string afterPath;
     std::string changedCsv;
+    bool detectChanged{};
     std::size_t width{320};
     std::size_t height{180};
     float focalX{260.0F};
@@ -125,6 +126,8 @@ parseFloatCsv(std::string_view csv) {
             if (!value)
                 return std::nullopt;
             options.changedCsv = *value;
+        } else if (arg == "--detect-changed") {
+            options.detectChanged = true;
         } else if (arg == "--world-to-camera") {
             auto value = requireValue(arg);
             if (!value)
@@ -186,7 +189,8 @@ parseFloatCsv(std::string_view csv) {
         } else if (arg == "--help") {
             std::cout
                 << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
-                   "--changed 1,4,9 [camera options]\n"
+                   "(--changed 1,4,9 | --detect-changed) [camera options]\n"
+                << "  --detect-changed compares stable source-order before/after records\n"
                 << "  --width N --height N --focal-x F --focal-y F\n"
                 << "  --center-x F --center-y F --near F --far F\n"
                 << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
@@ -200,8 +204,9 @@ parseFloatCsv(std::string_view csv) {
         }
     }
 
+    const bool hasExplicitChanged = !options.changedCsv.empty();
     if (options.beforePath.empty() || options.afterPath.empty() ||
-        options.changedCsv.empty() || options.epsilon < 0.0 ||
+        hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.focalX <= 0.0F || options.focalY <= 0.0F ||
         options.nearPlane <= 0.0F || options.farPlane <= options.nearPlane)
         return std::nullopt;
@@ -262,10 +267,13 @@ int main(int argc, char** argv) try {
         std::cerr << "Invalid CBRC Gaussian oracle arguments\n";
         return EXIT_FAILURE;
     }
-    auto changed = parseChangedIndices(options->changedCsv);
-    if (!changed) {
-        std::cerr << "Invalid --changed list; indices must be unique non-negative integers\n";
-        return EXIT_FAILURE;
+    std::optional<std::vector<std::size_t>> changed;
+    if (!options->detectChanged) {
+        changed = parseChangedIndices(options->changedCsv);
+        if (!changed) {
+            std::cerr << "Invalid --changed list; indices must be unique non-negative integers\n";
+            return EXIT_FAILURE;
+        }
     }
 
     auto before = aether::gaussian::PlyLoader::load(options->beforePath);
@@ -281,6 +289,20 @@ int main(int argc, char** argv) try {
     if (before->gaussians.size() != after->gaussians.size()) {
         std::cerr << "Oracle currently requires stable source-order Gaussian count\n";
         return EXIT_FAILURE;
+    }
+
+    if (options->detectChanged) {
+        std::vector<std::size_t> detected;
+        detected.reserve(before->gaussians.size() / 100 + 1);
+        for (std::size_t index = 0; index < before->gaussians.size(); ++index) {
+            if (!sameGaussian(before->gaussians[index], after->gaussians[index]))
+                detected.push_back(index);
+        }
+        if (detected.empty()) {
+            std::cerr << "Auto-diff found no changed Gaussian records\n";
+            return EXIT_FAILURE;
+        }
+        changed = std::move(detected);
     }
 
     std::vector<bool> isChanged(before->gaussians.size(), false);
