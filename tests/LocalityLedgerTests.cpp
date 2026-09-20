@@ -1,5 +1,6 @@
 #include <aether/world/LocalityLedger.hpp>
 
+#include <array>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -71,6 +72,37 @@ void testOverflowFailsClosed() {
            "counter overflow must return a bounded structured failure");
 }
 
+void testS1CoreCoverageRequiresEveryHeadlineLayer() {
+    LocalityLedger ledger;
+    constexpr std::array required{
+        LocalityDomain::observationsInspected,
+        LocalityDomain::tsdfBlocksRead,
+        LocalityDomain::tsdfBlocksWritten,
+        LocalityDomain::meshCellsRegenerated,
+        LocalityDomain::gaussiansInspected,
+        LocalityDomain::gaussiansUpdated,
+        LocalityDomain::textureTexelsWritten,
+        LocalityDomain::gpuPublicationBytes,
+        LocalityDomain::temporalPixelsInvalidated,
+    };
+
+    for (const LocalityDomain domain : required)
+        expect(ledger.set(domain, 1, 100).has_value(),
+               "S1 core fixture must accept valid per-domain counters");
+    expect(ledger.validateS1CoreCoverage().has_value(),
+           "S1 coverage gate must pass when every core layer has a full baseline");
+
+    LocalityLedger incomplete;
+    for (const LocalityDomain domain : required) {
+        if (domain == LocalityDomain::gpuPublicationBytes)
+            continue;
+        expect(incomplete.set(domain, 1, 100).has_value(),
+               "incomplete S1 fixture must accept its available counters");
+    }
+    expect(!incomplete.validateS1CoreCoverage().has_value(),
+           "S1 coverage gate must fail rather than silently omit GPU publication work");
+}
+
 void testInvalidDomainFailsClosed() {
     LocalityLedger ledger;
     const auto invalid = static_cast<LocalityDomain>(255);
@@ -87,6 +119,7 @@ int main() noexcept {
         testIndependentRatiosAndJson();
         testZeroFullBaselineFailsClosed();
         testOverflowFailsClosed();
+        testS1CoreCoverageRequiresEveryHeadlineLayer();
         testInvalidDomainFailsClosed();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
