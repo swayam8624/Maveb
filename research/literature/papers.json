@@ -716,6 +716,48 @@
       "claims_relevant_to_maveb": "Direct collision for generic unchanged-world-damage/locality benchmark novelty.",
       "overlap_with_candidate_maveb_contribution": "High for evaluation-only UWD; lower for explicit metric geometry bounds/certificates.",
       "potential_unexplored_gap": "A representation-resampling-aware 3D geometric disturbance quantity with a computable certificate integrated into editing."
+    },
+    {
+      "id": "p035",
+      "title": "Manifold-GS: Certified Hybrid Assets via Varifold-Conservative Gaussian Splatting",
+      "authors": "Boyang Li",
+      "year": 2026,
+      "venue": "arXiv 2608.00214",
+      "link": "https://arxiv.org/abs/2608.00214",
+      "code_repository": null,
+      "representation": "3DGS + discrete unoriented varifold + certified open surface patches + residual splats",
+      "inputs": "trained 3DGS scene",
+      "outputs": "certified hybrid asset with open patches/residual splats",
+      "central_contribution": "Separates appearance opacity from geometric quadrature mass, uses refinement-conservative varifold mass transport, local realizability diagnostics, source-preserving patch bindings and conservative collision candidates.",
+      "major_algorithms": "varifold-conservative quadrature; patch certification; source bindings",
+      "metrics": "patch-defined edit leakage; texture round-trip PSNR; collision floater area; precision/coverage",
+      "hardware": "see paper",
+      "runtime": "see paper",
+      "limitations": "Precision-coverage tradeoff; local realizability is not sufficient for sparse-view identifiability.",
+      "claims_relevant_to_maveb": "Major collision for any broad 'certified Gaussian asset/editing' or refinement-stable geometric representation claim.",
+      "overlap_with_candidate_maveb_contribution": "Thematic high; mathematical guarantee differs from H010. Manifold-GS certifies extracted hybrid surface assets and source bindings under refinement, whereas H010 currently bounds additive Gaussian density-field disturbance outside an arbitrary edit volume.",
+      "potential_unexplored_gap": "Uniform analytic non-target field/render disturbance bounds for arbitrary Gaussian edits; must prove this is not implicit in Manifold-GS and must compare directly."
+    },
+    {
+      "id": "p036",
+      "title": "FocusGS: Spatial Delta Layers for Local Repair and Deterministic Editing of Trained 3D Gaussian Assets",
+      "authors": "Yiqun Pan; Yukun Shi",
+      "year": 2026,
+      "venue": "arXiv 2607.28834",
+      "link": "https://arxiv.org/abs/2607.28834",
+      "code_repository": null,
+      "representation": "frozen base 3DGS + composite spatial delta layers",
+      "inputs": "trained 3DGS + target local repair/edit",
+      "outputs": "locally repaired or deterministically edited Gaussian asset",
+      "central_contribution": "Unifies additive repair and erase-insert deterministic editing through spatial delta layers while freezing global asset and suppressing non-target bleed.",
+      "major_algorithms": "composite spatial delta; erase-insert factorization; local Gaussian optimization; protected-region penalties",
+      "metrics": "target ROI PSNR; target-mask PSNR; target-delta correlation; local repair gains",
+      "hardware": "see paper",
+      "runtime": "minutes-scale local optimization per secondary summary",
+      "limitations": "Retrieved sources do not establish a formal uniform non-target disturbance bound.",
+      "claims_relevant_to_maveb": "Kills novelty of deterministic spatial-delta maintenance/local repair/editing framing.",
+      "overlap_with_candidate_maveb_contribution": "Very high for local-maintenance system framing; lower for H010 analytic certificate if materially distinct.",
+      "potential_unexplored_gap": "A provable outside-region disturbance certificate layered onto deterministic editing rather than another spatial-delta operator."
     }
   ]
 }
