@@ -52,6 +52,15 @@ class RevisionGraph final {
     activePredecessorClosure(std::span<const std::size_t> seed,
                              std::span<const double> trueChangeBounds) const;
 
+    /// Builds the fail-closed repair seed for one revision. In addition to the
+    /// physical-source HARD/EMPIRICAL closure, any active HARD/EMPIRICAL edge
+    /// whose source and target can both change forces its target into repair.
+    /// Active predecessor closure is then applied so every repaired state can
+    /// be recomputed from repaired or unchanged inputs.
+    [[nodiscard]] Result<std::vector<std::size_t>>
+    requiredRepairClosure(std::span<const std::size_t> physicalSources,
+                          std::span<const double> trueChangeBounds) const;
+
     [[nodiscard]] Result<bool>
     isActivePredecessorConsistent(std::span<const std::size_t> cone,
                                   std::span<const double> trueChangeBounds) const;

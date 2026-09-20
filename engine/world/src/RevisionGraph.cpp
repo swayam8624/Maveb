@@ -171,6 +171,62 @@ RevisionGraph::activePredecessorClosure(
     return closure;
 }
 
+Result<std::vector<std::size_t>>
+RevisionGraph::requiredRepairClosure(
+    std::span<const std::size_t> physicalSources,
+    std::span<const double> trueChangeBounds) const {
+    if (trueChangeBounds.size() != nodeCount_) {
+        return fail(ErrorCode::invalidArgument,
+                    "Revision true-change bound count does not match graph node count");
+    }
+    for (const double bound : trueChangeBounds) {
+        if (!std::isfinite(bound) || bound < 0.0) {
+            return fail(ErrorCode::invalidArgument,
+                        "Revision true-change bounds must be finite and non-negative");
+        }
+    }
+
+    auto physicalClosure = hardForwardClosure(physicalSources);
+    if (!physicalClosure)
+        return std::unexpected(physicalClosure.error());
+
+    std::vector<bool> included(nodeCount_, false);
+    for (const std::size_t node : *physicalClosure)
+        included[node] = true;
+
+    for (const RevisionDependency& dependency : dependencies_) {
+        if (dependency.dependencyClass != RevisionDependencyClass::hard &&
+            dependency.dependencyClass != RevisionDependencyClass::empirical)
+            continue;
+        if (trueChangeBounds[dependency.source] > 0.0 &&
+            trueChangeBounds[dependency.target] > 0.0) {
+            included[dependency.target] = true;
+        }
+    }
+
+    std::vector<std::size_t> stack;
+    for (std::size_t node = 0; node < nodeCount_; ++node)
+        if (included[node])
+            stack.push_back(node);
+
+    while (!stack.empty()) {
+        const std::size_t node = stack.back();
+        stack.pop_back();
+        for (const std::size_t predecessor : predecessors_[node]) {
+            if (trueChangeBounds[predecessor] <= 0.0 || included[predecessor])
+                continue;
+            included[predecessor] = true;
+            stack.push_back(predecessor);
+        }
+    }
+
+    std::vector<std::size_t> closure;
+    for (std::size_t node = 0; node < nodeCount_; ++node)
+        if (included[node])
+            closure.push_back(node);
+    return closure;
+}
+
 Result<bool>
 RevisionGraph::isActivePredecessorConsistent(
     std::span<const std::size_t> cone,

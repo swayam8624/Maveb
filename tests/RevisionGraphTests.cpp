@@ -75,6 +75,46 @@ void testUnchangedAnalyticPredecessorCanRemainOutside() {
            "unchanged predecessor must not be repaired merely because it is read");
 }
 
+void testSoftToHardBoundaryForcesRepair() {
+    using namespace aether::world;
+    const std::array dependencies{
+        RevisionDependency{0, 1, RevisionDependencyClass::analytic, 0.25, "proof-v1"},
+        RevisionDependency{1, 2, RevisionDependencyClass::hard, std::nullopt, ""},
+    };
+    auto graph = RevisionGraph::build(3, dependencies);
+    expect(graph.has_value(), "soft-to-hard graph must build");
+    if (!graph)
+        return;
+
+    const std::array<std::size_t, 1> sources{0};
+    const std::array<double, 3> changed{1.0, 0.25, 0.25};
+    auto closure = graph->requiredRepairClosure(sources, changed);
+    expect(closure.has_value(), "required repair closure must succeed");
+    if (!closure)
+        return;
+    expect(*closure == std::vector<std::size_t>({0, 1, 2}),
+           "active soft-to-hard boundary must force exact successor and changed predecessor");
+}
+
+void testZeroChangeHardTargetCanRemainOutside() {
+    using namespace aether::world;
+    const std::array dependencies{
+        RevisionDependency{0, 1, RevisionDependencyClass::analytic, 0.25, "proof-v1"},
+        RevisionDependency{1, 2, RevisionDependencyClass::hard, std::nullopt, ""},
+    };
+    auto graph = RevisionGraph::build(3, dependencies);
+    expect(graph.has_value(), "soft-to-hard graph must build");
+    if (!graph)
+        return;
+
+    const std::array<std::size_t, 1> sources{0};
+    const std::array<double, 3> changed{1.0, 0.25, 0.0};
+    auto closure = graph->requiredRepairClosure(sources, changed);
+    expect(closure.has_value() &&
+               *closure == std::vector<std::size_t>({0}),
+           "exact target with zero true change must not be forced into repair");
+}
+
 void testCyclesTerminate() {
     using namespace aether::world;
     const std::array dependencies{
@@ -118,6 +158,8 @@ int main() noexcept {
         testHardForwardClosureStopsAtAnalyticEdge();
         testChangedAnalyticPredecessorIsRequired();
         testUnchangedAnalyticPredecessorCanRemainOutside();
+        testSoftToHardBoundaryForcesRepair();
+        testZeroChangeHardTargetCanRemainOutside();
         testCyclesTerminate();
         testInvalidAnalyticDependencyFailsClosed();
         testOutOfRangeEndpointFailsClosed();
