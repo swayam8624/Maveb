@@ -3,6 +3,7 @@ add_library(AetherWorld STATIC
     src/LocalityLedger.cpp
     src/PersistentWorld.cpp
     src/RevisionGraph.cpp
+    src/RevisionCertificate.cpp
     src/SelectiveUpdate.cpp
     src/SemanticSceneGraph.cpp
     src/SpatialSemantics.cpp
