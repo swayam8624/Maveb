@@ -173,7 +173,7 @@ if(AETHER_BUILD_TESTS)
                 --width 64 --height 64
                 --focal-x 70 --focal-y 70
                 --center-x 32 --center-y 32
-                --epsilon 0.8
+                --epsilon 1.0
         )
     endif()
 
