@@ -61,7 +61,9 @@ void testDeterministicNativeCertificateJson() {
            "certificate JSON must expose artifact type");
     expect(json->find("edit \\\"source\\\"") != std::string::npos,
            "certificate JSON must escape node names");
-    expect(json->find("\"workRatioFull\":0.1") != std::string::npos,
+    expect(json->find("\"work\":1") != std::string::npos &&
+               json->find("\"fullWork\":10") != std::string::npos &&
+               json->find("\"workRatioFull\":") != std::string::npos,
            "certificate JSON must preserve independent FULL baseline");
     expect(json->find("\"name\":\"rgb\"") != std::string::npos,
            "certificate JSON must include QoI result");
