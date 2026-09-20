@@ -4,10 +4,12 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <span>
 #include <string>
 #include <vector>
 
