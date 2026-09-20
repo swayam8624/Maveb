@@ -224,10 +224,14 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     GaussianAsset asset;
     asset.gaussians.reserve(gaussianCount);
 
-    // Spread primitives across one-dimensional metric cells. Exactly ten primitives occupy cell 0.
+    // Spread primitives across one-dimensional metric cells. Exactly ten primitives occupy each
+    // cell, with every coordinate strictly inside its bucket rather than on a cell boundary.
     for (std::size_t index = 0; index < gaussianCount; ++index) {
-        const float x = static_cast<float>(index) / 10.0F;
-        asset.gaussians.push_back(gaussian(x + 0.1F, 0.1F, 0.1F));
+        const std::size_t cell = index / 10;
+        const std::size_t local = index % 10;
+        const float x = static_cast<float>(cell) + 0.05F +
+                        0.08F * static_cast<float>(local);
+        asset.gaussians.push_back(gaussian(x, 0.1F, 0.1F));
     }
 
     SelectiveUpdatePlan plan;
