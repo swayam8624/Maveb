@@ -91,6 +91,13 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
     aether_configure_target(MavebStableTextureAtlasTests)
     add_test(NAME MavebStableTextureAtlasTests COMMAND MavebStableTextureAtlasTests)
+
+    add_executable(MavebPersistentTexturePageAllocatorTests
+        tests/PersistentTexturePageAllocatorTests.cpp)
+    target_link_libraries(MavebPersistentTexturePageAllocatorTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebPersistentTexturePageAllocatorTests)
+    add_test(NAME MavebPersistentTexturePageAllocatorTests
+        COMMAND MavebPersistentTexturePageAllocatorTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)
