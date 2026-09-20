@@ -216,6 +216,50 @@ void testIndexedSelectionScalesWithDirtyPopulation() {
            "large indexed selection must return the exact dirty entity population");
 }
 
+
+void testIndexedSelectionScalesWithDirtyOccupancy() {
+    constexpr std::size_t gaussianCount = 20'000;
+    GaussianAsset asset;
+    asset.gaussians.reserve(gaussianCount);
+
+    // Spread primitives across one-dimensional metric cells. Exactly ten primitives occupy cell 0.
+    for (std::size_t index = 0; index < gaussianCount; ++index) {
+        const float x = static_cast<float>(index / 10);
+        asset.gaussians.push_back(gaussian(x + 0.1F, 0.1F, 0.1F));
+    }
+
+    SelectiveUpdatePlan plan;
+    plan.cellSizeMeters = 1.0F;
+    RegionUpdate dirty;
+    dirty.key = RegionKey{0, 0, 0};
+    plan.dirtyRegions.push_back(dirty);
+
+    auto spatialIndex = GaussianSpatialIndex::build(asset, plan.cellSizeMeters);
+    expect(spatialIndex.has_value(),
+           "large Gaussian spatial index fixture must build deterministically");
+    if (!spatialIndex)
+        return;
+
+    const auto scanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan);
+    const auto indexed =
+        aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan, *spatialIndex);
+    expect(scanned.has_value() && indexed.has_value(),
+           "large scan/index local-selection comparison must succeed");
+    if (!scanned || !indexed)
+        return;
+
+    expect(scanned->gaussianIndices == indexed->gaussianIndices &&
+               indexed->gaussianIndices.size() == 10,
+           "indexed selection must exactly match full scan for sparse dirty occupancy");
+    expect(scanned->inspectedGaussians == gaussianCount,
+           "full scan must report inspection of every Gaussian primitive");
+    expect(indexed->inspectedGaussians == 10,
+           "indexed selection must inspect only Gaussian primitives in the dirty cell");
+    expect(indexed->inspectedGaussians * 1'000 < scanned->inspectedGaussians,
+           "indexed selection must demonstrate at least three orders of magnitude inspection reduction in sparse fixture");
+}
+
 void testOwnedTranslationIsTransactional() {
     GaussianAsset asset;
     asset.gaussians = {
@@ -317,6 +361,7 @@ int main() noexcept {
     try {
         testOwnershipProtectsStableSplatsInDirtyCells();
         testIndexedSelectionMatchesFullScanAndTracksInspections();
+        testIndexedSelectionScalesWithDirtyOccupancy();
         testIndexedSelectionScalesWithDirtyPopulation();
         testOwnedTranslationIsTransactional();
         testPersistentWorldAndGaussianTranslationCommitTogether();
