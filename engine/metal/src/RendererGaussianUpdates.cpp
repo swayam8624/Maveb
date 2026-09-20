@@ -50,6 +50,10 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     if (gaussianIndices.empty())
         return {};
 
+    auto editBounds = gaussianPipeline_->translationBounds(gaussianIndices, translationDelta);
+    if (!editBounds)
+        return std::unexpected(editBounds.error());
+
     // draw() owns one semaphore slot from immediately before frame resource reuse until the Metal
     // command buffer completion handler fires. Owning every slot therefore proves that no in-flight
     // GPU command can still read GaussianPipeline's shared source buffer. New draw calls block at
@@ -59,9 +63,11 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     if (!translated)
         return std::unexpected(translated.error());
 
-    // Reprojection after an authored spatial edit must not blend against history generated from
-    // the pre-edit geometry.
-    temporalHistoryValid_ = false;
+    pendingTemporalInvalidationBounds_ = scene::TemporalWorldBounds{
+        .minimum = editBounds->minimum,
+        .maximum = editBounds->maximum,
+    };
+    lastTemporalInvalidationPlan_ = {};
     return {};
 }
 
