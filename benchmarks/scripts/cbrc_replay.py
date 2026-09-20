@@ -146,6 +146,27 @@ def finalize_row(
         raise ValueError("invalid hard/candidate/total node cardinalities")
 
     candidate_qoi = oracle["qois"]["rgb_linf"]
+
+    production = manifest.get("production_certificate")
+    if production is not None:
+        production_bound = float(production["maximumCurrentRgbBound"])
+        oracle_bound = float(candidate_qoi["certified_bound"])
+        agreement_tolerance = max(
+            1e-8, 1e-6 * max(abs(production_bound), abs(oracle_bound), 1.0)
+        )
+        if abs(production_bound - oracle_bound) > agreement_tolerance:
+            raise RuntimeError(
+                "production/offline certificate bound disagreement: "
+                f"{production_bound} vs {oracle_bound}"
+            )
+        expected_changed_fraction = hard_nodes / total_nodes
+        actual_changed_fraction = float(oracle["changedFraction"])
+        if abs(expected_changed_fraction - actual_changed_fraction) > 1e-12:
+            raise RuntimeError(
+                "production/offline changed-fraction disagreement: "
+                f"{expected_changed_fraction} vs {actual_changed_fraction}"
+            )
+
     fallback = returncode == 3 or not bool(oracle.get("withinTolerance", False))
 
     if fallback:
@@ -176,6 +197,10 @@ def finalize_row(
         "revision_id": str(manifest["revision_id"]),
         "git_sha": str(manifest["git_sha"]),
         "method": "CBRC",
+        "execution_mode": str(
+            manifest.get("execution_mode", "planner-selected-cone")
+        ),
+        "graph_scope": str(manifest.get("graph_scope", "heterogeneous-world")),
         "edit_class": str(manifest.get("edit_class", "gaussian")),
         "coupling_regime": str(manifest.get("coupling_regime", "unknown")),
         "changed_fraction": float(oracle["changedFraction"]),
