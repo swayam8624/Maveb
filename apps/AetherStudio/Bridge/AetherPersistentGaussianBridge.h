@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// JSON payloads used by SwiftUI without exposing C++ ABI types.
 - (NSData* _Nullable)entitiesJSONWithError:(NSError* _Nullable* _Nullable)error;
 - (NSData* _Nullable)ownershipJSONWithError:(NSError* _Nullable* _Nullable)error;
+/// Post-frame CBRC evidence for the most recently certified Gaussian revision.
+- (NSData* _Nullable)revisionCertificateJSONWithError:(NSError* _Nullable* _Nullable)error;
 
 /// Moves one stable persistent entity and all Gaussian primitives owned by it. The GPU subset is
 /// preflighted before the World+CPU-Gaussian transaction commits, then published to Metal only after
@@ -44,6 +46,8 @@ FOUNDATION_EXPORT BOOL AetherPersistentSaveState(
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentEntitiesJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentOwnershipJSON(
+    AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherPersistentRevisionCertificateJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentTranslateEntity(
     AetherPersistentGaussianView* view, uint64_t entityId, float x, float y, float z,
