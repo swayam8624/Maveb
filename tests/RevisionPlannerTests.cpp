@@ -135,6 +135,85 @@ void testFullFallbackWhenOnlyOutputRepairCanPass() {
     expect(result->fullRebuild, "zero epsilon should force full rebuild in this chain");
 }
 
+void testAnalyticFanOutAndFanInAccumulatesEveryPath() {
+    auto graph = RevisionGraph::build(
+        {
+            {"edit", 1.0, 1.0},
+            {"left", 1.0, 0.0},
+            {"right", 1.0, 0.0},
+            {"output", 1.0, 0.0},
+        },
+        {
+            {0, 1, RevisionEdgeClass::analytic, 0.2, "edit-left"},
+            {0, 2, RevisionEdgeClass::analytic, 0.3, "edit-right"},
+            {1, 3, RevisionEdgeClass::analytic, 0.5, "left-output"},
+            {2, 3, RevisionEdgeClass::analytic, 0.4, "right-output"},
+        });
+    expect(graph.has_value(), "fan-out graph must build");
+    if (!graph)
+        return;
+
+    const std::vector<double> source(4, 0.0);
+    const std::vector<RevisionNodeId> cone{0};
+    const std::vector<RevisionQoI> qois{{"out", {{3, 1.0}}, 0.23}};
+    auto certificate = certifyRevisionCone(*graph, source, cone, qois);
+    expect(certificate.has_value(), "fan-out certificate must evaluate");
+    if (!certificate)
+        return;
+    const double expected = 0.2 * 0.5 + 0.3 * 0.4;
+    expect(std::abs(certificate->qois.front().bound - expected) < 1e-12,
+           "analytic DAG must sum all conservative path contributions");
+    expect(certificate->passes, "fan-out certificate should pass exact epsilon envelope");
+}
+
+void testIndependentFullBaselineControlsFallbackAccounting() {
+    auto graph = RevisionGraph::build(
+        {
+            {"local-a", 7.0, 0.0},
+            {"local-b", 8.0, 0.0},
+        },
+        {},
+        5.0);
+    expect(graph.has_value(), "graph with independent full baseline must build");
+    if (!graph)
+        return;
+
+    const std::vector<double> source{0.0, 1.0};
+    const std::vector<RevisionNodeId> hard{0};
+    const std::vector<RevisionQoI> qois{{"out", {{1, 1.0}}, 0.0}};
+    auto result = greedyCertifiedRevisionCone(*graph, source, hard, qois);
+    expect(result.has_value(), "full-baseline fallback must return certificate");
+    if (!result)
+        return;
+    expect(result->fullRebuild, "cheaper independent FULL baseline must win");
+    expect(std::abs(result->work - 5.0) < 1e-12 &&
+               std::abs(result->fullWork - 5.0) < 1e-12,
+           "FULL fallback work must equal independent full baseline");
+}
+
+void testHardPredecessorInconsistentConeIsRejected() {
+    auto graph = RevisionGraph::build(
+        {
+            {"source", 1.0, 0.0},
+            {"target", 1.0, 0.0},
+        },
+        {
+            {0, 1, RevisionEdgeClass::hard, 0.0, "hard"},
+        });
+    expect(graph.has_value(), "hard graph must build");
+    if (!graph)
+        return;
+    const std::vector<double> source{0.0, 0.0};
+    const std::vector<RevisionNodeId> cone{1};
+    const std::vector<RevisionQoI> qois{{"out", {{1, 1.0}}, 0.0}};
+    auto certificate = certifyRevisionCone(*graph, source, cone, qois);
+    expect(certificate.has_value(), "inconsistent hard cone must return rejected certificate");
+    if (!certificate)
+        return;
+    expect(!certificate->stable && !certificate->passes,
+           "hard predecessor inconsistency must fail closed");
+}
+
 void testInvalidAnalyticEdgeWithoutProvenanceRejected() {
     auto graph = RevisionGraph::build(
         {
@@ -156,6 +235,9 @@ int main() noexcept {
         testAnalyticCycleFailsClosed();
         testGreedyExpansionCanAvoidFullRebuild();
         testFullFallbackWhenOnlyOutputRepairCanPass();
+        testAnalyticFanOutAndFanInAccumulatesEveryPath();
+        testIndependentFullBaselineControlsFallbackAccounting();
+        testHardPredecessorInconsistentConeIsRejected();
         testInvalidAnalyticEdgeWithoutProvenanceRejected();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
