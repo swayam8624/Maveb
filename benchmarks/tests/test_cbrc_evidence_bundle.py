@@ -32,10 +32,19 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
   "graphVersion": "gaussian-output-cone-v2",
   "boundVersion": "gaussian-image-temporal-v1",
   "costModelVersion": "temporal-pixel-work-v1",
+  "stable": true,
   "passes": true,
   "fullRebuild": false,
   "work": 25.0,
-  "fullWork": 100.0
+  "fullWork": 100.0,
+  "qois": [
+    {
+      "name": "resolved-rgb-linf",
+      "bound": 0.02,
+      "epsilon": 0.03,
+      "passes": true
+    }
+  ]
 }
 """
             )
@@ -44,10 +53,13 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
                 "bound_version": "gaussian-image-temporal-v1",
                 "production_certificate": {
                     "outputConePlanner": {
+                        "stable": True,
                         "passes": True,
                         "fullRepair": False,
                         "plannerWork": 25.0,
                         "fullWork": 100.0,
+                        "resolvedRgbBound": 0.02,
+                        "epsilon": 0.03,
                     }
                 },
             }
@@ -64,10 +76,19 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
   "graphVersion": "stale-graph",
   "boundVersion": "gaussian-image-temporal-v1",
   "costModelVersion": "temporal-pixel-work-v1",
+  "stable": true,
   "passes": true,
   "fullRebuild": false,
   "work": 25.0,
-  "fullWork": 100.0
+  "fullWork": 100.0,
+  "qois": [
+    {
+      "name": "resolved-rgb-linf",
+      "bound": 0.02,
+      "epsilon": 0.03,
+      "passes": true
+    }
+  ]
 }
 """
             )
@@ -76,10 +97,13 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
                 "bound_version": "gaussian-image-temporal-v1",
                 "production_certificate": {
                     "outputConePlanner": {
+                        "stable": True,
                         "passes": True,
                         "fullRepair": False,
                         "plannerWork": 25.0,
                         "fullWork": 100.0,
+                        "resolvedRgbBound": 0.02,
+                        "epsilon": 0.03,
                     }
                 },
             }
