@@ -51,6 +51,20 @@ void testUnsafeProjectionFallsBackToFullFrame() {
            "full-frame fallback must account exact invalidated pixels");
 }
 
+void testDisjointPendingEditsUnionConservatively() {
+    const aether::scene::TemporalWorldBounds first{
+        {-2.0F, -1.0F, 1.0F}, {-1.0F, 0.0F, 2.0F}};
+    const aether::scene::TemporalWorldBounds second{
+        {3.0F, 2.0F, -4.0F}, {5.0F, 6.0F, -2.0F}};
+    const auto merged = aether::scene::mergeTemporalWorldBounds(first, second);
+    expect(merged.minimum.x == -2.0F && merged.minimum.y == -1.0F &&
+               merged.minimum.z == -4.0F,
+           "temporal edit union must preserve the component-wise minimum");
+    expect(merged.maximum.x == 5.0F && merged.maximum.y == 6.0F &&
+               merged.maximum.z == 2.0F,
+           "temporal edit union must preserve the component-wise maximum");
+}
+
 void testExpansionIncreasesArea() {
     aether::scene::TemporalWorldBounds bounds{{-0.2F, -0.2F, 0.2F},
                                               {0.2F, 0.2F, 0.4F}};
@@ -70,6 +84,7 @@ int main() noexcept {
         testCompactVisibleRegion();
         testOffscreenRegionIsEmpty();
         testUnsafeProjectionFallsBackToFullFrame();
+        testDisjointPendingEditsUnionConservatively();
         testExpansionIncreasesArea();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
