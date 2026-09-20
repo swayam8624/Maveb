@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-20T18:37+05:30",
+  "branches": {
+    "discovery": {
+      "name": "research/maveb-discovery",
+      "base": "main@1d95c8f480fb2868d821fa107215311f1deab17c",
+      "purpose": "literature, probes, metrics, negative results, hypothesis ledger"
+    },
+    "persistentIntegration": {
+      "name": "research/maveb-discovery-persistent",
+      "base": "PR28@f157b2a40e2766bcb02d24ca055073e866140476",
+      "purpose": "production-shaped locality integration experiments"
+    }
+  },
+  "corpus": {
+    "papers": 39,
+    "repositoryImplementations": 15,
+    "hypotheses": 115,
+    "mediumStrengthShortlist": 8
+  },
+  "strongestDirections": [
+    {
+      "id": "S1",
+      "name": "dependency-certified heterogeneous minimal-work repair",
+      "status": "active-promoted",
+      "evidence": [
+        "exact TSDF->mesh locality already exists",
+        "Gaussian spatial index synthetic selection and maintenance probes passed",
+        "GPU publication and global temporal-history locality leaks identified"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "certified non-target geometric preservation for local edits",
+      "status": "active",
+      "evidence": [
+        "generic editing/selective update heavily occupied by prior art",
+        "requires explicit geometry certificate/bound to remain distinct"
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "temporal representation migration",
+      "status": "active-but-hardened",
+      "evidence": [
+        "static regional mesh/Gaussian allocation heavily occupied",
+        "offline measured migration oracle committed",
+        "only temporal cross-representation switching remains interesting"
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "resampling-stable lineage with downstream benefit",
+      "status": "active-unproven",
+      "evidence": [
+        "generic persistent identities occupied",
+        "must survive split/merge/prune/densify and improve downstream task"
+      ]
+    }
+  ],
+  "killedOrDemoted": [
+    {
+      "name": "generic local Gaussian update",
+      "status": "killed-headline",
+      "reason": "CL-Splats, GaussianUpdate, GaME, TwinSplat and others"
+    },
+    {
+      "name": "generic bounded-compute continual Gaussian scheduler",
+      "status": "killed-headline",
+      "reason": "EliGSiR"
+    },
+    {
+      "name": "generic primitive-space change detection",
+      "status": "killed-headline",
+      "reason": "GD-DIFF"
+    },
+    {
+      "name": "generic persistent Gaussian/object identity",
+      "status": "killed-headline",
+      "reason": "Consistent Instance Field / long-term semantic Gaussian mapping"
+    },
+    {
+      "name": "fixed/static mesh+Gaussian hybrid",
+      "status": "killed-headline",
+      "reason": "SuGaR, IJCAI 2025 hybrid, GaMeS, semantic-aware hybrids"
+    },
+    {
+      "name": "raw anisotropic opacity-weighted spectral phase",
+      "status": "rejected",
+      "reason": "representation nuisance AUC 0.453"
+    },
+    {
+      "name": "canonical phase as flagship",
+      "status": "demoted",
+      "reason": "known-correspondence rigid geometry solved by much simpler Procrustes/Kabsch baseline"
+    }
+  ],
+  "verifiedProbeHighlights": {
+    "phaseRepresentationNuisance": {
+      "decision": "reject raw field phase",
+      "editVsNuisanceAuc": 0.453125
+    },
+    "phaseShiftSanity": {
+      "decision": "mathematical sanity only",
+      "medianTranslationRecoveryError": 4.270065236692055e-12
+    },
+    "gaussianRegionIndex1M1pct": {
+      "fullScanInspections": 1000000,
+      "indexedInspections": 10005,
+      "linuxScanMs": 30.2602,
+      "linuxIndexMs": 1.1121,
+      "indexBuildMs": 212.8212
+    },
+    "gaussianIndexMaintenance1M1pct": {
+      "moved": 10000,
+      "rebuildMs": 210.126,
+      "maintainMs": 5.35305,
+      "equal": true
+    },
+    "indexLayout1M": {
+      "hashRssKiB": 88424,
+      "flatSortedRssKiB": 37160,
+      "hashLookupMs": 0.311805,
+      "flatLookupMs": 2.01335
+    },
+    "temporalInvalidationOpportunity": {
+      "oneDirtyBoxMedianFrameFraction": 0.004876543209876544,
+      "sixteenDirtyBoxesMedianFrameFraction": 0.11643518518518518,
+      "sixtyFourDirtyBoxesMedianFrameFraction": 0.3666820987654321
+    }
+  },
+  "integrationBranch": {
+    "spatialIndexImplementation": "committed",
+    "indexedSelector": "committed",
+    "exactSelectionUnitTest": "committed",
+    "inheritedPr28CiDefectsFixedSoFar": [
+      "simdjson dependency headers marked SYSTEM",
+      "WorldArchive signed-char warning fixed"
+    ],
+    "ciStatus": "queued at time of state write",
+    "claimsAllowed": "none until integration CI passes"
+  },
+  "nextExecutionQueue": [
+    "get persistent integration CI green; fix only concrete failures",
+    "measure indexed selector with real PR28 semantics and add benchmark counters",
+    "prototype region-scoped temporal-history invalidation if integration baseline is healthy",
+    "design cross-layer ULR experiment from dirty world revision through GPU publication",
+    "collect measured per-region mesh/Gaussian/TSDF costs for representation migration oracle",
+    "run split/merge/prune/densify correspondence benchmark for S4",
+    "expand literature/repository corpus and repeatedly refresh novelty collisions"
+  ],
+  "paperReady": false
+}
