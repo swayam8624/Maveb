@@ -254,3 +254,30 @@ MAVEB should not broaden S1 into a generic "immediate incremental 3DGS reconstru
 Tracked:
 - https://doi.org/10.1016/j.cad.2023.103516
 - https://arxiv.org/abs/2607.14481
+
+
+### Sparse Gaussian publication / dependency delivery — NOT NOVEL BY ITSELF
+**Closest work:** *Streaming Real-Time Rendered Scenes as 3D Gaussians* (2026) and
+*Renderable Partial Representations for Dynamic Gaussian Splatting under Incomplete Delivery*
+(2026).
+
+The former explicitly streams an evolving 3DGS representation using full snapshots plus
+incremental updates. The latter organizes dynamic Gaussian state into independently addressable
+spatiotemporal clusters with a dependency graph/closure and a concrete partial-delivery schedule.
+
+Therefore MAVEB must not claim novelty for:
+
+- transmitting/publishing only changed Gaussian records;
+- independently addressable Gaussian update clusters;
+- a dependency closure over Gaussian representation chunks;
+- versioned/incremental Gaussian delivery by itself.
+
+The versioned per-frame publication work remains valuable only as one measured systems mechanism
+inside S1. The surviving distinction still requires a captured-world evidence change to propagate
+through a heterogeneous dependency closure spanning reconstruction evidence, TSDF, explicit mesh,
+Gaussian state, texture/material state, GPU publication, and temporal history, with per-layer work
+ratios plus declared full-reference equivalence.
+
+Tracked:
+- https://arxiv.org/abs/2604.02851
+- https://arxiv.org/abs/2606.17212
