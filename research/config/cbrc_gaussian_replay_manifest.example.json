@@ -9,9 +9,6 @@
   "coupling_regime": "unknown",
   "before_ply": "/absolute/path/to/before.ply",
   "after_ply": "/absolute/path/to/after.ply",
-  "changed_indices": [
-    0
-  ],
   "camera": {
     "width": 1280,
     "height": 720,
@@ -56,5 +53,6 @@
   "total_nodes": 1,
   "candidate_work": 1,
   "full_work": 1,
-  "work_ledger": {}
+  "work_ledger": {},
+  "detect_changed": true
 }
