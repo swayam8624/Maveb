@@ -1,6 +1,7 @@
 #include <aether/metal/GaussianPipeline.hpp>
 
 #include <algorithm>
+#include <aether/gaussian/GaussianUpdatePlan.hpp>
 #include <cmath>
 #include <vector>
 
@@ -47,6 +48,18 @@ Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussian
                                          simd_float3 translationDelta) {
     if (auto validation = validateTranslation(gaussianIndices, translationDelta); !validation)
         return std::unexpected(validation.error());
+
+    auto publication = gaussian::planGaussianPublication(
+        gaussianIndices, gaussianCount_, sizeof(AetherGaussianGpu));
+    if (!publication)
+        return std::unexpected(publication.error());
+
+    lastPublicationStatistics_ = {
+        .touchedRecords = publication->touchedRecords,
+        .contiguousRanges = publication->ranges.size(),
+        .touchedBytes = publication->touchedBytes,
+        .fullBufferBytes = publication->fullBufferBytes,
+    };
     if (gaussianIndices.empty())
         return {};
 
