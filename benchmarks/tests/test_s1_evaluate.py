@@ -18,6 +18,19 @@ class S1EvaluationTests(unittest.TestCase):
         self.assertFalse(result["pass"])
         self.assertIn("tsdfBlocksRead",result["hiddenGlobalLayers"])
 
+    def test_accepts_canonical_ledger_domains(self):
+        row=mod.synthetic(True)[0]
+        ledger_row={
+            "scene":row["scene"],
+            "revision":row["revision"],
+            "changedFraction":row["changedFraction"],
+            "equivalence":row["equivalence"],
+            "ledger":{"domains":row["layers"]},
+        }
+        result=mod.evaluate([ledger_row, *mod.synthetic(True)[1:]])
+        self.assertTrue(result["gates"]["G1RecordsValid"])
+        self.assertIn("observationsInspected",result["layers"])
+
     def test_equivalence_failure_blocks_claim(self):
         rows=mod.synthetic(True); rows[1]["equivalence"]["pass"]=False
         result=mod.evaluate(rows)
