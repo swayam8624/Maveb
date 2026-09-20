@@ -631,13 +631,16 @@ int main(int argc, char** argv) try {
                 << "\"persistenceError\":\"\""
                 << "}\n";
 
+    const std::uint64_t affectedCount =
+        static_cast<std::uint64_t>(std::count_if(
+            certificate->rgbLInfBounds.begin(),
+            certificate->rgbLInfBounds.end(),
+            [](double value) { return value > 0.0; }));
     const double affectedRatio =
-        fullPixels == 0 ? 0.0
-                        : static_cast<double>(std::count_if(
-                              certificate->rgbLInfBounds.begin(),
-                              certificate->rgbLInfBounds.end(),
-                              [](double value) { return value > 0.0; })) /
-                              static_cast<double>(fullPixels);
+        fullPixels == 0
+            ? 0.0
+            : static_cast<double>(affectedCount) /
+                  static_cast<double>(fullPixels);
     const double resolvedBound =
         planned->qois.empty()
             ? std::numeric_limits<double>::infinity()
@@ -650,8 +653,7 @@ int main(int argc, char** argv) try {
          << "\"available\":true,"
          << "\"revisionVersion\":" << revision << ','
          << "\"changedGaussians\":" << edited->translatedGaussians << ','
-         << "\"affectedPixels\":"
-         << static_cast<std::uint64_t>(affectedRatio * fullPixels) << ','
+         << "\"affectedPixels\":" << affectedCount << ','
          << "\"fullFramePixels\":" << fullPixels << ','
          << "\"affectedPixelRatio\":" << affectedRatio << ','
          << "\"maximumCurrentRgbBound\":"
