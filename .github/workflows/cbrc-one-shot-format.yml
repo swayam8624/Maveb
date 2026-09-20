@@ -23,12 +23,12 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin research/maveb-revision-criticality
-          mapfile -t files < <(
-            git diff --diff-filter=ACMR --name-only               origin/research/maveb-revision-criticality...HEAD --               '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.mm'
-          )
-          if (( ${#files[@]} )); then
-            "$(brew --prefix llvm@18)/bin/clang-format" -i "${files[@]}"
-          fi
+          formatter="$(brew --prefix llvm@18)/bin/clang-format"
+          git diff --diff-filter=ACMR --name-only origin/research/maveb-revision-criticality...HEAD -- '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx' '*.mm' > /tmp/cbrc-format-files.txt
+          while IFS= read -r file; do
+            test -n "$file" || continue
+            "$formatter" -i "$file"
+          done < /tmp/cbrc-format-files.txt
           git diff --check
 
       - name: Commit formatting
