@@ -3,7 +3,7 @@
   "scene_id": "replace-with-scene",
   "revision_id": "replace-with-revision",
   "git_sha": "replace-with-tested-git-sha",
-  "graph_version": "gaussian-output-cone-v2",
+  "graph_version": "gaussian-source-image-history-v1",
   "bound_version": "gaussian-image-temporal-v1",
   "edit_class": "gaussian",
   "coupling_regime": "unknown",
