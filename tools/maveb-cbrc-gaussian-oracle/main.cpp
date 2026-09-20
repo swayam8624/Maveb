@@ -1,3 +1,4 @@
+#include <aether/gaussian/GaussianCodec.hpp>
 #include <aether/gaussian/PlyLoader.hpp>
 #include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -29,6 +31,7 @@ struct Options final {
     std::string beforePath;
     std::string afterPath;
     std::string changedCsv;
+    std::string inputFormat{"ply"};
     bool detectChanged{};
     std::size_t width{320};
     std::size_t height{180};
@@ -121,6 +124,11 @@ parseFloatCsv(std::string_view csv) {
             if (!value)
                 return std::nullopt;
             options.afterPath = *value;
+        } else if (arg == "--input-format") {
+            auto value = requireValue(arg);
+            if (!value || (*value != "ply" && *value != "aether-bin"))
+                return std::nullopt;
+            options.inputFormat = *value;
         } else if (arg == "--changed") {
             auto value = requireValue(arg);
             if (!value)
@@ -190,8 +198,8 @@ parseFloatCsv(std::string_view csv) {
             std::cout
                 << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
                    "(--changed 1,4,9 | --detect-changed) [camera options]\n"
-                << "  --detect-changed compares stable source-order before/after records\n"
-                << "  --width N --height N --focal-x F --focal-y F\n"
+                << "  --input-format ply|aether-bin (default: ply)\n"
+                << "  --detect-changed compares stable source-order before/after records\n"                << "  --width N --height N --focal-x F --focal-y F\n"
                 << "  --center-x F --center-y F --near F --far F\n"
                 << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
                 << "  --camera-world-position x,y,z\n"
@@ -232,6 +240,40 @@ parseChangedIndices(std::string_view csv) {
     if (unique.empty())
         return std::nullopt;
     return std::vector<std::size_t>(unique.begin(), unique.end());
+}
+
+[[nodiscard]] aether::Result<GaussianAsset>
+loadGaussianState(const std::string& path, std::string_view format) {
+    if (format == "ply")
+        return aether::gaussian::PlyLoader::load(path);
+    if (format != "aether-bin")
+        return aether::fail(aether::ErrorCode::invalidArgument,
+                            "Unsupported Gaussian oracle input format",
+                            std::string(format));
+
+    std::error_code filesystemError;
+    const auto fileBytes = std::filesystem::file_size(path, filesystemError);
+    constexpr std::uintmax_t maximumBytes = 32ULL * 1024ULL * 1024ULL * 1024ULL;
+    if (filesystemError)
+        return aether::fail(aether::ErrorCode::notFound,
+                            "Unable to inspect canonical Gaussian sidecar", path);
+    if (fileBytes == 0 || fileBytes > maximumBytes ||
+        fileBytes > std::numeric_limits<std::size_t>::max()) {
+        return aether::fail(aether::ErrorCode::resourceExhausted,
+                            "Canonical Gaussian sidecar size is invalid", path);
+    }
+
+    std::vector<std::byte> bytes(static_cast<std::size_t>(fileBytes));
+    std::ifstream stream(path, std::ios::binary);
+    stream.read(reinterpret_cast<char*>(bytes.data()),
+                static_cast<std::streamsize>(bytes.size()));
+    if (!stream)
+        return aether::fail(aether::ErrorCode::io,
+                            "Unable to read canonical Gaussian sidecar", path);
+    auto decoded = aether::gaussian::GaussianCodec::decode(bytes);
+    if (decoded)
+        decoded->name = std::filesystem::path(path).stem().string();
+    return decoded;
 }
 
 [[nodiscard]] bool sameGaussian(const Gaussian& a, const Gaussian& b) noexcept {
@@ -276,12 +318,12 @@ int main(int argc, char** argv) try {
         }
     }
 
-    auto before = aether::gaussian::PlyLoader::load(options->beforePath);
+    auto before = loadGaussianState(options->beforePath, options->inputFormat);
     if (!before) {
         std::cerr << before.error().describe() << '\n';
         return EXIT_FAILURE;
     }
-    auto after = aether::gaussian::PlyLoader::load(options->afterPath);
+    auto after = loadGaussianState(options->afterPath, options->inputFormat);
     if (!after) {
         std::cerr << after.error().describe() << '\n';
         return EXIT_FAILURE;
