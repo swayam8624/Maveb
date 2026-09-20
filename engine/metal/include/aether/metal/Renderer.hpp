@@ -50,6 +50,12 @@ struct ProxyMeshStatistics {
     std::uint32_t triangles{};
 };
 
+struct GaussianEditPublicationStatistics final {
+    GaussianPublicationStatistics sourceBuffer;
+    std::size_t frameSlotsQuiesced{};
+    bool globalTemporalHistoryInvalidated{};
+};
+
 struct FrameCapture final {
     std::uint32_t width{};
     std::uint32_t height{};
@@ -113,9 +119,9 @@ class Renderer final {
     validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
                                 simd_float3 translationDelta) const;
 
-    /// Waits until every in-flight frame has released the shared Gaussian buffer, applies one
-    /// transactional source-order subset translation, invalidates temporal history, then resumes
-    /// frame submission. This is the renderer seam used by persistent local Gaussian edits.
+    /// Applies one transactional source-order subset translation to canonical CPU Gaussian state.
+    /// GPU publication is deferred to each recycled frame slot, avoiding global frame quiescence.
+    /// Temporal history remains globally invalidated on this publication-only research branch.
     [[nodiscard]] Result<void> translateGaussians(std::span<const std::uint32_t> gaussianIndices,
                                                   simd_float3 translationDelta);
 
@@ -187,6 +193,10 @@ class Renderer final {
         return capabilities_;
     }
     [[nodiscard]] RendererStatistics statistics() const noexcept;
+    [[nodiscard]] GaussianEditPublicationStatistics
+    gaussianEditPublicationStatistics() const noexcept {
+        return lastGaussianEditPublicationStatistics_;
+    }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
         return {proxyVertexCount_, proxyIndexCount_ / 3U};
@@ -336,6 +346,7 @@ class Renderer final {
     std::uint32_t shadowDebugSlice_{};
     std::uint32_t selectedMeshEntity_{};
     std::uint32_t gizmoMode_{};
+    GaussianEditPublicationStatistics lastGaussianEditPublicationStatistics_{};
     Clock::TimePoint previousFrameTime_ = Clock::now();
 };
 
