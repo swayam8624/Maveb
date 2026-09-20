@@ -211,6 +211,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
 - (NSData*)entitiesJSONWithError:(NSError**)error;
 - (NSData*)ownershipJSONWithError:(NSError**)error;
 - (NSData*)revisionCertificateJSONWithError:(NSError**)error;
+- (BOOL)setRevisionRgbTolerance:(double)epsilon error:(NSError**)error;
 - (NSData*)translateEntity:(uint64_t)entityId
                          x:(float)x
                          y:(float)y
@@ -452,6 +453,7 @@ NSDictionary* entityPayload(const EntityState& entity) {
         return jsonData(@{@"schemaVersion" : @1, @"available" : @NO}, error);
 
     const auto certificate = _renderer->gaussianRevisionCertificateStatistics();
+    const auto outputPlan = _renderer->gaussianOutputConePlannerStatistics();
     const auto publication = _renderer->gaussianEditPublicationStatistics();
     const auto& temporal = _renderer->lastTemporalInvalidationPlan();
 
@@ -502,6 +504,18 @@ NSDictionary* entityPayload(const EntityState& entity) {
             @(certificate.invalidationCoversCertifiedSupport),
         @"temporalFullFrameFallback" :
             @(certificate.temporalFullFrameFallback),
+        @"outputConePlanner" : @{
+            @"available" : @(outputPlan.available),
+            @"stable" : @(outputPlan.stable),
+            @"passes" : @(outputPlan.passes),
+            @"temporalRepairSelected" :
+                @(outputPlan.temporalRepairSelected),
+            @"fullRepair" : @(outputPlan.fullRebuild),
+            @"resolvedRgbBound" : @(outputPlan.resolvedRgbBound),
+            @"epsilon" : @(outputPlan.epsilon),
+            @"plannerWork" : @(outputPlan.plannerWork),
+            @"fullWork" : @(outputPlan.fullWork),
+        },
         @"publication" : @{
             @"touchedRecords" : @(publication.sourceBuffer.touchedRecords),
             @"contiguousRanges" : @(publication.sourceBuffer.contiguousRanges),
@@ -524,6 +538,20 @@ NSDictionary* entityPayload(const EntityState& entity) {
             ],
         },
     }, error);
+}
+
+- (BOOL)setRevisionRgbTolerance:(double)epsilon error:(NSError**)error {
+    if (!_renderer) {
+        setError(error, aether::ErrorCode::notFound,
+                 "Persistent renderer is unavailable");
+        return NO;
+    }
+    auto updated = _renderer->setGaussianRevisionRgbTolerance(epsilon);
+    if (!updated) {
+        setError(error, updated.error());
+        return NO;
+    }
+    return YES;
 }
 
 - (NSData*)translateEntity:(uint64_t)entityId
@@ -699,6 +727,10 @@ NSDictionary* entityPayload(const EntityState& entity) {
 
 - (NSData*)revisionCertificateJSONWithError:(NSError**)error {
     return [_rendererDelegate revisionCertificateJSONWithError:error];
+}
+
+- (BOOL)setRevisionRgbTolerance:(double)epsilon error:(NSError**)error {
+    return [_rendererDelegate setRevisionRgbTolerance:epsilon error:error];
 }
 
 - (NSData*)translateEntity:(uint64_t)entityId
