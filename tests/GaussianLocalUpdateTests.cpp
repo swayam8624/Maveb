@@ -101,6 +101,67 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
            "without ownership, every Gaussian in a dirty metric cell must be selected spatially");
 }
 
+
+void testIndexedSelectionMatchesFullScanAndTracksInspections() {
+    GaussianAsset asset;
+    asset.gaussians = {
+        gaussian(0.2F, 0.2F, 0.2F),
+        gaussian(0.4F, 0.2F, 0.2F),
+        gaussian(0.6F, 0.2F, 0.2F),
+        gaussian(2.0F, 0.0F, 0.0F),
+        gaussian(5.0F, 5.0F, 5.0F),
+    };
+    GaussianEntityOwnership ownership;
+    ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}, EntityId{2}};
+
+    auto index = GaussianSpatialIndex::build(asset, oneDirtyCell().cellSizeMeters);
+    expect(index.has_value(), "Gaussian spatial index must build for valid finite positions");
+    if (!index)
+        return;
+
+    const auto scanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
+        asset, oneDirtyCell(), &ownership);
+    const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
+        asset, oneDirtyCell(), *index, &ownership);
+    expect(scanned.has_value() && indexed.has_value(),
+           "scan and indexed local selections must both succeed");
+    if (!scanned || !indexed)
+        return;
+
+    expect(scanned->gaussianIndices == indexed->gaussianIndices,
+           "indexed selection must return exactly the same primitive indices as full scan");
+    expect(scanned->ownedMatches == indexed->ownedMatches &&
+               scanned->conservativeUnownedMatches == indexed->conservativeUnownedMatches &&
+               scanned->rejectedStableOwnedGaussians == indexed->rejectedStableOwnedGaussians &&
+               scanned->unaffectedGaussians == indexed->unaffectedGaussians,
+           "indexed selection must preserve ownership accounting semantics");
+    expect(scanned->inspectedGaussians == asset.gaussians.size(),
+           "full scan instrumentation must count every primitive inspection");
+    expect(indexed->inspectedGaussians == 3,
+           "indexed selection must inspect only dirty-region primitives");
+
+    const auto stats = index->statistics();
+    expect(stats.primitiveCount == asset.gaussians.size() &&
+               stats.storedIndexEntries == asset.gaussians.size(),
+           "Gaussian spatial index must contain exactly one entry per primitive");
+
+    const simd_float3 oldPosition{asset.gaussians[4].position[0],
+                                  asset.gaussians[4].position[1],
+                                  asset.gaussians[4].position[2]};
+    const simd_float3 newPosition{0.8F, 0.2F, 0.2F};
+    expect(index->relocateGaussian(4, oldPosition, newPosition).has_value(),
+           "Gaussian spatial index must update cell-crossing membership");
+    asset.gaussians[4].position = {newPosition.x, newPosition.y, newPosition.z};
+
+    const auto rescanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
+        asset, oneDirtyCell(), &ownership);
+    const auto reindexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
+        asset, oneDirtyCell(), *index, &ownership);
+    expect(rescanned.has_value() && reindexed.has_value() &&
+               rescanned->gaussianIndices == reindexed->gaussianIndices,
+           "relocated index must remain selection-equivalent to full scan");
+}
+
 void testOwnedTranslationIsTransactional() {
     GaussianAsset asset;
     asset.gaussians = {
@@ -201,6 +262,7 @@ void testOwnershipShapeAndSelectionBudgetFailClosed() {
 int main() noexcept {
     try {
         testOwnershipProtectsStableSplatsInDirtyCells();
+        testIndexedSelectionMatchesFullScanAndTracksInspections();
         testOwnedTranslationIsTransactional();
         testPersistentWorldAndGaussianTranslationCommitTogether();
         testOwnershipShapeAndSelectionBudgetFailClosed();
