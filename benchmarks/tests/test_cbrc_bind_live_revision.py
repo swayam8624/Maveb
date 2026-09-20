@@ -33,6 +33,20 @@ def certificate():
         "maximumCurrentRgbBound": 0.02,
         "invalidationCoversCertifiedSupport": True,
         "temporalFullFrameFallback": False,
+        "outputConePlanner": {
+            "available": True,
+            "stable": True,
+            "passes": True,
+            "temporalValidationStable": True,
+            "temporalRepairSelected": False,
+            "fullRepair": False,
+            "resolvedRgbBound": 0.018,
+            "epsilon": 0.03,
+            "historyWeight": 0.9,
+            "temporalRepairWork": 256,
+            "plannerWork": 0,
+            "fullWork": 2048,
+        },
         "camera": {
             "width": 64,
             "height": 32,
@@ -79,7 +93,45 @@ class CBRCLiveRevisionBinderTests(unittest.TestCase):
             result["work_ledger"]["domains"]["gpuPublicationBytes"]["incremental"],
             1024,
         )
-        self.assertEqual(result["execution_mode"], "certified-supplied-cone")
+        self.assertEqual(
+            result["execution_mode"], "hybrid-supplied-source-planner-output"
+        )
+        graph = result["output_planner_graph"]
+        self.assertEqual(graph["full_work_baseline"], 2048)
+        self.assertEqual(
+            graph["qois"][0]["weights"]["temporal_history"], 0.9
+        )
+        self.assertEqual(graph["hard_closure"], ["current_frame"])
+
+    def test_output_planner_epsilon_mismatch_fails_closed(self):
+        c = certificate()
+        c["outputConePlanner"]["epsilon"] = 0.01
+        with self.assertRaisesRegex(ValueError, "epsilon disagrees"):
+            mod.bind(
+                translation(),
+                c,
+                scene_id="scene",
+                git_sha="abc",
+                epsilon=0.03,
+            )
+
+    def test_unstable_temporal_validation_hardens_history(self):
+        c = certificate()
+        c["outputConePlanner"]["temporalValidationStable"] = False
+        c["outputConePlanner"]["historyWeight"] = 1.0
+        c["outputConePlanner"]["temporalRepairSelected"] = True
+        c["outputConePlanner"]["plannerWork"] = 2048
+        result = mod.bind(
+            translation(),
+            c,
+            scene_id="scene",
+            git_sha="abc",
+            epsilon=0.03,
+        )
+        self.assertEqual(
+            result["output_planner_graph"]["hard_closure"],
+            ["current_frame", "temporal_history"],
+        )
 
     def test_changed_count_disagreement_fails_closed(self):
         c = certificate()
