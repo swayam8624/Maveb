@@ -43,21 +43,19 @@ void testDeterministicNativeCertificateJson() {
     if (!certificate)
         return;
 
-    auto json = serializeRevisionCertificateJson(
-        *graph, *certificate,
-        {
-            .graphVersion = "captured-world-v1",
-            .boundVersion = "gaussian-temporal-v1",
-            .costModelVersion = "fixture-ms-v1",
-        });
+    auto json = serializeRevisionCertificateJson(*graph, *certificate,
+                                                 {
+                                                     .graphVersion = "captured-world-v1",
+                                                     .boundVersion = "gaussian-temporal-v1",
+                                                     .costModelVersion = "fixture-ms-v1",
+                                                 });
     expect(json.has_value(), "certificate JSON serialization must succeed");
     if (!json)
         return;
 
     expect(json->find("\"schemaVersion\":1") != std::string::npos,
            "certificate JSON must expose schema version");
-    expect(json->find("\"artifact\":\"maveb-cbrc-native-certificate\"") !=
-               std::string::npos,
+    expect(json->find("\"artifact\":\"maveb-cbrc-native-certificate\"") != std::string::npos,
            "certificate JSON must expose artifact type");
     expect(json->find("edit \\\"source\\\"") != std::string::npos,
            "certificate JSON must escape node names");
@@ -82,15 +80,13 @@ void testMetadataIsMandatory() {
     certificate.work = 1.0;
     certificate.fullWork = 1.0;
 
-    auto json = serializeRevisionCertificateJson(
-        *graph, certificate,
-        {
-            .graphVersion = "",
-            .boundVersion = "bounds",
-            .costModelVersion = "costs",
-        });
-    expect(!json.has_value(),
-           "certificate JSON must reject missing provenance versions");
+    auto json = serializeRevisionCertificateJson(*graph, certificate,
+                                                 {
+                                                     .graphVersion = "",
+                                                     .boundVersion = "bounds",
+                                                     .costModelVersion = "costs",
+                                                 });
+    expect(!json.has_value(), "certificate JSON must reject missing provenance versions");
 }
 
 } // namespace

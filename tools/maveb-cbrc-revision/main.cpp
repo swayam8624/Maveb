@@ -517,15 +517,13 @@ int main(int argc, char** argv) try {
         std::cerr << planned.error().describe() << '\n';
         return EXIT_FAILURE;
     }
-    auto nativePlannerCertificate =
-        aether::revision::serializeRevisionCertificateJson(
-            *plannerGraph, *planned,
-            {
-                .graphVersion = std::string(aether::cbrc::gaussianOutputGraphVersion),
-                .boundVersion = std::string(aether::cbrc::gaussianTemporalBoundVersion),
-                .costModelVersion =
-                    std::string(aether::cbrc::headlessTemporalPixelCostModelVersion),
-            });
+    auto nativePlannerCertificate = aether::revision::serializeRevisionCertificateJson(
+        *plannerGraph, *planned,
+        {
+            .graphVersion = std::string(aether::cbrc::gaussianOutputGraphVersion),
+            .boundVersion = std::string(aether::cbrc::gaussianTemporalBoundVersion),
+            .costModelVersion = std::string(aether::cbrc::headlessTemporalPixelCostModelVersion),
+        });
     if (!nativePlannerCertificate) {
         std::cerr << nativePlannerCertificate.error().describe() << '\n';
         return EXIT_FAILURE;
@@ -684,10 +682,8 @@ int main(int argc, char** argv) try {
 
     const auto translationPath = options->outputDir / "translation.json";
     const auto certificatePath = options->outputDir / "certificate.json";
-    const auto nativePlannerPath =
-        options->outputDir / "native-planner-certificate.json";
-    if (!writeText(translationPath, translation.str()) ||
-        !writeText(certificatePath, cert.str()) ||
+    const auto nativePlannerPath = options->outputDir / "native-planner-certificate.json";
+    if (!writeText(translationPath, translation.str()) || !writeText(certificatePath, cert.str()) ||
         !writeText(nativePlannerPath, *nativePlannerCertificate)) {
         std::cerr << "Unable to publish CBRC evidence JSON\n";
         return EXIT_FAILURE;
@@ -695,8 +691,7 @@ int main(int argc, char** argv) try {
 
     std::cout << "{\"translation\":\"" << jsonEscape(translationPath.string())
               << "\",\"certificate\":\"" << jsonEscape(certificatePath.string())
-              << "\",\"nativePlannerCertificate\":\""
-              << jsonEscape(nativePlannerPath.string())
+              << "\",\"nativePlannerCertificate\":\"" << jsonEscape(nativePlannerPath.string())
               << "\",\"revision\":" << revision
               << ",\"temporalRepairSelected\":" << (repairHistory ? "true" : "false") << "}\n";
     return EXIT_SUCCESS;

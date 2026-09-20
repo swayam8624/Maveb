@@ -62,8 +62,7 @@ validateCertificateForSerialization(const RevisionGraph& graph,
         return fail(ErrorCode::invalidArgument,
                     "Revision certificate metadata versions must be non-empty");
     }
-    if (!finiteNonNegative(certificate.work) ||
-        !finiteNonNegative(certificate.fullWork)) {
+    if (!finiteNonNegative(certificate.work) || !finiteNonNegative(certificate.fullWork)) {
         return fail(ErrorCode::invalidArgument,
                     "Revision certificate work values must be finite and non-negative");
     }
@@ -87,10 +86,8 @@ validateCertificateForSerialization(const RevisionGraph& graph,
         return std::unexpected(valid.error());
 
     for (const RevisionQoIResult& qoi : certificate.qois) {
-        if (qoi.name.empty() || !finiteNonNegative(qoi.epsilon) ||
-            !finiteNonNegative(qoi.bound)) {
-            return fail(ErrorCode::invalidArgument,
-                        "Revision certificate QoI is not serializable");
+        if (qoi.name.empty() || !finiteNonNegative(qoi.epsilon) || !finiteNonNegative(qoi.bound)) {
+            return fail(ErrorCode::invalidArgument, "Revision certificate QoI is not serializable");
         }
     }
     return {};
@@ -105,28 +102,23 @@ void appendNodeArray(std::ostringstream& output, const RevisionGraph& graph,
         if (index != 0)
             output << ',';
         const RevisionNodeId id = ids[index];
-        output << "{\"id\":" << id << ",\"name\":\""
-               << escapeJson(graph.node(id).name) << "\"}";
+        output << "{\"id\":" << id << ",\"name\":\"" << escapeJson(graph.node(id).name) << "\"}";
     }
     output << ']';
 }
 
 } // namespace
 
-Result<std::string>
-serializeRevisionCertificateJson(const RevisionGraph& graph,
-                                 const RevisionConeCertificate& certificate,
-                                 const RevisionCertificateMetadata& metadata) {
-    if (auto valid =
-            validateCertificateForSerialization(graph, certificate, metadata);
-        !valid) {
+Result<std::string> serializeRevisionCertificateJson(const RevisionGraph& graph,
+                                                     const RevisionConeCertificate& certificate,
+                                                     const RevisionCertificateMetadata& metadata) {
+    if (auto valid = validateCertificateForSerialization(graph, certificate, metadata); !valid) {
         return std::unexpected(valid.error());
     }
 
     std::ostringstream output;
     output << std::setprecision(17);
-    output << '{'
-           << "\"schemaVersion\":1,"
+    output << '{' << "\"schemaVersion\":1,"
            << "\"artifact\":\"maveb-cbrc-native-certificate\","
            << "\"graphVersion\":\"" << escapeJson(metadata.graphVersion) << "\","
            << "\"boundVersion\":\"" << escapeJson(metadata.boundVersion) << "\","
@@ -135,9 +127,8 @@ serializeRevisionCertificateJson(const RevisionGraph& graph,
            << "\"passes\":" << (certificate.passes ? "true" : "false") << ','
            << "\"fullRebuild\":" << (certificate.fullRebuild ? "true" : "false") << ','
            << "\"reason\":\"" << escapeJson(certificate.reason) << "\","
-           << "\"work\":" << certificate.work << ','
-           << "\"fullWork\":" << certificate.fullWork << ','
-           << "\"workRatioFull\":";
+           << "\"work\":" << certificate.work << ',' << "\"fullWork\":" << certificate.fullWork
+           << ',' << "\"workRatioFull\":";
     if (certificate.fullWork == 0.0)
         output << "null";
     else
@@ -154,10 +145,8 @@ serializeRevisionCertificateJson(const RevisionGraph& graph,
             output << ',';
         const RevisionQoIResult& qoi = certificate.qois[index];
         output << "{\"name\":\"" << escapeJson(qoi.name) << "\","
-               << "\"bound\":" << qoi.bound << ','
-               << "\"epsilon\":" << qoi.epsilon << ','
-               << "\"passes\":" << (qoi.bound <= qoi.epsilon ? "true" : "false")
-               << '}';
+               << "\"bound\":" << qoi.bound << ',' << "\"epsilon\":" << qoi.epsilon << ','
+               << "\"passes\":" << (qoi.bound <= qoi.epsilon ? "true" : "false") << '}';
     }
     output << "]}\n";
     return output.str();
