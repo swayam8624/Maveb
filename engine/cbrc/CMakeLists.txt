@@ -10,6 +10,7 @@ target_link_libraries(AetherCBRC
     PUBLIC
         Aether::Revision
         Aether::Reconstruction
+        Aether::World
 )
 target_compile_features(AetherCBRC PUBLIC cxx_std_23)
 aether_configure_target(AetherCBRC)
