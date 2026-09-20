@@ -191,6 +191,33 @@ void testIndependentFullBaselineControlsFallbackAccounting() {
            "FULL fallback work must equal independent full baseline");
 }
 
+void testCompleteRepairConeCanRemainLocal() {
+    auto graph = RevisionGraph::build(
+        {
+            {"current-frame", 0.0, 0.0},
+            {"history-region", 25.0, 0.0},
+        },
+        {},
+        100.0);
+    expect(graph.has_value(), "regional full-cone graph must build");
+    if (!graph)
+        return;
+
+    const std::vector<double> source{0.0, 1.0};
+    const std::vector<RevisionNodeId> hard{0};
+    const std::vector<RevisionQoI> qois{{"out", {{1, 1.0}}, 0.0}};
+    auto result = greedyCertifiedRevisionCone(*graph, source, hard, qois);
+    expect(result.has_value(), "regional full-cone plan must evaluate");
+    if (!result)
+        return;
+    expect(result->passes, "regional complete cone must certify zero residual");
+    expect(!result->fullRebuild,
+           "complete abstract cone must remain local when cheaper than full baseline");
+    expect(std::abs(result->work - 25.0) < 1e-12 &&
+               std::abs(result->fullWork - 100.0) < 1e-12,
+           "regional repair work must stay distinct from full rebuild baseline");
+}
+
 void testHardPredecessorInconsistentConeIsRejected() {
     auto graph = RevisionGraph::build(
         {
@@ -237,6 +264,7 @@ int main() noexcept {
         testFullFallbackWhenOnlyOutputRepairCanPass();
         testAnalyticFanOutAndFanInAccumulatesEveryPath();
         testIndependentFullBaselineControlsFallbackAccounting();
+        testCompleteRepairConeCanRemainLocal();
         testHardPredecessorInconsistentConeIsRejected();
         testInvalidAnalyticEdgeWithoutProvenanceRejected();
     } catch (const std::exception& error) {
