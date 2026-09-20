@@ -201,9 +201,8 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
     if (certificate.exterior.empty()) {
         certificate.stable = true;
         certificate.passes = true;
-        certificate.fullRebuild = true;
-        certificate.reason = "full rebuild";
-        certificate.work = certificate.fullWork;
+        certificate.fullRebuild = false;
+        certificate.reason = "complete repair cone";
         for (const RevisionQoI& qoi : qois)
             certificate.qois.push_back({qoi.name, 0.0, qoi.epsilon});
         return certificate;
@@ -366,7 +365,16 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> 
 
     std::vector<RevisionNodeId> full(n);
     std::iota(full.begin(), full.end(), RevisionNodeId{0});
-    return certifyRevisionCone(graph, sourceBounds, full, qois);
+    auto complete = certifyRevisionCone(graph, sourceBounds, full, qois);
+    if (!complete)
+        return std::unexpected(complete.error());
+    if (complete->work < complete->fullWork)
+        return complete;
+
+    complete->work = complete->fullWork;
+    complete->fullRebuild = true;
+    complete->reason = "full rebuild fallback";
+    return complete;
 }
 
 } // namespace aether::revision
