@@ -1087,18 +1087,21 @@ void Renderer::draw(MTK::View* view) noexcept {
                 baseHistoryUsable && supportCovered && !forceTemporalFullHistoryInvalidation;
             const double staleHistoryBound = frameGaussianRevisionCertificate->maximumRgbLInfBound;
             const double historyWeight = temporalValidationStable ? 0.9 : 1.0;
+            const double fullHistoryWork =
+                static_cast<double>(static_cast<std::uint64_t>(sceneTargetWidth_) *
+                                    sceneTargetHeight_);
             const double candidateHistoryWork =
                 temporalValidationStable && haveTemporalInvalidationPlan
                     ? static_cast<double>(lastTemporalInvalidationPlan_.invalidatedPixels)
-                    : static_cast<double>(static_cast<std::uint64_t>(sceneTargetWidth_) *
-                                          sceneTargetHeight_);
+                    : fullHistoryWork;
 
             auto outputGraph = revision::RevisionGraph::build(
                 {
                     {"gaussian-current-frame-repaired", 0.0, 0.0},
                     {"temporal-history-repair", candidateHistoryWork, 0.0},
                 },
-                {});
+                {},
+                fullHistoryWork);
             bool temporalRepairSelected = true;
             if (outputGraph) {
                 std::vector<double> sourceBounds{0.0, staleHistoryBound};
@@ -1124,6 +1127,8 @@ void Renderer::draw(MTK::View* view) noexcept {
                                                 ? std::numeric_limits<double>::infinity()
                                                 : planned->qois.front().bound,
                         .epsilon = gaussianRevisionRgbTolerance_,
+                        .historyWeight = historyWeight,
+                        .temporalRepairWork = candidateHistoryWork,
                         .plannerWork = planned->work,
                         .fullWork = planned->fullWork,
                     };
@@ -1137,8 +1142,10 @@ void Renderer::draw(MTK::View* view) noexcept {
                         .fullRebuild = true,
                         .resolvedRgbBound = std::numeric_limits<double>::infinity(),
                         .epsilon = gaussianRevisionRgbTolerance_,
-                        .plannerWork = candidateHistoryWork,
-                        .fullWork = candidateHistoryWork,
+                        .historyWeight = historyWeight,
+                        .temporalRepairWork = candidateHistoryWork,
+                        .plannerWork = fullHistoryWork,
+                        .fullWork = fullHistoryWork,
                     };
                     Log::instance().write(LogLevel::error, planned.error().describe());
                 }
@@ -1152,8 +1159,10 @@ void Renderer::draw(MTK::View* view) noexcept {
                     .fullRebuild = true,
                     .resolvedRgbBound = std::numeric_limits<double>::infinity(),
                     .epsilon = gaussianRevisionRgbTolerance_,
-                    .plannerWork = candidateHistoryWork,
-                    .fullWork = candidateHistoryWork,
+                    .historyWeight = historyWeight,
+                    .temporalRepairWork = candidateHistoryWork,
+                    .plannerWork = fullHistoryWork,
+                    .fullWork = fullHistoryWork,
                 };
                 Log::instance().write(LogLevel::error, outputGraph.error().describe());
             }
