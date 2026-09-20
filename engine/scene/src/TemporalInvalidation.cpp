@@ -28,8 +28,11 @@ planTemporalInvalidation(const TemporalWorldBounds& bounds, simd_float4x4 viewPr
                          std::uint32_t expansionPixels) {
     if (width == 0 || height == 0)
         return fail(ErrorCode::invalidArgument, "Temporal invalidation viewport is empty");
-    if (!finite3(bounds.minimum) || !finite3(bounds.maximum) ||
-        simd_any(bounds.minimum > bounds.maximum) || !finiteMatrix(viewProjection)) {
+    const bool invalidBounds = bounds.minimum.x > bounds.maximum.x ||
+                               bounds.minimum.y > bounds.maximum.y ||
+                               bounds.minimum.z > bounds.maximum.z;
+    if (!finite3(bounds.minimum) || !finite3(bounds.maximum) || invalidBounds ||
+        !finiteMatrix(viewProjection)) {
         return fail(ErrorCode::invalidArgument, "Temporal invalidation inputs are invalid");
     }
 
