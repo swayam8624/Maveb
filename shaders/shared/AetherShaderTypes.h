@@ -46,8 +46,10 @@ struct AetherBloomUniforms {
 struct AetherTemporalUniforms {
     AetherFloat4x4 inverseCurrentViewProjection;
     AetherFloat4x4 previousViewProjection;
-    // history valid, history weight, depth rejection threshold, reserved
+    // history valid, history weight, depth rejection threshold, regional invalidation enabled
     AetherFloat4 historyParameters;
+    // top-left-origin normalized minU, minV, maxU, maxV
+    AetherFloat4 invalidationRect;
 };
 
 struct AetherGaussianCompositionUniforms {
@@ -250,7 +252,7 @@ struct AetherTsdfFrameUniforms {
 static_assert(sizeof(AetherFullscreenVertex) == 16);
 static_assert(sizeof(AetherPresentationUniforms) == 16);
 static_assert(sizeof(AetherBloomUniforms) == 16);
-static_assert(sizeof(AetherTemporalUniforms) == 144);
+static_assert(sizeof(AetherTemporalUniforms) == 160);
 static_assert(sizeof(AetherGizmoUniforms) == 112);
 static_assert(sizeof(AetherMeshVertex) == 96);
 static_assert(sizeof(AetherJointMatrix) == 128);
