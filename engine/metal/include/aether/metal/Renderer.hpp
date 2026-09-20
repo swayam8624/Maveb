@@ -11,6 +11,7 @@
 #include <aether/scene/ImageBasedLighting.hpp>
 #include <aether/scene/Lighting.hpp>
 #include <aether/scene/Shadows.hpp>
+#include <aether/scene/TemporalInvalidation.hpp>
 #include <shared/AetherShaderTypes.h>
 
 #include <Metal/Metal.hpp>
@@ -187,6 +188,10 @@ class Renderer final {
         return capabilities_;
     }
     [[nodiscard]] RendererStatistics statistics() const noexcept;
+    [[nodiscard]] const scene::TemporalInvalidationPlan&
+    lastTemporalInvalidationPlan() const noexcept {
+        return lastTemporalInvalidationPlan_;
+    }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
         return {proxyVertexCount_, proxyIndexCount_ / 3U};
@@ -324,6 +329,8 @@ class Renderer final {
     std::array<MetalPtr<MTL::Texture>, 2> temporalDepthHistory_;
     simd_float4x4 previousViewProjection_{matrix_identity_float4x4};
     bool temporalHistoryValid_{};
+    std::optional<scene::TemporalWorldBounds> pendingTemporalInvalidationBounds_;
+    scene::TemporalInvalidationPlan lastTemporalInvalidationPlan_{};
     std::uint32_t sceneTargetWidth_{};
     std::uint32_t sceneTargetHeight_{};
     std::uint32_t gaussianTargetWidth_{};
