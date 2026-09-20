@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "refreshDate": "2026-09-20",
-  "status": "living-initial-corpus",
+  "status": "living-expanded-corpus",
   "papers": [
     {
       "id": "p001",
@@ -674,6 +674,27 @@
       "claims_relevant_to_maveb": "Certified 3DGS rendering is established prior art.",
       "overlap_with_candidate_maveb_contribution": "Strong collision for any broad 'first certified 3DGS rendering' claim.",
       "potential_unexplored_gap": "A fixed-camera, concrete pre/post edited-subset alpha-mass locality certificate may be much cheaper and tailored to interactive editing, but must be compared directly."
+    },
+    {
+      "id": "p033",
+      "title": "Efficient Large-Scale Scene Reconstruction via Semantic-Aware Hybrid Representation",
+      "authors": "Li, Lin, Guo, Chen",
+      "year": 2026,
+      "venue": "IEEE TVCG 2026",
+      "link": "https://hongsong-wang.github.io/TVCG2026/",
+      "code_repository": null,
+      "representation": "textured mesh + 3D Gaussians",
+      "inputs": "large-scale multi-view scene + semantics",
+      "outputs": "hybrid large-scale reconstruction",
+      "central_contribution": "Semantic-guided hybrid modeling uses mesh for regular geometry and Gaussians for complex detail, with hybrid rendering and adaptive Gaussian sampling.",
+      "major_algorithms": "semantic partition / hybrid renderer / mesh-guided Gaussian sampling",
+      "metrics": "quality / storage / rendering speed",
+      "hardware": "CUDA GPU",
+      "runtime": "see paper",
+      "limitations": "see paper",
+      "claims_relevant_to_maveb": "Static adaptive regional mesh/Gaussian assignment is occupied.",
+      "overlap_with_candidate_maveb_contribution": "High for static region-wise hybrid allocation.",
+      "potential_unexplored_gap": "Temporal representation migration as evidence/update rate/resource state evolves."
     }
   ]
 }
