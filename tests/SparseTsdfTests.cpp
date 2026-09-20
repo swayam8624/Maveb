@@ -234,7 +234,8 @@ void testIncrementalHaloMeshing() {
     const auto blockRatio =
         locality.counter(aether::world::LocalityDomain::tsdfBlocksRead).ratio();
     expect(blockRatio.has_value() && *blockRatio == 1.0,
-           "current snapshot-map construction must honestly report globally scanning resident blocks");
+           "current snapshot-map construction must honestly report globally scanning resident "
+           "blocks");
     const auto incremental = mesher->mesh();
     expect(triangleCount(incremental) == triangleCount(*full),
            "halo-owned incremental patches should cover every full-extraction triangle exactly");
