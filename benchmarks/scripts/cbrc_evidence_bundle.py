@@ -59,6 +59,7 @@ def validate_native_planner_certificate(
 
     production = manifest["production_certificate"]["outputConePlanner"]
     comparisons = (
+        ("stable", bool(payload.get("stable")), bool(production["stable"])),
         ("passes", bool(payload.get("passes")), bool(production["passes"])),
         (
             "fullRebuild",
@@ -85,6 +86,27 @@ def validate_native_planner_certificate(
         if abs(native_value - production_value) > tolerance:
             raise ValueError(
                 f"native planner {native_key} disagrees with production planner telemetry"
+            )
+
+    qois = payload.get("qois")
+    if not isinstance(qois, list) or len(qois) != 1:
+        raise ValueError("native planner certificate must contain one output QoI")
+    qoi = qois[0]
+    if qoi.get("name") != "resolved-rgb-linf":
+        raise ValueError("native planner QoI name disagrees with production contract")
+    for native_key, production_key in (
+        ("bound", "resolvedRgbBound"),
+        ("epsilon", "epsilon"),
+    ):
+        native_value = float(qoi[native_key])
+        production_value = float(production[production_key])
+        tolerance = max(
+            1e-9,
+            1e-9 * max(abs(native_value), abs(production_value), 1.0),
+        )
+        if abs(native_value - production_value) > tolerance:
+            raise ValueError(
+                f"native planner QoI {native_key} disagrees with production telemetry"
             )
     return payload
 
