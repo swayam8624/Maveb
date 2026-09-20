@@ -47,7 +47,9 @@ class CBRCSchemaContractTests(unittest.TestCase):
     def test_campaign_example_matches_capture_mode_contract(self):
         campaign = self.load(CONFIG / "cbrc_real_campaign.example.json")
         self.assertEqual(campaign["schemaVersion"], 1)
-        self.assertGreaterEqual(len(campaign["cases"]), 2)
+        self.assertGreaterEqual(
+            len(campaign["cases"]), int(campaign["minimum_revisions"])
+        )
         ids = set()
         for case in campaign["cases"]:
             self.assertNotIn(case["id"], ids)
