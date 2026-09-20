@@ -206,8 +206,8 @@ Result<GaussianRevisionSnapshot> GaussianPipeline::pendingRevisionSnapshot() con
 
         degree =
             std::max(degree, std::max(shDegree(before->restCount), shDegree(after->restCount)));
-        snapshot.beforeChanged.gaussians.push_back(std::move(*before));
-        snapshot.afterChanged.gaussians.push_back(std::move(*after));
+        snapshot.beforeChanged.gaussians.push_back(*before);
+        snapshot.afterChanged.gaussians.push_back(*after);
     }
     snapshot.beforeChanged.sphericalHarmonicDegree = degree;
     snapshot.afterChanged.sphericalHarmonicDegree = degree;

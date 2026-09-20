@@ -365,10 +365,10 @@ supportPlan(const aether::world_gaussian::GaussianImageRevisionCertificate& cert
     result.fullFrame =
         result.pixels == static_cast<std::uint64_t>(certificate.width) * certificate.height;
     result.normalizedRect = {
-        static_cast<double>(minX) / certificate.width,
-        static_cast<double>(minY) / certificate.height,
-        static_cast<double>(maxX + 1) / certificate.width,
-        static_cast<double>(maxY + 1) / certificate.height,
+        static_cast<double>(minX) / static_cast<double>(certificate.width),
+        static_cast<double>(minY) / static_cast<double>(certificate.height),
+        static_cast<double>(maxX + 1) / static_cast<double>(certificate.width),
+        static_cast<double>(maxY + 1) / static_cast<double>(certificate.height),
     };
     return result;
 }

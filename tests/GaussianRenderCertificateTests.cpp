@@ -81,6 +81,7 @@ void testRandomizedInterleavingsStayBelowCertificate() {
     constexpr double colorCap = 2.5;
     for (int trial = 0; trial < 20'000; ++trial) {
         std::vector<Layer> unchanged;
+        unchanged.reserve(12);
         for (int i = 0; i < unchangedCount(rng); ++i) {
             unchanged.push_back({
                 .edited = false,
@@ -94,6 +95,10 @@ void testRandomizedInterleavingsStayBelowCertificate() {
         std::vector<Layer> afterEdited;
         std::vector<double> beforeAlphas;
         std::vector<double> afterAlphas;
+        beforeEdited.reserve(6);
+        afterEdited.reserve(6);
+        beforeAlphas.reserve(6);
+        afterAlphas.reserve(6);
 
         for (int i = 0; i < editedCount(rng); ++i) {
             const double alpha = 0.4 * unit(rng);

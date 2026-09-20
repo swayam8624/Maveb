@@ -6,13 +6,14 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <cstdint>
 #include <limits>
 #include <string>
 
 namespace aether::metal {
 namespace {
 
-enum PipelineIndex : std::size_t {
+enum PipelineIndex : std::uint8_t {
     project = 0,
     scanBlocks = 1,
     scanBlockSums = 2,

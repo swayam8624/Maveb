@@ -417,6 +417,10 @@ Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
         .worldEdit = std::move(*committedWorld),
         .translatedGaussians = affected->size(),
         .reoptimizationSelection = std::move(*selection),
+        .usedOverlayIndex = false,
+        .overlayIndexValid = true,
+        .overlayIndexCompacted = false,
+        .overlayDiagnostics = {},
     };
 }
 

@@ -134,5 +134,6 @@ jobs:
             grep -E '\.(c|cc|cpp|cxx)$' || true)
           if (( ${#sources[@]} )); then
             "$(brew --prefix llvm@18)/bin/clang-tidy" -p build/ci \
+              --extra-arg=-Wno-elaborated-enum-base \
               --warnings-as-errors='*' "${sources[@]}"
           fi

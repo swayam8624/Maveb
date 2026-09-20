@@ -128,8 +128,8 @@ struct CameraSnapshot final {
 
 class Renderer final {
   public:
-    static Result<std::unique_ptr<Renderer>> create(MTL::Device* device,
-                                                    std::filesystem::path shaderLibraryPath = {});
+    static Result<std::unique_ptr<Renderer>>
+    create(MTL::Device* device, const std::filesystem::path& shaderLibraryPath = {});
     ~Renderer();
 
     Renderer(const Renderer&) = delete;

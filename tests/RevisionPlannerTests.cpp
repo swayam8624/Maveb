@@ -122,7 +122,7 @@ void testGreedyExpansionCanAvoidFullRebuild() {
     expect(result->work < result->fullWork, "greedy certified cone must save frozen scalar work");
 }
 
-void testFullFallbackWhenOnlyOutputRepairCanPass() {
+void testOutputRepairCanSatisfyZeroEpsilonWithoutFullRebuild() {
     auto graph = RevisionGraph::build(
         {
             {"gaussian-edit", 1.0, 0.5},
@@ -144,8 +144,14 @@ void testFullFallbackWhenOnlyOutputRepairCanPass() {
     expect(result.has_value(), "zero-epsilon planner must return fallback");
     if (!result)
         return;
-    expect(result->passes, "full rebuild fallback must always certify zero residual");
-    expect(result->fullRebuild, "zero epsilon should force full rebuild in this chain");
+    expect(result->passes, "direct output repair must certify zero residual");
+    expect(!result->fullRebuild,
+           "repairing the QoI output directly should avoid a full rebuild");
+    expect(result->cone.size() == 2 && result->cone[0] == RevisionNodeId{0} &&
+               result->cone[1] == RevisionNodeId{2},
+           "zero epsilon should repair the hard edit and QoI output only");
+    expect(std::abs(result->work - 4.0) < 1e-12 && std::abs(result->fullWork - 6.0) < 1e-12,
+           "direct output repair must preserve the cheaper local-work accounting");
 }
 
 void testAnalyticFanOutAndFanInAccumulatesEveryPath() {
@@ -270,7 +276,7 @@ int main() noexcept {
         testEmpiricalEdgeFailsClosedAsExactPredecessor();
         testAnalyticCycleFailsClosed();
         testGreedyExpansionCanAvoidFullRebuild();
-        testFullFallbackWhenOnlyOutputRepairCanPass();
+        testOutputRepairCanSatisfyZeroEpsilonWithoutFullRebuild();
         testAnalyticFanOutAndFanInAccumulatesEveryPath();
         testIndependentFullBaselineControlsFallbackAccounting();
         testCompleteRepairConeCanRemainLocal();

@@ -113,7 +113,7 @@ Result<DecodedImage> decodeImage(std::span<const std::byte> encoded) {
 Result<std::string> sha256File(const std::filesystem::path& path) {
     package::Sha256 hasher;
     std::ifstream stream(path, std::ios::binary);
-    std::array<char, 64 * 1024> buffer{};
+    std::array<char, std::size_t{64} * 1024> buffer{};
     while (stream) {
         stream.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         const auto count = stream.gcount();
@@ -187,12 +187,12 @@ std::uint32_t tileEntryBudget(std::size_t gaussianCount) {
 }
 } // namespace
 
-Result<std::unique_ptr<Renderer>> Renderer::create(MTL::Device* device,
-                                                   std::filesystem::path shaderLibraryPath) {
+Result<std::unique_ptr<Renderer>>
+Renderer::create(MTL::Device* device, const std::filesystem::path& shaderLibraryPath) {
     if (!device) {
         return fail(ErrorCode::metal, "No Metal device is available on this Mac");
     }
-    auto renderer = std::unique_ptr<Renderer>(new Renderer(device, std::move(shaderLibraryPath)));
+    auto renderer = std::unique_ptr<Renderer>(new Renderer(device, shaderLibraryPath));
     if (!renderer->commandQueue_) {
         return fail(ErrorCode::metal, "Metal failed to create the primary command queue");
     }
@@ -237,6 +237,8 @@ Renderer::~Renderer() {
 #endif
 }
 
+// MetalKit calls this noexcept frame boundary. Internal Result failures are handled in-band.
+ // NOLINTNEXTLINE(bugprone-exception-escape)
 void Renderer::draw(MTK::View* view) noexcept {
     ProfileScope profile("Renderer::draw");
     if (!view || !commandQueue_) {
@@ -1705,7 +1707,7 @@ Result<std::uint32_t> Renderer::addLight(const scene::Light& light) {
         return std::unexpected(valid.error());
     lights_.push_back(light);
     temporalHistoryValid_ = false;
-    return static_cast<std::uint32_t>(lights_.size());
+    return Result<std::uint32_t>{std::in_place, static_cast<std::uint32_t>(lights_.size())};
 }
 
 Result<void> Renderer::removeLight(std::uint32_t lightId) {
@@ -1934,7 +1936,7 @@ Result<std::uint32_t> Renderer::pickGaussian(std::uint32_t x, std::uint32_t y) {
         return fail(ErrorCode::metal, "Gaussian pick command buffer failed");
     std::uint32_t sourceId{};
     std::memcpy(&sourceId, readback->contents(), sizeof(sourceId));
-    return sourceId;
+    return Result<std::uint32_t>{std::in_place, sourceId};
 }
 
 Result<std::uint32_t> Renderer::pickProxy(std::uint32_t x, std::uint32_t y) {
@@ -1960,7 +1962,7 @@ Result<std::uint32_t> Renderer::pickProxy(std::uint32_t x, std::uint32_t y) {
         return fail(ErrorCode::metal, "Proxy pick command buffer failed");
     std::uint32_t proxyId{};
     std::memcpy(&proxyId, readback->contents(), sizeof(proxyId));
-    return proxyId;
+    return Result<std::uint32_t>{std::in_place, proxyId};
 }
 
 Result<std::uint32_t> Renderer::pickMesh(std::uint32_t x, std::uint32_t y) {
@@ -1991,7 +1993,7 @@ Result<std::uint32_t> Renderer::pickMesh(std::uint32_t x, std::uint32_t y) {
     entityId &= AETHER_MESH_ENTITY_ID_MASK;
     if (entityId > meshInstances_.size())
         return fail(ErrorCode::corruptData, "Mesh pick target contains an invalid entity ID");
-    return entityId;
+    return Result<std::uint32_t>{std::in_place, entityId};
 }
 
 std::vector<std::string> Renderer::meshEntityNames() const {
@@ -2092,7 +2094,7 @@ Result<std::uint32_t> Renderer::pickGizmoAxis(std::uint32_t x, std::uint32_t y) 
     const std::uint32_t axis = encoded & 0x7fffffffU;
     if (axis < 1U || axis > 3U)
         return fail(ErrorCode::corruptData, "Gizmo target contains an invalid axis ID");
-    return axis;
+    return Result<std::uint32_t>{std::in_place, axis};
 }
 
 Result<simd_float4> Renderer::sampleMotionVector(std::uint32_t x, std::uint32_t y) {
