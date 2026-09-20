@@ -263,6 +263,18 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
     return result;
 }
 
+Result<void> recordGaussianSelectionLocality(
+    const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
+    world::LocalityLedger& ledger) {
+    if (selection.inspectedGaussians > asset.gaussians.size()) {
+        return fail(ErrorCode::corruptData,
+                    "Gaussian locality instrumentation exceeds full-scene primitive count");
+    }
+    return ledger.set(world::LocalityDomain::gaussiansInspected,
+                      static_cast<std::uint64_t>(selection.inspectedGaussians),
+                      static_cast<std::uint64_t>(asset.gaussians.size()));
+}
+
 Result<std::size_t>
 translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwnership& ownership,
                         world::EntityId entity, simd_float3 translationDelta,
