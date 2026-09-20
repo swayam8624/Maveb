@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "minimum_revisions": 5,
+  "minimum_scenes": 1,
+  "require_local_success": true,
+  "require_full_fallback": true,
+  "require_high_coupling": true,
+  "cases": [
+    {
+      "id": "replace-local-low-coupling",
+      "scene_id": "replace-scene",
+      "translation": "/absolute/path/translation.json",
+      "certificate": "/absolute/path/certificate.json",
+      "epsilon": 0.01,
+      "coupling_regime": "low",
+      "edit_class": "gaussian",
+      "work_cost_model": "/absolute/path/frozen-work-cost.json"
+    },
+    {
+      "id": "replace-adversarial-full",
+      "scene_id": "replace-scene",
+      "translation": "/absolute/path/translation-adversarial.json",
+      "certificate": "/absolute/path/certificate-adversarial.json",
+      "epsilon": 0.001,
+      "coupling_regime": "adversarial",
+      "edit_class": "gaussian",
+      "work_cost_model": "/absolute/path/frozen-work-cost.json"
+    }
+  ]
+}
