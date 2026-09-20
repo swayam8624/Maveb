@@ -212,6 +212,34 @@
       "benchmark_availability": "paper mobile benchmarks",
       "integration_feasibility": "secondary baseline; algorithm comparison",
       "reuse_status": "MIT reusable with attribution and dependency review"
+    },
+    {
+      "repository_url": "https://github.com/mkjjang3598/LTGS",
+      "commit_sha": "bba8beefc11ef524cf3dc947617298f748ec4f8d",
+      "license": "no root LICENSE file observed; manual review required",
+      "language": "Python/CUDA research stack",
+      "gpu_backend": "CUDA",
+      "relevant_subsystem": "long-term Gaussian chronology, sparse revisit updates, instance/template tracking",
+      "implementation_quality": "official CVPR 2026 Findings code; explicit multi-stage update scripts and dataset support",
+      "useful_algorithm": "localization -> change detection -> instance matching -> point-cloud initialization -> long-term Gaussian update",
+      "reproducibility": "official code and five-scene dataset exposed; dependency stack includes MASt3R/TEASER++/3DGS components",
+      "benchmark_availability": "LTGS five-scene indoor multi-timestep sparse-view dataset and evaluation script",
+      "integration_feasibility": "strong external baseline for chronology/change experiments; CUDA-only locally, so use as reference/external reproducibility target rather than pretending Metal equivalence",
+      "reuse_status": "no code reuse until license/dependency licenses are manually cleared"
+    },
+    {
+      "repository_url": "https://github.com/euleriansplatting/eulerian-splatting",
+      "commit_sha": "8b6874bb0edb96fd5b026e7c4cbb81f908ff0cdc",
+      "license": "no root LICENSE file observed; manual review required",
+      "language": "Python/CUDA",
+      "gpu_backend": "CUDA 12.1",
+      "relevant_subsystem": "resampling-stable Gaussian generation from persistent volumetric probability density",
+      "implementation_quality": "official CVPR 2026 code release",
+      "useful_algorithm": "hashed probability pyramid, unbiased density-gradient optimization, Gaussian resampling",
+      "reproducibility": "README specifies Python 3.9, PyTorch 2.4.1, CUDA 12.1 and H200-tested setup",
+      "benchmark_availability": "standard NVS reconstruction pipeline including mip-NeRF 360 reported by paper/project",
+      "integration_feasibility": "conceptual/algorithmic baseline for S4; external CUDA reproduction where compute is available",
+      "reuse_status": "no code reuse until repository license is clarified"
     }
   ]
 }
