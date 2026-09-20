@@ -21,6 +21,13 @@ std::array<std::uint32_t, 3> blockCounts(const SparseTsdfConfig& config) {
             blocks(config.volume.dimensions[2])};
 }
 
+[[nodiscard]] bool checkedAdd(std::size_t& target, std::size_t value) noexcept {
+    if (value > std::numeric_limits<std::size_t>::max() - target)
+        return false;
+    target += value;
+    return true;
+}
+
 Result<std::size_t> checkedVoxelCount(const std::array<std::uint32_t, 3>& dimensions,
                                       std::size_t budget) {
     std::size_t count = 1;
@@ -56,6 +63,10 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
     const std::size_t voxelsPerBlock = static_cast<std::size_t>(snapshot.config.blockResolution) *
                                        snapshot.config.blockResolution *
                                        snapshot.config.blockResolution;
+    IncrementalSparseMesherWorkStatistics work;
+    work.dirtyBlocksInput = dirtyBlocks.size();
+    work.snapshotBlocksScanned = snapshot.blocks.size();
+
     std::map<TsdfBlockCoordinate, const std::vector<TsdfVoxel>*> blocks;
     for (const auto& block : snapshot.blocks) {
         if (block.coordinate.x >= counts[0] || block.coordinate.y >= counts[1] ||
@@ -63,6 +74,59 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
             blocks.contains(block.coordinate))
             return fail(ErrorCode::corruptData, "Sparse TSDF snapshot block is invalid");
         blocks.emplace(block.coordinate, &block.voxels);
+    }
+
+    if (!blocks.empty()) {
+        TsdfBlockCoordinate minimum = blocks.begin()->first;
+        TsdfBlockCoordinate maximum = blocks.begin()->first;
+        for (const auto& [coordinate, voxels] : blocks) {
+            static_cast<void>(voxels);
+            minimum.x = std::min(minimum.x, coordinate.x);
+            minimum.y = std::min(minimum.y, coordinate.y);
+            minimum.z = std::min(minimum.z, coordinate.z);
+            maximum.x = std::max(maximum.x, coordinate.x);
+            maximum.y = std::max(maximum.y, coordinate.y);
+            maximum.z = std::max(maximum.z, coordinate.z);
+        }
+
+        const std::array<std::uint64_t, 3> first{
+            static_cast<std::uint64_t>(minimum.x) * snapshot.config.blockResolution,
+            static_cast<std::uint64_t>(minimum.y) * snapshot.config.blockResolution,
+            static_cast<std::uint64_t>(minimum.z) * snapshot.config.blockResolution};
+        const std::array<std::uint64_t, 3> last{
+            std::min<std::uint64_t>(
+                (static_cast<std::uint64_t>(maximum.x) + 1) * snapshot.config.blockResolution,
+                snapshot.config.volume.dimensions[0]),
+            std::min<std::uint64_t>(
+                (static_cast<std::uint64_t>(maximum.y) + 1) * snapshot.config.blockResolution,
+                snapshot.config.volume.dimensions[1]),
+            std::min<std::uint64_t>(
+                (static_cast<std::uint64_t>(maximum.z) + 1) * snapshot.config.blockResolution,
+                snapshot.config.volume.dimensions[2])};
+
+        std::size_t fullVoxels = 1;
+        std::size_t fullCells = 1;
+        bool fullAvailable = true;
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            const std::uint64_t span = last[axis] - first[axis];
+            if (span < 2 || span > std::numeric_limits<std::size_t>::max()) {
+                fullAvailable = false;
+                break;
+            }
+            const auto sampleSpan = static_cast<std::size_t>(span);
+            if (fullVoxels > snapshot.config.maximumExtractionVoxels / sampleSpan ||
+                fullCells > std::numeric_limits<std::size_t>::max() / (sampleSpan - 1)) {
+                fullAvailable = false;
+                break;
+            }
+            fullVoxels *= sampleSpan;
+            fullCells *= sampleSpan - 1;
+        }
+        if (fullAvailable) {
+            work.fullReferenceWorkAvailable = true;
+            work.fullReferenceVoxelSamples = fullVoxels;
+            work.fullReferenceCells = fullCells;
+        }
     }
 
     std::set<TsdfBlockCoordinate> owners;
@@ -80,6 +144,7 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
     if (owners.size() > config_.maximumPatchesPerUpdate)
         return fail(ErrorCode::resourceExhausted,
                     "Incremental sparse TSDF update exceeds its patch budget");
+    work.ownerPatchesRegenerated = owners.size();
 
     std::vector<SparseMeshPatchUpdate> updates;
     updates.reserve(owners.size());
@@ -111,9 +176,28 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
             updates.push_back({owner, snapshot.generation, std::nullopt});
             continue;
         }
+
+        std::size_t ownedCells = 1;
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            const auto span = static_cast<std::size_t>(ownedEnd[axis] - ownedFirst[axis]);
+            if (span == 0 || ownedCells > std::numeric_limits<std::size_t>::max() / span) {
+                return fail(ErrorCode::resourceExhausted,
+                            "Incremental sparse TSDF owned-cell work counter overflow");
+            }
+            ownedCells *= span;
+        }
+        if (!checkedAdd(work.ownerCellsRegenerated, ownedCells)) {
+            return fail(ErrorCode::resourceExhausted,
+                        "Incremental sparse TSDF aggregate cell work counter overflow");
+        }
+
         auto voxelCount = checkedVoxelCount(dimensions, config_.maximumPatchVoxels);
         if (!voxelCount)
             return std::unexpected(voxelCount.error());
+        if (!checkedAdd(work.fieldVoxelsMaterialized, *voxelCount)) {
+            return fail(ErrorCode::resourceExhausted,
+                        "Incremental sparse TSDF field work counter overflow");
+        }
         std::vector<TsdfVoxel> field(*voxelCount);
         const auto fieldIndex = [&](std::uint32_t x, std::uint32_t y, std::uint32_t z) {
             return (static_cast<std::size_t>(z) * dimensions[1] + y) * dimensions[0] + x;
@@ -173,6 +257,7 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
             patches_.erase(update.coordinate);
     }
     generation_ = snapshot.generation;
+    lastUpdateWorkStatistics_ = work;
     return updates;
 }
 
