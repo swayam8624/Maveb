@@ -1,6 +1,6 @@
 #pragma once
 
-#include <aether/gaussian/GaussianAsset.hpp>
+#include <aether/gaussian/GaussianAsset.hpp>\n#include <aether/world_gaussian/GaussianSpatialIndex.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
 #include <aether/world/WorldModel.hpp>
 
