@@ -48,6 +48,14 @@ The Fourier shift theorem, voxelized point-cloud phase correlation, low-frequenc
 
 The only surviving phase question is stricter: can a geometry-canonicalized *local* spectral constraint provide a useful and measurable certificate/bound on unintended edit damage outside an authored region, and beat simpler geometric invariants under Gaussian split/merge/prune/densify? If not, kill the phase family entirely.
 
+
+### Broad certified 3DGS rendering — KILLED AS HEADLINE
+**Closest work:** Abstract Rendering (NeurIPS 2025 spotlight) computes provable rendered-image bounds for 3D Gaussian Splats and NeRF under continuous camera/scene uncertainty, explicitly handling projection, sorting and cumulative alpha aggregation and scaling to scenes with up to one million Gaussians.
+
+Therefore MAVEB cannot claim "certified Gaussian rendering" in general.
+
+The alpha-mass candidate survives only as a specialized question: can a concrete pre/post *edited subset* be certified against protected pixels/views with a substantially simpler and tighter bound cheap enough for an interactive editor? This must be benchmarked against Abstract Rendering or clearly shown to solve a different contract.
+
 ## Current surviving distinctions to attack
 
 ### A. Certified geometry-preserving local editing
