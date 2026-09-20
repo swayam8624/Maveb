@@ -79,6 +79,99 @@ class CBRCCampaignTests(unittest.TestCase):
                 case_dir=Path("out"),
             )
 
+    def test_native_python_planner_parity(self):
+        manifest = {
+            "production_certificate": {
+                "outputConePlanner": {
+                    "plannerWork": 25.0,
+                    "passes": True,
+                    "fullRepair": False,
+                }
+            }
+        }
+        baseline = {
+            "baselines": {
+                "CBRC": {
+                    "work": 25.0,
+                    "passes": True,
+                    "usedFullRebuild": False,
+                }
+            }
+        }
+        result = mod.verify_native_python_planner_parity(manifest, baseline)
+        self.assertTrue(result["pass"])
+        self.assertEqual(result["workDelta"], 0.0)
+
+    def test_native_python_planner_parity_detects_fallback_mismatch(self):
+        manifest = {
+            "production_certificate": {
+                "outputConePlanner": {
+                    "plannerWork": 100.0,
+                    "passes": True,
+                    "fullRepair": True,
+                }
+            }
+        }
+        baseline = {
+            "baselines": {
+                "CBRC": {
+                    "work": 100.0,
+                    "passes": True,
+                    "usedFullRebuild": False,
+                }
+            }
+        }
+        result = mod.verify_native_python_planner_parity(manifest, baseline)
+        self.assertFalse(result["pass"])
+        self.assertFalse(result["fallbackMatch"])
+
+    def test_baseline_summary_aggregates_method_statistics(self):
+        records = [
+            {
+                "baselines": {
+                    "CBRC": {
+                        "passes": True,
+                        "usedFullRebuild": False,
+                        "workRatioFull": 0.25,
+                    }
+                },
+                "ablations": {
+                    "ABLATE_NO_FALLBACK": {
+                        "passes": False,
+                        "usedFullRebuild": False,
+                        "workRatioFull": 0.1,
+                    }
+                },
+            },
+            {
+                "baselines": {
+                    "CBRC": {
+                        "passes": True,
+                        "usedFullRebuild": True,
+                        "workRatioFull": 1.0,
+                    }
+                },
+                "ablations": {
+                    "ABLATE_NO_FALLBACK": {
+                        "passes": True,
+                        "usedFullRebuild": False,
+                        "workRatioFull": 0.2,
+                    }
+                },
+            },
+        ]
+        summary = mod.baseline_summary(records)
+        self.assertEqual(summary["baselines"]["CBRC"]["passRate"], 1.0)
+        self.assertEqual(
+            summary["baselines"]["CBRC"]["fullRebuildRate"], 0.5
+        )
+        self.assertEqual(
+            summary["baselines"]["CBRC"]["medianWorkRatioFull"], 0.625
+        )
+        self.assertEqual(
+            summary["ablations"]["ABLATE_NO_FALLBACK"]["passRate"], 0.5
+        )
+
     def test_certificate_violation_fails(self):
         rows = [row() for _ in range(4)] + [row(actual=0.04, bound=0.03)]
         result = mod.gate_rows(
