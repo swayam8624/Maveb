@@ -14,6 +14,14 @@ namespace {
     return std::isfinite(value) && value >= 0.0;
 }
 
+[[nodiscard]] Result<std::size_t> checkedSize(std::uint64_t value,
+                                               const char* label) {
+    if (value > std::numeric_limits<std::size_t>::max())
+        return fail(ErrorCode::resourceExhausted,
+                    "CBRC locality counter exceeds size_t range", label);
+    return static_cast<std::size_t>(value);
+}
+
 [[nodiscard]] Result<double> checkedCost(double units, double coefficient, const char* label) {
     if (!finiteNonNegative(units) || !finiteNonNegative(coefficient))
         return fail(ErrorCode::invalidArgument,
@@ -72,23 +80,58 @@ Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
                     "CBRC Gaussian full baselines disagree across inspection/update domains");
     }
 
+    auto observationIncremental =
+        checkedSize(observations.incremental, "observations.incremental");
+    auto observationFull = checkedSize(observations.full, "observations.full");
+    auto textureIncremental =
+        checkedSize(texturePages.incremental, "texturePages.incremental");
+    auto textureFull = checkedSize(texturePages.full, "texturePages.full");
+    auto materialIncremental =
+        checkedSize(materials.incremental, "materials.incremental");
+    auto materialFull = checkedSize(materials.full, "materials.full");
+    auto gaussianInspectionIncremental =
+        checkedSize(gaussiansInspected.incremental, "gaussiansInspected.incremental");
+    auto gaussianUpdateIncremental =
+        checkedSize(gaussiansUpdated.incremental, "gaussiansUpdated.incremental");
+    auto gaussianFull =
+        checkedSize(gaussiansInspected.full, "gaussians.full");
+    if (!observationIncremental || !observationFull || !textureIncremental ||
+        !textureFull || !materialIncremental || !materialFull ||
+        !gaussianInspectionIncremental || !gaussianUpdateIncremental ||
+        !gaussianFull) {
+        const Error* error = nullptr;
+        if (!observationIncremental)
+            error = &observationIncremental.error();
+        else if (!observationFull)
+            error = &observationFull.error();
+        else if (!textureIncremental)
+            error = &textureIncremental.error();
+        else if (!textureFull)
+            error = &textureFull.error();
+        else if (!materialIncremental)
+            error = &materialIncremental.error();
+        else if (!materialFull)
+            error = &materialFull.error();
+        else if (!gaussianInspectionIncremental)
+            error = &gaussianInspectionIncremental.error();
+        else if (!gaussianUpdateIncremental)
+            error = &gaussianUpdateIncremental.error();
+        else
+            error = &gaussianFull.error();
+        return std::unexpected(*error);
+    }
+
     return CapturedWorldRevisionInput{
-        .observationsInspected =
-            static_cast<std::size_t>(observations.incremental),
-        .fullObservations = static_cast<std::size_t>(observations.full),
+        .observationsInspected = *observationIncremental,
+        .fullObservations = *observationFull,
         .mesher = mesher,
-        .dirtyTexturePages =
-            static_cast<std::size_t>(texturePages.incremental),
-        .fullTexturePages = static_cast<std::size_t>(texturePages.full),
-        .materialStatesUpdated =
-            static_cast<std::size_t>(materials.incremental),
-        .fullMaterialStates = static_cast<std::size_t>(materials.full),
-        .gaussiansInspected =
-            static_cast<std::size_t>(gaussiansInspected.incremental),
-        .gaussiansUpdated =
-            static_cast<std::size_t>(gaussiansUpdated.incremental),
-        .fullGaussians =
-            static_cast<std::size_t>(gaussiansInspected.full),
+        .dirtyTexturePages = *textureIncremental,
+        .fullTexturePages = *textureFull,
+        .materialStatesUpdated = *materialIncremental,
+        .fullMaterialStates = *materialFull,
+        .gaussiansInspected = *gaussianInspectionIncremental,
+        .gaussiansUpdated = *gaussianUpdateIncremental,
+        .fullGaussians = *gaussianFull,
         .gpuPublicationBytes = publication.incremental,
         .fullGpuPublicationBytes = publication.full,
         .temporalPixelsInvalidated = temporal.incremental,
