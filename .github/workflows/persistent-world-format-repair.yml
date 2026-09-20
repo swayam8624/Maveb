@@ -15,11 +15,19 @@ concurrency:
 jobs:
   clang-format-repair:
     if: github.actor != 'github-actions[bot]'
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Install clang-format 18
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v clang-format-18 >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y clang-format-18
+          fi
       - name: Apply repository clang-format to changed native sources
         shell: bash
         run: |
@@ -29,7 +37,7 @@ jobs:
             [[ -n "$file" && -f "$file" ]] && files+=("$file")
           done < <(git diff --diff-filter=ACMR --name-only origin/main...HEAD --             '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx')
           if (( ${#files[@]} )); then
-            "$(brew --prefix llvm@18)/bin/clang-format" -i "${files[@]}"
+            clang-format-18 -i "${files[@]}"
           fi
           if git diff --quiet; then
             echo "No formatting changes required."
