@@ -40,9 +40,8 @@ EntityState entity(std::size_t index, float translationX) {
     result.name = "synthetic-region";
     result.semanticLabel = "fixture";
     result.transform.translation = {baseX + translationX, 0.0F, baseZ};
-    result.worldBounds =
-        Bounds{{baseX - 0.25F + translationX, -0.25F, baseZ - 0.25F},
-               {baseX + 0.25F + translationX, 0.25F, baseZ + 0.25F}};
+    result.worldBounds = Bounds{{baseX - 0.25F + translationX, -0.25F, baseZ - 0.25F},
+                                {baseX + 0.25F + translationX, 0.25F, baseZ + 0.25F}};
     result.representation = RepresentationKind::gaussian;
     result.geometrySignature = static_cast<std::uint64_t>(index) + 1000U;
     result.appearanceSignature = static_cast<std::uint64_t>(index) + 2000U;
@@ -67,7 +66,8 @@ std::vector<std::size_t> changedIndices(std::size_t count, bool scattered) {
     }
     std::sort(result.begin(), result.end());
     result.erase(std::unique(result.begin(), result.end()), result.end());
-    for (std::size_t candidate = 0; result.size() < count && candidate < kEntityCount; ++candidate) {
+    for (std::size_t candidate = 0; result.size() < count && candidate < kEntityCount;
+         ++candidate) {
         if (!std::binary_search(result.begin(), result.end(), candidate))
             result.push_back(candidate);
     }
@@ -136,19 +136,17 @@ void emitCase(std::size_t changedCount, bool scattered, float cellSize, std::uin
 
     const double changedFraction =
         static_cast<double>(changedCount) / static_cast<double>(kEntityCount);
-    const double gaussianLocality =
-        static_cast<double>(selection->gaussianIndices.size()) /
-        static_cast<double>(asset.gaussians.size());
+    const double gaussianLocality = static_cast<double>(selection->gaussianIndices.size()) /
+                                    static_cast<double>(asset.gaussians.size());
 
-    std::cout << "{\"changedEntities\":" << changedCount << ",\"changedFraction\":"
-              << changedFraction << ",\"pattern\":\"" << (scattered ? "scattered" : "clustered")
-              << "\",\"cellSizeMeters\":" << cellSize << ",\"haloCells\":" << halo
-              << ",\"dirtyRegions\":" << update->dirtyRegions.size()
+    std::cout << "{\"changedEntities\":" << changedCount
+              << ",\"changedFraction\":" << changedFraction << ",\"pattern\":\""
+              << (scattered ? "scattered" : "clustered") << "\",\"cellSizeMeters\":" << cellSize
+              << ",\"haloCells\":" << halo << ",\"dirtyRegions\":" << update->dirtyRegions.size()
               << ",\"selectedGaussians\":" << selection->gaussianIndices.size()
               << ",\"totalGaussians\":" << asset.gaussians.size()
               << ",\"gaussianUpdateLocalityRatio\":" << gaussianLocality
-              << ",\"rejectedStableOwnedGaussians\":"
-              << selection->rejectedStableOwnedGaussians
+              << ",\"rejectedStableOwnedGaussians\":" << selection->rejectedStableOwnedGaussians
               << ",\"unaffectedGaussians\":" << selection->unaffectedGaussians << '}';
 }
 
