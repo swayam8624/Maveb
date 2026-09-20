@@ -2,6 +2,7 @@
 
 #include <aether/gaussian/GaussianAsset.hpp>
 #include <aether/world_gaussian/GaussianSpatialIndex.hpp>
+#include <aether/world_gaussian/GaussianOverlaySpatialIndex.hpp>
 #include <aether/world/LocalityLedger.hpp>
 #include <aether/world/SelectiveUpdate.hpp>
 #include <aether/world/WorldModel.hpp>
@@ -60,6 +61,21 @@ struct PersistentGaussianTranslationResult final {
     const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
     const GaussianSpatialIndex& spatialIndex,
     const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
+
+struct GaussianOverlaySelectionDiagnostics final {
+    std::size_t dirtyRegionsQueried{};
+    std::size_t baseEntriesVisited{};
+    std::size_t staleBaseEntriesSkipped{};
+    std::size_t deltaEntriesVisited{};
+};
+
+/// Compact base+delta indexed equivalent used to test revision-local spatial maintenance.
+/// The selected primitive set and ownership semantics must remain identical to the scan oracle.
+[[nodiscard]] Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdateIndexed(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianOverlaySpatialIndex& spatialIndex,
+    const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {},
+    GaussianOverlaySelectionDiagnostics* diagnostics = nullptr);
 
 /// Applies a rigid translation to every Gaussian owned by one stable persistent entity.
 /// Gaussian scale, rotation, opacity, and SH appearance remain unchanged under pure translation.
