@@ -16,7 +16,8 @@ namespace {
 void writeEscapedString(std::ostream& stream, std::string_view value) {
     constexpr char hexadecimal[] = "0123456789abcdef";
     stream << '"';
-    for (const unsigned char character : value) {
+    for (const char rawCharacter : value) {
+        const auto character = static_cast<unsigned char>(rawCharacter);
         switch (character) {
         case '"':
             stream << "\\\"";
