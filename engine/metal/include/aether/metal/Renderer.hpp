@@ -50,6 +50,12 @@ struct ProxyMeshStatistics {
     std::uint32_t triangles{};
 };
 
+struct GaussianEditPublicationStatistics final {
+    GaussianPublicationStatistics sourceBuffer;
+    std::size_t frameSlotsQuiesced{};
+    bool globalTemporalHistoryInvalidated{};
+};
+
 struct FrameCapture final {
     std::uint32_t width{};
     std::uint32_t height{};
@@ -187,6 +193,10 @@ class Renderer final {
         return capabilities_;
     }
     [[nodiscard]] RendererStatistics statistics() const noexcept;
+    [[nodiscard]] GaussianEditPublicationStatistics
+    gaussianEditPublicationStatistics() const noexcept {
+        return lastGaussianEditPublicationStatistics_;
+    }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
         return {proxyVertexCount_, proxyIndexCount_ / 3U};
@@ -336,6 +346,7 @@ class Renderer final {
     std::uint32_t shadowDebugSlice_{};
     std::uint32_t selectedMeshEntity_{};
     std::uint32_t gizmoMode_{};
+    GaussianEditPublicationStatistics lastGaussianEditPublicationStatistics_{};
     Clock::TimePoint previousFrameTime_ = Clock::now();
 };
 
