@@ -9,6 +9,55 @@
 #include <vector>
 
 namespace aether::metal {
+namespace {
+
+[[nodiscard]] Result<gaussian::Gaussian>
+decodeCanonicalGaussian(const AetherGaussianGpu& source) {
+    gaussian::Gaussian result;
+    result.position = {
+        source.positionOpacity.x,
+        source.positionOpacity.y,
+        source.positionOpacity.z,
+    };
+    result.opacityLogit = source.positionOpacity.w;
+    result.logScale = {
+        source.logScaleRestCount.x,
+        source.logScaleRestCount.y,
+        source.logScaleRestCount.z,
+    };
+    result.rotation = {
+        source.rotation.x,
+        source.rotation.y,
+        source.rotation.z,
+        source.rotation.w,
+    };
+    result.dc = {source.dc.x, source.dc.y, source.dc.z};
+
+    const double restCountValue =
+        static_cast<double>(source.logScaleRestCount.w);
+    if (!std::isfinite(restCountValue))
+        return fail(ErrorCode::corruptData,
+                    "Canonical Gaussian rest count is non-finite");
+    const auto rounded = static_cast<std::size_t>(std::llround(restCountValue));
+    if (std::abs(restCountValue - static_cast<double>(rounded)) > 1.0e-4 ||
+        (rounded != 0 && rounded != 9 && rounded != 24 && rounded != 45)) {
+        return fail(ErrorCode::corruptData,
+                    "Canonical Gaussian rest count is invalid");
+    }
+    result.restCount = rounded;
+    for (std::size_t coefficient = 0; coefficient < result.rest.size();
+         ++coefficient) {
+        result.rest[coefficient] =
+            source.shRest[coefficient / 4][coefficient % 4];
+    }
+    return result;
+}
+
+[[nodiscard]] std::size_t shDegree(std::size_t restCount) noexcept {
+    return restCount >= 45 ? 3 : restCount >= 24 ? 2 : restCount >= 9 ? 1 : 0;
+}
+
+} // namespace
 
 Result<void>
 GaussianPipeline::validateTranslationLocked(
@@ -121,6 +170,7 @@ GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
     std::vector<std::uint32_t> sorted(gaussianIndices.begin(), gaussianIndices.end());
     std::sort(sorted.begin(), sorted.end());
     for (const std::uint32_t index : sorted) {
+        pendingRevisionBefore_.try_emplace(index, canonicalGaussians_[index]);
         canonicalGaussians_[index].positionOpacity.x += translationDelta.x;
         canonicalGaussians_[index].positionOpacity.y += translationDelta.y;
         canonicalGaussians_[index].positionOpacity.z += translationDelta.z;
@@ -130,6 +180,60 @@ GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
     publicationJournal_.push_back(
         PublicationPatch{.version = currentVersion_, .indices = std::move(sorted)});
     return {};
+}
+
+Result<GaussianRevisionSnapshot>
+GaussianPipeline::pendingRevisionSnapshot() const {
+    std::scoped_lock lock(publicationMutex_);
+    if (pendingRevisionBefore_.empty())
+        return fail(ErrorCode::notFound,
+                    "Gaussian revision snapshot has no pending edits");
+
+    std::vector<std::uint32_t> indices;
+    indices.reserve(pendingRevisionBefore_.size());
+    for (const auto& [index, _] : pendingRevisionBefore_)
+        indices.push_back(index);
+    std::sort(indices.begin(), indices.end());
+
+    GaussianRevisionSnapshot snapshot;
+    snapshot.version = currentVersion_;
+    snapshot.sourceIndices = indices;
+    snapshot.sceneColorUpperBound = sceneColorUpperBound_;
+    snapshot.beforeChanged.name = "pending-revision-before";
+    snapshot.afterChanged.name = "pending-revision-after";
+    snapshot.beforeChanged.gaussians.reserve(indices.size());
+    snapshot.afterChanged.gaussians.reserve(indices.size());
+
+    std::size_t degree{};
+    for (const std::uint32_t index : indices) {
+        const auto beforeIt = pendingRevisionBefore_.find(index);
+        if (beforeIt == pendingRevisionBefore_.end() ||
+            index >= canonicalGaussians_.size()) {
+            return fail(ErrorCode::corruptData,
+                        "Gaussian revision journal contains an invalid source index");
+        }
+
+        auto before = decodeCanonicalGaussian(beforeIt->second);
+        if (!before)
+            return std::unexpected(before.error());
+        auto after = decodeCanonicalGaussian(canonicalGaussians_[index]);
+        if (!after)
+            return std::unexpected(after.error());
+
+        degree = std::max(
+            degree, std::max(shDegree(before->restCount),
+                             shDegree(after->restCount)));
+        snapshot.beforeChanged.gaussians.push_back(std::move(*before));
+        snapshot.afterChanged.gaussians.push_back(std::move(*after));
+    }
+    snapshot.beforeChanged.sphericalHarmonicDegree = degree;
+    snapshot.afterChanged.sphericalHarmonicDegree = degree;
+    return snapshot;
+}
+
+void GaussianPipeline::clearPendingRevisionSnapshot() noexcept {
+    std::scoped_lock lock(publicationMutex_);
+    pendingRevisionBefore_.clear();
 }
 
 void GaussianPipeline::collectPublishedJournalLocked() noexcept {
