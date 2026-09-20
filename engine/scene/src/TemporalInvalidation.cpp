@@ -22,6 +22,15 @@ namespace {
 
 } // namespace
 
+TemporalWorldBounds
+mergeTemporalWorldBounds(const TemporalWorldBounds& first,
+                         const TemporalWorldBounds& second) noexcept {
+    return {
+        .minimum = simd_min(first.minimum, second.minimum),
+        .maximum = simd_max(first.maximum, second.maximum),
+    };
+}
+
 Result<TemporalInvalidationPlan>
 planTemporalInvalidation(const TemporalWorldBounds& bounds, simd_float4x4 viewProjection,
                          std::uint32_t width, std::uint32_t height,
