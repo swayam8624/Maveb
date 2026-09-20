@@ -78,6 +78,28 @@ def bind(
     if not isinstance(publication, dict) or not isinstance(temporal, dict):
         raise ValueError("certificate publication/temporal telemetry is required")
 
+    output_plan = certificate.get("outputConePlanner")
+    if not isinstance(output_plan, dict) or not bool(output_plan.get("available", False)):
+        raise ValueError("certificate output-cone planner telemetry is required")
+    history_weight = float(output_plan.get("historyWeight", float("nan")))
+    repair_work = float(output_plan.get("temporalRepairWork", float("nan")))
+    planner_work = float(output_plan.get("plannerWork", float("nan")))
+    full_work = float(output_plan.get("fullWork", float("nan")))
+    planner_epsilon = float(output_plan.get("epsilon", float("nan")))
+    resolved_bound = float(output_plan.get("resolvedRgbBound", float("nan")))
+    temporal_stable = bool(output_plan.get("temporalValidationStable", False))
+    if not 0.0 <= history_weight <= 1.0:
+        raise ValueError("output-cone historyWeight must be in [0,1]")
+    if not all(
+        value >= 0.0
+        for value in (repair_work, planner_work, full_work, planner_epsilon, resolved_bound)
+    ):
+        raise ValueError("output-cone planner work/bounds must be non-negative")
+    if abs(planner_epsilon - float(epsilon)) > 1e-12:
+        raise ValueError("output-cone planner epsilon disagrees with experiment epsilon")
+    if repair_work > full_work or planner_work > full_work:
+        raise ValueError("output-cone planner work exceeds full baseline")
+
     touched_bytes = int(publication.get("touchedBytes", 0))
     full_bytes = int(publication.get("fullBufferBytes", 0))
     invalidated_pixels = int(temporal.get("invalidatedPixels", 0))
@@ -91,6 +113,41 @@ def bind(
     previous_revision = int(translation["previousRevision"])
     if revision <= previous_revision:
         raise ValueError("world revision must advance monotonically")
+
+    changed_fraction = translated / total_gaussians
+    output_planner_graph = {
+        "schemaVersion": 1,
+        "graph_scope": "gaussian-output-cone-v2",
+        "nodes": [
+            {
+                "id": "current_frame",
+                "work": 0.0,
+                "true_change_bound": 0.0,
+                "source_bound": 0.0,
+            },
+            {
+                "id": "temporal_history",
+                "work": repair_work,
+                "true_change_bound": 0.0,
+                "source_bound": float(certificate["maximumCurrentRgbBound"]),
+            },
+        ],
+        "edges": [],
+        "hard_closure": (
+            ["current_frame"]
+            if temporal_stable
+            else ["current_frame", "temporal_history"]
+        ),
+        "qois": [
+            {
+                "name": "resolved-rgb-linf",
+                "weights": {"temporal_history": history_weight},
+                "epsilon": planner_epsilon,
+            }
+        ],
+        "changed_fraction": changed_fraction,
+        "full_work_baseline": full_work,
+    }
 
     work_ledger = {
         "domains": {
@@ -122,12 +179,12 @@ def bind(
         "scene_id": scene_id,
         "revision_id": f"{previous_revision}->{revision}",
         "git_sha": git_sha,
-        "execution_mode": "certified-supplied-cone",
+        "execution_mode": "hybrid-supplied-source-planner-output",
         "selection_mode": (
             "overlay-indexed" if used_overlay else "full-scan-fallback"
         ),
         "overlay_index_valid_after_edit": overlay_valid,
-        "graph_scope": "gaussian-vertical-slice-v1",
+        "graph_scope": "gaussian-output-cone-v2",
         "graph_version": "gaussian-source-image-history-v1",
         "bound_version": "gaussian-image-temporal-v1",
         "edit_class": "gaussian",
@@ -156,6 +213,7 @@ def bind(
         "candidate_cone_nodes": translated,
         "total_nodes": total_gaussians,
         "work_ledger": work_ledger,
+        "output_planner_graph": output_planner_graph,
         "selection_diagnostics": {
             "dirtyRegionsQueried": int(
                 translation.get("overlayDirtyRegionsQueried", 0)
@@ -173,7 +231,8 @@ def bind(
                 translation.get("overlayIndexCompacted", False)
             ),
         },
-        "production_certificate": {            "revisionVersion": int(certificate.get("revisionVersion", 0)),
+        "production_certificate": {
+            "revisionVersion": int(certificate.get("revisionVersion", 0)),
             "maximumCurrentRgbBound": float(
                 certificate["maximumCurrentRgbBound"]
             ),
@@ -184,6 +243,21 @@ def bind(
             "temporalFullFrameFallback": bool(
                 certificate["temporalFullFrameFallback"]
             ),
+            "outputConePlanner": {
+                "stable": bool(output_plan.get("stable", False)),
+                "passes": bool(output_plan.get("passes", False)),
+                "temporalValidationStable": temporal_stable,
+                "temporalRepairSelected": bool(
+                    output_plan.get("temporalRepairSelected", False)
+                ),
+                "fullRepair": bool(output_plan.get("fullRepair", False)),
+                "historyWeight": history_weight,
+                "temporalRepairWork": repair_work,
+                "plannerWork": planner_work,
+                "fullWork": full_work,
+                "resolvedRgbBound": resolved_bound,
+                "epsilon": planner_epsilon,
+            },
         },
     }
     if work_cost_model is not None:
