@@ -4,18 +4,37 @@
   "title": "MAVEB CBRC real campaign",
   "type": "object",
   "additionalProperties": true,
-  "required": ["schemaVersion", "cases"],
+  "required": [
+    "schemaVersion",
+    "cases"
+  ],
   "properties": {
-    "schemaVersion": {"const": 1},
-    "minimum_revisions": {"type": "integer", "minimum": 1},
-    "minimum_scenes": {"type": "integer", "minimum": 1},
-    "require_local_success": {"type": "boolean"},
-    "require_full_fallback": {"type": "boolean"},
-    "require_high_coupling": {"type": "boolean"},
+    "schemaVersion": {
+      "const": 1
+    },
+    "minimum_revisions": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "minimum_scenes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "require_local_success": {
+      "type": "boolean"
+    },
+    "require_full_fallback": {
+      "type": "boolean"
+    },
+    "require_high_coupling": {
+      "type": "boolean"
+    },
     "cases": {
       "type": "array",
       "minItems": 1,
-      "items": {"$ref": "#/$defs/case"}
+      "items": {
+        "$ref": "#/$defs/case"
+      }
     }
   },
   "$defs": {
@@ -23,65 +42,152 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "width": {"type": "integer", "minimum": 1},
-        "height": {"type": "integer", "minimum": 1},
-        "focal_x": {"type": "number", "exclusiveMinimum": 0},
-        "focal_y": {"type": "number", "exclusiveMinimum": 0},
-        "center_x": {"type": "number"},
-        "center_y": {"type": "number"},
-        "near": {"type": "number", "exclusiveMinimum": 0},
-        "far": {"type": "number", "exclusiveMinimum": 0},
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "focal_x": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "focal_y": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "center_x": {
+          "type": "number"
+        },
+        "center_y": {
+          "type": "number"
+        },
+        "near": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "far": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
         "camera_world_position": {
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
-          "items": {"type": "number"}
+          "items": {
+            "type": "number"
+          }
         },
         "world_to_camera": {
           "type": "array",
           "minItems": 16,
           "maxItems": 16,
-          "items": {"type": "number"}
+          "items": {
+            "type": "number"
+          }
         }
       }
     },
     "revision": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["archive", "entity", "target", "timestamp"],
+      "required": [
+        "archive",
+        "entity",
+        "target",
+        "timestamp"
+      ],
       "properties": {
-        "archive": {"type": "string", "minLength": 1},
-        "entity": {"type": "integer", "minimum": 1},
+        "archive": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entity": {
+          "type": "integer",
+          "minimum": 1
+        },
         "target": {
           "type": "array",
           "minItems": 3,
           "maxItems": 3,
-          "items": {"type": "number"}
+          "items": {
+            "type": "number"
+          }
         },
-        "timestamp": {"type": "integer", "minimum": 1},
-        "history_stable": {"type": "boolean"},
-        "history_weight": {"type": "number", "minimum": 0, "maximum": 1},
-        "camera": {"$ref": "#/$defs/camera"}
+        "timestamp": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "history_stable": {
+          "type": "boolean"
+        },
+        "history_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "camera": {
+          "$ref": "#/$defs/camera"
+        }
       }
     },
     "case": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["id", "scene_id", "epsilon"],
+      "required": [
+        "id",
+        "scene_id",
+        "epsilon"
+      ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "scene_id": {"type": "string", "minLength": 1},
-        "epsilon": {"type": "number", "minimum": 0},
-        "coupling_regime": {"type": "string"},
-        "edit_class": {"type": "string"},
-        "work_cost_model": {"type": "string"},
-        "revision": {"$ref": "#/$defs/revision"},
-        "translation": {"type": "string"},
-        "certificate": {"type": "string"}
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scene_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "epsilon": {
+          "type": "number",
+          "minimum": 0
+        },
+        "coupling_regime": {
+          "type": "string"
+        },
+        "edit_class": {
+          "type": "string"
+        },
+        "work_cost_model": {
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        },
+        "translation": {
+          "type": "string"
+        },
+        "certificate": {
+          "type": "string"
+        },
+        "native_planner_certificate": {
+          "type": "string"
+        }
       },
       "oneOf": [
-        {"required": ["revision"]},
-        {"required": ["translation", "certificate"]}
+        {
+          "required": [
+            "revision"
+          ]
+        },
+        {
+          "required": [
+            "translation",
+            "certificate"
+          ]
+        }
       ]
     }
   }
