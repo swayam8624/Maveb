@@ -127,7 +127,8 @@ selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
                               const GaussianEntityOwnership* ownership,
                               GaussianLocalUpdatePolicy policy) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
-        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+        return fail(ErrorCode::invalidArgument,
+                    "World update cell size must be finite and positive");
     if (policy.maximumAffectedGaussians == 0)
         return fail(ErrorCode::invalidArgument, "Gaussian local-update budget cannot be zero");
     if (ownership && ownership->owners.size() != asset.gaussians.size()) {
@@ -196,7 +197,8 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
                                      const GaussianEntityOwnership* ownership,
                                      GaussianLocalUpdatePolicy policy) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
-        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+        return fail(ErrorCode::invalidArgument,
+                    "World update cell size must be finite and positive");
     if (policy.maximumAffectedGaussians == 0)
         return fail(ErrorCode::invalidArgument, "Gaussian local-update budget cannot be zero");
     if (ownership && ownership->owners.size() != asset.gaussians.size()) {
@@ -319,8 +321,8 @@ translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
     if (!affected)
         return std::unexpected(affected.error());
 
-    auto selection = selectGaussiansForLocalUpdate(asset, preparedWorld->selectiveUpdate, &ownership,
-                                                   gaussianPolicy);
+    auto selection = selectGaussiansForLocalUpdate(
+        asset, preparedWorld->selectiveUpdate, &ownership, gaussianPolicy);
     if (!selection)
         return std::unexpected(selection.error());
 
