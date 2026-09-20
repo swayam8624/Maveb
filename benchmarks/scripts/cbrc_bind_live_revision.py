@@ -5,9 +5,10 @@ Inputs come from:
   1. AetherPersistentTranslateEntity JSON (transaction/revision provenance)
   2. AetherPersistentRevisionCertificateJSON (post-frame camera/certificate/work)
 
-This is explicitly the first "gaussian-vertical-slice-v1": the edited Gaussian
-set is supplied by the transaction and certified through image/temporal layers.
-It is not yet a claim that the general CBRC planner selected the cone.
+This is the v1 hybrid production path: the physical Gaussian source set is
+supplied exactly by the persistent transaction, while the Gaussian->image->
+temporal output repair cone is selected by the native CBRC planner. It does not
+claim that CBRC chooses which physical source Gaussians were edited.
 """
 from __future__ import annotations
 
@@ -19,6 +20,7 @@ from typing import Any
 
 GAUSSIAN_OUTPUT_GRAPH_VERSION = "gaussian-output-cone-v2"
 GAUSSIAN_TEMPORAL_BOUND_VERSION = "gaussian-image-temporal-v1"
+
 
 def load_object(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text())
