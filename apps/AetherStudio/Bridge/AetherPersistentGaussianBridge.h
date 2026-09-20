@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSData* _Nullable)ownershipJSONWithError:(NSError* _Nullable* _Nullable)error;
 /// Post-frame CBRC evidence for the most recently certified Gaussian revision.
 - (NSData* _Nullable)revisionCertificateJSONWithError:(NSError* _Nullable* _Nullable)error;
+- (BOOL)setRevisionRgbTolerance:(double)epsilon
+                          error:(NSError* _Nullable* _Nullable)error;
 
 /// Moves one stable persistent entity and all Gaussian primitives owned by it. The GPU subset is
 /// preflighted before the World+CPU-Gaussian transaction commits, then published to Metal only after
@@ -49,6 +51,9 @@ FOUNDATION_EXPORT NSData* _Nullable AetherPersistentOwnershipJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentRevisionCertificateJSON(
     AetherPersistentGaussianView* view, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherPersistentSetRevisionRgbTolerance(
+    AetherPersistentGaussianView* view, double epsilon,
+    NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherPersistentTranslateEntity(
     AetherPersistentGaussianView* view, uint64_t entityId, float x, float y, float z,
     uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
