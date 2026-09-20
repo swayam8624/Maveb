@@ -2,6 +2,7 @@
 
 #include <aether/reconstruction/IncrementalSparseTsdfMesher.hpp>
 #include <aether/revision/RevisionPlanner.hpp>
+#include <aether/world/LocalityLedger.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -89,6 +90,19 @@ struct CapturedWorldGraphBuild final {
 [[nodiscard]] Result<CapturedWorldGraphBuild>
 buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
                                 const CapturedWorldCostModel& costs);
+
+/// Convert one validated heterogeneous LocalityLedger into the exact
+/// planner-input counters consumed by buildCapturedWorldRevisionGraph.
+/// Mesher counters are cross-checked against ledger mesh evidence so runtime
+/// instrumentation and planner accounting cannot silently diverge.
+[[nodiscard]] Result<CapturedWorldRevisionInput>
+capturedWorldRevisionInputFromEvidence(
+    const world::LocalityLedger& ledger,
+    const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
+    double gaussianCurrentRgbBound,
+    double temporalHistoryWeight,
+    bool temporalValidationStable,
+    double epsilonRgbLInf);
 
 [[nodiscard]] Result<revision::RevisionConeCertificate>
 planCapturedWorldRevision(const CapturedWorldRevisionInput& input,
