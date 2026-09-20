@@ -43,8 +43,8 @@ EntityState observation(std::string name, std::string semantic, float x) {
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds =
+        Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::gaussian;
     result.geometrySignature = 10;
     result.appearanceSignature = 20;
@@ -72,8 +72,8 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}};
 
-    const auto selected = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto selected =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     expect(selected.has_value(), "owned Gaussian selection must accept valid world update plan");
     if (!selected)
         return;
@@ -103,16 +103,13 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
            "without ownership, every Gaussian in a dirty metric cell must be selected spatially");
 }
 
-
 void testIndexedSelectionMatchesFullScanAndTracksInspections() {
     GaussianAsset asset;
-    asset.gaussians = {
-        gaussian(0.2F, 0.2F, 0.2F),
-        gaussian(0.4F, 0.2F, 0.2F),
-        gaussian(0.6F, 0.2F, 0.2F),
-        gaussian(2.0F, 0.0F, 0.0F),
-        gaussian(5.0F, 5.0F, 5.0F),
-    };
+    asset.gaussians.push_back(gaussian(0.2F, 0.2F, 0.2F));
+    asset.gaussians.push_back(gaussian(0.4F, 0.2F, 0.2F));
+    asset.gaussians.push_back(gaussian(0.6F, 0.2F, 0.2F));
+    asset.gaussians.push_back(gaussian(2.0F, 0.0F, 0.0F));
+    asset.gaussians.push_back(gaussian(5.0F, 5.0F, 5.0F));
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}, EntityId{2}};
 
@@ -121,8 +118,8 @@ void testIndexedSelectionMatchesFullScanAndTracksInspections() {
     if (!index)
         return;
 
-    const auto scanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto scanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
         asset, oneDirtyCell(), *index, &ownership);
     expect(scanned.has_value() && indexed.has_value(),
@@ -147,23 +144,22 @@ void testIndexedSelectionMatchesFullScanAndTracksInspections() {
                stats.storedIndexEntries == asset.gaussians.size(),
            "Gaussian spatial index must contain exactly one entry per primitive");
 
-    const simd_float3 oldPosition{asset.gaussians[4].position[0],
-                                  asset.gaussians[4].position[1],
-                                  asset.gaussians[4].position[2]};
+    const simd_float3 oldPosition{
+        asset.gaussians[4].position[0], asset.gaussians[4].position[1],
+        asset.gaussians[4].position[2]};
     const simd_float3 newPosition{0.8F, 0.2F, 0.2F};
     expect(index->relocateGaussian(4, oldPosition, newPosition).has_value(),
            "Gaussian spatial index must update cell-crossing membership");
     asset.gaussians[4].position = {newPosition.x, newPosition.y, newPosition.z};
 
-    const auto rescanned = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto rescanned =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     const auto reindexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
         asset, oneDirtyCell(), *index, &ownership);
     expect(rescanned.has_value() && reindexed.has_value() &&
                rescanned->gaussianIndices == reindexed->gaussianIndices,
            "relocated index must remain selection-equivalent to full scan");
 }
-
 
 void testIndexedSelectionScalesWithDirtyPopulation() {
     GaussianAsset asset;
@@ -218,7 +214,6 @@ void testIndexedSelectionScalesWithDirtyPopulation() {
            "large indexed selection must return the exact dirty entity population");
 }
 
-
 void testIndexedSelectionScalesWithDirtyOccupancy() {
     constexpr std::size_t gaussianCount = 20'000;
     GaussianAsset asset;
@@ -226,7 +221,7 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
 
     // Spread primitives across one-dimensional metric cells. Exactly ten primitives occupy cell 0.
     for (std::size_t index = 0; index < gaussianCount; ++index) {
-        const float x = static_cast<float>(index / 10);
+        const float x = static_cast<float>(index) / 10.0F;
         asset.gaussians.push_back(gaussian(x + 0.1F, 0.1F, 0.1F));
     }
 
@@ -242,10 +237,9 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     if (!spatialIndex)
         return;
 
-    const auto scanned =
-        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan);
-    const auto indexed =
-        aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan, *spatialIndex);
+    const auto scanned = aether::world_gaussian::selectGaussiansForLocalUpdate(asset, plan);
+    const auto indexed = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
+        asset, plan, *spatialIndex);
     expect(scanned.has_value() && indexed.has_value(),
            "large scan/index local-selection comparison must succeed");
     if (!scanned || !indexed)
@@ -259,7 +253,8 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
     expect(indexed->inspectedGaussians == 10,
            "indexed selection must inspect only Gaussian primitives in the dirty cell");
     expect(indexed->inspectedGaussians * 1'000 < scanned->inspectedGaussians,
-           "indexed selection must demonstrate at least three orders of magnitude inspection reduction in sparse fixture");
+           "indexed selection must demonstrate at least three orders of magnitude inspection "
+           "reduction in sparse fixture");
 }
 
 void testOwnedTranslationIsTransactional() {
@@ -352,8 +347,8 @@ void testOwnershipShapeAndSelectionBudgetFailClosed() {
 
     GaussianLocalUpdatePolicy budget;
     budget.maximumAffectedGaussians = 1;
-    const auto rejected =
-        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), nullptr, budget);
+    const auto rejected = aether::world_gaussian::selectGaussiansForLocalUpdate(
+        asset, oneDirtyCell(), nullptr, budget);
     expect(!rejected.has_value(), "local Gaussian selection must enforce affected-splat budget");
 }
 
