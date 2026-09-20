@@ -104,13 +104,12 @@ struct Options final {
                 return std::nullopt;
             options.repeats = *parsed;
         } else if (arg == "--help") {
-            std::cout
-                << "Usage: maveb-gaussian-locality-bench [options]\n"
-                << "  --gaussians N\n"
-                << "  --gaussians-per-cell N\n"
-                << "  --dirty-fraction F\n"
-                << "  --cell-size metres\n"
-                << "  --repeats N\n";
+            std::cout << "Usage: maveb-gaussian-locality-bench [options]\n"
+                      << "  --gaussians N\n"
+                      << "  --gaussians-per-cell N\n"
+                      << "  --dirty-fraction F\n"
+                      << "  --cell-size metres\n"
+                      << "  --repeats N\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -164,10 +163,9 @@ struct Options final {
                                            const std::vector<RegionKey>& cells) {
     SelectiveUpdatePlan plan;
     plan.cellSizeMeters = options.cellSizeMeters;
-    const std::size_t dirtyCount =
-        std::max<std::size_t>(1, static_cast<std::size_t>(
-                                     std::ceil(static_cast<double>(cells.size()) *
-                                               options.dirtyFraction)));
+    const std::size_t dirtyCount = std::max<std::size_t>(
+        1, static_cast<std::size_t>(
+               std::ceil(static_cast<double>(cells.size()) * options.dirtyFraction)));
     plan.dirtyRegions.reserve(dirtyCount);
     for (std::size_t index = 0; index < dirtyCount; ++index) {
         RegionUpdate update;
@@ -179,7 +177,7 @@ struct Options final {
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     auto options = parseOptions(argc, argv);
     if (!options) {
         std::cerr << "Invalid benchmark arguments\n";
@@ -215,8 +213,8 @@ int main(int argc, char** argv) {
         scanned = std::move(*scan);
 
         const auto indexedStart = Clock::now();
-        auto selected = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(
-            asset, plan, *spatialIndex);
+        auto selected =
+            aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan, *spatialIndex);
         const auto indexedEnd = Clock::now();
         if (!selected) {
             std::cerr << selected.error().describe() << '\n';
@@ -232,8 +230,7 @@ int main(int argc, char** argv) {
     }
 
     const auto stats = spatialIndex->statistics();
-    std::cout << std::fixed << std::setprecision(6)
-              << "{"
+    std::cout << std::fixed << std::setprecision(6) << "{"
               << "\"schemaVersion\":1,"
               << "\"benchmark\":\"maveb-gaussian-locality-bench\","
               << "\"gaussians\":" << asset.gaussians.size() << ','
@@ -246,9 +243,16 @@ int main(int argc, char** argv) {
               << "\"indexedInspections\":" << indexed.inspectedGaussians << ','
               << "\"indexBuildMs\":" << elapsedMs(buildStart, buildEnd) << ','
               << "\"scanMeanMs\":" << scanTotalMs / static_cast<double>(options->repeats) << ','
-              << "\"indexedMeanMs\":" << indexedTotalMs / static_cast<double>(options->repeats) << ','
+              << "\"indexedMeanMs\":"
+              << indexedTotalMs / static_cast<double>(options->repeats) << ','
               << "\"repeats\":" << options->repeats << ','
               << "\"exactSelectionAgreement\":true"
               << "}\n";
     return EXIT_SUCCESS;
+} catch (const std::exception& error) {
+    std::cerr << "Unhandled benchmark exception: " << error.what() << '\n';
+    return EXIT_FAILURE;
+} catch (...) {
+    std::cerr << "Unhandled benchmark exception\n";
+    return EXIT_FAILURE;
 }
