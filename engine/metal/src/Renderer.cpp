@@ -187,8 +187,8 @@ std::uint32_t tileEntryBudget(std::size_t gaussianCount) {
 }
 } // namespace
 
-Result<std::unique_ptr<Renderer>>
-Renderer::create(MTL::Device* device, const std::filesystem::path& shaderLibraryPath) {
+Result<std::unique_ptr<Renderer>> Renderer::create(
+    MTL::Device* device, const std::filesystem::path& shaderLibraryPath) {
     if (!device) {
         return fail(ErrorCode::metal, "No Metal device is available on this Mac");
     }
@@ -238,7 +238,7 @@ Renderer::~Renderer() {
 }
 
 // MetalKit calls this noexcept frame boundary. Internal Result failures are handled in-band.
- // NOLINTNEXTLINE(bugprone-exception-escape)
+// NOLINTNEXTLINE(bugprone-exception-escape)
 void Renderer::draw(MTK::View* view) noexcept {
     ProfileScope profile("Renderer::draw");
     if (!view || !commandQueue_) {

@@ -145,12 +145,12 @@ void testOutputRepairCanSatisfyZeroEpsilonWithoutFullRebuild() {
     if (!result)
         return;
     expect(result->passes, "direct output repair must certify zero residual");
-    expect(!result->fullRebuild,
-           "repairing the QoI output directly should avoid a full rebuild");
+    expect(!result->fullRebuild, "repairing the QoI output directly should avoid a full rebuild");
     expect(result->cone.size() == 2 && result->cone[0] == RevisionNodeId{0} &&
                result->cone[1] == RevisionNodeId{2},
            "zero epsilon should repair the hard edit and QoI output only");
-    expect(std::abs(result->work - 4.0) < 1e-12 && std::abs(result->fullWork - 6.0) < 1e-12,
+    expect(std::abs(result->work - 4.0) < 1e-12 &&
+               std::abs(result->fullWork - 6.0) < 1e-12,
            "direct output repair must preserve the cheaper local-work accounting");
 }
 
