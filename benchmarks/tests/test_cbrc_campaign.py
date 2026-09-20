@@ -61,6 +61,24 @@ class CBRCCampaignTests(unittest.TestCase):
         self.assertFalse(result["pass"])
         self.assertFalse(result["gates"]["hasAutomaticFullFallback"])
 
+    def test_capture_case_requires_three_value_target(self):
+        case = {
+            "id": "bad",
+            "epsilon": 0.1,
+            "revision": {
+                "archive": "world",
+                "entity": 1,
+                "target": [1, 2],
+                "timestamp": 2,
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "target"):
+            mod.capture_case(
+                case,
+                revision_tool=Path("tool"),
+                case_dir=Path("out"),
+            )
+
     def test_certificate_violation_fails(self):
         rows = [row() for _ in range(4)] + [row(actual=0.04, bound=0.03)]
         result = mod.gate_rows(
