@@ -123,6 +123,22 @@ class CBRCReplayTests(unittest.TestCase):
         self.assertEqual(row["work_cost_model_version"], "fixture-cost-v1")
         self.assertEqual(row["work_cost_unit"], "ms")
 
+    def test_production_offline_bound_disagreement_is_fatal(self):
+        m = manifest()
+        m["production_certificate"] = {
+            "maximumCurrentRgbBound": 0.07,
+        }
+        with self.assertRaisesRegex(RuntimeError, "bound disagreement"):
+            mod.finalize_row(m, oracle(bound=0.05), 0)
+
+    def test_vertical_slice_scope_is_preserved(self):
+        m = manifest()
+        m["execution_mode"] = "certified-supplied-cone"
+        m["graph_scope"] = "gaussian-vertical-slice-v1"
+        row = mod.finalize_row(m, oracle(), 0)
+        self.assertEqual(row["execution_mode"], "certified-supplied-cone")
+        self.assertEqual(row["graph_scope"], "gaussian-vertical-slice-v1")
+
     def test_certificate_violation_is_fatal(self):
         with self.assertRaisesRegex(RuntimeError, "FATAL CBRC certificate violation"):
             mod.finalize_row(
