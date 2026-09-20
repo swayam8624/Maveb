@@ -210,52 +210,6 @@ NSDictionary* entityPayload(const EntityState& entity) {
 - (NSData*)entitiesJSONWithError:(NSError**)error;
 - (NSData*)ownershipJSONWithError:(NSError**)error;
 - (NSData*)revisionCertificateJSONWithError:(NSError**)error;
-- (NSData*)revisionCertificateJSONWithError:(NSError**)error {
-    if (!_renderer)
-        return jsonData(@{@"schemaVersion" : @1, @"available" : @NO}, error);
-
-    const auto certificate = _renderer->gaussianRevisionCertificateStatistics();
-    const auto publication = _renderer->gaussianEditPublicationStatistics();
-    const auto& temporal = _renderer->lastTemporalInvalidationPlan();
-
-    return jsonData(@{
-        @"schemaVersion" : @1,
-        @"available" : @(certificate.available),
-        @"revisionVersion" : @(certificate.revisionVersion),
-        @"changedGaussians" : @(certificate.changedGaussians),
-        @"affectedPixels" : @(certificate.affectedPixels),
-        @"fullFramePixels" : @(certificate.fullFramePixels),
-        @"affectedPixelRatio" : @(certificate.affectedPixelRatio()),
-        @"maximumCurrentRgbBound" : @(certificate.maximumCurrentRgbBound),
-        @"sceneColorUpperBound" : @(certificate.sceneColorUpperBound),
-        @"invalidationCoversCertifiedSupport" :
-            @(certificate.invalidationCoversCertifiedSupport),
-        @"temporalFullFrameFallback" :
-            @(certificate.temporalFullFrameFallback),
-        @"publication" : @{
-            @"touchedRecords" : @(publication.sourceBuffer.touchedRecords),
-            @"contiguousRanges" : @(publication.sourceBuffer.contiguousRanges),
-            @"touchedBytes" : @(publication.sourceBuffer.touchedBytes),
-            @"fullBufferBytes" : @(publication.sourceBuffer.fullBufferBytes),
-            @"byteRatio" : @(publication.sourceBuffer.byteRatio()),
-            @"frameSlotsQuiesced" : @(publication.frameSlotsQuiesced),
-            @"globalTemporalHistoryInvalidated" :
-                @(publication.globalTemporalHistoryInvalidated),
-        },
-        @"temporal" : @{
-            @"fullFrame" : @(temporal.fullFrame),
-            @"empty" : @(temporal.empty),
-            @"invalidatedPixels" : @(temporal.invalidatedPixels),
-            @"fullFramePixels" : @(temporal.fullFramePixels),
-            @"pixelRatio" : @(temporal.pixelRatio()),
-            @"normalizedRect" : @[
-                @(temporal.normalizedRect.x), @(temporal.normalizedRect.y),
-                @(temporal.normalizedRect.z), @(temporal.normalizedRect.w)
-            ],
-        },
-    }, error);
-}
-
 - (NSData*)translateEntity:(uint64_t)entityId
                          x:(float)x
                          y:(float)y
@@ -465,6 +419,52 @@ NSDictionary* entityPayload(const EntityState& entity) {
                             ? 0.0
                             : static_cast<double>(assigned) /
                                   static_cast<double>(_ownership->owners.size())),
+    }, error);
+}
+
+- (NSData*)revisionCertificateJSONWithError:(NSError**)error {
+    if (!_renderer)
+        return jsonData(@{@"schemaVersion" : @1, @"available" : @NO}, error);
+
+    const auto certificate = _renderer->gaussianRevisionCertificateStatistics();
+    const auto publication = _renderer->gaussianEditPublicationStatistics();
+    const auto& temporal = _renderer->lastTemporalInvalidationPlan();
+
+    return jsonData(@{
+        @"schemaVersion" : @1,
+        @"available" : @(certificate.available),
+        @"revisionVersion" : @(certificate.revisionVersion),
+        @"changedGaussians" : @(certificate.changedGaussians),
+        @"affectedPixels" : @(certificate.affectedPixels),
+        @"fullFramePixels" : @(certificate.fullFramePixels),
+        @"affectedPixelRatio" : @(certificate.affectedPixelRatio()),
+        @"maximumCurrentRgbBound" : @(certificate.maximumCurrentRgbBound),
+        @"sceneColorUpperBound" : @(certificate.sceneColorUpperBound),
+        @"invalidationCoversCertifiedSupport" :
+            @(certificate.invalidationCoversCertifiedSupport),
+        @"temporalFullFrameFallback" :
+            @(certificate.temporalFullFrameFallback),
+        @"publication" : @{
+            @"touchedRecords" : @(publication.sourceBuffer.touchedRecords),
+            @"contiguousRanges" : @(publication.sourceBuffer.contiguousRanges),
+            @"touchedBytes" : @(publication.sourceBuffer.touchedBytes),
+            @"fullBufferBytes" : @(publication.sourceBuffer.fullBufferBytes),
+            @"byteRatio" : @(publication.sourceBuffer.byteRatio()),
+            @"frameSlotsQuiesced" : @(publication.frameSlotsQuiesced),
+            @"globalTemporalHistoryInvalidated" :
+                @(publication.globalTemporalHistoryInvalidated),
+        },
+        @"temporal" : @{
+            @"fullFrame" : @(temporal.fullFrame),
+            @"empty" : @(temporal.empty),
+            @"invalidatedPixels" : @(temporal.invalidatedPixels),
+            @"fullFramePixels" : @(temporal.fullFramePixels),
+            @"pixelRatio" : @(temporal.pixelRatio()),
+            @"normalizedRect" : @[
+                @(temporal.normalizedRect.x), @(temporal.normalizedRect.y),
+                @(temporal.normalizedRect.z), @(temporal.normalizedRect.w)
+            ],
+        },
     }, error);
 }
 
