@@ -38,6 +38,13 @@ struct Options final {
     float nearPlane{0.01F};
     float farPlane{10'000.0F};
     std::array<float, 3> background{0.0F, 0.0F, 0.0F};
+    std::array<float, 3> cameraWorldPosition{0.0F, 0.0F, 0.0F};
+    std::array<float, 16> worldToCamera{
+        1.0F, 0.0F, 0.0F, 0.0F,
+        0.0F, 1.0F, 0.0F, 0.0F,
+        0.0F, 0.0F, 1.0F, 0.0F,
+        0.0F, 0.0F, 0.0F, 1.0F,
+    };
     double epsilon{0.01};
 };
 
@@ -63,6 +70,31 @@ struct Options final {
     } catch (...) {
         return std::nullopt;
     }
+}
+
+template <std::size_t N>
+[[nodiscard]] std::optional<std::array<float, N>>
+parseFloatCsv(std::string_view csv) {
+    std::array<float, N> result{};
+    std::size_t start{};
+    for (std::size_t index = 0; index < N; ++index) {
+        const std::size_t comma = csv.find(',', start);
+        const std::size_t end = comma == std::string_view::npos ? csv.size() : comma;
+        if (end == start)
+            return std::nullopt;
+        auto value = parseDouble(csv.substr(start, end - start));
+        if (!value)
+            return std::nullopt;
+        result[index] = static_cast<float>(*value);
+        if (index + 1 < N) {
+            if (comma == std::string_view::npos)
+                return std::nullopt;
+            start = comma + 1;
+        } else if (comma != std::string_view::npos) {
+            return std::nullopt;
+        }
+    }
+    return result;
 }
 
 [[nodiscard]] std::optional<Options> parseOptions(int argc, char** argv) {
@@ -93,6 +125,22 @@ struct Options final {
             if (!value)
                 return std::nullopt;
             options.changedCsv = *value;
+        } else if (arg == "--world-to-camera") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            auto parsed = parseFloatCsv<16>(*value);
+            if (!parsed)
+                return std::nullopt;
+            options.worldToCamera = *parsed;
+        } else if (arg == "--camera-world-position") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            auto parsed = parseFloatCsv<3>(*value);
+            if (!parsed)
+                return std::nullopt;
+            options.cameraWorldPosition = *parsed;
         } else if (arg == "--width" || arg == "--height") {
             auto value = requireValue(arg);
             if (!value)
@@ -141,6 +189,8 @@ struct Options final {
                    "--changed 1,4,9 [camera options]\n"
                 << "  --width N --height N --focal-x F --focal-y F\n"
                 << "  --center-x F --center-y F --near F --far F\n"
+                << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
+                << "  --camera-world-position x,y,z\n"
                 << "  --background-r F --background-g F --background-b F\n"
                 << "  --epsilon F\n";
             std::exit(EXIT_SUCCESS);
@@ -271,6 +321,8 @@ int main(int argc, char** argv) try {
     camera.centerY = options->centerY;
     camera.nearPlane = options->nearPlane;
     camera.farPlane = options->farPlane;
+    camera.cameraWorldPosition = options->cameraWorldPosition;
+    camera.worldToCamera = options->worldToCamera;
 
     auto oldImage =
         aether::gaussian::ReferenceRasterizer::render(*before, camera, options->background);
