@@ -440,6 +440,39 @@ NSDictionary* entityPayload(const EntityState& entity) {
         @"affectedPixelRatio" : @(certificate.affectedPixelRatio()),
         @"maximumCurrentRgbBound" : @(certificate.maximumCurrentRgbBound),
         @"sceneColorUpperBound" : @(certificate.sceneColorUpperBound),
+        @"camera" : @{
+            @"width" : @(certificate.camera.width),
+            @"height" : @(certificate.camera.height),
+            @"focalX" : @(certificate.camera.focalX),
+            @"focalY" : @(certificate.camera.focalY),
+            @"centerX" : @(certificate.camera.centerX),
+            @"centerY" : @(certificate.camera.centerY),
+            @"near" : @(certificate.camera.nearPlane),
+            @"far" : @(certificate.camera.farPlane),
+            @"cameraWorldPosition" : @[
+                @(certificate.camera.cameraWorldPosition[0]),
+                @(certificate.camera.cameraWorldPosition[1]),
+                @(certificate.camera.cameraWorldPosition[2])
+            ],
+            @"worldToCamera" : @[
+                @(certificate.camera.worldToCamera[0]),
+                @(certificate.camera.worldToCamera[1]),
+                @(certificate.camera.worldToCamera[2]),
+                @(certificate.camera.worldToCamera[3]),
+                @(certificate.camera.worldToCamera[4]),
+                @(certificate.camera.worldToCamera[5]),
+                @(certificate.camera.worldToCamera[6]),
+                @(certificate.camera.worldToCamera[7]),
+                @(certificate.camera.worldToCamera[8]),
+                @(certificate.camera.worldToCamera[9]),
+                @(certificate.camera.worldToCamera[10]),
+                @(certificate.camera.worldToCamera[11]),
+                @(certificate.camera.worldToCamera[12]),
+                @(certificate.camera.worldToCamera[13]),
+                @(certificate.camera.worldToCamera[14]),
+                @(certificate.camera.worldToCamera[15])
+            ],
+        },
         @"invalidationCoversCertifiedSupport" :
             @(certificate.invalidationCoversCertifiedSupport),
         @"temporalFullFrameFallback" :
