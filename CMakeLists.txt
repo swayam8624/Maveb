@@ -163,6 +163,11 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebTemporalInvalidationTests)
     add_test(NAME MavebTemporalInvalidationTests COMMAND MavebTemporalInvalidationTests)
 
+    add_executable(MavebTemporalRevisionCertificateTests tests/TemporalRevisionCertificateTests.cpp)
+    target_link_libraries(MavebTemporalRevisionCertificateTests PRIVATE Aether::Scene)
+    aether_configure_target(MavebTemporalRevisionCertificateTests)
+    add_test(NAME MavebTemporalRevisionCertificateTests COMMAND MavebTemporalRevisionCertificateTests)
+
 
     add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
     target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
