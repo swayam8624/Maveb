@@ -101,3 +101,27 @@ The only remaining phase candidate is a **geometry-canonicalized** descriptor th
 - Sparse2DGS, CVPR 2025: https://openaccess.thecvf.com/content/CVPR2025/html/Wu_Sparse2DGS_Geometry-Prioritized_Gaussian_Splatting_for_Surface_Reconstruction_from_Sparse_Views_CVPR_2025_paper.html
 
 Refresh this repeatedly. A surviving idea can be killed at any time by stronger prior art.
+
+## Cross-domain novelty collision — 2026-09-20 refresh
+
+### Dependency graph incremental rendering — NOT NOVEL BY ITSELF
+
+Older incremental-computation and rendering literature already establishes the generic mechanism:
+
+- Wörister et al., **Lazy Incremental Computation for Efficient Scene Graph Rendering** (High-Performance Graphics 2013) synthesize a dependency graph from a scene graph, connect sources of change to affected rendering-cache resources, and update affected cache portions without full scene-graph traversal.
+- Self-adjusting computation work by Acar and collaborators uses dynamic dependence graphs and change propagation to recompute only affected computations.
+- Parallel/incremental computation systems likewise record dependencies and re-execute changed portions.
+
+Therefore MAVEB must **not** claim novelty for:
+
+> build a dependency graph and update only affected rendering resources.
+
+The S1 distinction is now required to be domain-specific and stronger:
+
+1. dependencies originate from **captured-world evidence changes** rather than authored scene-graph property mutation;
+2. closure spans heterogeneous reconstruction state: observations → sparse volumetric evidence → explicit surface patches → Gaussian appearance/support → textures/materials → GPU resources → temporal history;
+3. the system measures **work locality and result equivalence** against a full rebuild;
+4. it exposes hidden global costs such as all-resident readback, O(N) Gaussian scans, all-frame publication barriers, and global temporal invalidation;
+5. where exact minimality is claimed, a tiny-scene exhaustive oracle or conservative dependency proof must support it.
+
+If those stronger properties do not survive experiments, S1 is a systems engineering improvement rather than a research contribution.
