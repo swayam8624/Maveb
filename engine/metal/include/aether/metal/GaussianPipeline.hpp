@@ -2,6 +2,7 @@
 
 #include <aether/core/Error.hpp>
 #include <aether/gaussian/GaussianAsset.hpp>
+#include <aether/gaussian/GaussianUpdatePlan.hpp>
 #include <aether/metal/MetalPtr.hpp>
 #include <shared/AetherShaderTypes.h>
 
@@ -21,6 +22,19 @@ struct GaussianPipelineStatistics final {
     std::uint32_t tileEntries{};
     std::uint32_t overflowedEntries{};
     std::uint32_t earlyTerminations{};
+};
+
+struct GaussianPublicationStatistics final {
+    std::size_t touchedRecords{};
+    std::size_t contiguousRanges{};
+    std::size_t touchedBytes{};
+    std::size_t fullBufferBytes{};
+
+    [[nodiscard]] double byteRatio() const noexcept {
+        if (fullBufferBytes == 0)
+            return 0.0;
+        return static_cast<double>(touchedBytes) / static_cast<double>(fullBufferBytes);
+    }
 };
 
 class GaussianPipeline final {
@@ -57,6 +71,11 @@ class GaussianPipeline final {
     /// Call only after the encoded command buffer completes.
     [[nodiscard]] GaussianPipelineStatistics statistics() const noexcept;
 
+    /// Exact source-buffer publication work from the most recent local mutation.
+    [[nodiscard]] GaussianPublicationStatistics publicationStatistics() const noexcept {
+        return lastPublicationStatistics_;
+    }
+
   private:
     GaussianPipeline(MTL::Device* device, std::uint32_t maximumTileEntries);
     [[nodiscard]] Result<void> buildPipelines(MTL::Library* library);
@@ -85,6 +104,7 @@ class GaussianPipeline final {
     MetalPtr<MTL::Buffer> ranges_;
     MetalPtr<MTL::Buffer> counters_;
     std::array<MetalPtr<MTL::ComputePipelineState>, 13> pipelines_;
+    GaussianPublicationStatistics lastPublicationStatistics_{};
 };
 
 } // namespace aether::metal
