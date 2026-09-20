@@ -370,9 +370,11 @@ NSDictionary* entityPayload(const EntityState& entity) {
 
     _gaussians = std::make_unique<GaussianAsset>(std::move(*loaded));
     _ownership = std::make_unique<GaussianEntityOwnership>(std::move(*ownership));
-    _gaussianOverlayIndex =
-        overlay ? std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay))
-                : nullptr;
+    _gaussianOverlayIndex.reset();
+    if (overlay) {
+        _gaussianOverlayIndex =
+            std::make_unique<GaussianOverlaySpatialIndex>(std::move(*overlay));
+    }
     auto persisted = persistState(_archivePath, *_world, *_gaussians, *_ownership);
     if (!persisted) {
         setError(error, persisted.error());
@@ -424,12 +426,20 @@ NSDictionary* entityPayload(const EntityState& entity) {
     for (const EntityId owner : _ownership->owners)
         assigned += owner.valid() ? 1U : 0U;
     const std::size_t unassigned = _ownership->owners.size() - assigned;
+    const bool overlayAvailable = _gaussianOverlayIndex != nullptr;
+    const auto overlayStatistics =
+        overlayAvailable ? _gaussianOverlayIndex->statistics()
+                         : aether::world_gaussian::GaussianOverlaySpatialIndexStatistics{};
     return jsonData(@{
         @"schemaVersion" : @1,
         @"available" : @YES,
         @"gaussianCount" : @(_gaussians->gaussians.size()),
         @"assigned" : @(assigned),
         @"unassigned" : @(unassigned),
+        @"overlayIndexAvailable" : @(overlayAvailable),
+        @"overlayDeltaEntries" : @(overlayStatistics.deltaEntries),
+        @"overlayMovedPrimitives" : @(overlayStatistics.movedPrimitives),
+        @"overlayCompactionRecommended" : @(overlayStatistics.compactionRecommended),
         @"coverage" : @(_ownership->owners.empty()
                             ? 0.0
                             : static_cast<double>(assigned) /
@@ -565,12 +575,20 @@ NSDictionary* entityPayload(const EntityState& entity) {
         setError(error, preflight.error());
         return nil;
     }
-    auto edited = aether::world_gaussian::translatePersistentGaussianEntity(
-        *_world, *_gaussians, *_ownership, EntityId{entityId}, target, timestampNanoseconds);
+    auto edited =
+        _gaussianOverlayIndex
+            ? aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+                  *_world, *_gaussians, *_ownership, *_gaussianOverlayIndex,
+                  EntityId{entityId}, target, timestampNanoseconds)
+            : aether::world_gaussian::translatePersistentGaussianEntity(
+                  *_world, *_gaussians, *_ownership, EntityId{entityId},
+                  target, timestampNanoseconds);
     if (!edited) {
         setError(error, edited.error());
         return nil;
     }
+    if (edited->usedOverlayIndex && !edited->overlayIndexValid)
+        _gaussianOverlayIndex.reset();
 
     auto rendered = _renderer->translateGaussians(ownedIndices, delta);
     if (!rendered) {
@@ -599,6 +617,14 @@ NSDictionary* entityPayload(const EntityState& entity) {
         @"gaussianInputFormat" : @"aether-bin",
         @"translatedGaussians" : @(edited->translatedGaussians),
         @"gaussiansInspected" : @(edited->reoptimizationSelection.inspectedGaussians),
+        @"usedOverlayIndex" : @(edited->usedOverlayIndex),
+        @"overlayIndexValid" : @(edited->overlayIndexValid),
+        @"overlayIndexCompacted" : @(edited->overlayIndexCompacted),
+        @"overlayDirtyRegionsQueried" : @(edited->overlayDiagnostics.dirtyRegionsQueried),
+        @"overlayBaseEntriesVisited" : @(edited->overlayDiagnostics.baseEntriesVisited),
+        @"overlayStaleBaseEntriesSkipped" :
+            @(edited->overlayDiagnostics.staleBaseEntriesSkipped),
+        @"overlayDeltaEntriesVisited" : @(edited->overlayDiagnostics.deltaEntriesVisited),
         @"reoptimizationGaussians" : @(edited->reoptimizationSelection.gaussianIndices.size()),
         @"protectedStableGaussians" :
             @(edited->reoptimizationSelection.rejectedStableOwnedGaussians),
