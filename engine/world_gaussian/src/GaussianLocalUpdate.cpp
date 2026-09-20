@@ -265,6 +265,96 @@ selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
     return result;
 }
 
+Result<GaussianLocalUpdateSelection>
+selectGaussiansForLocalUpdateIndexed(const gaussian::GaussianAsset& asset,
+                                     const world::SelectiveUpdatePlan& worldUpdate,
+                                     const GaussianOverlaySpatialIndex& spatialIndex,
+                                     const GaussianEntityOwnership* ownership,
+                                     GaussianLocalUpdatePolicy policy,
+                                     GaussianOverlaySelectionDiagnostics* diagnostics) {
+    if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
+        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+    if (policy.maximumAffectedGaussians == 0)
+        return fail(ErrorCode::invalidArgument, "Gaussian local-update budget cannot be zero");
+    if (ownership && ownership->owners.size() != asset.gaussians.size()) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian ownership count must match Gaussian asset primitive count");
+    }
+    if (spatialIndex.primitiveCount() != asset.gaussians.size()) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian overlay spatial index primitive count does not match current asset");
+    }
+    if (spatialIndex.cellSizeMeters() != worldUpdate.cellSizeMeters) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian overlay spatial index cell size does not match selective-update plan");
+    }
+
+    std::unordered_map<world::RegionKey, DirtyRegionInfo, RegionKeyHash> dirty;
+    dirty.reserve(worldUpdate.dirtyRegions.size());
+    for (const world::RegionUpdate& region : worldUpdate.dirtyRegions) {
+        DirtyRegionInfo& info = dirty[region.key];
+        for (const world::EntityId entity : region.entities) {
+            if (entity.valid())
+                info.entityIds.insert(entity.value);
+        }
+    }
+
+    GaussianLocalUpdateSelection result;
+    result.gaussianIndices.reserve(
+        std::min(asset.gaussians.size(), policy.maximumAffectedGaussians));
+    if (diagnostics)
+        *diagnostics = {};
+
+    std::vector<std::size_t> candidates;
+    for (const auto& [key, region] : dirty) {
+        candidates.clear();
+        auto query = spatialIndex.appendIndices(key, candidates, asset.gaussians.size());
+        if (!query)
+            return std::unexpected(query.error());
+        if (diagnostics) {
+            ++diagnostics->dirtyRegionsQueried;
+            diagnostics->baseEntriesVisited += query->baseEntriesVisited;
+            diagnostics->staleBaseEntriesSkipped += query->staleBaseEntriesSkipped;
+            diagnostics->deltaEntriesVisited += query->deltaEntriesVisited;
+        }
+
+        for (const std::size_t index : candidates) {
+            if (index >= asset.gaussians.size()) {
+                return fail(ErrorCode::corruptData,
+                            "Gaussian overlay index contains out-of-range primitive index");
+            }
+            ++result.inspectedGaussians;
+
+            bool select = ownership == nullptr;
+            if (ownership) {
+                const world::EntityId owner = ownership->owners[index];
+                if (!owner.valid()) {
+                    select = policy.includeUnownedGaussians;
+                    if (select)
+                        ++result.conservativeUnownedMatches;
+                } else if (region.entityIds.contains(owner.value)) {
+                    select = true;
+                    ++result.ownedMatches;
+                } else {
+                    ++result.rejectedStableOwnedGaussians;
+                }
+            }
+
+            if (!select)
+                continue;
+            if (result.gaussianIndices.size() >= policy.maximumAffectedGaussians) {
+                return fail(ErrorCode::resourceExhausted,
+                            "Gaussian local update exceeds affected-primitive budget");
+            }
+            result.gaussianIndices.push_back(index);
+        }
+    }
+
+    std::sort(result.gaussianIndices.begin(), result.gaussianIndices.end());
+    result.unaffectedGaussians = asset.gaussians.size() - result.gaussianIndices.size();
+    return result;
+}
+
 Result<void> recordGaussianSelectionLocality(
     const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
     world::LocalityLedger& ledger) {
