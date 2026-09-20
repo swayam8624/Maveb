@@ -2933,6 +2933,83 @@
         "deterministic configs/results"
       ],
       "status": "probe-candidate"
+    },
+    {
+      "hypothesis_id": "H116",
+      "family": "D",
+      "family_name": "Dependency-certified minimal repair",
+      "name": "Compact base plus bounded relocation delta",
+      "research_question": "Can a compact immutable Gaussian region index plus a bounded relocation overlay preserve exact dirty-region selection while reducing per-revision maintenance work enough to improve end-to-end heterogeneous world repair?",
+      "prior_art_collision": "incremental spatial indices, LSM-style base/delta structures, self-adjusting computation; not a novelty candidate by itself",
+      "expected_novelty": "ENABLING MECHANISM ONLY unless it materially changes the end-to-end S1 quality/work frontier with explicit cross-layer counters.",
+      "required_implementation": "C++23 GaussianOverlaySpatialIndex behind existing local-update interface; exact scan/hash comparators; compaction policy; later GPU-publication integration.",
+      "required_datasets": "synthetic exact fixtures first; then real MavebBench Gaussian scenes and evolving-world revisions",
+      "expected_experiment_cost": "low-to-medium",
+      "falsification_experiment": "Sweep cumulative relocation 1-100%, repeated moves, clustered keys and births/deaths; compare full rebuild, mutable hash and base+delta on the same selected set and end-to-end update.",
+      "success_metric": "exact selection plus lower total update time/bytes over a measurable sparse-change regime without unacceptable query/memory cost",
+      "failure_metric": "compaction/query overhead erases end-to-end benefit or correctness diverges under repeated revisions",
+      "visual_demo_potential": "low alone; high only as part of S1 dependency-work visualization",
+      "siggraph_relevance": "systems infrastructure only unless tied to heterogeneous minimal-repair claim",
+      "cvpr_relevance": "low standalone",
+      "systems_relevance": "high",
+      "dependencies": [
+        "S1 dependency closure",
+        "Gaussian local-update oracle",
+        "raw work counters"
+      ],
+      "status": "production-prototype"
+    },
+    {
+      "hypothesis_id": "H117",
+      "family": "D",
+      "family_name": "Dependency-certified minimal repair",
+      "name": "Paged stable texture addressing",
+      "research_question": "Can persistent page/tile indirection keep unchanged texture addresses stable across local mesh edits without the texel-density collapse of one globally fixed-capacity atlas?",
+      "prior_art_collision": "virtual texturing, sparse textures, stable texture atlases and page tables are established systems ideas; standalone novelty is unlikely",
+      "expected_novelty": "REQUIRED INFRASTRUCTURE, not standalone novelty. Value is whether it removes hidden global invalidation from a captured-world dependency closure.",
+      "required_implementation": "persistent patch/page IDs; page allocator; indirection table; dirty-page writes; fragmentation and compaction accounting; correctness fixture against current baker",
+      "required_datasets": "synthetic edit sequences then reconstructed MavebBench meshes with texture bakes",
+      "expected_experiment_cost": "medium",
+      "falsification_experiment": "Insertion/removal/update sweeps from 10K to 1M triangles; compare ordinal atlas, global fixed stable atlas and paged stable atlas on address survival, texel density, dirty bytes and render lookup overhead.",
+      "success_metric": "near-100% address survival for unchanged patches while maintaining bounded texel density and local write volume",
+      "failure_metric": "fragmentation/indirection/compaction overhead causes global invalidation or unacceptable quality/cost",
+      "visual_demo_potential": "medium as dirty-page/atlas residency visualization",
+      "siggraph_relevance": "infrastructure unless enabling S1 result",
+      "cvpr_relevance": "low standalone",
+      "systems_relevance": "high",
+      "dependencies": [
+        "texture locality audit",
+        "stable atlas correctness fixture",
+        "persistent patch identity"
+      ],
+      "status": "probe-candidate"
+    },
+    {
+      "hypothesis_id": "H118",
+      "family": "D",
+      "family_name": "Dependency-certified minimal repair",
+      "name": "End-to-end work locality has a sparse-change regime",
+      "research_question": "Does there exist a nontrivial changed-world fraction where observation-to-GPU heterogeneous repair is sublinear in world size while remaining equivalent to the declared full-rebuild reference?",
+      "prior_art_collision": "continual Gaussian mapping localizes reconstruction work; incremental rendering and self-adjusting computation localize dependency propagation",
+      "expected_novelty": "UNVERIFIED. Candidate distinction is measured heterogeneous closure across reconstruction, representation, texture/history and render publication rather than any one local subsystem.",
+      "required_implementation": "single work ledger spanning dirty evidence/TSDF blocks/mesh cells/Gaussians/texture pages/history bytes/GPU bytes and full-rebuild comparator",
+      "required_datasets": "controlled 1/2/5/10/25/50% changes across synthetic and public evolving scenes, then real capture",
+      "expected_experiment_cost": "medium-to-high",
+      "falsification_experiment": "Force increasingly large changes and measure where hidden global work dominates; compare against full rebuild and strong continual Gaussian baselines where applicable.",
+      "success_metric": "stable sparse-change interval with low Update Locality Ratio and near-full-rebuild quality/equivalence across multiple scenes",
+      "failure_metric": "one hidden global stage keeps ULR near one or quality requires global repair",
+      "visual_demo_potential": "high via per-layer dependency closure and work heatmaps",
+      "siggraph_relevance": "potentially high if mechanism and generality survive",
+      "cvpr_relevance": "possible if reconstruction contribution dominates",
+      "systems_relevance": "very high",
+      "dependencies": [
+        "H116",
+        "H117",
+        "observability semantics",
+        "TSDF dirty meshing",
+        "GPU publication counters"
+      ],
+      "status": "priority-probe"
     }
   ],
   "lastPrunedAt": "2026-09-20",
