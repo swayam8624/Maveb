@@ -103,6 +103,10 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
         command.extend(
             ["--changed", ",".join(str(int(i)) for i in changed)]
         )
+    spatial_output = manifest.get("spatial_output")
+    if spatial_output:
+        command.extend(["--spatial-output", str(spatial_output)])
+
     command.extend([
         "--width", str(int(camera["width"])),
         "--height", str(int(camera["height"])),
@@ -218,6 +222,7 @@ def finalize_row(
         "work_cost_unit": work_cost_unit,
         "qois": {"rgb_linf": qoi},
         "work_ledger": manifest.get("work_ledger", {}),
+        "spatial_evidence": str(manifest.get("spatial_output", "")),
         "candidateDiagnostics": {
             "candidateConeNodes": candidate_nodes,
             "candidateWork": candidate_work,
