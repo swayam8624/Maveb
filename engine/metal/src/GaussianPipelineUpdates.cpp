@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace aether::metal {
@@ -41,6 +42,50 @@ GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianInd
         }
     }
     return {};
+}
+
+Result<GaussianEditBounds>
+GaussianPipeline::translationBounds(std::span<const std::uint32_t> gaussianIndices,
+                                    simd_float3 translationDelta) const {
+    if (auto validation = validateTranslation(gaussianIndices, translationDelta); !validation)
+        return std::unexpected(validation.error());
+    if (gaussianIndices.empty())
+        return fail(ErrorCode::invalidArgument, "Gaussian edit bounds require at least one ID");
+
+    const auto* primitives = static_cast<const AetherGaussianGpu*>(gaussians_->contents());
+    if (!primitives)
+        return fail(ErrorCode::metal, "Gaussian shared GPU buffer is not CPU-addressable");
+
+    const float infinity = std::numeric_limits<float>::infinity();
+    GaussianEditBounds result{
+        .minimum = {infinity, infinity, infinity},
+        .maximum = {-infinity, -infinity, -infinity},
+    };
+
+    for (const std::uint32_t index : gaussianIndices) {
+        const auto& primitive = primitives[index];
+        const float maximumLogScale =
+            std::max({primitive.logScaleRestCount.x, primitive.logScaleRestCount.y,
+                      primitive.logScaleRestCount.z});
+        const float radius = 3.0F * std::exp(maximumLogScale);
+        if (!std::isfinite(radius))
+            return fail(ErrorCode::resourceExhausted,
+                        "Gaussian edit bound radius is non-finite");
+
+        const simd_float3 oldCenter{
+            primitive.positionOpacity.x,
+            primitive.positionOpacity.y,
+            primitive.positionOpacity.z,
+        };
+        const simd_float3 newCenter = oldCenter + translationDelta;
+        const simd_float3 extent{radius, radius, radius};
+
+        result.minimum = simd_min(result.minimum, oldCenter - extent);
+        result.minimum = simd_min(result.minimum, newCenter - extent);
+        result.maximum = simd_max(result.maximum, oldCenter + extent);
+        result.maximum = simd_max(result.maximum, newCenter + extent);
+    }
+    return result;
 }
 
 Result<void> GaussianPipeline::translate(std::span<const std::uint32_t> gaussianIndices,
