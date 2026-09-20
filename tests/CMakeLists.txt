@@ -15,7 +15,7 @@ add_test(NAME AetherOracleGeometryTests
         "${PROJECT_BINARY_DIR}/test-artifacts/r1-oracle-geometry.json")
 
 add_executable(AetherSparseTsdfTests SparseTsdfTests.cpp)
-target_link_libraries(AetherSparseTsdfTests PRIVATE Aether::Reconstruction)
+target_link_libraries(AetherSparseTsdfTests PRIVATE Aether::Reconstruction Aether::World)
 aether_configure_target(AetherSparseTsdfTests)
 add_test(NAME AetherSparseTsdfTests
     COMMAND AetherSparseTsdfTests --json-output
