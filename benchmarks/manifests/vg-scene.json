@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "vg-scene",
+  "title": "VG-Scene semi-static RGB-D benchmark",
+  "kind": "vg-scene",
+  "root": "$MAVEB_DATA/VG-Scene",
+  "source": {
+    "paper": "https://arxiv.org/abs/2510.09962",
+    "repository": "https://github.com/heyicheng-never/VG-Mapping",
+    "repositoryCommit": "8f7de4fcbc04aae1c33f1c8ac4914333e60afe8b"
+  },
+  "note": "Public evolving-world benchmark. Adapter validates pre/post RGB-D revision structure without committing dataset bytes. Method-code reproduction remains separate until official VG-Mapping code and licensing are released."
+}
