@@ -37,6 +37,11 @@ jobs:
         run: python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
       - name: Research evaluation unit tests
         run: python3 -m unittest discover -s research/tests -p 'test_*.py'
+      - name: Resampling-lineage research probe
+        run: >-
+          python3 research/probes/resampling_lineage_probe.py
+          --self-test
+          --output build/research-ci/resampling-lineage-v1.json
 
   sanitizer:
     name: Sanitizer
