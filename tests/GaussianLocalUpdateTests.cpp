@@ -21,6 +21,7 @@ using aether::world::RepresentationKind;
 using aether::world::SelectiveUpdatePlan;
 using aether::world_gaussian::GaussianEntityOwnership;
 using aether::world_gaussian::GaussianLocalUpdatePolicy;
+using aether::world_gaussian::GaussianOverlaySpatialIndex;
 using aether::world_gaussian::GaussianSpatialIndex;
 
 int failures{};
@@ -376,6 +377,66 @@ void testPersistentWorldAndGaussianTranslationCommitTogether() {
            "local re-optimization selection must protect stable owned neighbors in dirty area");
 }
 
+void testIndexedPersistentTranslationEliminatesGlobalSelectionScan() {
+    PersistentWorldModel model;
+    const auto initial = model.ingest(
+        100, {observation("Chair", "chair", 0.0F),
+              observation("Wall", "wall", 1.25F)});
+    expect(initial.has_value(),
+           "indexed persistent transaction fixture must initialize world");
+    if (!initial)
+        return;
+
+    GaussianAsset asset;
+    asset.gaussians = {
+        gaussian(0.0F, 0.0F, 0.0F),
+        gaussian(0.1F, 0.0F, 0.0F),
+        gaussian(1.2F, 0.0F, 0.0F),
+    };
+    GaussianEntityOwnership ownership;
+    ownership.owners = {EntityId{1}, EntityId{1}, EntityId{2}};
+
+    for (std::size_t index = 0; index < 100; ++index) {
+        asset.gaussians.push_back(
+            gaussian(50.0F + static_cast<float>(index), 0.0F, 0.0F));
+        ownership.owners.push_back(EntityId{2});
+    }
+
+    auto overlay = GaussianOverlaySpatialIndex::build(asset, 0.5F);
+    expect(overlay.has_value(),
+           "indexed persistent transaction overlay must build");
+    if (!overlay)
+        return;
+
+    const auto committed =
+        aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+            model, asset, ownership, *overlay, EntityId{1},
+            simd_float3{1.0F, 0.0F, 0.0F}, 200);
+    expect(committed.has_value(),
+           "indexed persistent Gaussian translation must commit");
+    if (!committed)
+        return;
+
+    expect(committed->usedOverlayIndex,
+           "indexed persistent transaction must report overlay use");
+    expect(committed->overlayIndexValid,
+           "overlay must remain valid after exact relocation maintenance");
+    expect(committed->translatedGaussians == 2,
+           "indexed transaction must translate both owned chair splats");
+    expect(committed->reoptimizationSelection.inspectedGaussians <
+               asset.gaussians.size(),
+           "indexed transaction must inspect fewer Gaussians than full scan");
+    expect(committed->overlayDiagnostics.dirtyRegionsQueried > 0,
+           "indexed transaction must report dirty-region queries");
+    expect(asset.gaussians[0].position[0] == 1.0F &&
+               asset.gaussians[1].position[0] == 1.1F,
+           "indexed transaction must advance owned Gaussian positions");
+    expect(asset.gaussians[2].position[0] == 1.2F,
+           "indexed transaction must preserve stable nearby owner");
+    expect(overlay->statistics().movedPrimitives == 2,
+           "overlay must track the two relocated source records");
+}
+
 void testOwnershipShapeAndSelectionBudgetFailClosed() {
     GaussianAsset asset;
     asset.gaussians = {gaussian(0.1F, 0.1F, 0.1F), gaussian(0.2F, 0.1F, 0.1F)};
@@ -403,6 +464,7 @@ int main() noexcept {
         testIndexedSelectionScalesWithDirtyPopulation();
         testOwnedTranslationIsTransactional();
         testPersistentWorldAndGaussianTranslationCommitTogether();
+        testIndexedPersistentTranslationEliminatesGlobalSelectionScan();
         testOwnershipShapeAndSelectionBudgetFailClosed();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
