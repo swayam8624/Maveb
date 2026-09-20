@@ -70,12 +70,33 @@ class CBRCBaselineSuiteTests(unittest.TestCase):
             result["baselines"]["FULL"]["work"],
         )
 
+    def test_independent_full_work_baseline_is_preserved(self):
+        payload = graph()
+        payload["full_work_baseline"] = 5.0
+        result = mod.run(payload)
+        self.assertEqual(result["baselines"]["FULL"]["work"], 5.0)
+        self.assertEqual(result["baselines"]["FULL"]["fullWork"], 5.0)
+
+    def test_hard_soft_ablation_forces_downstream_repair(self):
+        result = mod.run(graph())
+        ablated = result["ablations"]["ABLATE_HARD_SOFT_SEPARATION"]
+        self.assertTrue(ablated["passes"])
+        self.assertTrue(ablated["usedFullRebuild"])
+
+    def test_global_norm_tail_remains_conservative(self):
+        result = mod.run(graph())
+        ablated = result["ablations"]["ABLATE_GLOBAL_NORM_TAIL"]
+        self.assertTrue(ablated["passes"])
+        self.assertGreaterEqual(ablated["work"], 0.0)
+
     def test_required_ablations_exist(self):
         result = mod.run(graph())
         self.assertIn("ABLATE_PREDECESSOR_CLOSURE", result["ablations"])
         self.assertIn("ABLATE_GAUSSIAN_ANALYTIC_BOUND", result["ablations"])
         self.assertIn("ABLATE_TEMPORAL_ANALYTIC_BOUND", result["ablations"])
         self.assertIn("ABLATE_QOI_SPECIALIZATION", result["ablations"])
+        self.assertIn("ABLATE_HARD_SOFT_SEPARATION", result["ablations"])
+        self.assertIn("ABLATE_GLOBAL_NORM_TAIL", result["ablations"])
         self.assertIn("ABLATE_NO_FALLBACK", result["ablations"])
 
 
