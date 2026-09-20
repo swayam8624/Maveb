@@ -195,13 +195,13 @@ Dense/reference Python versus sparse/native C++ agreement is enforced separately
 
 ## Mandatory paper artifacts
 
-F1. measured error vs certified bound with y=x safety line.  
-F2. work ratio vs changed fraction.  
-F3. coupling regime vs repair-cone fraction.  
-F4. automatic local-to-FULL crossover.  
-F5. effectivity distribution.  
-F6. per-layer work ledger.  
-F7. repair-cone/support plus screen-space residual.  
+F1. measured error vs certified bound with y=x safety line.
+F2. work ratio vs changed fraction.
+F3. coupling regime vs repair-cone fraction.
+F4. automatic local-to-FULL crossover.
+F5. effectivity distribution.
+F6. per-layer work ledger.
+F7. repair-cone/support plus screen-space residual.
 F8. adversarial/high-coupling fallback.
 
 Method/ablation tables are generated as:
