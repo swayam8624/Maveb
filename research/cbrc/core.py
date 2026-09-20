@@ -197,12 +197,12 @@ def certify_cone(
             cone=tuple(Cidx),
             exterior=(),
             stable=True,
-            reason="full rebuild",
+            reason="complete repair cone",
             bound_by_qoi={q.name: 0.0 for q in qois},
             passes=True,
-            work=full_work,
+            work=local_work,
             full_work=full_work,
-            used_full_rebuild=True,
+            used_full_rebuild=False,
             transient_amplification=0.0,
             susceptibility=0.0,
         )
@@ -353,7 +353,7 @@ def greedy_minimum_work_cone(
                 return current
             break
 
-    return certify_cone(
+    complete = certify_cone(
         K_cert=K,
         source=source,
         true_change_bound=true_change_bound,
@@ -362,6 +362,21 @@ def greedy_minimum_work_cone(
         work=c,
         qois=qois,
         full_work_baseline=full_work_baseline,
+    )
+    if complete.work < complete.full_work:
+        return complete
+    return Certificate(
+        cone=complete.cone,
+        exterior=complete.exterior,
+        stable=True,
+        reason="full rebuild fallback",
+        bound_by_qoi=complete.bound_by_qoi,
+        passes=True,
+        work=complete.full_work,
+        full_work=complete.full_work,
+        used_full_rebuild=True,
+        transient_amplification=complete.transient_amplification,
+        susceptibility=complete.susceptibility,
     )
 
 
