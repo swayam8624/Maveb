@@ -35,7 +35,10 @@
         "local-canonical-phase-v3: canonical phase overall AUC 0.784 vs canonical density L2 0.776",
         "local-phase-contamination-v4: coherent translations recover well, but partial motion becomes aggregate/mass-weighted and cannot provide max-displacement certificate alone"
       ],
-      "next_action": "Test partitioned/multi-component local support or drop phase in favor of simpler canonical density plus explicit geometry constraints."
+      "next_action": "Test partitioned/multi-component local support or drop phase in favor of simpler canonical density plus explicit geometry constraints.",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H002",
@@ -61,7 +64,10 @@
         "deterministic configs/results"
       ],
       "status": "probe-candidate",
-      "note": "Graph-spectral variant remains untested; must beat graph Laplacian / geometric baselines."
+      "note": "Graph-spectral variant remains untested; must beat graph Laplacian / geometric baselines.",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H003",
@@ -86,7 +92,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H004",
@@ -111,7 +120,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H005",
@@ -136,7 +148,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H006",
@@ -161,7 +176,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H007",
@@ -186,7 +204,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H008",
@@ -211,7 +232,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H009",
@@ -236,7 +260,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H010",
@@ -264,7 +291,10 @@
         "research/results/probes/gaussian-tail-locality-certificate-v0-summary.json",
         "EditBench3D"
       ],
-      "status": "priority-survivor-after-analytic-probe"
+      "status": "priority-survivor-after-analytic-probe",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H011",
@@ -289,7 +319,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H012",
@@ -314,7 +347,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H013",
@@ -339,7 +375,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H014",
@@ -364,7 +403,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H015",
@@ -389,7 +431,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H016",
@@ -414,7 +459,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H017",
@@ -439,7 +487,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H018",
@@ -464,7 +515,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H019",
@@ -489,7 +543,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H020",
@@ -515,7 +572,10 @@
         "deterministic configs/results"
       ],
       "status": "priority-kill-test",
-      "note": "Lineage is only worth building if it improves downstream edit/change metrics."
+      "note": "Lineage is only worth building if it improves downstream edit/change metrics.",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H021",
@@ -540,7 +600,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H022",
@@ -565,7 +628,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H023",
@@ -590,7 +656,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H024",
@@ -623,7 +692,10 @@
         "gaussian-region-index-maintenance-v1: small changed fractions maintain index far below full rebuild cost in synthetic benchmark",
         "production-shaped GaussianSpatialIndex and indexed selector added on research/maveb-discovery-persistent"
       ],
-      "next_action": "Obtain green CI, run in-repo locality benchmark, then measure real clustered scenes and Apple M2 Pro performance."
+      "next_action": "Obtain green CI, run in-repo locality benchmark, then measure real clustered scenes and Apple M2 Pro performance.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H025",
@@ -653,7 +725,10 @@
         "TextureBaker globally rasterizes cameras, searches triangle-camera candidates, computes global exposure target, and uses ordinal atlas layout.",
         "atlas-uv-churn-v0 shows local triangle insertion/removal can churn 50-100% of unchanged UV addresses."
       ],
-      "next_action": "Prototype stable patch/page texture addressing before any incremental texture-repair claim."
+      "next_action": "Prototype stable patch/page texture addressing before any incremental texture-repair claim.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H026",
@@ -678,7 +753,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H027",
@@ -703,7 +781,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "locked-headline",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Directly required to establish the locked paper claim: cross-derived-state dependency closure, minimal-work certification, changed-fraction scaling, and end-to-end ULR/equivalence."
     },
     {
       "hypothesis_id": "H028",
@@ -732,7 +813,10 @@
       "latest_evidence": [
         "gaussian-index-layout-v2 exposes memory-latency tradeoff: hash-bucket prototype ~88 MB RSS vs sorted compact prototype ~41 MB RSS at 1M synthetic primitives"
       ],
-      "next_action": "Compare flat/open-addressed hash, Morton-sorted region ranges and compact region-directory layouts."
+      "next_action": "Compare flat/open-addressed hash, Morton-sorted region ranges and compact region-directory layouts.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H029",
@@ -757,7 +841,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "locked-headline",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Directly required to establish the locked paper claim: cross-derived-state dependency closure, minimal-work certification, changed-fraction scaling, and end-to-end ULR/equivalence."
     },
     {
       "hypothesis_id": "H030",
@@ -786,7 +873,10 @@
       "latest_evidence": [
         "gaussian-region-index-v0 shows primitive inspections scale with selected dirty buckets in synthetic data rather than total Gaussian count"
       ],
-      "next_action": "Run same fixed scene over 0.1%-100% dirty fractions with scan/index/full-update wall time, bytes touched and memory overhead."
+      "next_action": "Run same fixed scene over 0.1%-100% dirty fractions with scan/index/full-update wall time, bytes touched and memory overhead.",
+      "final_disposition": "locked-headline",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Directly required to establish the locked paper claim: cross-derived-state dependency closure, minimal-work certification, changed-fraction scaling, and end-to-end ULR/equivalence."
     },
     {
       "hypothesis_id": "H031",
@@ -811,7 +901,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H032",
@@ -836,7 +929,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H033",
@@ -861,7 +957,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H034",
@@ -887,7 +986,10 @@
         "deterministic configs/results"
       ],
       "status": "priority-survivor",
-      "note": "End-to-end dependency-driven ULR is the strongest systems hypothesis; must expose hidden scans/copies across every layer."
+      "note": "End-to-end dependency-driven ULR is the strongest systems hypothesis; must expose hidden scans/copies across every layer.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H035",
@@ -912,7 +1014,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "locked-headline",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Directly required to establish the locked paper claim: cross-derived-state dependency closure, minimal-work certification, changed-fraction scaling, and end-to-end ULR/equivalence."
     },
     {
       "hypothesis_id": "H036",
@@ -937,7 +1042,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H037",
@@ -962,7 +1070,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H038",
@@ -987,7 +1098,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H039",
@@ -1012,7 +1126,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H040",
@@ -1037,7 +1154,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H041",
@@ -1062,7 +1182,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H042",
@@ -1087,7 +1210,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H043",
@@ -1112,7 +1238,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H044",
@@ -1137,7 +1266,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H045",
@@ -1162,7 +1294,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H046",
@@ -1187,7 +1322,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H047",
@@ -1212,7 +1350,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H048",
@@ -1237,7 +1378,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H049",
@@ -1262,7 +1406,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H050",
@@ -1287,7 +1434,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H051",
@@ -1312,7 +1462,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H052",
@@ -1337,7 +1490,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H053",
@@ -1367,7 +1523,10 @@
         "PR #28 ingestion drops unmatched previous entities from the next snapshot.",
         "observability-gated-deletion-v0: 392 false removals and 312 identity churn events under moving partial coverage vs 0/0 with observability gating."
       ],
-      "next_action": "Add explicit observation coverage and contradiction semantics before real deletion/reappearance experiments."
+      "next_action": "Add explicit observation coverage and contradiction semantics before real deletion/reappearance experiments.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H054",
@@ -1392,7 +1551,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H055",
@@ -1417,7 +1579,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H056",
@@ -1442,7 +1607,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H057",
@@ -1467,7 +1635,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H058",
@@ -1492,7 +1663,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H059",
@@ -1517,7 +1691,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H060",
@@ -1542,7 +1719,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H061",
@@ -1567,7 +1747,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H062",
@@ -1592,7 +1775,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H063",
@@ -1617,7 +1803,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H064",
@@ -1642,7 +1831,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H065",
@@ -1667,7 +1859,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H066",
@@ -1692,7 +1887,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H067",
@@ -1717,7 +1915,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H068",
@@ -1742,7 +1943,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H069",
@@ -1767,7 +1971,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H070",
@@ -1792,7 +1999,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H071",
@@ -1817,7 +2027,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H072",
@@ -1842,7 +2055,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H073",
@@ -1867,7 +2083,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H074",
@@ -1892,7 +2111,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H075",
@@ -1917,7 +2139,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H076",
@@ -1942,7 +2167,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H077",
@@ -1967,7 +2195,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H078",
@@ -1992,7 +2223,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H079",
@@ -2017,7 +2251,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H080",
@@ -2042,7 +2279,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H081",
@@ -2067,7 +2307,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H082",
@@ -2098,7 +2341,10 @@
         "renderer-locality-audit-v0 quantifies 256-byte canonical Gaussian record and ~344 MB per-Gaussian allocation footprint at 1M splats before sort buffers.",
         "stable-slot traffic accounting shows enough theoretical byte leverage for same-cardinality patch updates."
       ],
-      "next_action": "Implement same-cardinality partial canonical-record updates and measure on M2 Pro."
+      "next_action": "Implement same-cardinality partial canonical-record updates and measure on M2 Pro.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H083",
@@ -2123,7 +2369,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H084",
@@ -2148,7 +2397,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H085",
@@ -2173,7 +2425,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H086",
@@ -2198,7 +2453,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H087",
@@ -2223,7 +2481,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H088",
@@ -2248,7 +2509,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H089",
@@ -2273,7 +2537,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H090",
@@ -2298,7 +2565,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H091",
@@ -2328,7 +2598,10 @@
         "WorldArchive currently rewrites full history of full snapshots.",
         "world-archive-delta-accounting-v0 shows large mechanical scaling leverage for checkpoint+delta history under sparse changes."
       ],
-      "next_action": "Implement append-only revision journal + periodic checkpoints; verify exact revision reconstruction."
+      "next_action": "Implement append-only revision journal + periodic checkpoints; verify exact revision reconstruction.",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H092",
@@ -2357,7 +2630,10 @@
       "latest_evidence": [
         "Full-history archive audit establishes avoidable duplication; content-addressed reuse remains untested."
       ],
-      "next_action": "Only test after delta journal exists; do not build ahead of measured need."
+      "next_action": "Only test after delta journal exists; do not build ahead of measured need.",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H093",
@@ -2382,7 +2658,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H094",
@@ -2407,7 +2686,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H095",
@@ -2432,7 +2714,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H096",
@@ -2457,7 +2742,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H097",
@@ -2482,7 +2770,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H098",
@@ -2507,7 +2798,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H099",
@@ -2532,7 +2826,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H100",
@@ -2557,7 +2854,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H101",
@@ -2582,7 +2882,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H102",
@@ -2607,7 +2910,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H103",
@@ -2632,7 +2938,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H104",
@@ -2657,7 +2966,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H105",
@@ -2682,7 +2994,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H106",
@@ -2707,7 +3022,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H107",
@@ -2732,7 +3050,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H108",
@@ -2757,7 +3078,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H109",
@@ -2782,7 +3106,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H110",
@@ -2807,7 +3134,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H111",
@@ -2832,7 +3162,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H112",
@@ -2857,7 +3190,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H113",
@@ -2882,7 +3218,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "evaluation-or-ablation",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Retained only as a falsification metric, ablation, or failure-regime test for the locked claim."
     },
     {
       "hypothesis_id": "H114",
@@ -2907,7 +3246,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H115",
@@ -2932,7 +3274,10 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "final_disposition": "deferred-followup",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Removed from the current paper path to avoid contribution dilution; may become a separate follow-up if independent evidence later warrants it."
     },
     {
       "hypothesis_id": "H116",
@@ -2957,7 +3302,10 @@
         "Gaussian local-update oracle",
         "raw work counters"
       ],
-      "status": "production-prototype"
+      "status": "production-prototype",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H117",
@@ -2982,7 +3330,10 @@
         "stable atlas correctness fixture",
         "persistent patch identity"
       ],
-      "status": "pivoted-after-probe"
+      "status": "pivoted-after-probe",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     },
     {
       "hypothesis_id": "H118",
@@ -3009,7 +3360,10 @@
         "TSDF dirty meshing",
         "GPU publication counters"
       ],
-      "status": "priority-probe"
+      "status": "priority-probe",
+      "final_disposition": "locked-headline",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Directly required to establish the locked paper claim: cross-derived-state dependency closure, minimal-work certification, changed-fraction scaling, and end-to-end ULR/equivalence."
     },
     {
       "hypothesis_id": "H119",
@@ -3035,9 +3389,24 @@
         "texture locality audit",
         "ULR texture-byte counters"
       ],
-      "status": "priority-probe"
+      "status": "priority-probe",
+      "final_disposition": "required-mechanism",
+      "final_filter_date": "2026-09-20",
+      "final_filter_rationale": "Necessary correctness or locality mechanism for the locked claim, but not claimed as standalone novelty."
     }
   ],
   "lastPrunedAt": "2026-09-20",
-  "lastUpdated": "2026-09-20"
+  "lastUpdated": "2026-09-20",
+  "finalFilter": {
+    "date": "2026-09-20",
+    "lockedProblem": "Dependency-certified heterogeneous minimal-work repair for persistent captured worlds",
+    "rule": "Only hypotheses that directly prove, implement, or falsify the locked claim remain active for the current paper.",
+    "counts": {
+      "deferred-followup": 92,
+      "evaluation-or-ablation": 6,
+      "required-mechanism": 16,
+      "locked-headline": 5
+    },
+    "paperReady": false
+  }
 }
