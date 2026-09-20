@@ -653,6 +653,27 @@
       "claims_relevant_to_maveb": "Strong prior art for robustness of phase correlation to noise/outliers/uneven point density.",
       "overlap_with_candidate_maveb_contribution": "Kills any claim that phase-based displacement robustness under resampling is new.",
       "potential_unexplored_gap": "Use as a baseline or component only."
+    },
+    {
+      "id": "p032",
+      "title": "Abstract Rendering: Certified Rendering Under 3D Semantic Uncertainty",
+      "authors": "Ji, Li, Zhong, Zhang, Mitra",
+      "year": 2025,
+      "venue": "NeurIPS 2025",
+      "link": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/976c391cba6bf0bb70f6edd7f89cd23c-Abstract-Conference.html",
+      "code_repository": "https://github.com/IllinoisReliableAutonomyGroup/Abstract-Rendering",
+      "representation": "3D Gaussian Splats and NeRF",
+      "inputs": "scene plus continuous camera/scene uncertainty sets",
+      "outputs": "provable per-pixel rendered-image bounds and downstream certification",
+      "central_contribution": "Piecewise-linear abstract rendering bounds through projection, sorting and cumulative alpha aggregation; scales to scenes with up to 1M Gaussians.",
+      "major_algorithms": "linear relational approximations; abstract sorting/aggregation; auto_LiRPA/CROWN integration",
+      "metrics": "bound tightness and downstream certification",
+      "hardware": "GPU/CUDA implementation",
+      "runtime": "see paper/repository",
+      "limitations": "targets uncertainty sets and downstream certification, not specifically post-edit protected-region locality",
+      "claims_relevant_to_maveb": "Certified 3DGS rendering is established prior art.",
+      "overlap_with_candidate_maveb_contribution": "Strong collision for any broad 'first certified 3DGS rendering' claim.",
+      "potential_unexplored_gap": "A fixed-camera, concrete pre/post edited-subset alpha-mass locality certificate may be much cheaper and tailored to interactive editing, but must be compared directly."
     }
   ]
 }
