@@ -1,4 +1,4 @@
-"""Auditable reference implementation of Criticality-Bounded Revision Cones.
+r"""Auditable reference implementation of Criticality-Bounded Revision Cones.
 
 K[v, u] is the non-negative normalized influence gain from state block u -> v.
 The unrepaired exterior is O = V \ C.
