@@ -63,10 +63,17 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     if (!translated)
         return std::unexpected(translated.error());
 
-    pendingTemporalInvalidationBounds_ = scene::TemporalWorldBounds{
-        .minimum = editBounds->minimum,
-        .maximum = editBounds->maximum,
-    };
+    if (pendingTemporalInvalidationBounds_) {
+        pendingTemporalInvalidationBounds_->minimum =
+            simd_min(pendingTemporalInvalidationBounds_->minimum, editBounds->minimum);
+        pendingTemporalInvalidationBounds_->maximum =
+            simd_max(pendingTemporalInvalidationBounds_->maximum, editBounds->maximum);
+    } else {
+        pendingTemporalInvalidationBounds_ = scene::TemporalWorldBounds{
+            .minimum = editBounds->minimum,
+            .maximum = editBounds->maximum,
+        };
+    }
     lastTemporalInvalidationPlan_ = {};
     return {};
 }
