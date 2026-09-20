@@ -240,6 +240,20 @@
       "benchmark_availability": "standard NVS reconstruction pipeline including mip-NeRF 360 reported by paper/project",
       "integration_feasibility": "conceptual/algorithmic baseline for S4; external CUDA reproduction where compute is available",
       "reuse_status": "no code reuse until repository license is clarified"
+    },
+    {
+      "repository_url": "https://github.com/heyicheng-never/VG-Mapping",
+      "commit_sha": "8f7de4fcbc04aae1c33f1c8ac4914333e60afe8b",
+      "license": "no root LICENSE file observed; manual review required",
+      "language": "repository currently exposes README + supplementary material; implementation code not yet released",
+      "gpu_backend": "not inspectable from repository at pinned SHA",
+      "relevant_subsystem": "semi-static RGB-D benchmark, TSDF-assisted changed-region detection, hybrid TSDF+3DGS update baseline",
+      "implementation_quality": "official paper repository but README marks code release incomplete",
+      "useful_algorithm": "paper-level TSDF-assisted variation detection and variation-aware Gaussian density control; code unavailable for implementation audit",
+      "reproducibility": "dataset available; method code unavailable at pinned SHA",
+      "benchmark_availability": "VG-Scene: 6 synthetic + 3 real pre/post-change RGB-D sequences",
+      "integration_feasibility": "high-value dataset/direct baseline once official code is released; currently literature/dataset comparator only",
+      "reuse_status": "no code present to reuse; no reuse until code and license are released/verified"
     }
   ]
 }
