@@ -10,6 +10,7 @@
 #include <aether/mesh/TransparentSort.hpp>
 #include <aether/package/Package.hpp>
 #include <aether/package/Sha256.hpp>
+#include <aether/revision/RevisionPlanner.hpp>
 #include <aether/scene/Camera.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 
@@ -1030,7 +1031,9 @@ void Renderer::draw(MTK::View* view) noexcept {
                 maximumMatrixDelta = std::max(
                     maximumMatrixDelta, std::abs(currentViewProjection.columns[column][row] -
                                                  previousViewProjection_.columns[column][row]));
-        bool historyUsable = temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
+        const bool baseHistoryUsable =
+            temporalHistoryValid_ && maximumMatrixDelta < 0.5F;
+        bool historyUsable = baseHistoryUsable;
         bool regionalInvalidation = false;
         bool haveTemporalInvalidationPlan = false;
         simd_float4 invalidationRect{};
@@ -1102,7 +1105,118 @@ void Renderer::draw(MTK::View* view) noexcept {
 
             lastGaussianRevisionCertificateStatistics_
                 .invalidationCoversCertifiedSupport = supportCovered;
-            if (!supportCovered || forceTemporalFullHistoryInvalidation) {
+
+            const bool temporalValidationStable =
+                baseHistoryUsable && supportCovered &&
+                !forceTemporalFullHistoryInvalidation;
+            const double staleHistoryBound =
+                frameGaussianRevisionCertificate->maximumRgbLInfBound;
+            const double historyWeight = temporalValidationStable ? 0.9 : 1.0;
+            const double candidateHistoryWork =
+                temporalValidationStable && haveTemporalInvalidationPlan
+                    ? static_cast<double>(
+                          lastTemporalInvalidationPlan_.invalidatedPixels)
+                    : static_cast<double>(
+                          static_cast<std::uint64_t>(sceneTargetWidth_) *
+                          sceneTargetHeight_);
+
+            auto outputGraph = revision::RevisionGraph::build(
+                {
+                    {"gaussian-current-frame-repaired", 0.0, 0.0},
+                    {"temporal-history-repair", candidateHistoryWork, 0.0},
+                },
+                {});
+            bool temporalRepairSelected = true;
+            if (outputGraph) {
+                std::vector<double> sourceBounds{
+                    0.0, staleHistoryBound};
+                std::vector<revision::RevisionNodeId> hardClosure{0};
+                if (!temporalValidationStable)
+                    hardClosure.push_back(1);
+                const std::vector<revision::RevisionQoI> qois{
+                    {"resolved-rgb-linf",
+                     {{1, historyWeight}},
+                     gaussianRevisionRgbTolerance_},
+                };
+                auto planned = revision::greedyCertifiedRevisionCone(
+                    *outputGraph, sourceBounds, hardClosure, qois);
+                if (planned) {
+                    temporalRepairSelected =
+                        std::find(planned->cone.begin(), planned->cone.end(),
+                                  revision::RevisionNodeId{1}) !=
+                        planned->cone.end();
+                    lastGaussianOutputConePlannerStatistics_ = {
+                        .available = true,
+                        .stable = planned->stable,
+                        .passes = planned->passes,
+                        .temporalRepairSelected = temporalRepairSelected,
+                        .fullRebuild = planned->fullRebuild,
+                        .resolvedRgbBound =
+                            planned->qois.empty()
+                                ? std::numeric_limits<double>::infinity()
+                                : planned->qois.front().bound,
+                        .epsilon = gaussianRevisionRgbTolerance_,
+                        .plannerWork = planned->work,
+                        .fullWork = planned->fullWork,
+                    };
+                } else {
+                    forceTemporalFullHistoryInvalidation = true;
+                    lastGaussianOutputConePlannerStatistics_ = {
+                        .available = false,
+                        .stable = false,
+                        .passes = false,
+                        .temporalRepairSelected = true,
+                        .fullRebuild = true,
+                        .resolvedRgbBound =
+                            std::numeric_limits<double>::infinity(),
+                        .epsilon = gaussianRevisionRgbTolerance_,
+                        .plannerWork = candidateHistoryWork,
+                        .fullWork = candidateHistoryWork,
+                    };
+                    Log::instance().write(
+                        LogLevel::error, planned.error().describe());
+                }
+            } else {
+                forceTemporalFullHistoryInvalidation = true;
+                lastGaussianOutputConePlannerStatistics_ = {
+                    .available = false,
+                    .stable = false,
+                    .passes = false,
+                    .temporalRepairSelected = true,
+                    .fullRebuild = true,
+                    .resolvedRgbBound =
+                        std::numeric_limits<double>::infinity(),
+                    .epsilon = gaussianRevisionRgbTolerance_,
+                    .plannerWork = candidateHistoryWork,
+                    .fullWork = candidateHistoryWork,
+                };
+                Log::instance().write(
+                    LogLevel::error, outputGraph.error().describe());
+            }
+
+            if (!temporalRepairSelected &&
+                temporalValidationStable &&
+                !forceTemporalFullHistoryInvalidation) {
+                // CBRC certifies that retaining stale history remains within the
+                // declared output tolerance. Current frame rendering is exact,
+                // so only the retained-history residual contributes.
+                historyUsable = true;
+                regionalInvalidation = false;
+                invalidationRect = {};
+                const std::uint64_t fullPixels =
+                    static_cast<std::uint64_t>(sceneTargetWidth_) *
+                    sceneTargetHeight_;
+                lastTemporalInvalidationPlan_ = {
+                    .fullFrame = false,
+                    .empty = true,
+                    .normalizedRect = {},
+                    .invalidatedPixels = 0,
+                    .fullFramePixels = fullPixels,
+                };
+                lastGaussianRevisionCertificateStatistics_
+                    .temporalFullFrameFallback = false;
+            } else if (!supportCovered || forceTemporalFullHistoryInvalidation ||
+                       !baseHistoryUsable) {
                 historyUsable = false;
                 regionalInvalidation = false;
                 const std::uint64_t fullPixels =
@@ -1117,23 +1231,21 @@ void Renderer::draw(MTK::View* view) noexcept {
                 };
                 lastGaussianRevisionCertificateStatistics_
                     .temporalFullFrameFallback = true;
-            } else if (!historyUsable ||
-                       lastTemporalInvalidationPlan_.fullFrame) {
+            } else if (lastTemporalInvalidationPlan_.fullFrame) {
+                historyUsable = false;
+                regionalInvalidation = false;
                 lastGaussianRevisionCertificateStatistics_
                     .temporalFullFrameFallback = true;
-                if (!lastTemporalInvalidationPlan_.fullFrame) {
-                    regionalInvalidation = false;
-                    const std::uint64_t fullPixels =
-                        static_cast<std::uint64_t>(sceneTargetWidth_) *
-                        sceneTargetHeight_;
-                    lastTemporalInvalidationPlan_ = {
-                        .fullFrame = true,
-                        .empty = false,
-                        .normalizedRect = {0.0F, 0.0F, 1.0F, 1.0F},
-                        .invalidatedPixels = fullPixels,
-                        .fullFramePixels = fullPixels,
-                    };
-                }
+            } else {
+                // Planner selected temporal repair and the existing regional
+                // plan covers every pixel in certified Gaussian support.
+                historyUsable = true;
+                regionalInvalidation =
+                    !lastTemporalInvalidationPlan_.empty;
+                invalidationRect =
+                    lastTemporalInvalidationPlan_.normalizedRect;
+                lastGaussianRevisionCertificateStatistics_
+                    .temporalFullFrameFallback = false;
             }
         } else if (forceTemporalFullHistoryInvalidation) {
             historyUsable = false;
