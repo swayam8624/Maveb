@@ -39,6 +39,13 @@ struct GaussianLocalUpdateSelection final {
     const gaussian::GaussianAsset& asset, const GaussianLocalUpdateSelection& selection,
     world::LocalityLedger& ledger);
 
+struct GaussianOverlaySelectionDiagnostics final {
+    std::size_t dirtyRegionsQueried{};
+    std::size_t baseEntriesVisited{};
+    std::size_t staleBaseEntriesSkipped{};
+    std::size_t deltaEntriesVisited{};
+};
+
 struct PersistentGaussianTranslationResult final {
     world::WorldEditResult worldEdit;
     std::size_t translatedGaussians{};
@@ -65,13 +72,6 @@ struct PersistentGaussianTranslationResult final {
     const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
     const GaussianSpatialIndex& spatialIndex,
     const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
-
-struct GaussianOverlaySelectionDiagnostics final {
-    std::size_t dirtyRegionsQueried{};
-    std::size_t baseEntriesVisited{};
-    std::size_t staleBaseEntriesSkipped{};
-    std::size_t deltaEntriesVisited{};
-};
 
 /// Compact base+delta indexed equivalent used to test revision-local spatial maintenance.
 /// The selected primitive set and ownership semantics must remain identical to the scan oracle.
