@@ -138,6 +138,40 @@ with the usual care that log(kappa) < 0.
 
 This is the core mathematical replacement for an arbitrary dirty halo.
 
+## 6.1 Revision Green's function and susceptibility
+
+For any unrepaired exterior O for which the response is stable, define
+
+    G_O = (I-K_OO)^(-1).
+
+G_O is the **revision response Green's function**: its entry (v,u) upper-bounds the accumulated
+normalized true-change response at v induced by one unit of frontier change at u through every
+admissible exterior propagation path.
+
+Define global exterior susceptibility
+
+    chi_O = ||G_O||_w
+
+and, more usefully for a specific revision/frontier direction,
+
+    chi_O(f) = ||G_O f||_w / ||f||_w.
+
+Then the exterior stale-error certificate is
+
+    ||z_O||_w <= chi_O(f_O) ||f_O||_w.
+
+This quantity is superior to spectral radius alone for finite captured-world graphs. A DAG has
+rho(K)=0 but may still have enormous transient fan-out. G_O sums that finite path amplification
+exactly. In cyclic systems, chi grows rapidly as the response approaches criticality.
+
+Cheap safe bound:
+
+    if kappa_O = ||K_OO||_w < 1,
+    then chi_O <= 1/(1-kappa_O).
+
+For acyclic exteriors, K_OO is nilpotent and G_O is a finite polynomial even when kappa_O >= 1.
+Therefore kappa is a sufficient contraction test, not the sole definition of criticality.
+
 ## 7. Revision correlation length
 
 For 0 < kappa < 1 define
@@ -340,6 +374,38 @@ Kill CBRC if:
 - closest prior art is found that already applies correlation-decay/light-cone criticality to
   heterogeneous captured-world reconstruction and rendering updates.
 
+## 14.1 Important collision notes
+
+The vocabulary "influence" and "susceptibility" is **not** novel. Engineering design-change research
+has used dependency matrices and dominant eigenvectors to rank component influence/susceptibility
+under cyclic change propagation (Sarica & Luo, IEEE Systems Journal 2019). CBRC therefore must not
+claim generic susceptibility analysis.
+
+Likewise:
+
+- self-adjusting computation already tracks dependencies and re-executes affected computation;
+- correlation-decay algorithms already justify local computation in other graph problems;
+- goal-oriented adaptive PDE methods already use local error estimators to minimize work for a QoI;
+- incremental rendering already tracks affected render regions/caches;
+- differentiable rendering computes scene-to-image sensitivities;
+- recent Gaussian-splatting work analytically quantifies some per-Gaussian rendering errors.
+
+The surviving candidate distinction is the **typed captured-world frontier theorem**: physical evidence
+revision -> exact hard closure -> tolerance-normalized heterogeneous transfer operator -> boundary
+change flux -> exterior Green's-function response bound -> minimum-work certified repair cone ->
+principled local/full crossover.
+
+Key neighboring references to keep in the attack set:
+
+- Acar, *Self-Adjusting Computation*, CMU-CS-05-129.
+- Wörister et al., *Lazy Incremental Computation for Efficient Scene Graph Rendering*, HPG 2013.
+- Sarica & Luo, *An Infinite Regress Model of Design Change Propagation in Complex Systems*,
+  IEEE Systems Journal 2019, DOI 10.1109/JSYST.2019.2899988.
+- Gamarnik et al., correlation-decay methods for local network algorithms.
+- Goal-oriented/local a-posteriori error estimation literature for adaptive PDEs.
+- 2026 algorithmic-locality/light-cone work in tensor-network message passing.
+- GaussianPOP (2026) and other analytical Gaussian rendering-error work.
+
 ## 15. Current novelty status
 
 A current search found extensive prior art in self-adjusting computation, correlation-decay local
@@ -350,6 +416,6 @@ The search did not identify the combined construction above for persistent captu
 That absence is not proof of worldwide novelty. The candidate must continue to be attacked before
 publication.
 
-MATHEMATICAL_DESIGN_MATURITY = approximately 0.65
+MATHEMATICAL_DESIGN_MATURITY = approximately 0.70
 IMPLEMENTATION_EVIDENCE = false
 NOVELTY_PROVEN = false
