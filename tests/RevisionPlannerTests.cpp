@@ -1,5 +1,6 @@
 #include <aether/revision/RevisionPlanner.hpp>
 
+#include <stdexcept>
 #include <cmath>
 #include <cstdlib>
 #include <exception>
