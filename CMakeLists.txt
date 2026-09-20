@@ -169,7 +169,7 @@ if(AETHER_BUILD_TESTS)
             COMMAND maveb-cbrc-gaussian-oracle
                 --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
                 --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
-                --changed 0
+                --detect-changed
                 --width 64 --height 64
                 --focal-x 70 --focal-y 70
                 --center-x 32 --center-y 32
