@@ -132,6 +132,12 @@ if(AETHER_BUILD_TESTS)
     add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
 
 
+    add_executable(MavebGaussianPublicationPlanTests tests/GaussianPublicationPlanTests.cpp)
+    target_link_libraries(MavebGaussianPublicationPlanTests PRIVATE Aether::Gaussian)
+    aether_configure_target(MavebGaussianPublicationPlanTests)
+    add_test(NAME MavebGaussianPublicationPlanTests COMMAND MavebGaussianPublicationPlanTests)
+
+
     add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
     target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
     aether_configure_target(MavebStableTextureAtlasTests)
