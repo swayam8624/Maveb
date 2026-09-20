@@ -31,7 +31,9 @@ class MavebBenchVGSceneTests(unittest.TestCase):
             resolved=mod.resolve_input(manifest)
             self.assertTrue(resolved["ready"])
             self.assertTrue(resolved["complete"])
-            self.assertEqual(resolved["sequences"][0]["path"],str(seq))
+            self.assertEqual(
+                Path(resolved["sequences"][0]["path"]).resolve(), seq.resolve()
+            )
             out=root/"canonical.json"
             status,detail=mod.adapt_vgscene(seq,"synthetic",out)
             self.assertEqual(status,"pass",detail)
