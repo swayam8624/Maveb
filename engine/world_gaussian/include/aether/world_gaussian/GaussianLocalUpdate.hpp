@@ -26,6 +26,8 @@ struct GaussianLocalUpdateSelection final {
     std::size_t conservativeUnownedMatches{};
     std::size_t rejectedStableOwnedGaussians{};
     std::size_t unaffectedGaussians{};
+    /// Number of primitives whose ownership/selection state was actually inspected.
+    std::size_t inspectedGaussians{};
 };
 
 struct PersistentGaussianTranslationResult final {
@@ -41,6 +43,14 @@ struct PersistentGaussianTranslationResult final {
 /// they occupy the same dirty metric cell; unowned boundary splats may be included conservatively.
 [[nodiscard]] Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdate(
     const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
+
+/// Indexed equivalent of selectGaussiansForLocalUpdate().
+/// It must preserve the exact selected primitive set and ownership accounting while inspecting only
+/// primitives that occupy dirty RegionKey buckets.
+[[nodiscard]] Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdateIndexed(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianSpatialIndex& spatialIndex,
     const GaussianEntityOwnership* ownership = nullptr, GaussianLocalUpdatePolicy policy = {});
 
 /// Applies a rigid translation to every Gaussian owned by one stable persistent entity.
