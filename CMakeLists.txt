@@ -163,6 +163,20 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebGaussianPublicationPlanTests)
     add_test(NAME MavebGaussianPublicationPlanTests COMMAND MavebGaussianPublicationPlanTests)
 
+    if(TARGET maveb-cbrc-gaussian-oracle)
+        add_test(
+            NAME MavebCBRCGaussianOracleFixture
+            COMMAND maveb-cbrc-gaussian-oracle
+                --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
+                --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
+                --changed 0
+                --width 64 --height 64
+                --focal-x 70 --focal-y 70
+                --center-x 32 --center-y 32
+                --epsilon 0.8
+        )
+    endif()
+
 
     add_executable(MavebTemporalInvalidationTests tests/TemporalInvalidationTests.cpp)
     target_link_libraries(MavebTemporalInvalidationTests PRIVATE Aether::Scene)
