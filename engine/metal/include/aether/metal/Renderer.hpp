@@ -57,6 +57,25 @@ struct GaussianEditPublicationStatistics final {
     bool globalTemporalHistoryInvalidated{};
 };
 
+struct GaussianRevisionCertificateStatistics final {
+    bool available{};
+    bool invalidationCoversCertifiedSupport{};
+    bool temporalFullFrameFallback{};
+    std::uint64_t revisionVersion{};
+    std::size_t changedGaussians{};
+    std::uint64_t affectedPixels{};
+    std::uint64_t fullFramePixels{};
+    double maximumCurrentRgbBound{};
+    double sceneColorUpperBound{};
+
+    [[nodiscard]] double affectedPixelRatio() const noexcept {
+        if (fullFramePixels == 0)
+            return 0.0;
+        return static_cast<double>(affectedPixels) /
+               static_cast<double>(fullFramePixels);
+    }
+};
+
 struct FrameCapture final {
     std::uint32_t width{};
     std::uint32_t height{};
@@ -201,6 +220,10 @@ class Renderer final {
     [[nodiscard]] const scene::TemporalInvalidationPlan&
     lastTemporalInvalidationPlan() const noexcept {
         return lastTemporalInvalidationPlan_;
+    }
+    [[nodiscard]] GaussianRevisionCertificateStatistics
+    gaussianRevisionCertificateStatistics() const noexcept {
+        return lastGaussianRevisionCertificateStatistics_;
     }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
@@ -354,6 +377,7 @@ class Renderer final {
     std::uint32_t selectedMeshEntity_{};
     std::uint32_t gizmoMode_{};
     GaussianEditPublicationStatistics lastGaussianEditPublicationStatistics_{};
+    GaussianRevisionCertificateStatistics lastGaussianRevisionCertificateStatistics_{};
     Clock::TimePoint previousFrameTime_ = Clock::now();
 };
 
