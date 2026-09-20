@@ -191,8 +191,8 @@ GaussianPipeline::pendingRevisionSnapshot() const {
 
     std::vector<std::uint32_t> indices;
     indices.reserve(pendingRevisionBefore_.size());
-    for (const auto& [index, _] : pendingRevisionBefore_)
-        indices.push_back(index);
+    for (const auto& entry : pendingRevisionBefore_)
+        indices.push_back(entry.first);
     std::sort(indices.begin(), indices.end());
 
     GaussianRevisionSnapshot snapshot;
