@@ -49,6 +49,8 @@ def bind(
     total_gaussians = int(translation.get("gaussianCount", 0))
     translated = int(translation.get("translatedGaussians", 0))
     inspected = int(translation.get("gaussiansInspected", 0))
+    used_overlay = bool(translation.get("usedOverlayIndex", False))
+    overlay_valid = bool(translation.get("overlayIndexValid", True))
     certified_changed = int(certificate.get("changedGaussians", 0))
     if total_gaussians <= 0:
         raise ValueError("gaussianCount must be positive")
@@ -121,6 +123,10 @@ def bind(
         "revision_id": f"{previous_revision}->{revision}",
         "git_sha": git_sha,
         "execution_mode": "certified-supplied-cone",
+        "selection_mode": (
+            "overlay-indexed" if used_overlay else "full-scan-fallback"
+        ),
+        "overlay_index_valid_after_edit": overlay_valid,
         "graph_scope": "gaussian-vertical-slice-v1",
         "graph_version": "gaussian-source-image-history-v1",
         "bound_version": "gaussian-image-temporal-v1",
@@ -150,8 +156,24 @@ def bind(
         "candidate_cone_nodes": translated,
         "total_nodes": total_gaussians,
         "work_ledger": work_ledger,
-        "production_certificate": {
-            "revisionVersion": int(certificate.get("revisionVersion", 0)),
+        "selection_diagnostics": {
+            "dirtyRegionsQueried": int(
+                translation.get("overlayDirtyRegionsQueried", 0)
+            ),
+            "baseEntriesVisited": int(
+                translation.get("overlayBaseEntriesVisited", 0)
+            ),
+            "staleBaseEntriesSkipped": int(
+                translation.get("overlayStaleBaseEntriesSkipped", 0)
+            ),
+            "deltaEntriesVisited": int(
+                translation.get("overlayDeltaEntriesVisited", 0)
+            ),
+            "overlayCompacted": bool(
+                translation.get("overlayIndexCompacted", False)
+            ),
+        },
+        "production_certificate": {            "revisionVersion": int(certificate.get("revisionVersion", 0)),
             "maximumCurrentRgbBound": float(
                 certificate["maximumCurrentRgbBound"]
             ),
