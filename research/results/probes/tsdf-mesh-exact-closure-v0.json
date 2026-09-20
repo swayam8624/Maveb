@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "experiment": "tsdf-mesh-exact-closure-oracle-v0",
+  "executedAt": "2026-09-20",
+  "counts": [
+    3,
+    3,
+    3
+  ],
+  "maximumDirtySubsetSize": 4,
+  "cases": 20852,
+  "mismatchCount": 0,
+  "maximumClosureAmplification": 8,
+  "byDirtySubsetSize": {
+    "1": {
+      "cases": 27,
+      "closureMin": 1,
+      "closureMax": 8,
+      "closureMean": 4.62962962962963
+    },
+    "2": {
+      "cases": 351,
+      "closureMin": 2,
+      "closureMax": 12,
+      "closureMean": 7.725071225071225
+    },
+    "3": {
+      "cases": 2925,
+      "closureMin": 3,
+      "closureMax": 16,
+      "closureMean": 10.202051282051283
+    },
+    "4": {
+      "cases": 17549,
+      "closureMin": 4,
+      "closureMax": 19,
+      "closureMean": 12.31141375576956
+    }
+  },
+  "mismatches": [],
+  "decision": "PASS",
+  "interpretation": [
+    "Across all dirty-block subsets of size 1-4 in a 3x3x3 block grid, the production 8-owner invalidation rule exactly matches the independently enumerated block-level dependency oracle.",
+    "A single dirty block can invalidate at most 8 owner patches at block granularity.",
+    "This gives MAVEB one layer with an exact dependency contract that higher-layer locality mechanisms can be compared against."
+  ]
+}

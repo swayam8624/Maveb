@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "experiment": "temporal-local-invalidation-opportunity-v0",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-opportunity-probe",
+  "configuration": {
+    "trialsPerBoxCount": 500,
+    "frame": [
+      1920,
+      1080
+    ],
+    "coarseMask": [
+      240,
+      135
+    ],
+    "verticalFovDegrees": 60,
+    "depthRangeMeters": [
+      2,
+      10
+    ],
+    "boxExtentRangeMeters": [
+      0.08,
+      0.7
+    ],
+    "screenHaloPixels": 8
+  },
+  "summary": {
+    "1": {
+      "median": 0.004876543209876544,
+      "p95": 0.03241203703703703,
+      "mean": 0.008892592592592593
+    },
+    "2": {
+      "median": 0.013225308641975308,
+      "p95": 0.040888888888888864,
+      "mean": 0.016675061728395064
+    },
+    "4": {
+      "median": 0.028904320987654324,
+      "p95": 0.06572685185185184,
+      "mean": 0.03245302469135802
+    },
+    "8": {
+      "median": 0.05851851851851852,
+      "p95": 0.10541358024691357,
+      "mean": 0.062288827160493825
+    },
+    "16": {
+      "median": 0.11643518518518518,
+      "p95": 0.17439351851851848,
+      "mean": 0.12017956790123456
+    },
+    "32": {
+      "median": 0.2148456790123457,
+      "p95": 0.280270061728395,
+      "mean": 0.217255
+    },
+    "64": {
+      "median": 0.3666820987654321,
+      "p95": 0.43685648148148143,
+      "mean": 0.3678112345679012
+    },
+    "128": {
+      "median": 0.5443518518518519,
+      "p95": 0.606969135802469,
+      "mean": 0.5443385802469136
+    }
+  },
+  "decision": "PROMOTE TO RENDERER PROBE: conservative dirty-world projections are often far below full-frame area, so global temporal-history invalidation plausibly wastes stable history.",
+  "caveats": [
+    "synthetic boxes",
+    "no occlusion reasoning",
+    "coarse screen mask",
+    "not measured renderer quality/performance",
+    "camera model simplified"
+  ],
+  "next": "Implement a debug-only dirty-history mask in the experiment branch, compare unchanged-region temporal error and recovery frames against global invalidation."
+}

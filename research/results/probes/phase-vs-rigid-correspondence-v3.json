@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-vs-rigid-correspondence-baseline-v3",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-baseline-sanity",
+  "configuration": {
+    "trials": 100,
+    "pointsPerTrial": 64,
+    "anisotropicPointDistribution": true,
+    "randomRigidTransforms": true
+  },
+  "result": {
+    "medianRotationMatrixFrobeniusError": 7.244459328246368e-16,
+    "medianTranslationError": 5.615749585121715e-17
+  },
+  "interpretation": [
+    "With known primitive/entity correspondences, ordinary Procrustes/Kabsch recovery already solves rigid geometric preservation essentially exactly in this synthetic setting.",
+    "A spectral-phase mechanism is therefore not justified for ordinary rigid persistent-entity edits.",
+    "Phase remains scientifically interesting only where correspondence is absent/unstable under split, merge, prune or densification, and it must then beat simpler correspondence-free geometry baselines."
+  ],
+  "decision": "DEMOTE phase from flagship candidate. Retain only as a narrow correspondence-free/resampling hypothesis."
+}

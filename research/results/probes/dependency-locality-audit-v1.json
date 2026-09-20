@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "experiment": "dependency-locality-audit-v1",
+  "date": "2026-09-20",
+  "type": "source-audit-not-performance-benchmark",
+  "baselines": {
+    "main": "1d95c8f480fb2868d821fa107215311f1deab17c",
+    "persistentBranch": "research/maveb-discovery-persistent"
+  },
+  "localityLeaks": [
+    {
+      "stage": "dirty-region to Gaussian selection",
+      "currentBehavior": "PR #28 full selector scans every Gaussian even for tiny dirty sets.",
+      "mitigationStatus": "production-shaped GaussianSpatialIndex integration in research/maveb-discovery-persistent; CI verification pending.",
+      "researchMetric": "gaussian primitive inspections / full-scene primitive count"
+    },
+    {
+      "stage": "CPU sparse Metal snapshot to mesher",
+      "currentBehavior": "documented Metal sparse snapshot copies all resident blocks before CPU incremental mesh extraction.",
+      "mitigationStatus": "not implemented",
+      "researchMetric": "TSDF blocks/bytes read back per update / resident blocks/bytes"
+    },
+    {
+      "stage": "Gaussian GPU publication",
+      "currentBehavior": "Renderer::translateGaussians acquires every frame-semaphore slot via FrameQuiescence before modifying the shared Gaussian source buffer.",
+      "consequence": "A local edit waits for all in-flight rendering and blocks new draw submissions during publication.",
+      "mitigationHypotheses": [
+        "double-buffered regional chunks",
+        "copy-on-write Gaussian pages",
+        "deferred command-buffer patch publication",
+        "versioned shared-buffer ranges"
+      ],
+      "researchMetric": "edit publication stall p50/p95; blocked frame submissions; changed bytes"
+    },
+    {
+      "stage": "temporal state",
+      "currentBehavior": "Every local Gaussian translation sets temporalHistoryValid_ = false.",
+      "consequence": "A local spatial edit discards temporal history globally, potentially causing whole-frame temporal quality recovery cost.",
+      "mitigationHypotheses": [
+        "dirty-screen-space temporal invalidation mask",
+        "region/version tagged history",
+        "per-pixel world revision IDs"
+      ],
+      "researchMetric": "pixels/history tiles invalidated; temporal recovery frames; unchanged-region temporal damage"
+    },
+    {
+      "stage": "Gaussian render",
+      "currentBehavior": "Standard pipeline still projects/sorts/composites the active scene each frame; local edit state does not imply local render work.",
+      "consequence": "This is not itself an update bug, but any claim of 'minimal work' must distinguish mutation/reconstruction work from ordinary frame rendering."
+    }
+  ],
+  "decision": "S1 is promoted because source audit reveals multiple concrete places where semantic locality currently leaks into global computational work. The contribution must instrument and remove enough of these leaks to produce an end-to-end changed-fraction scaling result, not just add a spatial index.",
+  "immediateNext": [
+    "Get indexed selector branch green or isolate inherited PR28 failures.",
+    "Add explicit inspection/bytes/stall counters.",
+    "Prototype region/version temporal invalidation before attempting broader scheduler.",
+    "Measure whether local GPU publication can avoid all-frame quiescence safely."
+  ]
+}

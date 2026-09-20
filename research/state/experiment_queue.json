@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "frozenAt": "2026-09-20",
+  "updatedAt": "2026-09-20T20:20+05:30",
+  "rules": [
+    "cheap falsification before integration",
+    "novelty collision kills headline claim immediately",
+    "primary metrics fixed before medium/full experiment",
+    "all negative results retained",
+    "no numeric result is evidence until the committed probe actually executes"
+  ],
+  "queue": [
+    {
+      "priority": 1,
+      "id": "D3",
+      "name": "indexed persistent Gaussian selection",
+      "branch": "research/maveb-discovery-persistent",
+      "next": "finish format/static-analysis CI; preserve exact scan/index equivalence and ownership semantics; then run the in-repo locality benchmark on Apple silicon",
+      "kill": "semantic mismatch, maintenance overhead, or M2-Pro measurements show no meaningful work reduction"
+    },
+    {
+      "priority": 2,
+      "id": "D4",
+      "name": "cross-layer ULR ledger and first instrumented path",
+      "branch": "research/maveb-ulr-ledger",
+      "next": "get ledger CI green; record Gaussian inspection ULR first, then attach TSDF/mesh/GPU/temporal counters without mixing units",
+      "kill": "instrumentation cannot define equivalent full baselines or hidden global stages keep end-to-end locality near one"
+    },
+    {
+      "priority": 3,
+      "id": "D5",
+      "name": "observability-safe world transactions",
+      "branch": "research/maveb-observability",
+      "next": "get full CI green; test unknown vs observed-absent vs true removal vs reappearance with explicit negative-evidence regions",
+      "kill": "semantics are not conservative/correct under partial observation or introduce unacceptable stale-state behavior"
+    },
+    {
+      "priority": 4,
+      "id": "D6",
+      "name": "paged stable texture addressing",
+      "branch": "future child after stable-atlas correctness branch",
+      "next": "retain fixed global atlas only as correctness oracle; prototype persistent pages/indirection and measure address survival, texel density, fragmentation and dirty-page bytes",
+      "kill": "indirection/fragmentation/compaction causes global churn or destroys usable texture density"
+    },
+    {
+      "priority": 5,
+      "id": "D7",
+      "name": "same-cardinality Gaussian GPU publication locality",
+      "branch": "future PR28-derived child",
+      "next": "patch stable Gaussian record ranges without full scene reload/all-record conversion; measure bytes written, publication stall and next-frame cost",
+      "kill": "safe publication still requires effectively global copying/quiescence or patching hurts frame correctness/performance"
+    },
+    {
+      "priority": 6,
+      "id": "T1",
+      "name": "regional temporal-history invalidation",
+      "branch": "future PR28-derived child",
+      "next": "implement conservative dirty-world AABB projection mask and compare global/no/V0/V1 history invalidation",
+      "kill": "masks cover most pixels, changed-region ghosting regresses, or cost erases unchanged-region benefit"
+    },
+    {
+      "priority": 7,
+      "id": "R1",
+      "name": "offline temporal representation migration oracle",
+      "branch": "research/maveb-discovery",
+      "next": "collect measured per-region TSDF/mesh/Gaussian quality-memory-render-update tuples; solve exact temporal oracle before online policy work",
+      "kill": "best fixed feasible representation remains Pareto-optimal on held-out revisions"
+    },
+    {
+      "priority": 8,
+      "id": "C1",
+      "name": "resampling-stable lineage benefit",
+      "branch": "research/maveb-discovery",
+      "next": "strengthen benchmark against persistent-density and nearest/covariance/ICP/OT baselines; require downstream repair/history benefit",
+      "kill": "representation-level baseline matches correspondence or no downstream benefit remains"
+    },
+    {
+      "priority": 9,
+      "id": "P7",
+      "name": "geometry certificate tightness",
+      "branch": "research/maveb-discovery",
+      "next": "continue only as spare parallel probe; compare direct geometric/density bounds before more phase-specific work",
+      "kill": "useful coverage requires excessive slack or simpler geometry certificate dominates"
+    }
+  ]
+}

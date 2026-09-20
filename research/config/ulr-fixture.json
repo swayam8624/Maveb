@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "note": "Synthetic schema fixture only; not a MAVEB performance result.",
+  "repo": "swayam8624/Maveb",
+  "branch": "research/example",
+  "sha": "0000000000000000000000000000000000000000",
+  "scene": "synthetic-fixture",
+  "revision": "r1-to-r2",
+  "changedFraction": 0.01,
+  "correctnessGates": [
+    {
+      "name": "selected-set-equivalence",
+      "required": true,
+      "passed": true
+    },
+    {
+      "name": "geometry-equivalence",
+      "required": true,
+      "passed": true
+    }
+  ],
+  "layers": {
+    "tsdf": {
+      "blocksTouched": {
+        "full": 10000,
+        "incremental": 120
+      }
+    },
+    "mesh": {
+      "patchesRegenerated": {
+        "full": 10000,
+        "incremental": 140
+      }
+    },
+    "gaussian": {
+      "primitivesInspected": {
+        "full": 1000000,
+        "incremental": 10000
+      },
+      "primitivesRewritten": {
+        "full": 1000000,
+        "incremental": 10000
+      }
+    },
+    "texture": {
+      "texelsRewritten": {
+        "full": 67108864,
+        "incremental": 700000
+      }
+    },
+    "gpu": {
+      "canonicalBytesWritten": {
+        "full": 256000000,
+        "incremental": 2560000
+      }
+    },
+    "history": {
+      "diskBytesWritten": {
+        "full": 100000000,
+        "incremental": 1500000
+      }
+    }
+  },
+  "timingMs": {
+    "full": 500,
+    "incremental": 22
+  },
+  "byteDomains": {
+    "gpuUpload": {
+      "full": 256000000,
+      "incremental": 2560000
+    },
+    "diskWrite": {
+      "full": 100000000,
+      "incremental": 1500000
+    }
+  },
+  "peakMemoryBytes": {
+    "full": 1000000000,
+    "incremental": 800000000
+  }
+}
