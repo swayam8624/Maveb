@@ -1,4 +1,5 @@
 #include <aether/metal/GaussianPipeline.hpp>
+#include <aether/world_gaussian/GaussianRenderCertificate.hpp>
 
 #include <Foundation/Foundation.hpp>
 
@@ -134,9 +135,17 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
         asset.gaussians.size() > std::numeric_limits<std::uint32_t>::max()) {
         return fail(ErrorCode::resourceExhausted, "Gaussian asset count is empty or exceeds Metal");
     }
+    double sceneColorUpperBound = 1.0;
     std::vector<AetherGaussianGpu> converted(asset.gaussians.size());
     for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
         const gaussian::Gaussian& source = asset.gaussians[index];
+        auto colorBound =
+            world_gaussian::gaussianRendererColorUpperBound(source);
+        if (!colorBound)
+            return std::unexpected(colorBound.error());
+        for (const double channel : *colorBound)
+            sceneColorUpperBound = std::max(sceneColorUpperBound, channel);
+
         AetherGaussianGpu& destination = converted[index];
         destination.positionOpacity = {source.position[0], source.position[1], source.position[2],
                                        source.opacityLogit};
@@ -183,6 +192,8 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
         std::scoped_lock lock(publicationMutex_);
         gaussianSources_ = std::move(gaussianSources);
         canonicalGaussians_ = std::move(converted);
+        pendingRevisionBefore_.clear();
+        sceneColorUpperBound_ = sceneColorUpperBound;
         sourceVersions_.fill(0);
         currentVersion_ = 0;
         publicationJournal_.clear();
