@@ -226,7 +226,7 @@ void testIndexedSelectionScalesWithDirtyOccupancy() {
 
     // Spread primitives across one-dimensional metric cells. Exactly ten primitives occupy cell 0.
     for (std::size_t index = 0; index < gaussianCount; ++index) {
-        const float x = static_cast<float>(index / 10);
+        const float x = static_cast<float>(index) / 10.0F;
         asset.gaussians.push_back(gaussian(x + 0.1F, 0.1F, 0.1F));
     }
 
