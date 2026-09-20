@@ -76,6 +76,16 @@ def certificate():
 
 
 class CBRCLiveRevisionBinderTests(unittest.TestCase):
+    def test_frozen_version_identifiers(self):
+        self.assertEqual(
+            mod.GAUSSIAN_OUTPUT_GRAPH_VERSION,
+            "gaussian-output-cone-v2",
+        )
+        self.assertEqual(
+            mod.GAUSSIAN_TEMPORAL_BOUND_VERSION,
+            "gaussian-image-temporal-v1",
+        )
+
     def test_binds_exact_revision_sidecars_and_camera(self):
         result = mod.bind(
             translation(),
