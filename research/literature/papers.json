@@ -695,6 +695,27 @@
       "claims_relevant_to_maveb": "Static adaptive regional mesh/Gaussian assignment is occupied.",
       "overlap_with_candidate_maveb_contribution": "High for static region-wise hybrid allocation.",
       "potential_unexplored_gap": "Temporal representation migration as evidence/update rate/resource state evolves."
+    },
+    {
+      "id": "p034",
+      "title": "What Makes a 3D Scene Editable? A Factorized Benchmark of Fidelity, Locality, Consistency, and Preservation",
+      "authors": "Sariah Patro, Arjun Mehra, Nikhil Bhatia",
+      "year": 2026,
+      "venue": "arXiv 2609.14899",
+      "link": "https://arxiv.org/abs/2609.14899",
+      "code_repository": null,
+      "representation": "representation-agnostic 3D editing benchmark",
+      "inputs": "240 scene-edit pairs; NeRF, 3DGS, hybrid and proxy-based editors",
+      "outputs": "factorized editability profile",
+      "central_contribution": "EditBench3D evaluates instruction fidelity, spatial locality, held-out-view consistency and preservation of non-target content across five edit families.",
+      "major_algorithms": "visibility-aware 3D target supports + factorized evaluation",
+      "metrics": "fidelity, locality, consistency, non-target preservation",
+      "hardware": "benchmark dependent",
+      "runtime": "see paper",
+      "limitations": "Does not by itself provide a geometric preservation mechanism or formal disturbance certificate.",
+      "claims_relevant_to_maveb": "Direct collision for generic unchanged-world-damage/locality benchmark novelty.",
+      "overlap_with_candidate_maveb_contribution": "High for evaluation-only UWD; lower for explicit metric geometry bounds/certificates.",
+      "potential_unexplored_gap": "A representation-resampling-aware 3D geometric disturbance quantity with a computable certificate integrated into editing."
     }
   ]
 }
