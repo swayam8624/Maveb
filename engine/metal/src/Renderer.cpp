@@ -401,6 +401,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                                 certificate->maximumRgbLInfBound,
                             .sceneColorUpperBound =
                                 pendingRevision->sceneColorUpperBound,
+                            .camera = referenceCamera,
                         };
                         frameGaussianRevisionCertificate = std::move(*certificate);
                     } else {
@@ -417,6 +418,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                             .maximumCurrentRgbBound = 0.0,
                             .sceneColorUpperBound =
                                 pendingRevision->sceneColorUpperBound,
+                            .camera = referenceCamera,
                         };
                         Log::instance().write(
                             LogLevel::error, certificate.error().describe());
@@ -434,6 +436,7 @@ void Renderer::draw(MTK::View* view) noexcept {
                             static_cast<std::uint64_t>(width) * height,
                         .maximumCurrentRgbBound = 0.0,
                         .sceneColorUpperBound = 0.0,
+                        .camera = {},
                     };
                     Log::instance().write(
                         LogLevel::error, pendingRevision.error().describe());
