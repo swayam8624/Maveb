@@ -125,3 +125,64 @@ The S1 distinction is now required to be domain-specific and stronger:
 5. where exact minimality is claimed, a tiny-scene exhaustive oracle or conservative dependency proof must support it.
 
 If those stronger properties do not survive experiments, S1 is a systems engineering improvement rather than a research contribution.
+
+
+## 2026-09-20 late refresh — lifelong chronology/object-maintenance collisions
+
+### Long-term Gaussian chronology — BROADER THAN PREVIOUS WATCH
+**Closest work:** LTGS (CVPR 2026 Findings).
+
+LTGS explicitly maintains a chronological Gaussian scene from sparse post-change captures, tracks
+object-level changes, and uses reusable Gaussian templates across time. MAVEB must therefore not
+claim novelty for "a Gaussian world with inspectable revisions", "sparse revisit updates", or
+"persistent reusable Gaussian object templates" in isolation.
+
+**S12 consequence:** historical world queries/versioning remain infrastructure unless MAVEB proves a
+different systems property such as cross-representation delta closure, bounded random-access
+reconstruction cost, or a downstream capability not supplied by chronology alone.
+
+### Object-centric lifelong Gaussian asset maintenance — KILLED AS HEADLINE
+**Closest work:** CubifyGS (IROS 2026 accepted; arXiv 2606.28720).
+
+CubifyGS already treats movable instances as reusable Gaussian assets, reasons about
+appearance/disappearance, retrieves and rigidly transforms assets, prunes stale content, and triggers
+optimization only around affected regions.
+
+MAVEB must therefore not claim novelty for persistent object assets, event-triggered local
+optimization, or rigid object rearrangement maintenance by themselves.
+
+### Selective semantic single-image map repair — KILLED AS HEADLINE
+**Closest work:** SI-Update (2026 preprint).
+
+SI-Update updates affected semantic Gaussian object submodels from a single post-change RGB image
+while preserving the static Gaussian background. "Only changed objects are updated" and
+"unchanged Gaussian background is preserved" are therefore insufficient MAVEB novelty statements.
+
+### Persistent representation above primitive resampling — NEW THREAT TO S4
+**Closest work:** Eulerian Gaussian Splatting (CVPR 2026).
+
+Eulerian Splatting optimizes a persistent volumetric probability density and samples Gaussian
+positions from it instead of treating split/prune/relocate heuristics as the fundamental state.
+This weakens any S4 novelty claim phrased merely as "identity that survives Gaussian resampling."
+
+S4 now survives only if MAVEB defines lineage/correspondence across revisions and demonstrates a
+measurable downstream benefit for continual repair, edit verification, history, or change reasoning
+that a persistent density or nearest/covariance correspondence does not already provide.
+
+### Stronger S1 formulation after this refresh
+The safest surviving question is narrower:
+
+> Given a captured-world revision, can MAVEB compute and execute a conservative heterogeneous
+> dependency closure across evidence, TSDF, mesh, Gaussian, texture/material, temporal history and
+> GPU publication, while measuring work at every layer and matching a declared full-rebuild
+> reference within explicit tolerances?
+
+This is **not yet a novelty claim**. It remains a candidate distinction requiring continued
+literature search, an end-to-end implementation, ULR/work counters, quality-equivalence tests,
+and comparison against continual Gaussian systems.
+
+Tracked additions:
+- LTGS: https://arxiv.org/abs/2510.09881
+- CubifyGS: https://arxiv.org/abs/2606.28720
+- SI-Update: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6958781
+- Eulerian Gaussian Splatting: https://arxiv.org/abs/2605.29136
