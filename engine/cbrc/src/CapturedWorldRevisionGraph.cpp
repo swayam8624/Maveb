@@ -31,6 +31,75 @@ void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::Revis
 
 } // namespace
 
+Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
+    const world::LocalityLedger& ledger,
+    const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
+    double gaussianCurrentRgbBound, double temporalHistoryWeight,
+    bool temporalValidationStable, double epsilonRgbLInf) {
+    if (auto validation = ledger.validateS1CoreCoverage(); !validation)
+        return std::unexpected(validation.error());
+
+    const auto observations =
+        ledger.counter(world::LocalityDomain::observationsInspected);
+    const auto meshCells =
+        ledger.counter(world::LocalityDomain::meshCellsRegenerated);
+    const auto meshPatches =
+        ledger.counter(world::LocalityDomain::meshPatchesRegenerated);
+    const auto texturePages =
+        ledger.counter(world::LocalityDomain::texturePagesUpdated);
+    const auto materials =
+        ledger.counter(world::LocalityDomain::materialStatesUpdated);
+    const auto gaussiansInspected =
+        ledger.counter(world::LocalityDomain::gaussiansInspected);
+    const auto gaussiansUpdated =
+        ledger.counter(world::LocalityDomain::gaussiansUpdated);
+    const auto publication =
+        ledger.counter(world::LocalityDomain::gpuPublicationBytes);
+    const auto temporal =
+        ledger.counter(world::LocalityDomain::temporalPixelsInvalidated);
+
+    if (meshCells.incremental != mesher.ownerCellsRegenerated ||
+        meshCells.full != mesher.fullReferenceCells) {
+        return fail(ErrorCode::invalidArgument,
+                    "CBRC mesh-cell ledger disagrees with mesher statistics");
+    }
+    if (meshPatches.incremental != mesher.ownerPatchesRegenerated) {
+        return fail(ErrorCode::invalidArgument,
+                    "CBRC mesh-patch ledger disagrees with mesher statistics");
+    }
+    if (gaussiansInspected.full != gaussiansUpdated.full) {
+        return fail(ErrorCode::invalidArgument,
+                    "CBRC Gaussian full baselines disagree across inspection/update domains");
+    }
+
+    return CapturedWorldRevisionInput{
+        .observationsInspected =
+            static_cast<std::size_t>(observations.incremental),
+        .fullObservations = static_cast<std::size_t>(observations.full),
+        .mesher = mesher,
+        .dirtyTexturePages =
+            static_cast<std::size_t>(texturePages.incremental),
+        .fullTexturePages = static_cast<std::size_t>(texturePages.full),
+        .materialStatesUpdated =
+            static_cast<std::size_t>(materials.incremental),
+        .fullMaterialStates = static_cast<std::size_t>(materials.full),
+        .gaussiansInspected =
+            static_cast<std::size_t>(gaussiansInspected.incremental),
+        .gaussiansUpdated =
+            static_cast<std::size_t>(gaussiansUpdated.incremental),
+        .fullGaussians =
+            static_cast<std::size_t>(gaussiansInspected.full),
+        .gpuPublicationBytes = publication.incremental,
+        .fullGpuPublicationBytes = publication.full,
+        .temporalPixelsInvalidated = temporal.incremental,
+        .fullTemporalPixels = temporal.full,
+        .gaussianCurrentRgbBound = gaussianCurrentRgbBound,
+        .temporalHistoryWeight = temporalHistoryWeight,
+        .temporalValidationStable = temporalValidationStable,
+        .epsilonRgbLInf = epsilonRgbLInf,
+    };
+}
+
 Result<CapturedWorldGraphBuild>
 buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
                                 const CapturedWorldCostModel& costs) {
