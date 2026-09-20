@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "experiment": "texture-locality-audit-v0",
+  "date": "2026-09-20",
+  "sourceBaseline": "research/maveb-discovery",
+  "findings": [
+    {
+      "coupling": "camera-depth-oracle",
+      "source": "engine/reconstruction/src/TextureBaker.cpp: rasterizeDepth() called for every prepared camera over source.vertices/source.indices",
+      "consequence": "A bake rebuilds each camera depth oracle from the full mesh; local geometry changes are not currently represented as screen-space dirty depth regions."
+    },
+    {
+      "coupling": "triangle-camera-candidates",
+      "source": "TextureBaker.cpp loops every triangle and every prepared camera before truncating to maximumCamerasPerTriangle",
+      "consequence": "Candidate selection is globally O(triangles*cameras) even for a local mesh change."
+    },
+    {
+      "coupling": "global-exposure-target",
+      "source": "targetLogLuminance = median(cameraMedians); every camera exposure gain is derived from this target",
+      "consequence": "A source-image/exposure change can alter a camera gain, and in threshold cases the global median target, invalidating texels beyond the changed spatial region."
+    },
+    {
+      "coupling": "ordinal-atlas-layout",
+      "source": "columns=ceil(sqrt(triangleCount)); rows/cell derive from total triangleCount; tileX/tileY derive from triangle ordinal",
+      "consequence": "Triangle insertion/removal/reordering can change UV addresses of unchanged triangles; threshold crossings can globally change atlas cell dimensions."
+    },
+    {
+      "coupling": "global-gutter-dilation",
+      "source": "gutter iterations scan almost the entire atlas",
+      "consequence": "Even if only a few triangle tiles change, final dilation currently performs global atlas work."
+    }
+  ],
+  "decision": "Do not claim texture-level locality from spatial dirty regions. Exact incremental texture repair requires stable triangle/patch identity, stable atlas addressing, localized visibility/depth dependencies, and a photometric policy whose dependency scope is explicit.",
+  "nextProbes": [
+    "atlas-uv-churn-v0: quantify unchanged-triangle UV churn under local triangle insertion/removal in current ordinal layout",
+    "stable-patch-atlas-v0: compare fixed page/patch allocation overhead vs UV stability",
+    "exposure-coupling-v0: perturb one camera's exposure samples and measure number of camera gains/texels theoretically invalidated",
+    "screen-space-depth-dependency-v0: map changed mesh patch bounds to affected cameras and depth tiles"
+  ]
+}
