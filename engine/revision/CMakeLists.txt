@@ -1,5 +1,6 @@
 add_library(AetherRevision STATIC
     src/RevisionPlanner.cpp
+    src/RevisionCertificateJson.cpp
 )
 add_library(Aether::Revision ALIAS AetherRevision)
 
