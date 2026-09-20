@@ -47,3 +47,16 @@ CI caught a literal escaped-newline corruption in the generated header include. 
 2. Can heterogeneous world repair eliminate hidden global scans/copies across TSDF, mesh, Gaussian, texture/material and GPU resource layers?
 3. Can temporal representation migration beat the best fixed representation on an offline Pareto oracle?
 4. Can split/merge/prune/densify-stable correspondence produce measurable downstream benefit beyond existing persistent semantic identity methods?
+
+
+## 2026-09-20 — Research integrity correction: overlay probe remains unexecuted
+
+- Added `research/probes/gaussian_index_overlay_v3.cpp` as a cheap falsification probe for a
+  compact immutable Gaussian-region index plus a bounded mutable delta overlay.
+- A result/summary file was briefly created before the probe had actually been executed in an
+  available runtime. Those numeric files were immediately deleted and are **not evidence**.
+- No measured conclusion is retained from that unexecuted probe.
+- The overlay hypothesis remains **UNMEASURED** until the committed source is compiled and run; any
+  future result must record the actual compiler/runtime provenance and raw stdout.
+- This correction is intentionally preserved in the research log so the evidence chain stays
+  auditable.
