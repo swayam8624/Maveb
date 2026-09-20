@@ -83,10 +83,19 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
             "specify exactly one of non-empty changed_indices or detect_changed=true"
         )
 
+    before_state = manifest.get("before_state", manifest.get("before_ply"))
+    after_state = manifest.get("after_state", manifest.get("after_ply"))
+    if not before_state or not after_state:
+        raise ValueError("before_state and after_state are required")
+    input_format = str(manifest.get("input_format", "ply"))
+    if input_format not in ("ply", "aether-bin"):
+        raise ValueError("input_format must be ply or aether-bin")
+
     command = [
         str(binary),
-        "--before", str(manifest["before_ply"]),
-        "--after", str(manifest["after_ply"]),
+        "--before", str(before_state),
+        "--after", str(after_state),
+        "--input-format", input_format,
     ]
     if detect_changed:
         command.append("--detect-changed")
