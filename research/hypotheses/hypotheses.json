@@ -2963,16 +2963,16 @@
       "hypothesis_id": "H117",
       "family": "D",
       "family_name": "Dependency-certified minimal repair",
-      "name": "Paged stable texture addressing",
-      "research_question": "Can persistent page/tile indirection keep unchanged texture addresses stable across local mesh edits without the texel-density collapse of one globally fixed-capacity atlas?",
+      "name": "Stable texture addressing with locality-preserving write granularity",
+      "research_question": "Can persistent texture addresses remain stable while RegionKey/Morton/mesh-dependency allocation or sub-page writes keep dirty texture bytes proportional to changed world support?",
       "prior_art_collision": "virtual texturing, sparse textures, stable texture atlases and page tables are established systems ideas; standalone novelty is unlikely",
       "expected_novelty": "REQUIRED INFRASTRUCTURE, not standalone novelty. Value is whether it removes hidden global invalidation from a captured-world dependency closure.",
       "required_implementation": "persistent patch/page IDs; page allocator; indirection table; dirty-page writes; fragmentation and compaction accounting; correctness fixture against current baker",
       "required_datasets": "synthetic edit sequences then reconstructed MavebBench meshes with texture bakes",
       "expected_experiment_cost": "medium",
-      "falsification_experiment": "Insertion/removal/update sweeps from 10K to 1M triangles; compare ordinal atlas, global fixed stable atlas and paged stable atlas on address survival, texel density, dirty bytes and render lookup overhead.",
+      "falsification_experiment": "Compare random/free-list pages, RegionKey/Morton-local pages, mesh-adjacency partitioned pages, and sub-page dirty rectangles over repeated edit sequences; measure address survival, dirty bytes, page count, fragmentation, migration and lookup overhead.",
       "success_metric": "near-100% address survival for unchanged patches while maintaining bounded texel density and local write volume",
-      "failure_metric": "fragmentation/indirection/compaction overhead causes global invalidation or unacceptable quality/cost",
+      "failure_metric": "page assignment scatters local edits across most resident pages, or sub-page/indirection/fragmentation overhead erases write-locality benefit",
       "visual_demo_potential": "medium as dirty-page/atlas residency visualization",
       "siggraph_relevance": "infrastructure unless enabling S1 result",
       "cvpr_relevance": "low standalone",
@@ -2982,7 +2982,7 @@
         "stable atlas correctness fixture",
         "persistent patch identity"
       ],
-      "status": "probe-candidate"
+      "status": "pivoted-after-probe"
     },
     {
       "hypothesis_id": "H118",
@@ -3008,6 +3008,32 @@
         "observability semantics",
         "TSDF dirty meshing",
         "GPU publication counters"
+      ],
+      "status": "priority-probe"
+    },
+    {
+      "hypothesis_id": "H119",
+      "family": "D",
+      "family_name": "Dependency-certified minimal repair",
+      "name": "Dependency-coherent texture page assignment",
+      "research_question": "Can texture patches be assigned to persistent pages according to spatial/change dependency so a local world revision dirties a near-proportional number of pages rather than scattering across the atlas?",
+      "prior_art_collision": "virtual texturing, sparse textures, spatial clustering and graph partitioning are established; only end-to-end captured-world dependency benefit can matter",
+      "expected_novelty": "ENABLING MECHANISM ONLY unless it is required for a new end-to-end S1 locality result.",
+      "required_implementation": "stable patch IDs; RegionKey/Morton and adjacency-aware page allocators; page indirection; sub-page dirty rectangles; fragmentation/compaction counters",
+      "required_datasets": "synthetic scattered/clustered edits, reconstructed MavebBench meshes, evolving-world revision sequences",
+      "expected_experiment_cost": "medium",
+      "falsification_experiment": "At fixed active patch count and page sizes, sweep changed fraction/location coherence over repeated revisions and compare random allocation, Morton/RegionKey allocation, adjacency partitioning and sub-page writes.",
+      "success_metric": "near-100% unchanged address survival with dirty texture bytes/pages tracking changed support over a useful sparse-change regime",
+      "failure_metric": "dirty-page fraction approaches one for small local changes, fragmentation explodes, or compaction causes broad address invalidation",
+      "visual_demo_potential": "medium-high via page/dirty-patch heatmaps",
+      "siggraph_relevance": "supporting systems mechanism for S1 only",
+      "cvpr_relevance": "low standalone",
+      "systems_relevance": "high",
+      "dependencies": [
+        "H117",
+        "stable patch identity",
+        "texture locality audit",
+        "ULR texture-byte counters"
       ],
       "status": "priority-probe"
     }
