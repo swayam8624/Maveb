@@ -75,15 +75,26 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
         raise ValueError("camera_world_position must contain 3 values")
     if len(world_to_camera) != 16:
         raise ValueError("world_to_camera must contain 16 row-major values")
-    changed = manifest["changed_indices"]
-    if not isinstance(changed, list) or not changed:
-        raise ValueError("changed_indices must be a non-empty list")
+    changed = manifest.get("changed_indices")
+    detect_changed = bool(manifest.get("detect_changed", False))
+    has_explicit_changed = isinstance(changed, list) and bool(changed)
+    if has_explicit_changed == detect_changed:
+        raise ValueError(
+            "specify exactly one of non-empty changed_indices or detect_changed=true"
+        )
 
     command = [
         str(binary),
         "--before", str(manifest["before_ply"]),
         "--after", str(manifest["after_ply"]),
-        "--changed", ",".join(str(int(i)) for i in changed),
+    ]
+    if detect_changed:
+        command.append("--detect-changed")
+    else:
+        command.extend(
+            ["--changed", ",".join(str(int(i)) for i in changed)]
+        )
+    command.extend([
         "--width", str(int(camera["width"])),
         "--height", str(int(camera["height"])),
         "--focal-x", str(float(camera["focal_x"])),
@@ -100,7 +111,7 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
         "--background-r", str(float(background[0])),
         "--background-g", str(float(background[1])),
         "--background-b", str(float(background[2])),
-    ]
+    ])
     return command
 
 
