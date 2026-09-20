@@ -161,6 +161,60 @@ void testSpatialHashMatchesAcrossCellBoundary() {
            "cross-cell spatial association must retain the prior stable ID");
 }
 
+
+void testAbsenceEvidenceSeparatesUnknownFromRemoval() {
+    WorldSnapshot previous;
+    previous.timestamp = 100;
+    previous.entities = {
+        entity(1, "Visible Desk", "desk", 0.0F, 10, 20, 100),
+        entity(2, "Hidden Chair", "chair", 5.0F, 30, 40, 100),
+    };
+
+    AssociationPolicy preserveUnknown;
+    preserveUnknown.preserveUnobservedOutsideAbsenceEvidence = true;
+    preserveUnknown.absenceEvidenceRegions = {
+        Bounds{{-1.0F, -1.0F, -1.0F}, {1.0F, 1.0F, 1.0F}},
+    };
+
+    auto partial = aether::world::associateObservations(
+        previous, 200,
+        {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)},
+        3, preserveUnknown);
+    expect(partial.has_value(),
+           "partial observation with explicit negative-evidence region must associate");
+    if (!partial)
+        return;
+
+    expect(partial->reusedIds == 1,
+           "visible desk must retain its persistent identity");
+    expect(partial->carriedForwardUnobservedEntities == 1,
+           "hidden chair outside negative-evidence coverage must be carried forward");
+    expect(partial->missingPreviousEntities == 0,
+           "unknown space must not be counted as a missing/removed entity");
+    const EntityState* hidden = findByName(partial->snapshot, "Hidden Chair");
+    expect(hidden && hidden->id.value == 2 && hidden->lastObserved == 100,
+           "carried-forward unknown entity must preserve ID and last-observed time");
+
+    AssociationPolicy confirmedAbsent = preserveUnknown;
+    confirmedAbsent.absenceEvidenceRegions.push_back(
+        Bounds{{4.0F, -1.0F, -1.0F}, {6.0F, 1.0F, 1.0F}});
+    auto removal = aether::world::associateObservations(
+        previous, 300,
+        {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)},
+        3, confirmedAbsent);
+    expect(removal.has_value(),
+           "negative evidence covering hidden chair must produce a valid removal candidate");
+    if (!removal)
+        return;
+
+    expect(removal->carriedForwardUnobservedEntities == 0,
+           "entity fully covered by negative evidence must not be carried forward");
+    expect(removal->missingPreviousEntities == 1,
+           "confirmed absent chair must remain missing so Reality Diff can remove it");
+    expect(findByName(removal->snapshot, "Hidden Chair") == nullptr,
+           "confirmed absent entity must be absent from the candidate snapshot");
+}
+
 void testCandidateBudgetFailsClosed() {
     WorldSnapshot previous;
     previous.timestamp = 100;
@@ -195,6 +249,7 @@ int main() noexcept {
         testSemanticMismatchDoesNotStealIdentity();
         testExplicitIdentityIsAuthoritative();
         testSpatialHashMatchesAcrossCellBoundary();
+        testAbsenceEvidenceSeparatesUnknownFromRemoval();
         testCandidateBudgetFailsClosed();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
