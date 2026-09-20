@@ -11,6 +11,7 @@
 #include <aether/scene/ImageBasedLighting.hpp>
 #include <aether/scene/Lighting.hpp>
 #include <aether/scene/Shadows.hpp>
+#include <aether/scene/TemporalInvalidation.hpp>
 #include <shared/AetherShaderTypes.h>
 
 #include <Metal/Metal.hpp>
@@ -121,7 +122,7 @@ class Renderer final {
 
     /// Applies one transactional source-order subset translation to canonical CPU Gaussian state.
     /// GPU publication is deferred to each recycled frame slot, avoiding global frame quiescence.
-    /// Temporal history remains globally invalidated on this publication-only research branch.
+    /// Temporal history invalidation is retained only over conservative projected edit bounds.
     [[nodiscard]] Result<void> translateGaussians(std::span<const std::uint32_t> gaussianIndices,
                                                   simd_float3 translationDelta);
 
@@ -196,6 +197,10 @@ class Renderer final {
     [[nodiscard]] GaussianEditPublicationStatistics
     gaussianEditPublicationStatistics() const noexcept {
         return lastGaussianEditPublicationStatistics_;
+    }
+    [[nodiscard]] const scene::TemporalInvalidationPlan&
+    lastTemporalInvalidationPlan() const noexcept {
+        return lastTemporalInvalidationPlan_;
     }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
@@ -334,6 +339,8 @@ class Renderer final {
     std::array<MetalPtr<MTL::Texture>, 2> temporalDepthHistory_;
     simd_float4x4 previousViewProjection_{matrix_identity_float4x4};
     bool temporalHistoryValid_{};
+    std::optional<scene::TemporalWorldBounds> pendingTemporalInvalidationBounds_;
+    scene::TemporalInvalidationPlan lastTemporalInvalidationPlan_{};
     std::uint32_t sceneTargetWidth_{};
     std::uint32_t sceneTargetHeight_{};
     std::uint32_t gaussianTargetWidth_{};
