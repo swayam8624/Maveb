@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-index-layout-v2",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-linux-layout-probe",
+  "environment": {
+    "compiler": "g++ -O3 -std=c++20",
+    "platform": "Linux x86_64 analysis sandbox",
+    "measurement": "/usr/bin/time -v maximum RSS"
+  },
+  "configuration": {
+    "gaussians": 1000000,
+    "cellSizeMeters": 0.5,
+    "dirtyOccupiedCellFraction": 0.01,
+    "sceneExtent": "[-25,25]^3",
+    "seed": 9
+  },
+  "layouts": [
+    {
+      "name": "unordered_map<Key, vector<index>>",
+      "buildMs": 263.597,
+      "queryMs": 0.311805,
+      "occupiedCells": 632132,
+      "selected": 10116,
+      "maxRssKiB": 88424
+    },
+    {
+      "name": "sorted vector<packedKey,index>",
+      "buildMs": 107.158,
+      "queryMs": 2.01335,
+      "occupiedCells": 632132,
+      "selected": 9949,
+      "maxRssKiB": 37160
+    }
+  ],
+  "note": "Selected counts differ because each executable shuffles its occupied-key sample independently after layout construction; this probe compares layout resource characteristics, not set equivalence.",
+  "conclusion": "The hash layout is faster for sparse lookup but costs far more memory. A production candidate should test a compact sorted immutable base with a small mutable delta overlay so continual updates avoid O(N) rebuilds without paying unordered_map overhead for the whole world.",
+  "caveats": [
+    "RSS includes common point/input storage and process overhead",
+    "not Apple M2 Pro",
+    "packed key assumes bounded coordinate encoding in this toy probe",
+    "no ownership payload yet"
+  ]
+}
