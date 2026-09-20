@@ -16,3 +16,11 @@ target_include_directories(AetherWorld PUBLIC
 target_link_libraries(AetherWorld PUBLIC Aether::Core Aether::Scene PRIVATE simdjson::simdjson)
 target_compile_features(AetherWorld PUBLIC cxx_std_23)
 aether_configure_target(AetherWorld)
+
+
+# Research-branch CI unblock: simdjson 3.12.3 emits Clang warning classes that the
+# repository promotes to errors while compiling WorldArchive.cpp. The PR #28
+# baseline already fails here before observability prototypes are compiled.
+# Keep suppression local to the translation unit that includes third-party headers.
+set_source_files_properties(src/WorldArchive.cpp PROPERTIES
+    COMPILE_OPTIONS "-Wno-sign-conversion;-Wno-old-style-cast")
