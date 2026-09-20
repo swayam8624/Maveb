@@ -108,6 +108,85 @@ void testPlannerProducesCertifiedResult() {
            "captured-world result must compare local work against independent full baseline");
 }
 
+aether::world::LocalityLedger evidenceLedger(
+    const aether::reconstruction::IncrementalSparseMesherWorkStatistics& mesher) {
+    using aether::world::LocalityDomain;
+    aether::world::LocalityLedger ledger;
+    const auto set = [&](LocalityDomain domain, std::uint64_t incremental,
+                         std::uint64_t full) {
+        expect(ledger.set(domain, incremental, full).has_value(),
+               "fixture locality domain must accept valid evidence");
+    };
+    set(LocalityDomain::observationsInspected, 3, 100);
+    set(LocalityDomain::tsdfBlocksRead, mesher.snapshotBlocksScanned,
+        mesher.snapshotBlocksScanned);
+    set(LocalityDomain::tsdfBlocksWritten, mesher.dirtyBlocksInput,
+        mesher.snapshotBlocksScanned);
+    set(LocalityDomain::meshCellsRegenerated, mesher.ownerCellsRegenerated,
+        mesher.fullReferenceCells);
+    set(LocalityDomain::meshPatchesRegenerated, mesher.ownerPatchesRegenerated,
+        mesher.snapshotBlocksScanned);
+    set(LocalityDomain::gaussiansInspected, 25, 1000);
+    set(LocalityDomain::gaussiansUpdated, 5, 1000);
+    set(LocalityDomain::texturePagesUpdated, 2, 100);
+    set(LocalityDomain::textureSlotsConsidered, 8, 400);
+    set(LocalityDomain::textureTexelsWritten, 1024, 100000);
+    set(LocalityDomain::materialStatesUpdated, 1, 20);
+    set(LocalityDomain::gpuPublicationBytes, 1280, 256000);
+    set(LocalityDomain::temporalPixelsInvalidated, 1000, 100000);
+    return ledger;
+}
+
+void testValidatedLedgerBuildsPlannerInput() {
+    const auto expected = input();
+    auto ledger = evidenceLedger(expected.mesher);
+    auto adapted = aether::cbrc::capturedWorldRevisionInputFromEvidence(
+        ledger, expected.mesher, expected.gaussianCurrentRgbBound,
+        expected.temporalHistoryWeight, expected.temporalValidationStable,
+        expected.epsilonRgbLInf);
+    expect(adapted.has_value(), "validated locality ledger must adapt to CBRC input");
+    if (!adapted)
+        return;
+    expect(adapted->observationsInspected == expected.observationsInspected &&
+               adapted->dirtyTexturePages == expected.dirtyTexturePages &&
+               adapted->materialStatesUpdated == expected.materialStatesUpdated &&
+               adapted->gaussiansUpdated == expected.gaussiansUpdated &&
+               adapted->gpuPublicationBytes == expected.gpuPublicationBytes &&
+               adapted->temporalPixelsInvalidated == expected.temporalPixelsInvalidated,
+           "ledger adapter must preserve heterogeneous incremental counters");
+
+    auto planned = aether::cbrc::planCapturedWorldRevision(*adapted, costs());
+    expect(planned.has_value() && planned->passes,
+           "ledger-derived captured-world input must be directly plannable");
+}
+
+void testLedgerMesherDisagreementFailsClosed() {
+    const auto expected = input();
+    auto ledger = evidenceLedger(expected.mesher);
+    auto mismatched = expected.mesher;
+    ++mismatched.ownerCellsRegenerated;
+    auto adapted = aether::cbrc::capturedWorldRevisionInputFromEvidence(
+        ledger, mismatched, expected.gaussianCurrentRgbBound,
+        expected.temporalHistoryWeight, expected.temporalValidationStable,
+        expected.epsilonRgbLInf);
+    expect(!adapted.has_value(),
+           "ledger/mesher counter disagreement must not reach planner");
+}
+
+void testGaussianFullBaselineDisagreementFailsClosed() {
+    using aether::world::LocalityDomain;
+    const auto expected = input();
+    auto ledger = evidenceLedger(expected.mesher);
+    expect(ledger.set(LocalityDomain::gaussiansUpdated, 5, 999).has_value(),
+           "fixture must permit internally inconsistent Gaussian baselines");
+    auto adapted = aether::cbrc::capturedWorldRevisionInputFromEvidence(
+        ledger, expected.mesher, expected.gaussianCurrentRgbBound,
+        expected.temporalHistoryWeight, expected.temporalValidationStable,
+        expected.epsilonRgbLInf);
+    expect(!adapted.has_value(),
+           "Gaussian full-baseline disagreement must fail closed");
+}
+
 void testIncrementalWorkCannotExceedFullBaseline() {
     auto value = input();
     value.gaussiansUpdated = value.fullGaussians + 1;
@@ -130,6 +209,9 @@ int main() noexcept {
         testStructuralHardClosureRegistersCrossLayerWork();
         testUnstableTemporalValidationPromotesHistoryToHard();
         testPlannerProducesCertifiedResult();
+        testValidatedLedgerBuildsPlannerInput();
+        testLedgerMesherDisagreementFailsClosed();
+        testGaussianFullBaselineDisagreementFailsClosed();
         testIncrementalWorkCannotExceedFullBaseline();
         testMissingFrozenCostVersionFailsClosed();
     } catch (const std::exception& error) {
