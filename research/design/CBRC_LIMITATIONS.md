@@ -2,6 +2,19 @@
 
 This document is part of the experiment contract, not post-hoc reviewer defense.
 
+## V1 implementation boundary
+
+CBRC v1 is implementation-complete. Gaussian-to-image and stable temporal propagation are the
+implemented analytic soft edges. Observation/TSDF/mesh/texture/material/publication identity and
+unstable temporal validation remain exact HARD dependencies intentionally. Treating those relations
+as HARD is the conservative v1 design, not missing implementation.
+
+The native sparse planner certifies finite analytic DAG exteriors. Analytic cycles fail closed:
+the cone must expand enough to remove the unsupported cycle or the planner chooses FULL. A future
+cyclic resolvent implementation would be a v2 extension and must earn its own regression/evidence
+contract.
+
+
 ## Certification assumptions
 
 CBRC is only as sound as its bounds. A certificate is valid only if every exact/discrete dependency needed to reproduce repaired state is included in the hard or predecessor closure; every soft edge used in `K_cert` is non-negative and is a conservative finite-change upper bound over the declared revision domain; the exterior response admits the selected finite/convergent path-sum interpretation; each QoI operator is itself a conservative bound for the output metric being claimed; and implementation arithmetic/indexing preserve those assumptions.
