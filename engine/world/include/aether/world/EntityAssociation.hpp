@@ -16,6 +16,14 @@ struct AssociationPolicy final {
     float minimumScore{0.20F};
     std::size_t maximumCandidatePairs{2'000'000};
     bool allowSemanticMismatch{false};
+
+    /// Opt-in partial-observation semantics. When enabled, an unmatched previous entity is
+    /// preserved unless its complete prior bounds lie inside one of absenceEvidenceRegions.
+    ///
+    /// These regions must mean "absence is evidence" (for example visibility/free-space-confirmed
+    /// volume), not merely camera frustum coverage. Occluded/unknown space should not be included.
+    bool preserveUnobservedOutsideAbsenceEvidence{false};
+    std::vector<Bounds> absenceEvidenceRegions;
 };
 
 struct AssociationResult final {
@@ -23,6 +31,7 @@ struct AssociationResult final {
     std::size_t reusedIds{};
     std::size_t createdIds{};
     std::size_t missingPreviousEntities{};
+    std::size_t carriedForwardUnobservedEntities{};
     std::uint64_t nextEntityId{1};
 };
 

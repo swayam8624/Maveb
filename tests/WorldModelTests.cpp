@@ -102,6 +102,62 @@ void testInitialAndIncrementalIngest() {
     expect(monitor && monitor->id.value == 3, "new monitor must receive the next fresh ID");
 }
 
+
+void testPartialObservationPreservesUnknownWorldState() {
+    PersistentWorldModel model;
+    const auto initial = model.ingest(
+        100, {observation("Desk", "desk", 0.0F, 10, 20),
+              observation("Chair", "chair", 5.0F, 30, 40)});
+    expect(initial.has_value(),
+           "partial-observation fixture must establish complete initial world");
+    if (!initial)
+        return;
+
+    const EntityState* initialChair = findByName(model, "Chair");
+    expect(initialChair && initialChair->id.value == 2,
+           "initial hidden-chair identity must be stable before partial observation");
+
+    WorldIngestPolicy partialPolicy;
+    partialPolicy.association.preserveUnobservedOutsideAbsenceEvidence = true;
+    partialPolicy.association.absenceEvidenceRegions = {
+        Bounds{{-1.0F, -1.0F, -1.0F}, {1.0F, 1.0F, 1.0F}},
+    };
+    const auto partial = model.ingest(
+        200, {observation("Desk", "desk", 0.02F, 10, 20)}, partialPolicy);
+    expect(partial.has_value(),
+           "partial observation must commit while preserving unknown outside evidence");
+    if (!partial)
+        return;
+
+    expect(partial->carriedForwardUnobservedEntities == 1,
+           "world ingest must report one carried-forward unknown entity");
+    expect(partial->missingPreviousEntities == 0,
+           "unknown chair must not be treated as confirmed missing");
+    expect(partial->diff.summary.removed == 0,
+           "partial observation must not create false Reality Diff removals");
+    const EntityState* carriedChair = findByName(model, "Chair");
+    expect(carriedChair && carriedChair->id.value == 2,
+           "unknown chair must survive partial observation with the same identity");
+
+    WorldIngestPolicy removalPolicy = partialPolicy;
+    removalPolicy.association.absenceEvidenceRegions.push_back(
+        Bounds{{4.0F, -1.0F, -1.0F}, {6.0F, 1.0F, 1.0F}});
+    const auto removed = model.ingest(
+        300, {observation("Desk", "desk", 0.02F, 10, 20)}, removalPolicy);
+    expect(removed.has_value(),
+           "confirmed absence evidence must commit a removal revision");
+    if (!removed)
+        return;
+
+    expect(removed->missingPreviousEntities == 1 &&
+               removed->carriedForwardUnobservedEntities == 0,
+           "negative evidence must convert unknown chair into one confirmed missing entity");
+    expect(removed->diff.summary.removed == 1,
+           "confirmed absence must create exactly one Reality Diff removal");
+    expect(findByName(model, "Chair") == nullptr,
+           "confirmed absent chair must leave the latest world snapshot");
+}
+
 void testFailedUpdateRollsBackTimelineAndAllocator() {
     PersistentWorldModel model;
     const auto first = model.ingest(100, {observation("Desk", "desk", 0.0F, 1, 1)});
@@ -225,6 +281,7 @@ void testHistoricalRevertCreatesNewRevisionWithoutReusingIds() {
 int main() noexcept {
     try {
         testInitialAndIncrementalIngest();
+        testPartialObservationPreservesUnknownWorldState();
         testFailedUpdateRollsBackTimelineAndAllocator();
         testTimestampFailureIsNonMutating();
         testHistoricalRevertCreatesNewRevisionWithoutReusingIds();

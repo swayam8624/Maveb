@@ -26,6 +26,7 @@ struct WorldIngestResult final {
     std::size_t reusedIds{};
     std::size_t createdIds{};
     std::size_t missingPreviousEntities{};
+    std::size_t carriedForwardUnobservedEntities{};
 };
 
 /// Result of restoring a historical world state as a new append-only revision.

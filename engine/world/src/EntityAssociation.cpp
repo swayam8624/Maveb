@@ -46,6 +46,23 @@ struct SpatialCellHash final {
     return (bounds.minimum + bounds.maximum) * 0.5F;
 }
 
+
+[[nodiscard]] bool finiteBounds(const Bounds& bounds) noexcept {
+    const auto finite3 = [](simd_float3 value) {
+        return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+    };
+    return finite3(bounds.minimum) && finite3(bounds.maximum) &&
+           bounds.minimum.x <= bounds.maximum.x &&
+           bounds.minimum.y <= bounds.maximum.y &&
+           bounds.minimum.z <= bounds.maximum.z;
+}
+
+[[nodiscard]] bool containsBounds(const Bounds& container, const Bounds& value) noexcept {
+    return value.minimum.x >= container.minimum.x && value.minimum.y >= container.minimum.y &&
+           value.minimum.z >= container.minimum.z && value.maximum.x <= container.maximum.x &&
+           value.maximum.y <= container.maximum.y && value.maximum.z <= container.maximum.z;
+}
+
 [[nodiscard]] float volume(const Bounds& bounds) noexcept {
     const simd_float3 extent =
         simd_max(bounds.maximum - bounds.minimum, simd_float3{0.0F, 0.0F, 0.0F});
@@ -143,6 +160,12 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous,
         return fail(ErrorCode::invalidArgument,
                     "Entity association policy requires finite positive distance, score, and "
                     "candidate-budget bounds");
+    }
+    if (policy.preserveUnobservedOutsideAbsenceEvidence &&
+        std::ranges::any_of(policy.absenceEvidenceRegions,
+                            [](const Bounds& bounds) { return !finiteBounds(bounds); })) {
+        return fail(ErrorCode::invalidArgument,
+                    "Absence-evidence regions must contain finite ordered bounds");
     }
     if (auto result = validateSnapshot(previous); !result)
         return std::unexpected(result.error());
@@ -291,6 +314,26 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous,
         observationMatched[index] = true;
         ++result.createdIds;
         allocation = allocation == std::numeric_limits<std::uint64_t>::max() ? 0 : allocation + 1U;
+    }
+
+    if (policy.preserveUnobservedOutsideAbsenceEvidence) {
+        for (std::size_t previousIndex = 0; previousIndex < previous.entities.size();
+             ++previousIndex) {
+            if (previousMatched[previousIndex])
+                continue;
+
+            const EntityState& prior = previous.entities[previousIndex];
+            const bool absenceIsEvidence = std::ranges::any_of(
+                policy.absenceEvidenceRegions, [&](const Bounds& evidence) {
+                    return containsBounds(evidence, prior.worldBounds);
+                });
+            if (absenceIsEvidence)
+                continue;
+
+            observations.push_back(prior);
+            previousMatched[previousIndex] = true;
+            ++result.carriedForwardUnobservedEntities;
+        }
     }
 
     result.missingPreviousEntities =
