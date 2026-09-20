@@ -123,6 +123,31 @@ Result<void> LocalityLedger::validate() const {
     return {};
 }
 
+Result<void> LocalityLedger::validateS1CoreCoverage() const {
+    if (auto validation = validate(); !validation)
+        return std::unexpected(validation.error());
+
+    constexpr std::array required{
+        LocalityDomain::observationsInspected,
+        LocalityDomain::tsdfBlocksRead,
+        LocalityDomain::tsdfBlocksWritten,
+        LocalityDomain::meshCellsRegenerated,
+        LocalityDomain::gaussiansInspected,
+        LocalityDomain::gaussiansUpdated,
+        LocalityDomain::textureTexelsWritten,
+        LocalityDomain::gpuPublicationBytes,
+        LocalityDomain::temporalPixelsInvalidated,
+    };
+    for (const LocalityDomain domain : required) {
+        if (counter(domain).full == 0) {
+            return fail(ErrorCode::invalidArgument,
+                        "S1 locality certificate is missing a core full-reference baseline",
+                        std::string(localityDomainName(domain)));
+        }
+    }
+    return {};
+}
+
 Result<std::string> LocalityLedger::toJson() const {
     if (auto validation = validate(); !validation)
         return std::unexpected(validation.error());
