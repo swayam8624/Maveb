@@ -1,0 +1,101 @@
+name: Persistent World Research Probes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/persistent-world-core-v1
+    paths:
+      - '.github/workflows/persistent-world-probes.yml'
+      - 'tools/maveb-identity-probe/**'
+      - 'tools/maveb-update-locality-probe/**'
+      - 'engine/world/**'
+      - 'engine/world_gaussian/**'
+
+concurrency:
+  group: persistent-world-research-probes
+  cancel-in-progress: true
+
+jobs:
+  probes:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset ci
+      - name: Build research probes
+        run: >-
+          cmake --build build/ci --parallel --
+          maveb-identity-probe maveb-update-locality-probe
+      - name: Run probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/research-probes
+          build/ci/tools/maveb-identity-probe/maveb-identity-probe             | tee build/research-probes/identity-baseline.json
+          build/ci/tools/maveb-update-locality-probe/maveb-update-locality-probe             | tee build/research-probes/update-locality-baseline.json
+          python3 -m json.tool build/research-probes/identity-baseline.json >/dev/null
+          python3 -m json.tool build/research-probes/update-locality-baseline.json >/dev/null
+      - name: Summarize probes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          identity = json.loads(Path("build/research-probes/identity-baseline.json").read_text())
+          crossing = identity["crossing"]
+          perfect = sum(row["identitySurvivalRate"] == 1.0 for row in crossing)
+          switches = sum(row["identitySwitches"] for row in crossing)
+          births = sum(row["falseBirths"] for row in crossing)
+          print(
+              "IDENTITY_SUMMARY",
+              json.dumps(
+                  {
+                      "cases": len(crossing),
+                      "perfect_cases": perfect,
+                      "total_identity_switches": switches,
+                      "total_false_births": births,
+                      "reappearance": identity["reappearance"],
+                  },
+                  sort_keys=True,
+              ),
+          )
+
+          locality = json.loads(
+              Path("build/research-probes/update-locality-baseline.json").read_text()
+          )
+          rows = locality["cases"]
+          best_by_fraction = {}
+          worst_by_fraction = {}
+          for row in rows:
+              key = row["changedFraction"]
+              ratio = row["gaussianUpdateLocalityRatio"]
+              if key not in best_by_fraction or ratio < best_by_fraction[key]["ratio"]:
+                  best_by_fraction[key] = {
+                      "ratio": ratio,
+                      "pattern": row["pattern"],
+                      "cellSizeMeters": row["cellSizeMeters"],
+                      "haloCells": row["haloCells"],
+                  }
+              if key not in worst_by_fraction or ratio > worst_by_fraction[key]["ratio"]:
+                  worst_by_fraction[key] = {
+                      "ratio": ratio,
+                      "pattern": row["pattern"],
+                      "cellSizeMeters": row["cellSizeMeters"],
+                      "haloCells": row["haloCells"],
+                  }
+          print(
+              "LOCALITY_BEST_BY_CHANGED_FRACTION",
+              json.dumps(best_by_fraction, sort_keys=True),
+          )
+          print(
+              "LOCALITY_WORST_BY_CHANGED_FRACTION",
+              json.dumps(worst_by_fraction, sort_keys=True),
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: persistent-world-probe-results
+          path: build/research-probes/*.json
+          if-no-files-found: error
