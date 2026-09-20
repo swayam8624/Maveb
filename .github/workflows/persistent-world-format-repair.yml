@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: persistent-world-format-repair
+  cancel-in-progress: true
+
 jobs:
   clang-format-repair:
     if: github.actor != 'github-actions[bot]'
