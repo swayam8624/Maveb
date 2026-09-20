@@ -22,6 +22,11 @@ NSData* AetherPersistentOwnershipJSON(AetherPersistentGaussianView* view, NSErro
     return [view ownershipJSONWithError:error];
 }
 
+NSData* AetherPersistentRevisionCertificateJSON(
+    AetherPersistentGaussianView* view, NSError** error) {
+    return [view revisionCertificateJSONWithError:error];
+}
+
 NSData* AetherPersistentTranslateEntity(AetherPersistentGaussianView* view, uint64_t entityId,
                                         float x, float y, float z,
                                         uint64_t timestampNanoseconds, NSError** error) {
