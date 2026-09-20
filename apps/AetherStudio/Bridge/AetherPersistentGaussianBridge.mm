@@ -512,6 +512,13 @@ NSDictionary* entityPayload(const EntityState& entity) {
                  "Live persistent translation requires world, Gaussian field, and ownership");
         return nil;
     }
+    const auto* worldBeforeEdit = _world->latest();
+    if (!worldBeforeEdit) {
+        setError(error, aether::ErrorCode::notFound,
+                 "Persistent entity edit requires a committed world revision");
+        return nil;
+    }
+    const std::uint64_t previousRevision = worldBeforeEdit->revision;
     const EntityState* state = findEntity(*_world, entityId);
     if (!state) {
         setError(error, aether::ErrorCode::notFound, "Persistent entity was not found",
@@ -564,10 +571,19 @@ NSDictionary* entityPayload(const EntityState& entity) {
     }
 
     const auto persistence = persistState(_archivePath, *_world, *_gaussians, *_ownership);
+    const std::uint64_t revision = edited->worldEdit.candidate.revision;
+    const auto beforeGaussianPath = gaussianSidecar(_archivePath, previousRevision);
+    const auto afterGaussianPath = gaussianSidecar(_archivePath, revision);
     NSDictionary* payload = @{
         @"schemaVersion" : @1,
-        @"revision" : @(edited->worldEdit.candidate.revision),
+        @"previousRevision" : @(previousRevision),
+        @"revision" : @(revision),
+        @"gaussianCount" : @(_gaussians->gaussians.size()),
+        @"beforeGaussianSidecar" : text(beforeGaussianPath.string()),
+        @"afterGaussianSidecar" : text(afterGaussianPath.string()),
+        @"gaussianInputFormat" : @"aether-bin",
         @"translatedGaussians" : @(edited->translatedGaussians),
+        @"gaussiansInspected" : @(edited->reoptimizationSelection.inspectedGaussians),
         @"reoptimizationGaussians" : @(edited->reoptimizationSelection.gaussianIndices.size()),
         @"protectedStableGaussians" :
             @(edited->reoptimizationSelection.rejectedStableOwnedGaussians),
