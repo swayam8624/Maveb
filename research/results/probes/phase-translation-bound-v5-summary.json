@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-translation-bound-v5",
+  "executedAt": "2026-09-20",
+  "status": "linear-algebra-sanity-probe",
+  "trials": 1000,
+  "epsilons": [
+    0.0001,
+    0.001,
+    0.01,
+    0.05
+  ],
+  "allExactBoundsHold": true,
+  "allInfinityBoundsHold": true,
+  "maximumErrorToExactBoundRatio": 0.6795062624034487,
+  "maximumErrorToInfinityBoundRatio": 0.430578090587486,
+  "decision": "CONDITIONAL THEORY SANITY PASS. Keep the theorem only with explicit coherent-support, non-degenerate-mode and correct-unwrapping assumptions; do not present residual/coherence alone as a certificate.",
+  "next": [
+    "Estimate a defensible phase-error envelope under split/merge/resampling for canonical center fields.",
+    "Partition support before certification and reject mixed-motion neighborhoods.",
+    "Compare certificate usefulness against direct surface-anchor/rigidity constraints."
+  ]
+}
