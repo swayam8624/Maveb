@@ -86,6 +86,10 @@ class RevisionGraph final {
     [[nodiscard]] double fullWorkBaseline() const noexcept {
         return fullWorkBaseline_;
     }
+    [[nodiscard]] std::span<const std::size_t>
+    analyticOutgoing(RevisionNodeId id) const noexcept {
+        return analyticOutgoing_[id];
+    }
 
     /// HARD and EMPIRICAL edges are exact for certification. This closure only
     /// enforces predecessor consistency. Domain-specific forward hard
