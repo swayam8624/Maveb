@@ -989,6 +989,27 @@
       "claims_relevant_to_maveb": "Raises the bar for any claim that persistent identity must live at primitive indices: a persistent density can exist above resampled Gaussian samples.",
       "overlap_with_candidate_maveb_contribution": "Direct conceptual threat to S4 if S4 is framed only as surviving split/prune/densify; motivates representation-level lineage above primitive identity.",
       "potential_unexplored_gap": "Demonstrate downstream temporal/change/edit benefit from resampling-stable lineage across revisions rather than merely persistent sampling density."
+    },
+    {
+      "id": "p048",
+      "title": "VG-Mapping: Variation-Aware 3D Gaussians for Online Semi-static Scene Mapping",
+      "authors": "Yicheng He; Jingwen Yu; Guangcheng Chen; Hong Zhang",
+      "year": 2026,
+      "venue": "IEEE Robotics and Automation Letters 2026 (accepted; preprint arXiv 2510.09962)",
+      "link": "https://arxiv.org/abs/2510.09962",
+      "code_repository": "https://github.com/heyicheng-never/VG-Mapping",
+      "representation": "hybrid 3DGS + TSDF voxel map",
+      "inputs": "RGB-D stream with revisits across semi-static scene changes",
+      "outputs": "updated online 3D Gaussian map with TSDF-supported variation detection",
+      "central_contribution": "Uses a TSDF geometric map to detect semi-static changes and variation-aware density control to insert/prune Gaussians and target map updates.",
+      "major_algorithms": "TSDF-assisted variation detection; hybrid map; variation-aware Gaussian initialization/density control; direct pruning in changed areas",
+      "metrics": "render quality, map-update efficiency and localization/downstream evaluation on VG-Scene; exact paper table values must be ingested from source before benchmark comparison",
+      "hardware": "not transcribed in this refresh",
+      "runtime": "paper reports online update efficiency; exact timing values not transcribed in this refresh",
+      "limitations": "hybrid TSDF+3DGS and changed-region repair strongly overlap MAVEB broad vision; does not document an end-to-end dependency/work certificate spanning mesh texture GPU publication temporal history in inspected material",
+      "claims_relevant_to_maveb": "Kills generic hybrid TSDF+Gaussian continual mapping, TSDF-guided variation detection, and targeted Gaussian density update as headline novelty.",
+      "overlap_with_candidate_maveb_contribution": "Very high overlap with H2/H5/H6 and generic S1 reconstruction layers; forces S1 to prove cross-derived-state dependency closure and work/equivalence accounting beyond TSDF-to-Gaussian changed-region mapping.",
+      "potential_unexplored_gap": "Heterogeneous dependency closure including explicit mesh/texture/render-resource/temporal-history publication and per-layer ULR remains a candidate distinction, not a verified novelty claim."
     }
   ]
 }
