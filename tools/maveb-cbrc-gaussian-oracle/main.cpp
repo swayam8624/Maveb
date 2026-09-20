@@ -33,6 +33,7 @@ struct Options final {
     std::string afterPath;
     std::string changedCsv;
     std::string inputFormat{"ply"};
+    std::string spatialOutputPath;
     bool detectChanged{};
     std::size_t width{320};
     std::size_t height{180};
@@ -137,6 +138,11 @@ parseFloatCsv(std::string_view csv) {
             options.changedCsv = *value;
         } else if (arg == "--detect-changed") {
             options.detectChanged = true;
+        } else if (arg == "--spatial-output") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            options.spatialOutputPath = *value;
         } else if (arg == "--world-to-camera") {
             auto value = requireValue(arg);
             if (!value)
@@ -200,7 +206,9 @@ parseFloatCsv(std::string_view csv) {
                 << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
                    "(--changed 1,4,9 | --detect-changed) [camera options]\n"
                 << "  --input-format ply|aether-bin (default: ply)\n"
-                << "  --detect-changed compares stable source-order before/after records\n"                << "  --width N --height N --focal-x F --focal-y F\n"
+                << "  --detect-changed compares stable source-order before/after records\n"
+                << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
+                << "  --width N --height N --focal-x F --focal-y F\n"
                 << "  --center-x F --center-y F --near F --far F\n"
                 << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
                 << "  --camera-world-position x,y,z\n"
@@ -420,6 +428,9 @@ int main(int argc, char** argv) try {
     std::size_t affectedPixels{};
     std::size_t certificateViolations{};
     std::size_t toleranceViolations{};
+    std::vector<double> actualResiduals;
+    if (!options->spatialOutputPath.empty())
+        actualResiduals.resize(oldImage->color.size());
 
     for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
         double actual{};
@@ -430,6 +441,8 @@ int main(int argc, char** argv) try {
                          static_cast<double>(newImage->color[pixel][channel])));
         }
         const double bound = certificate->rgbLInfBounds[pixel];
+        if (!actualResiduals.empty())
+            actualResiduals[pixel] = actual;
         maximumActual = std::max(maximumActual, actual);
         maximumBound = std::max(maximumBound, bound);
         affectedPixels += static_cast<std::size_t>(bound > 0.0);
@@ -437,6 +450,50 @@ int main(int argc, char** argv) try {
             static_cast<std::size_t>(actual > bound + 2.0e-6);
         toleranceViolations +=
             static_cast<std::size_t>(actual > options->epsilon + 2.0e-6);
+    }
+
+    if (!options->spatialOutputPath.empty()) {
+        const std::filesystem::path outputPath = options->spatialOutputPath;
+        if (!outputPath.parent_path().empty()) {
+            std::error_code directoryError;
+            std::filesystem::create_directories(outputPath.parent_path(), directoryError);
+            if (directoryError) {
+                std::cerr << "Unable to create spatial evidence directory: "
+                          << directoryError.message() << '\n';
+                return EXIT_FAILURE;
+            }
+        }
+        const std::filesystem::path temporary = outputPath.string() + ".tmp";
+        std::ofstream spatial(temporary, std::ios::trunc);
+        if (!spatial) {
+            std::cerr << "Unable to open spatial evidence output\n";
+            return EXIT_FAILURE;
+        }
+        spatial << "x,y,actual_rgb_linf,certified_bound,certificate_violation\n";
+        spatial << std::setprecision(17);
+        for (std::size_t pixel = 0; pixel < actualResiduals.size(); ++pixel) {
+            const std::size_t x = pixel % camera.width;
+            const std::size_t y = pixel / camera.width;
+            const double actual = actualResiduals[pixel];
+            const double bound = certificate->rgbLInfBounds[pixel];
+            spatial << x << ',' << y << ',' << actual << ',' << bound << ','
+                    << (actual > bound + 2.0e-6 ? 1 : 0) << '\n';
+        }
+        spatial.close();
+        if (!spatial) {
+            std::cerr << "Unable to write spatial evidence output\n";
+            std::error_code ignored;
+            std::filesystem::remove(temporary, ignored);
+            return EXIT_FAILURE;
+        }
+        std::error_code publishError;
+        std::filesystem::rename(temporary, outputPath, publishError);
+        if (publishError) {
+            std::cerr << "Unable to publish spatial evidence output: "
+                      << publishError.message() << '\n';
+            std::filesystem::remove(temporary, publishError);
+            return EXIT_FAILURE;
+        }
     }
 
     const double effectivity =
@@ -459,6 +516,8 @@ int main(int argc, char** argv) try {
                      static_cast<double>(before->gaussians.size()) << ','
               << "\"affectedPixels\":" << affectedPixels << ','
               << "\"affectedPixelFraction\":" << affectedFraction << ','
+              << "\"spatialEvidenceWritten\":"
+              << (!options->spatialOutputPath.empty() ? "true" : "false") << ','
               << "\"colorUpperBound\":" << colorCap << ','
               << "\"qois\":{\"rgb_linf\":{"
               << "\"epsilon\":" << options->epsilon << ','
