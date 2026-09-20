@@ -17,6 +17,9 @@ from pathlib import Path
 from typing import Any
 
 
+GAUSSIAN_OUTPUT_GRAPH_VERSION = "gaussian-output-cone-v2"
+GAUSSIAN_TEMPORAL_BOUND_VERSION = "gaussian-image-temporal-v1"
+
 def load_object(path: Path) -> dict[str, Any]:
     data = json.loads(path.read_text())
     if not isinstance(data, dict):
@@ -117,7 +120,7 @@ def bind(
     changed_fraction = translated / total_gaussians
     output_planner_graph = {
         "schemaVersion": 1,
-        "graph_scope": "gaussian-output-cone-v2",
+        "graph_scope": GAUSSIAN_OUTPUT_GRAPH_VERSION,
         "nodes": [
             {
                 "id": "current_frame",
@@ -184,9 +187,9 @@ def bind(
             "overlay-indexed" if used_overlay else "full-scan-fallback"
         ),
         "overlay_index_valid_after_edit": overlay_valid,
-        "graph_scope": "gaussian-output-cone-v2",
+        "graph_scope": GAUSSIAN_OUTPUT_GRAPH_VERSION,
         "graph_version": "gaussian-source-image-history-v1",
-        "bound_version": "gaussian-image-temporal-v1",
+        "bound_version": GAUSSIAN_TEMPORAL_BOUND_VERSION,
         "edit_class": "gaussian",
         "coupling_regime": "unclassified-real-scene",
         "before_state": before_state,
