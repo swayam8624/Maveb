@@ -13,7 +13,9 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <span>
+#include <vector>
 
 namespace aether::metal {
 
@@ -66,14 +68,22 @@ class GaussianPipeline final {
     /// Task: render front-to-back splats and expose bounded overflow through counters.
     [[nodiscard]] Result<void> encode(MTL::CommandBuffer* commandBuffer,
                                       AetherGaussianCamera camera, MTL::Texture* color,
-                                      MTL::Texture* depth, MTL::Texture* ids);
+                                      MTL::Texture* depth, MTL::Texture* ids,
+                                      std::size_t frameSlot);
 
     /// Call only after the encoded command buffer completes.
     [[nodiscard]] GaussianPipelineStatistics statistics() const noexcept;
 
-    /// Exact source-buffer publication work from the most recent local mutation.
+    /// Logical bytes/ranges changed by the most recent local mutation.
     [[nodiscard]] GaussianPublicationStatistics publicationStatistics() const noexcept {
+        std::scoped_lock lock(publicationMutex_);
         return lastPublicationStatistics_;
+    }
+
+    /// Actual bytes/ranges copied into the most recently recycled frame-slot source buffer.
+    [[nodiscard]] GaussianPublicationStatistics framePublicationStatistics() const noexcept {
+        std::scoped_lock lock(publicationMutex_);
+        return lastFramePublicationStatistics_;
     }
 
   private:
@@ -81,15 +91,31 @@ class GaussianPipeline final {
     [[nodiscard]] Result<void> buildPipelines(MTL::Library* library);
     [[nodiscard]] Result<void> ensureTileRanges(std::uint32_t tileCount);
     [[nodiscard]] Result<void>
+    validateTranslationLocked(std::span<const std::uint32_t> gaussianIndices,
+                              simd_float3 translationDelta) const;
+    [[nodiscard]] Result<void> publishFrameSlot(std::size_t frameSlot);
+    void collectPublishedJournalLocked() noexcept;
+    [[nodiscard]] Result<void>
     dispatch1D(MTL::CommandBuffer* commandBuffer, MTL::ComputePipelineState* pipeline,
                std::uint32_t threads, const char* label,
                const std::function<void(MTL::ComputeCommandEncoder*)>& bind) const;
 
     MetalPtr<MTL::Device> device_;
     std::uint32_t maximumTileEntries_{};
+    static constexpr std::size_t gaussianSourceBufferCount_ = 3;
+
+    struct PublicationPatch final {
+        std::uint64_t version{};
+        std::vector<std::uint32_t> indices;
+    };
+
     std::uint32_t gaussianCount_{};
     std::uint32_t rangeCapacity_{};
-    MetalPtr<MTL::Buffer> gaussians_;
+    std::array<MetalPtr<MTL::Buffer>, gaussianSourceBufferCount_> gaussianSources_;
+    std::vector<AetherGaussianGpu> canonicalGaussians_;
+    std::array<std::uint64_t, gaussianSourceBufferCount_> sourceVersions_{};
+    std::uint64_t currentVersion_{};
+    std::vector<PublicationPatch> publicationJournal_;
     MetalPtr<MTL::Buffer> projected_;
     MetalPtr<MTL::Buffer> tileCounts_;
     MetalPtr<MTL::Buffer> offsets_;
@@ -104,7 +130,9 @@ class GaussianPipeline final {
     MetalPtr<MTL::Buffer> ranges_;
     MetalPtr<MTL::Buffer> counters_;
     std::array<MetalPtr<MTL::ComputePipelineState>, 13> pipelines_;
+    mutable std::mutex publicationMutex_;
     GaussianPublicationStatistics lastPublicationStatistics_{};
+    GaussianPublicationStatistics lastFramePublicationStatistics_{};
 };
 
 } // namespace aether::metal
