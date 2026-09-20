@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-20T21:55+05:30",
+  "updatedAt": "2026-09-20T22:05+05:30",
   "branches": {
     "discovery": {
       "name": "research/maveb-discovery",
@@ -29,7 +29,7 @@
     }
   },
   "corpus": {
-    "papers": 52,
+    "papers": 53,
     "repositoryImplementations": 18,
     "hypotheses": 119,
     "finalFilter": {
@@ -197,7 +197,8 @@
     ],
     "document": "research/state/PROBLEM_LOCK.md",
     "claimProven": false,
-    "paperReady": false
+    "paperReady": false,
+    "priorArtBoundaryNote": "Generic dependency-graph-driven incremental rendering is occupied at least as early as HPG 2013; MAVEB-CLOSURE novelty target is the captured-world heterogeneous closure plus work/equivalence certificate."
   },
   "hypothesisFilter": {
     "date": "2026-09-20",

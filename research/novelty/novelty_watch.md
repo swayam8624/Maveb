@@ -281,3 +281,27 @@ ratios plus declared full-reference equivalence.
 Tracked:
 - https://arxiv.org/abs/2604.02851
 - https://arxiv.org/abs/2606.17212
+
+
+### Dependency-graph incremental rendering caches — OCCUPIED SINCE HPG 2013
+**Closest work:** Wörister, Steinlechner, Maierhofer & Tobler, *Lazy Incremental Computation for
+Efficient Scene Graph Rendering*, High-Performance Graphics 2013.
+
+This work already synthesizes dependency information linking scene-graph changes to affected
+render-cache state and incrementally propagates only required updates instead of globally traversing
+the scene after each change.
+
+Therefore MAVEB must not claim novelty for:
+
+- a dependency graph linking scene changes to render resources;
+- incremental change propagation into render caches;
+- avoiding whole-scene traversal after an edit;
+- generic lazy/self-adjusting rendering updates.
+
+The surviving MAVEB-CLOSURE distinction remains narrower: a **physical captured-world revision**
+must drive a conservative heterogeneous closure spanning evidence/observations, volumetric
+reconstruction, explicit surface state, Gaussian state, texture/material state, GPU publication and
+temporal history, with native-unit work accounting and declared full-reference equivalence.
+
+Tracked:
+- https://doi.org/10.1145/2492045.2492051

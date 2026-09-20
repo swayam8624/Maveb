@@ -44,7 +44,7 @@ The locked line now contains:
 
 ## Corpus and filter
 
-- Literature corpus: **52 papers**
+- Literature corpus: **53 papers**
 - Mined implementations: **18 repositories**
 - Hypotheses: **119**
 - Locked headline hypotheses: **5**
@@ -63,7 +63,9 @@ mapping, persistent Gaussian/object identity, virtual texturing, sparse GPU publ
 TAA invalidation, Gaussian streaming/deltas, dependency graphs, or self-adjusting scene-graph
 rendering by themselves.
 
-Those ideas are prior art or enabling mechanisms.
+Those ideas are prior art or enabling mechanisms. HPG 2013 work on lazy incremental scene-graph
+rendering already used dependency-driven render-cache propagation, so dependency graphs/change
+propagation themselves are explicitly outside the novelty claim.
 
 The surviving candidate contribution is the **end-to-end captured-world closure and certificate**:
 physical evidence change → heterogeneous derived-state closure → bounded repair → native-unit work
