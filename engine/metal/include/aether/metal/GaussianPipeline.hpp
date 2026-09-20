@@ -23,6 +23,11 @@ struct GaussianPipelineStatistics final {
     std::uint32_t earlyTerminations{};
 };
 
+struct GaussianEditBounds final {
+    simd_float3 minimum{};
+    simd_float3 maximum{};
+};
+
 class GaussianPipeline final {
   public:
     /// Input: Metal 3 device, offline library, and an explicit tile-entry memory budget.
@@ -40,6 +45,12 @@ class GaussianPipeline final {
     [[nodiscard]] Result<void>
     validateTranslation(std::span<const std::uint32_t> gaussianIndices,
                         simd_float3 translationDelta) const;
+
+    /// Returns a conservative 3-sigma world AABB covering selected splats before and after
+    /// applying the proposed translation. Used to invalidate only affected temporal history.
+    [[nodiscard]] Result<GaussianEditBounds>
+    translationBounds(std::span<const std::uint32_t> gaussianIndices,
+                      simd_float3 translationDelta) const;
 
     /// Applies one metric translation to a unique subset of source-order Gaussian IDs.
     /// The shared GPU buffer is fully preflighted before mutation, so invalid IDs, duplicates, or
