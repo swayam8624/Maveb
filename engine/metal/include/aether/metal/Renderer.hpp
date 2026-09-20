@@ -67,6 +67,8 @@ struct GaussianOutputConePlannerStatistics final {
     bool fullRebuild{};
     double resolvedRgbBound{};
     double epsilon{};
+    double historyWeight{};
+    double temporalRepairWork{};
     double plannerWork{};
     double fullWork{};
 };
