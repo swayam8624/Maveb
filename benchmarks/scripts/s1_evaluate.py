@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 REQUIRED_LAYERS=(
- "observations","tsdfBlocksRead","tsdfBlocksWritten","meshCellsRegenerated",
+ "observationsInspected","tsdfBlocksRead","tsdfBlocksWritten","meshCellsRegenerated",
  "gaussiansInspected","gaussiansUpdated","textureTexelsWritten",
  "gpuPublicationBytes","temporalPixelsInvalidated"
 )
@@ -36,7 +36,12 @@ def validate_record(row:dict[str,Any],index:int)->dict[str,Any]:
     eq=row.get("equivalence")
     if not isinstance(eq,dict) or "pass" not in eq: raise ValueError("equivalence.pass is required")
     layers=row.get("layers")
-    if not isinstance(layers,dict): raise ValueError("layers object is required")
+    if not isinstance(layers,dict):
+        layers=row.get("domains")
+    if not isinstance(layers,dict) and isinstance(row.get("ledger"),dict):
+        layers=row["ledger"].get("domains")
+    if not isinstance(layers,dict):
+        raise ValueError("layers/domains or ledger.domains object is required")
     normalized={}
     for layer in REQUIRED_LAYERS:
         if layer not in layers: raise ValueError(f"revision {index} missing layer {layer}")
@@ -120,13 +125,13 @@ def evaluate(rows:list[dict[str,Any]], sparse_threshold:float=0.05,
 def synthetic(healthy:bool=True)->list[dict[str,Any]]:
     fractions=(0.001,0.005,0.01,0.05,0.10,0.25,1.0)
     fulls={
-      "observations":100000,"tsdfBlocksRead":12000,"tsdfBlocksWritten":12000,
+      "observationsInspected":100000,"tsdfBlocksRead":12000,"tsdfBlocksWritten":12000,
       "meshCellsRegenerated":900000,"gaussiansInspected":1000000,"gaussiansUpdated":1000000,
       "textureTexelsWritten":16_000_000,"gpuPublicationBytes":256_000_000,
       "temporalPixelsInvalidated":2_073_600,
     }
     units={
-      "observations":"observations","tsdfBlocksRead":"blocks","tsdfBlocksWritten":"blocks",
+      "observationsInspected":"observations","tsdfBlocksRead":"blocks","tsdfBlocksWritten":"blocks",
       "meshCellsRegenerated":"cells","gaussiansInspected":"gaussians","gaussiansUpdated":"gaussians",
       "textureTexelsWritten":"texels","gpuPublicationBytes":"bytes","temporalPixelsInvalidated":"pixels"
     }
