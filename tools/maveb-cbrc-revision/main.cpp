@@ -374,8 +374,6 @@ struct SupportPlan final {
     const std::size_t width = maxX - minX + 1;
     const std::size_t height = maxY - minY + 1;
     result.pixels = static_cast<std::uint64_t>(width) * height;
-    const double fullPixels =
-        static_cast<double>(certificate.width) * certificate.height;
     result.fullFrame = result.pixels ==
         static_cast<std::uint64_t>(certificate.width) * certificate.height;
     result.normalizedRect = {
@@ -384,7 +382,6 @@ struct SupportPlan final {
         static_cast<double>(maxX + 1) / certificate.width,
         static_cast<double>(maxY + 1) / certificate.height,
     };
-    static_cast<void>(fullPixels);
     return result;
 }
 
@@ -507,13 +504,18 @@ int main(int argc, char** argv) try {
     const std::uint64_t fullPixels =
         static_cast<std::uint64_t>(camera.width) * camera.height;
 
+    const double localHistoryRepairWork =
+        options->historyStable
+            ? static_cast<double>(support.empty ? 0 : support.pixels)
+            : static_cast<double>(fullPixels);
+    const double fullHistoryRepairWork = static_cast<double>(fullPixels);
     auto plannerGraph = aether::revision::RevisionGraph::build(
         {
             {"exact-current-frame", 0.0, 0.0},
-            {"temporal-history-repair",
-             static_cast<double>(support.empty ? 0 : support.pixels), 0.0},
+            {"temporal-history-repair", localHistoryRepairWork, 0.0},
         },
-        {});
+        {},
+        fullHistoryRepairWork);
     if (!plannerGraph) {
         std::cerr << plannerGraph.error().describe() << '\n';
         return EXIT_FAILURE;
