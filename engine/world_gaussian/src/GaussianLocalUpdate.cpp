@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <new>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -425,6 +426,116 @@ translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
         .worldEdit = std::move(*committedWorld),
         .translatedGaussians = affected->size(),
         .reoptimizationSelection = std::move(*selection),
+    };
+}
+
+Result<PersistentGaussianTranslationResult>
+translatePersistentGaussianEntityIndexed(
+    world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
+    const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
+    world::EntityId entity, simd_float3 targetWorldTranslation,
+    world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy,
+    GaussianLocalUpdatePolicy gaussianPolicy) {
+    const world::WorldSnapshot* latest = worldModel.latest();
+    if (!latest)
+        return fail(ErrorCode::notFound,
+                    "Indexed persistent Gaussian edit requires an existing world");
+    const world::EntityState* state = findEntity(*latest, entity);
+    if (!state)
+        return fail(ErrorCode::notFound,
+                    "Indexed persistent Gaussian entity was not found",
+                    std::to_string(entity.value));
+    if (!finiteDelta(targetWorldTranslation))
+        return fail(ErrorCode::invalidArgument,
+                    "Indexed Gaussian target translation must be finite");
+    if (spatialIndex.primitiveCount() != asset.gaussians.size()) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian overlay index primitive count does not match current asset");
+    }
+    if (spatialIndex.cellSizeMeters() !=
+        worldPolicy.selectiveUpdate.cellSizeMeters) {
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian overlay index cell size does not match World edit policy");
+    }
+
+    const simd_float3 translationDelta =
+        targetWorldTranslation - state->transform.translation;
+    world::EntityPatch patch;
+    patch.id = entity;
+    patch.transform = state->transform;
+    patch.transform->translation = targetWorldTranslation;
+
+    auto preparedWorld =
+        world::prepareWorldEdit(*latest, timestamp, {patch}, worldPolicy);
+    if (!preparedWorld)
+        return std::unexpected(preparedWorld.error());
+
+    auto affected = preflightOwnedTranslation(
+        asset, ownership, entity, translationDelta,
+        gaussianPolicy.maximumAffectedGaussians);
+    if (!affected)
+        return std::unexpected(affected.error());
+
+    GaussianOverlaySelectionDiagnostics diagnostics;
+    auto selection = selectGaussiansForLocalUpdateIndexed(
+        asset, preparedWorld->selectiveUpdate, spatialIndex, &ownership,
+        gaussianPolicy, &diagnostics);
+    if (!selection)
+        return std::unexpected(selection.error());
+
+    std::vector<GaussianRelocation> relocations;
+    try {
+        relocations.reserve(affected->size());
+    } catch (const std::bad_alloc&) {
+        return fail(ErrorCode::resourceExhausted,
+                    "Indexed Gaussian transaction could not allocate relocations");
+    }
+    for (const std::size_t index : *affected) {
+        if (index >= asset.gaussians.size()) {
+            return fail(ErrorCode::corruptData,
+                        "Indexed Gaussian transaction affected index is out of range");
+        }
+        const auto& primitive = asset.gaussians[index];
+        const simd_float3 oldPosition{
+            primitive.position[0],
+            primitive.position[1],
+            primitive.position[2],
+        };
+        relocations.push_back(GaussianRelocation{
+            .gaussianIndex = index,
+            .oldPosition = oldPosition,
+            .newPosition = oldPosition + translationDelta,
+        });
+    }
+
+    auto committedWorld = worldModel.edit(timestamp, {patch}, worldPolicy);
+    if (!committedWorld)
+        return std::unexpected(committedWorld.error());
+
+    applyOwnedTranslation(asset, *affected, translationDelta);
+
+    bool overlayValid = true;
+    bool overlayCompacted = false;
+    if (auto updated = spatialIndex.applyRelocations(relocations); !updated) {
+        // The overlay is only an optimization. Reconstruct it from the
+        // authoritative post-edit asset rather than compromising the committed
+        // World/Gaussian transaction.
+        auto compacted = spatialIndex.compact(asset);
+        if (compacted) {
+            overlayCompacted = true;
+        } else {
+            overlayValid = false;
+        }
+    }
+
+    return PersistentGaussianTranslationResult{
+        .worldEdit = std::move(*committedWorld),
+        .translatedGaussians = affected->size(),
+        .reoptimizationSelection = std::move(*selection),
+        .usedOverlayIndex = true,
+        .overlayIndexValid = overlayValid,
+        .overlayIndexCompacted = overlayCompacted,
+        .overlayDiagnostics = diagnostics,
     };
 }
 
