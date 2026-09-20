@@ -752,7 +752,7 @@ int main() {
     camera.focalCenter = {8.0F, 8.0F, 4.5F, 4.5F};
     camera.depthViewport = {0.01F, 100.0F, static_cast<float>(width), static_cast<float>(height)};
     auto encoded =
-        (*gaussianPipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get());
+        (*gaussianPipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get(), 0);
     if (!encoded) {
         std::cerr << encoded.error().describe() << '\n';
         pool->release();
@@ -818,7 +818,7 @@ int main() {
     camera.debugOptions.x = 2;
     MTL::CommandBuffer* debugCommand = queue->commandBuffer();
     if (!debugCommand ||
-        !(*gaussianPipeline)->encode(debugCommand, camera, color.get(), depth.get(), ids.get())) {
+        !(*gaussianPipeline)->encode(debugCommand, camera, color.get(), depth.get(), ids.get(), 1)) {
         std::cerr << "Unable to encode Gaussian source-ID debug view\n";
         pool->release();
         return 1;
@@ -838,7 +838,7 @@ int main() {
         MTL::CommandBuffer* visualizationCommand = queue->commandBuffer();
         if (!visualizationCommand ||
             !(*gaussianPipeline)
-                 ->encode(visualizationCommand, camera, color.get(), depth.get(), ids.get())) {
+                 ->encode(visualizationCommand, camera, color.get(), depth.get(), ids.get(), 2)) {
             std::cerr << "Unable to encode Gaussian representation visualization\n";
             pool->release();
             return 1;
