@@ -54,9 +54,8 @@ class PersistentWorldModel final {
 
     /// Restores a historical snapshot as a new revision without deleting later history or rolling
     /// back the persistent-ID allocator. This is the primitive behind non-destructive time travel.
-    [[nodiscard]] Result<WorldRevertResult> revertTo(std::uint64_t sourceRevision,
-                                                      TimestampNs timestamp,
-                                                      WorldEditPolicy policy = {});
+    [[nodiscard]] Result<WorldRevertResult>
+    revertTo(std::uint64_t sourceRevision, TimestampNs timestamp, WorldEditPolicy policy = {});
 
     /// Atomically persists the complete committed history and identity allocator state.
     [[nodiscard]] Result<void> save(const std::filesystem::path& path) const;

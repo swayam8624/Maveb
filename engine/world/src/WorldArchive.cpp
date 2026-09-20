@@ -69,7 +69,8 @@ Result<void> validateArchiveState(const WorldTimeline& timeline, std::uint64_t n
         if (snapshot.revision != expectedRevision)
             return fail(ErrorCode::corruptData, "World archive revisions must be contiguous");
         if (snapshot.timestamp == 0 || snapshot.timestamp <= previousTimestamp)
-            return fail(ErrorCode::corruptData, "World archive timestamps must be strictly increasing");
+            return fail(ErrorCode::corruptData,
+                        "World archive timestamps must be strictly increasing");
         if (auto validation = validateSnapshot(snapshot); !validation)
             return validation;
         for (const EntityState& entity : snapshot.entities)
@@ -119,7 +120,8 @@ Result<simd_float3> readFloat3(simdjson::dom::element object, const char* field)
         if (element.get(value) || !std::isfinite(value) ||
             value < -static_cast<double>(std::numeric_limits<float>::max()) ||
             value > static_cast<double>(std::numeric_limits<float>::max())) {
-            return fail(ErrorCode::corruptData, "World archive float3 contains invalid number", field);
+            return fail(ErrorCode::corruptData, "World archive float3 contains invalid number",
+                        field);
         }
         result[index++] = static_cast<float>(value);
     }
@@ -137,7 +139,8 @@ Result<simd_float4> readFloat4(simdjson::dom::element object, const char* field)
         if (element.get(value) || !std::isfinite(value) ||
             value < -static_cast<double>(std::numeric_limits<float>::max()) ||
             value > static_cast<double>(std::numeric_limits<float>::max())) {
-            return fail(ErrorCode::corruptData, "World archive float4 contains invalid number", field);
+            return fail(ErrorCode::corruptData, "World archive float4 contains invalid number",
+                        field);
         }
         result[index++] = static_cast<float>(value);
     }
@@ -192,8 +195,8 @@ Result<EntityState> readEntity(simdjson::dom::element element) {
     entity.name = std::move(*name);
     entity.semanticLabel = std::move(*semanticLabel);
     entity.transform.translation = *translation;
-    entity.transform.rotation = simd_quaternion((*rotation).x, (*rotation).y, (*rotation).z,
-                                                (*rotation).w);
+    entity.transform.rotation =
+        simd_quaternion((*rotation).x, (*rotation).y, (*rotation).z, (*rotation).w);
     entity.transform.scale = *scale;
     entity.worldBounds = Bounds{*boundsMinimum, *boundsMaximum};
     entity.representation = static_cast<RepresentationKind>(*representation);
@@ -224,8 +227,8 @@ Result<void> saveWorldArchive(const std::filesystem::path& path, const WorldTime
     const auto& snapshots = timeline.snapshots();
     for (std::size_t snapshotIndex = 0; snapshotIndex < snapshots.size(); ++snapshotIndex) {
         const WorldSnapshot& snapshot = snapshots[snapshotIndex];
-        stream << "    {\"revision\":" << snapshot.revision << ",\"timestamp\":"
-               << snapshot.timestamp << ",\"entities\":[\n";
+        stream << "    {\"revision\":" << snapshot.revision
+               << ",\"timestamp\":" << snapshot.timestamp << ",\"entities\":[\n";
         for (std::size_t entityIndex = 0; entityIndex < snapshot.entities.size(); ++entityIndex) {
             const EntityState& entity = snapshot.entities[entityIndex];
             const simd_float4 rotation = entity.transform.rotation.vector;
@@ -246,8 +249,8 @@ Result<void> saveWorldArchive(const std::filesystem::path& path, const WorldTime
             stream << ",\"representation\":" << static_cast<std::uint64_t>(entity.representation)
                    << ",\"geometrySignature\":" << entity.geometrySignature
                    << ",\"appearanceSignature\":" << entity.appearanceSignature
-                   << ",\"confidence\":" << entity.confidence << ",\"lastObserved\":"
-                   << entity.lastObserved << '}';
+                   << ",\"confidence\":" << entity.confidence
+                   << ",\"lastObserved\":" << entity.lastObserved << '}';
             stream << (entityIndex + 1 == snapshot.entities.size() ? "\n" : ",\n");
         }
         stream << "    ]}" << (snapshotIndex + 1 == snapshots.size() ? "\n" : ",\n");
@@ -294,7 +297,8 @@ Result<WorldArchiveData> loadWorldArchive(const std::filesystem::path& path,
         return fail(ErrorCode::unsupported, "World archive schema version is unsupported");
 
     simdjson::dom::array snapshots;
-    if (document["snapshots"].get_array().get(snapshots) || snapshots.size() > limits.maximumSnapshots)
+    if (document["snapshots"].get_array().get(snapshots) ||
+        snapshots.size() > limits.maximumSnapshots)
         return fail(ErrorCode::resourceExhausted, "World archive snapshot count exceeds limits");
 
     WorldArchiveData result;

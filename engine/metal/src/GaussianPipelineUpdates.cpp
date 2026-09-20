@@ -6,9 +6,8 @@
 
 namespace aether::metal {
 
-Result<void>
-GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianIndices,
-                                      simd_float3 translationDelta) const {
+Result<void> GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                                   simd_float3 translationDelta) const {
     if (!gaussians_ || gaussianCount_ == 0)
         return fail(ErrorCode::notFound, "Gaussian translation requires a loaded GPU scene");
     if (!std::isfinite(translationDelta.x) || !std::isfinite(translationDelta.y) ||
@@ -21,8 +20,7 @@ GaussianPipeline::validateTranslation(std::span<const std::uint32_t> gaussianInd
     std::vector<std::uint32_t> sorted(gaussianIndices.begin(), gaussianIndices.end());
     std::sort(sorted.begin(), sorted.end());
     if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end()) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian GPU translation indices must be unique");
+        return fail(ErrorCode::invalidArgument, "Gaussian GPU translation indices must be unique");
     }
     if (sorted.back() >= gaussianCount_)
         return fail(ErrorCode::invalidArgument, "Gaussian GPU translation index is out of range");

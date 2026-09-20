@@ -41,8 +41,7 @@ EntityState observation(std::string name, std::string semantic, float x) {
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::gaussian;
     result.geometrySignature = 10;
     result.appearanceSignature = 20;
@@ -70,8 +69,8 @@ void testOwnershipProtectsStableSplatsInDirtyCells() {
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{}, EntityId{1}};
 
-    const auto selected = aether::world_gaussian::selectGaussiansForLocalUpdate(
-        asset, oneDirtyCell(), &ownership);
+    const auto selected =
+        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), &ownership);
     expect(selected.has_value(), "owned Gaussian selection must accept valid world update plan");
     if (!selected)
         return;
@@ -191,8 +190,8 @@ void testOwnershipShapeAndSelectionBudgetFailClosed() {
 
     GaussianLocalUpdatePolicy budget;
     budget.maximumAffectedGaussians = 1;
-    const auto rejected =
-        aether::world_gaussian::selectGaussiansForLocalUpdate(asset, oneDirtyCell(), nullptr, budget);
+    const auto rejected = aether::world_gaussian::selectGaussiansForLocalUpdate(
+        asset, oneDirtyCell(), nullptr, budget);
     expect(!rejected.has_value(), "local Gaussian selection must enforce affected-splat budget");
 }
 

@@ -30,9 +30,8 @@ class FrameQuiescence final {
 
 } // namespace
 
-Result<void>
-Renderer::validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
-                                      simd_float3 translationDelta) const {
+Result<void> Renderer::validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                                   simd_float3 translationDelta) const {
     if (!gaussianPipeline_)
         return fail(ErrorCode::notFound, "Gaussian translation requires an active captured scene");
     return gaussianPipeline_->validateTranslation(gaussianIndices, translationDelta);

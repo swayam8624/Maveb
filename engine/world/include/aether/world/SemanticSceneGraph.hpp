@@ -45,8 +45,8 @@ struct SceneGraphEdge final {
 /// entity pair, while explicit budgets bound adversarial dense scenes.
 class SemanticSceneGraph final {
   public:
-    [[nodiscard]] static Result<SemanticSceneGraph>
-    build(const WorldSnapshot& snapshot, SceneGraphPolicy policy = {});
+    [[nodiscard]] static Result<SemanticSceneGraph> build(const WorldSnapshot& snapshot,
+                                                          SceneGraphPolicy policy = {});
 
     [[nodiscard]] std::uint64_t revision() const noexcept {
         return revision_;

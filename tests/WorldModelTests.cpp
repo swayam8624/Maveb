@@ -31,8 +31,7 @@ EntityState observation(std::string name, std::string semantic, float x,
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -53,9 +52,8 @@ const EntityState* findByName(const PersistentWorldModel& model, const std::stri
 void testInitialAndIncrementalIngest() {
     PersistentWorldModel model;
 
-    const auto first = model.ingest(
-        100, {observation("Wall", "wall", 0.0F, 10, 20),
-              observation("Chair", "chair", 1.0F, 30, 40)});
+    const auto first = model.ingest(100, {observation("Wall", "wall", 0.0F, 10, 20),
+                                          observation("Chair", "chair", 1.0F, 30, 40)});
     expect(first.has_value(), "initial observation set must commit as the first world revision");
     if (!first)
         return;
@@ -75,10 +73,9 @@ void testInitialAndIncrementalIngest() {
     expect(firstChair && firstChair->id.value == 2,
            "first observed chair must receive stable ID 2");
 
-    const auto second = model.ingest(
-        200, {observation("Wall", "wall", 0.002F, 10, 20),
-              observation("Chair", "chair", 1.5F, 30, 41),
-              observation("Monitor", "monitor", 3.0F, 50, 60)});
+    const auto second = model.ingest(200, {observation("Wall", "wall", 0.002F, 10, 20),
+                                           observation("Chair", "chair", 1.5F, 30, 41),
+                                           observation("Monitor", "monitor", 3.0F, 50, 60)});
     expect(second.has_value(), "new physical observation must advance persistent world history");
     if (!second)
         return;
@@ -90,8 +87,7 @@ void testInitialAndIncrementalIngest() {
            "monitor must be represented as an addition instead of identity churn");
     expect(second->diff.summary.modified == 1,
            "moved/appearance-changed chair must be represented as a modification");
-    expect(second->diff.summary.unchanged == 1,
-           "sub-threshold wall jitter must remain unchanged");
+    expect(second->diff.summary.unchanged == 1, "sub-threshold wall jitter must remain unchanged");
     expect(model.timeline().size() == 2, "successful incremental ingest must append history");
 
     const EntityState* wall = findByName(model, "Wall");
@@ -119,8 +115,7 @@ void testFailedUpdateRollsBackTimelineAndAllocator() {
     impossibleBudget.selectiveUpdate.maximumDirtyRegions = 1;
 
     const auto rejected = model.ingest(
-        200, {observation("Desk", "desk", 4.0F, 1, 1),
-              observation("Lamp", "lamp", 8.0F, 2, 2)},
+        200, {observation("Desk", "desk", 4.0F, 1, 1), observation("Lamp", "lamp", 8.0F, 2, 2)},
         impossibleBudget);
     expect(!rejected.has_value(), "dirty-region budget overflow must reject the world transaction");
     expect(model.timeline().size() == timelineSizeBefore,
@@ -131,8 +126,7 @@ void testFailedUpdateRollsBackTimelineAndAllocator() {
            "failed transaction must leave the committed latest revision unchanged");
 
     const auto recovered = model.ingest(
-        300, {observation("Desk", "desk", 0.1F, 1, 1),
-              observation("Lamp", "lamp", 3.0F, 2, 2)});
+        300, {observation("Desk", "desk", 0.1F, 1, 1), observation("Lamp", "lamp", 3.0F, 2, 2)});
     expect(recovered.has_value(), "valid update after rollback must still commit normally");
     if (!recovered)
         return;
@@ -150,22 +144,21 @@ void testTimestampFailureIsNonMutating() {
     const auto rejected = model.ingest(100, {observation("Desk", "desk", 0.0F, 1, 1)});
     expect(!rejected.has_value(), "non-increasing observation time must be rejected");
     expect(model.timeline().size() == 1, "timestamp rejection must not append history");
-    expect(model.nextEntityId() == allocator, "timestamp rejection must not consume identity space");
+    expect(model.nextEntityId() == allocator,
+           "timestamp rejection must not consume identity space");
 }
 
 void testHistoricalRevertCreatesNewRevisionWithoutReusingIds() {
     PersistentWorldModel model;
-    const auto first = model.ingest(
-        100, {observation("Desk", "desk", 0.0F, 10, 10),
-              observation("Chair", "chair", 1.0F, 20, 20)});
+    const auto first = model.ingest(100, {observation("Desk", "desk", 0.0F, 10, 10),
+                                          observation("Chair", "chair", 1.0F, 20, 20)});
     expect(first.has_value(), "time-travel fixture must create revision 1");
     if (!first)
         return;
 
-    const auto second = model.ingest(
-        200, {observation("Desk", "desk", 0.0F, 10, 10),
-              observation("Chair", "chair", 1.5F, 20, 20),
-              observation("Plant", "plant", 3.0F, 30, 30)});
+    const auto second = model.ingest(200, {observation("Desk", "desk", 0.0F, 10, 10),
+                                           observation("Chair", "chair", 1.5F, 20, 20),
+                                           observation("Plant", "plant", 3.0F, 30, 30)});
     expect(second.has_value(), "time-travel fixture must create revision 2");
     if (!second)
         return;
@@ -202,10 +195,9 @@ void testHistoricalRevertCreatesNewRevisionWithoutReusingIds() {
     expect(restoredChair && restoredChair->transform.translation.x == 1.0F,
            "restored chair must return to its historical metric position");
 
-    const auto future = model.ingest(
-        400, {observation("Desk", "desk", 0.0F, 10, 10),
-              observation("Chair", "chair", 1.0F, 20, 20),
-              observation("Lamp", "lamp", 5.0F, 40, 40)});
+    const auto future = model.ingest(400, {observation("Desk", "desk", 0.0F, 10, 10),
+                                           observation("Chair", "chair", 1.0F, 20, 20),
+                                           observation("Lamp", "lamp", 5.0F, 40, 40)});
     expect(future.has_value(), "world must continue evolving after time travel");
     if (!future)
         return;

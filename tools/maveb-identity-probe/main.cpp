@@ -28,8 +28,7 @@ EntityState entity(std::uint64_t id, std::string name, float x, std::uint64_t ge
     result.name = std::move(name);
     result.semanticLabel = "object";
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds =
-        Bounds{{x - 0.10F, -0.10F, -0.10F}, {x + 0.10F, 0.10F, 0.10F}};
+    result.worldBounds = Bounds{{x - 0.10F, -0.10F, -0.10F}, {x + 0.10F, 0.10F, 0.10F}};
     result.representation = RepresentationKind::gaussian;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -70,14 +69,13 @@ void emitCrossingProbe() {
                         entity(0, "physical-a", displacement, distinctSignatures ? 101U : 1U,
                                distinctSignatures ? 201U : 1U, 0),
                         entity(0, "physical-b", separation - displacement,
-                               distinctSignatures ? 102U : 1U,
-                               distinctSignatures ? 202U : 1U, 0),
+                               distinctSignatures ? 102U : 1U, distinctSignatures ? 202U : 1U, 0),
                     };
                     if (reverseObservationOrder)
                         std::swap(observations[0], observations[1]);
 
-                    auto associated =
-                        aether::world::associateObservations(previous, 200, std::move(observations), 3);
+                    auto associated = aether::world::associateObservations(
+                        previous, 200, std::move(observations), 3);
                     if (!associated) {
                         std::cerr << associated.error().describe() << '\n';
                         std::exit(3);
@@ -93,22 +91,19 @@ void emitCrossingProbe() {
                     const std::size_t identitySwitches =
                         static_cast<std::size_t>(predictedA == 2U) +
                         static_cast<std::size_t>(predictedB == 1U);
-                    const std::size_t falseBirths =
-                        static_cast<std::size_t>(predictedA > 2U) +
-                        static_cast<std::size_t>(predictedB > 2U);
+                    const std::size_t falseBirths = static_cast<std::size_t>(predictedA > 2U) +
+                                                    static_cast<std::size_t>(predictedB > 2U);
 
                     if (!first)
                         std::cout << ',';
                     first = false;
                     std::cout << "{\"separationMeters\":" << separation
-                              << ",\"travelFraction\":" << fraction
-                              << ",\"distinctSignatures\":"
+                              << ",\"travelFraction\":" << fraction << ",\"distinctSignatures\":"
                               << (distinctSignatures ? "true" : "false")
                               << ",\"reverseObservationOrder\":"
                               << (reverseObservationOrder ? "true" : "false")
                               << ",\"predictedA\":" << predictedA
-                              << ",\"predictedB\":" << predictedB
-                              << ",\"identitySurvivalRate\":"
+                              << ",\"predictedB\":" << predictedB << ",\"identitySurvivalRate\":"
                               << static_cast<double>(correctlyPreserved) / 2.0
                               << ",\"identitySwitches\":" << identitySwitches
                               << ",\"falseBirths\":" << falseBirths << '}';
@@ -121,9 +116,8 @@ void emitCrossingProbe() {
 
 void emitReappearanceProbe(bool explicitIdentity) {
     PersistentWorldModel model;
-    auto initial = model.ingest(
-        100, {entity(0, "physical-a", 0.0F, 101, 201, 0),
-              entity(0, "physical-b", 1.0F, 102, 202, 0)});
+    auto initial = model.ingest(100, {entity(0, "physical-a", 0.0F, 101, 201, 0),
+                                      entity(0, "physical-b", 1.0F, 102, 202, 0)});
     if (!initial) {
         std::cerr << initial.error().describe() << '\n';
         std::exit(4);
@@ -138,9 +132,9 @@ void emitReappearanceProbe(bool explicitIdentity) {
         std::exit(5);
     }
 
-    EntityState returningB = entity(explicitIdentity ? originalB : 0, "physical-b", 1.02F, 102, 202, 0);
-    auto reappeared =
-        model.ingest(300, {entity(0, "physical-a", 0.03F, 101, 201, 0), returningB});
+    EntityState returningB =
+        entity(explicitIdentity ? originalB : 0, "physical-b", 1.02F, 102, 202, 0);
+    auto reappeared = model.ingest(300, {entity(0, "physical-a", 0.03F, 101, 201, 0), returningB});
     if (!reappeared) {
         std::cerr << reappeared.error().describe() << '\n';
         std::exit(6);

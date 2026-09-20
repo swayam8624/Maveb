@@ -37,9 +37,8 @@ class GaussianPipeline final {
     [[nodiscard]] Result<void> load(const gaussian::GaussianAsset& asset);
 
     /// Validates a source-order subset translation without mutating GPU-visible state.
-    [[nodiscard]] Result<void>
-    validateTranslation(std::span<const std::uint32_t> gaussianIndices,
-                        simd_float3 translationDelta) const;
+    [[nodiscard]] Result<void> validateTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                                   simd_float3 translationDelta) const;
 
     /// Applies one metric translation to a unique subset of source-order Gaussian IDs.
     /// The shared GPU buffer is fully preflighted before mutation, so invalid IDs, duplicates, or

@@ -41,8 +41,8 @@ struct DirtyRegionInfo final {
     return static_cast<std::int32_t>(scaled);
 }
 
-[[nodiscard]] Result<world::RegionKey>
-regionKey(const gaussian::Gaussian& gaussian, float cellSizeMeters) {
+[[nodiscard]] Result<world::RegionKey> regionKey(const gaussian::Gaussian& gaussian,
+                                                 float cellSizeMeters) {
     auto x = cellCoordinate(gaussian.position[0], cellSizeMeters);
     auto y = cellCoordinate(gaussian.position[1], cellSizeMeters);
     auto z = cellCoordinate(gaussian.position[2], cellSizeMeters);
@@ -110,24 +110,22 @@ void applyOwnedTranslation(gaussian::GaussianAsset& asset,
     }
 }
 
-[[nodiscard]] const world::EntityState*
-findEntity(const world::WorldSnapshot& snapshot, world::EntityId entity) noexcept {
-    const auto match = std::find_if(snapshot.entities.begin(), snapshot.entities.end(),
-                                    [entity](const world::EntityState& state) {
-                                        return state.id == entity;
-                                    });
+[[nodiscard]] const world::EntityState* findEntity(const world::WorldSnapshot& snapshot,
+                                                   world::EntityId entity) noexcept {
+    const auto match =
+        std::find_if(snapshot.entities.begin(), snapshot.entities.end(),
+                     [entity](const world::EntityState& state) { return state.id == entity; });
     return match == snapshot.entities.end() ? nullptr : &*match;
 }
 
 } // namespace
 
-Result<GaussianLocalUpdateSelection>
-selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
-                              const world::SelectiveUpdatePlan& worldUpdate,
-                              const GaussianEntityOwnership* ownership,
-                              GaussianLocalUpdatePolicy policy) {
+Result<GaussianLocalUpdateSelection> selectGaussiansForLocalUpdate(
+    const gaussian::GaussianAsset& asset, const world::SelectiveUpdatePlan& worldUpdate,
+    const GaussianEntityOwnership* ownership, GaussianLocalUpdatePolicy policy) {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
-        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+        return fail(ErrorCode::invalidArgument,
+                    "World update cell size must be finite and positive");
     if (policy.maximumAffectedGaussians == 0)
         return fail(ErrorCode::invalidArgument, "Gaussian local-update budget cannot be zero");
     if (ownership && ownership->owners.size() != asset.gaussians.size()) {
@@ -187,10 +185,10 @@ selectGaussiansForLocalUpdate(const gaussian::GaussianAsset& asset,
     return result;
 }
 
-Result<std::size_t>
-translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwnership& ownership,
-                        world::EntityId entity, simd_float3 translationDelta,
-                        std::size_t maximumAffectedGaussians) {
+Result<std::size_t> translateOwnedGaussians(gaussian::GaussianAsset& asset,
+                                            const GaussianEntityOwnership& ownership,
+                                            world::EntityId entity, simd_float3 translationDelta,
+                                            std::size_t maximumAffectedGaussians) {
     auto affected = preflightOwnedTranslation(asset, ownership, entity, translationDelta,
                                               maximumAffectedGaussians);
     if (!affected)
@@ -199,13 +197,11 @@ translateOwnedGaussians(gaussian::GaussianAsset& asset, const GaussianEntityOwne
     return affected->size();
 }
 
-Result<PersistentGaussianTranslationResult>
-translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
-                                  gaussian::GaussianAsset& asset,
-                                  const GaussianEntityOwnership& ownership,
-                                  world::EntityId entity, simd_float3 targetWorldTranslation,
-                                  world::TimestampNs timestamp, world::WorldEditPolicy worldPolicy,
-                                  GaussianLocalUpdatePolicy gaussianPolicy) {
+Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
+    world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
+    const GaussianEntityOwnership& ownership, world::EntityId entity,
+    simd_float3 targetWorldTranslation, world::TimestampNs timestamp,
+    world::WorldEditPolicy worldPolicy, GaussianLocalUpdatePolicy gaussianPolicy) {
     const world::WorldSnapshot* latest = worldModel.latest();
     if (!latest)
         return fail(ErrorCode::notFound, "Persistent Gaussian edit requires an existing world");
@@ -231,8 +227,8 @@ translatePersistentGaussianEntity(world::PersistentWorldModel& worldModel,
     if (!affected)
         return std::unexpected(affected.error());
 
-    auto selection = selectGaussiansForLocalUpdate(asset, preparedWorld->selectiveUpdate, &ownership,
-                                                   gaussianPolicy);
+    auto selection = selectGaussiansForLocalUpdate(asset, preparedWorld->selectiveUpdate,
+                                                   &ownership, gaussianPolicy);
     if (!selection)
         return std::unexpected(selection.error());
 

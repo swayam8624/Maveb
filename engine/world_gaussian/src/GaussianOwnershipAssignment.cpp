@@ -105,12 +105,12 @@ assignGaussianOwnership(const gaussian::GaussianAsset& asset, const world::World
             boundsVolume(entity.worldBounds),
         });
     }
-    std::sort(entities.begin(), entities.end(), [](const EntityCandidate& lhs,
-                                                    const EntityCandidate& rhs) {
-        if (lhs.minimumX != rhs.minimumX)
-            return lhs.minimumX < rhs.minimumX;
-        return lhs.id < rhs.id;
-    });
+    std::sort(entities.begin(), entities.end(),
+              [](const EntityCandidate& lhs, const EntityCandidate& rhs) {
+                  if (lhs.minimumX != rhs.minimumX)
+                      return lhs.minimumX < rhs.minimumX;
+                  return lhs.id < rhs.id;
+              });
 
     std::vector<std::size_t> gaussianOrder(asset.gaussians.size());
     std::iota(gaussianOrder.begin(), gaussianOrder.end(), 0);
@@ -127,7 +127,8 @@ assignGaussianOwnership(const gaussian::GaussianAsset& asset, const world::World
     std::size_t entityCursor{};
     for (const std::size_t gaussianIndex : gaussianOrder) {
         const gaussian::Gaussian& primitive = asset.gaussians[gaussianIndex];
-        const simd_float3 point{primitive.position[0], primitive.position[1], primitive.position[2]};
+        const simd_float3 point{primitive.position[0], primitive.position[1],
+                                primitive.position[2]};
         const float minimumCandidateX = point.x - policy.maximumSurfaceDistanceMeters;
         const float maximumCandidateX = point.x + policy.maximumSurfaceDistanceMeters;
 
@@ -135,9 +136,10 @@ assignGaussianOwnership(const gaussian::GaussianAsset& asset, const world::World
                entities[entityCursor].minimumX <= maximumCandidateX) {
             active.push_back(entityCursor++);
         }
-        active.erase(std::remove_if(active.begin(), active.end(), [&](std::size_t index) {
-                         return entities[index].maximumX < minimumCandidateX;
-                     }),
+        active.erase(std::remove_if(active.begin(), active.end(),
+                                    [&](std::size_t index) {
+                                        return entities[index].maximumX < minimumCandidateX;
+                                    }),
                      active.end());
 
         OwnershipChoice best;

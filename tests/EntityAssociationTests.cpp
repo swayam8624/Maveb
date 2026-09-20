@@ -33,8 +33,7 @@ EntityState entity(std::uint64_t id, std::string name, std::string semantic, flo
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -114,7 +113,8 @@ void testSemanticMismatchDoesNotStealIdentity() {
     const EntityState* lamp = findByName(associated->snapshot, "Lamp");
     expect(lamp && lamp->id.value == 20,
            "nearby object with conflicting semantics must receive a new persistent ID");
-    expect(associated->reusedIds == 0, "semantic mismatch must not reuse prior identity by default");
+    expect(associated->reusedIds == 0,
+           "semantic mismatch must not reuse prior identity by default");
     expect(associated->createdIds == 1, "semantic mismatch must allocate one new identity");
     expect(associated->missingPreviousEntities == 1,
            "unobserved chair must remain missing rather than being relabeled as a lamp");
@@ -180,7 +180,8 @@ void testCandidateBudgetFailsClosed() {
     policy.maximumCandidatePairs = 1;
     const auto associated =
         aether::world::associateObservations(previous, 200, std::move(observations), 3, policy);
-    expect(!associated.has_value(), "association must fail when its explicit pair budget is exceeded");
+    expect(!associated.has_value(),
+           "association must fail when its explicit pair budget is exceeded");
     if (!associated) {
         expect(associated.error().code == ErrorCode::resourceExhausted,
                "candidate-pair budget failure must report resource exhaustion");
