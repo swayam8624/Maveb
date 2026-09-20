@@ -24,9 +24,12 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     if (gaussianIndices.empty())
         return {};
 
-    // Local edits mutate canonical CPU state and append a publication journal entry only.
-    // Each recycled frame slot receives its stale record ranges immediately before that slot is
-    // encoded, so no edit waits for or mutates an in-flight GPU source buffer.
+    auto editBounds = gaussianPipeline_->translationBounds(gaussianIndices, translationDelta);
+    if (!editBounds)
+        return std::unexpected(editBounds.error());
+
+    // The edit mutates canonical CPU state and journals changed IDs only. No submitted frame-slot
+    // source buffer is touched here; stale records are copied when each slot is recycled.
     auto translated = gaussianPipeline_->translate(gaussianIndices, translationDelta);
     if (!translated)
         return std::unexpected(translated.error());
@@ -34,13 +37,20 @@ Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussia
     lastGaussianEditPublicationStatistics_ = {
         .sourceBuffer = gaussianPipeline_->publicationStatistics(),
         .frameSlotsQuiesced = 0,
-        .globalTemporalHistoryInvalidated = true,
+        .globalTemporalHistoryInvalidated = false,
     };
 
-    // Reprojection after an authored spatial edit must not blend against history generated from
-    // the pre-edit geometry. This global invalidation is intentionally preserved as the correctness
-    // baseline; the temporal-locality research branch must beat it without introducing ghosting.
-    temporalHistoryValid_ = false;
+    const scene::TemporalWorldBounds currentBounds{
+        .minimum = editBounds->minimum,
+        .maximum = editBounds->maximum,
+    };
+    if (pendingTemporalInvalidationBounds_) {
+        *pendingTemporalInvalidationBounds_ =
+            scene::mergeTemporalWorldBounds(*pendingTemporalInvalidationBounds_, currentBounds);
+    } else {
+        pendingTemporalInvalidationBounds_ = currentBounds;
+    }
+    lastTemporalInvalidationPlan_ = {};
     return {};
 }
 
