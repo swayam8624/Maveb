@@ -41,6 +41,21 @@ if(Python3_Interpreter_FOUND)
             -s "${PROJECT_SOURCE_DIR}/tools/aether-proxy/tests" -v)
     set_tests_properties(AetherProxyPythonTests PROPERTIES
         ENVIRONMENT "PYTHONPATH=${PROJECT_SOURCE_DIR}/tools/aether-proxy/src")
+
+    add_test(NAME MavebTemporalRepresentationOracleSelfTest
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/research/probes/temporal_representation_oracle.py"
+            --self-test)
+    add_test(NAME MavebTemporalRepresentationOracleSynthetic
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/research/probes/temporal_representation_oracle.py"
+            --synthetic
+            --output "${PROJECT_BINARY_DIR}/test-artifacts/temporal-representation-oracle.json")
+    add_test(NAME MavebResamplingLineageProbe
+        COMMAND ${Python3_EXECUTABLE}
+            "${PROJECT_SOURCE_DIR}/research/probes/resampling_lineage_probe.py"
+            --self-test
+            --output "${PROJECT_BINARY_DIR}/test-artifacts/resampling-lineage-v1.json")
 endif()
 
 if(TARGET AetherCapture)
