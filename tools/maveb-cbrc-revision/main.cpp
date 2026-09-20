@@ -521,7 +521,7 @@ int main(int argc, char** argv) try {
             *plannerGraph, *planned,
             {
                 .graphVersion = "gaussian-output-cone-v2",
-                .boundVersion = "gaussian-image+temporal-v1",
+                .boundVersion = "gaussian-image-temporal-v1",
                 .costModelVersion = "temporal-pixel-work-v1",
             });
     if (!nativePlannerCertificate) {
