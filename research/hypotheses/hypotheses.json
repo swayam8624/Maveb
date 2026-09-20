@@ -27,7 +27,8 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "demoted-supporting",
+      "note": "Raw-field phase rejected; canonical phase survives only for correspondence-free resampling problems. Rigid known-correspondence edits are solved by simpler Procrustes baseline."
     },
     {
       "hypothesis_id": "H002",
@@ -52,7 +53,8 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "probe-candidate",
+      "note": "Graph-spectral variant remains untested; must beat graph Laplacian / geometric baselines."
     },
     {
       "hypothesis_id": "H003",
@@ -505,7 +507,8 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "priority-kill-test",
+      "note": "Lineage is only worth building if it improves downstream edit/change metrics."
     },
     {
       "hypothesis_id": "H021",
@@ -605,7 +608,8 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "promoted-integration",
+      "note": "Synthetic RegionKey index probes remove O(N) selection scans with exact set equivalence; production integration branch created."
     },
     {
       "hypothesis_id": "H025",
@@ -855,7 +859,8 @@
         "literature corpus",
         "deterministic configs/results"
       ],
-      "status": "probe-candidate"
+      "status": "priority-survivor",
+      "note": "End-to-end dependency-driven ULR is the strongest systems hypothesis; must expose hidden scans/copies across every layer."
     },
     {
       "hypothesis_id": "H035",
@@ -2882,5 +2887,6 @@
       ],
       "status": "probe-candidate"
     }
-  ]
+  ],
+  "lastPrunedAt": "2026-09-20"
 }
