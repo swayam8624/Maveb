@@ -1,11 +1,13 @@
 from __future__ import annotations
-import importlib.util, tempfile, unittest
+import importlib.util, sys, tempfile, unittest
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPT=ROOT/"scripts/mavebbench.py"
 spec=importlib.util.spec_from_file_location("mavebbench_vg",SCRIPT)
-mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+mod=importlib.util.module_from_spec(spec)
+sys.modules[spec.name]=mod
+spec.loader.exec_module(mod)
 
 class MavebBenchVGSceneTests(unittest.TestCase):
     def fixture(self,root:Path)->Path:
