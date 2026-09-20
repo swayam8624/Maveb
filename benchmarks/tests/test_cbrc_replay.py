@@ -62,6 +62,44 @@ class CBRCReplayTests(unittest.TestCase):
             row["candidateDiagnostics"]["candidateRgbBound"], 0.08
         )
 
+    def test_frozen_work_model_converts_native_ledger(self):
+        m = manifest()
+        m.pop("candidate_work")
+        m.pop("full_work")
+        m["work_ledger"] = {
+            "domains": {
+                "gaussiansUpdated": {
+                    "incremental": 10,
+                    "full": 100,
+                    "unit": "gaussians",
+                },
+                "gpuPublicationBytes": {
+                    "incremental": 1000,
+                    "full": 10000,
+                    "unit": "bytes",
+                },
+            }
+        }
+        m["work_cost_model"] = {
+            "version": "fixture-cost-v1",
+            "cost_unit": "ms",
+            "domains": {
+                "gaussiansUpdated": {
+                    "unit": "gaussians",
+                    "cost_per_unit": 0.01,
+                },
+                "gpuPublicationBytes": {
+                    "unit": "bytes",
+                    "cost_per_unit": 1e-6,
+                },
+            },
+        }
+        row = mod.finalize_row(m, oracle(), 0)
+        self.assertAlmostEqual(row["planner_work"], 0.101)
+        self.assertAlmostEqual(row["full_work"], 1.01)
+        self.assertEqual(row["work_cost_model_version"], "fixture-cost-v1")
+        self.assertEqual(row["work_cost_unit"], "ms")
+
     def test_certificate_violation_is_fatal(self):
         with self.assertRaisesRegex(RuntimeError, "FATAL CBRC certificate violation"):
             mod.finalize_row(
