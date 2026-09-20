@@ -239,9 +239,9 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
         ready.pop_front();
         ++visited;
 
-        for (const RevisionEdge& edge : graph.edges()) {
-            if (edge.edgeClass != RevisionEdgeClass::analytic || edge.source != source ||
-                inside[edge.target])
+        for (const std::size_t edgeIndex : graph.analyticOutgoing(source)) {
+            const RevisionEdge& edge = graph.edges()[edgeIndex];
+            if (inside[edge.target])
                 continue;
             residual[edge.target] += edge.gain * residual[source];
             if (!std::isfinite(residual[edge.target]))
