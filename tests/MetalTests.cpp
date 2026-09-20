@@ -874,7 +874,7 @@ int main() {
         !multiBlockCommand ||
         !(*multiBlockPipeline)
              ->encode(multiBlockCommand, camera, multiBlockColor.get(), multiBlockDepth.get(),
-                      multiBlockIds.get())) {
+                      multiBlockIds.get(), 0)) {
         std::cerr << "Unable to encode multi-block Gaussian scan test\n";
         pool->release();
         return 1;
@@ -902,6 +902,37 @@ int main() {
         return 1;
     }
 
+    constexpr std::array<std::uint32_t, 3> versionedEditIds{1U, 256U, 512U};
+    if (!(*multiBlockPipeline)->translate(versionedEditIds, simd_float3{0.0F, 0.0F, 0.0F})) {
+        std::cerr << "Unable to journal sparse Gaussian publication fixture\n";
+        pool->release();
+        return 1;
+    }
+    const auto logicalPublication = (*multiBlockPipeline)->publicationStatistics();
+    MTL::CommandBuffer* versionedPublicationCommand = queue->commandBuffer();
+    if (!versionedPublicationCommand ||
+        !(*multiBlockPipeline)
+             ->encode(versionedPublicationCommand, camera, multiBlockColor.get(),
+                      multiBlockDepth.get(), multiBlockIds.get(), 1)) {
+        std::cerr << "Unable to publish sparse Gaussian revision into recycled frame slot\n";
+        pool->release();
+        return 1;
+    }
+    versionedPublicationCommand->commit();
+    versionedPublicationCommand->waitUntilCompleted();
+    const auto framePublication = (*multiBlockPipeline)->framePublicationStatistics();
+    if (logicalPublication.touchedRecords != versionedEditIds.size() ||
+        logicalPublication.contiguousRanges != versionedEditIds.size() ||
+        framePublication.touchedRecords != versionedEditIds.size() ||
+        framePublication.touchedBytes != versionedEditIds.size() * sizeof(AetherGaussianGpu) ||
+        framePublication.fullBufferBytes !=
+            multiBlockAsset.gaussians.size() * sizeof(AetherGaussianGpu) ||
+        !(framePublication.byteRatio() < 0.01)) {
+        std::cerr << "Versioned Gaussian publication did not remain sparse\n";
+        pool->release();
+        return 1;
+    }
+
     auto boundedPipeline = aether::metal::GaussianPipeline::create(device.get(), library.get(), 1);
     auto boundedColor = makeTexture(device.get(), MTL::PixelFormatRGBA32Float, 32, 32);
     auto boundedDepth = makeTexture(device.get(), MTL::PixelFormatR32Float, 32, 32);
@@ -914,7 +945,7 @@ int main() {
     if (!boundedPipeline || !(*boundedPipeline)->load(*gaussianAsset) || !boundedCommand ||
         !(*boundedPipeline)
              ->encode(boundedCommand, boundedCamera, boundedColor.get(), boundedDepth.get(),
-                      boundedIds.get())) {
+                      boundedIds.get(), 0)) {
         std::cerr << "Unable to encode bounded Gaussian tile test\n";
         pool->release();
         return 1;
