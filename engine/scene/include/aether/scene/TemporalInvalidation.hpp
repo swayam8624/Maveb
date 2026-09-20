@@ -12,6 +12,10 @@ struct TemporalWorldBounds final {
     simd_float3 maximum{};
 };
 
+[[nodiscard]] TemporalWorldBounds
+mergeTemporalWorldBounds(const TemporalWorldBounds& first,
+                         const TemporalWorldBounds& second) noexcept;
+
 struct TemporalInvalidationPlan final {
     bool fullFrame{};
     bool empty{};
