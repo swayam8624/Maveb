@@ -206,6 +206,11 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebLocalityLedgerTests)
     add_test(NAME MavebLocalityLedgerTests COMMAND MavebLocalityLedgerTests)
 
+    add_executable(MavebRevisionGraphTests tests/RevisionGraphTests.cpp)
+    target_link_libraries(MavebRevisionGraphTests PRIVATE Aether::World)
+    aether_configure_target(MavebRevisionGraphTests)
+    add_test(NAME MavebRevisionGraphTests COMMAND MavebRevisionGraphTests)
+
     add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
     target_link_libraries(MavebGaussianOwnershipCodecTests PRIVATE Aether::WorldGaussian)
     aether_configure_target(MavebGaussianOwnershipCodecTests)
