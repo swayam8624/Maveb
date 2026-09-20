@@ -63,6 +63,7 @@ struct GaussianOutputConePlannerStatistics final {
     bool available{};
     bool stable{};
     bool passes{};
+    bool temporalValidationStable{};
     bool temporalRepairSelected{};
     bool fullRebuild{};
     double resolvedRgbBound{};
