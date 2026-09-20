@@ -1052,6 +1052,48 @@
       "claims_relevant_to_maveb": "Raises the bar for any generic claim around immediate incremental Gaussian capture, global consistency, out-of-order updates or scalable Gaussian hierarchy.",
       "overlap_with_candidate_maveb_contribution": "Relevant to capture/reconstruction layer and large-scene scaling but not a direct substitute for S1's proposed cross-derived-state revision-work accounting.",
       "potential_unexplored_gap": "Repeated captured-world revisions with causal dependency closure across non-Gaussian derived state remain a candidate distinction."
+    },
+    {
+      "id": "p051",
+      "title": "Streaming Real-Time Rendered Scenes as 3D Gaussians",
+      "authors": "Matti Siekkinen; Teemu Kämäräinen",
+      "year": 2026,
+      "venue": "arXiv 2604.02851 (2026 preprint)",
+      "link": "https://arxiv.org/abs/2604.02851",
+      "code_repository": "",
+      "representation": "live streamed evolving 3D Gaussian scene representation",
+      "inputs": "real-time rendered reference views from a server-side scene",
+      "outputs": "client-renderable evolving 3DGS model delivered by snapshots and incremental updates",
+      "central_contribution": "Investigates streaming an evolving 3DGS scene instead of 2D video, with full model snapshots plus incremental representation updates for remote interactive rendering.",
+      "major_algorithms": "server-side live 3DGS construction/optimization; full snapshots; incremental Gaussian updates; client-side rendering",
+      "metrics": "paper evaluates the prototype against image-warping/cloud-rendering alternatives; exact tables are not transcribed in this refresh",
+      "hardware": "not transcribed in this refresh",
+      "runtime": "real-time system context; exact latency/bandwidth values must be sourced before baseline use",
+      "limitations": "network delivery of a rendered-scene representation is a different problem from captured-world heterogeneous reconstruction repair",
+      "claims_relevant_to_maveb": "Kills sparse/incremental Gaussian publication or version delivery as standalone novelty.",
+      "overlap_with_candidate_maveb_contribution": "Direct overlap with S1 GPU-publication submechanism, but not with the full observations-to-TSDF-to-mesh-to-texture-to-GPU-to-history dependency closure.",
+      "potential_unexplored_gap": "Captured-world cross-layer work/equivalence certification remains a candidate distinction."
+    },
+    {
+      "id": "p052",
+      "title": "Renderable Partial Representations for Dynamic Gaussian Splatting under Incomplete Delivery",
+      "authors": "Faruk Alpay; Levent Sarioglu; Yaser Hadri",
+      "year": 2026,
+      "venue": "arXiv 2606.17212 (2026 preprint)",
+      "link": "https://arxiv.org/abs/2606.17212",
+      "code_repository": "",
+      "representation": "dynamic 3DGS organized into independently addressable spatiotemporal clusters and refinements",
+      "inputs": "dynamic Gaussian scene representations under incomplete network delivery",
+      "outputs": "directly renderable partial receiver states with dependency-aware delivery",
+      "central_contribution": "Organizes dynamic Gaussian state into independently addressable spatiotemporal clusters with base/refinement groups, trains under partial dependency graphs, and realizes dependency-closed partial delivery.",
+      "major_algorithms": "spatiotemporal cluster decomposition; partial dependency-graph sampling; marginal render utility; MTU-bounded chunking; deadline-aware dependency-closed scheduling",
+      "metrics": "held-out-view distortion and utility under partial delivery; exact table values must be sourced before comparison",
+      "hardware": "not transcribed in this refresh",
+      "runtime": "delivery/render system results reported; exact hardware/runtime not transcribed",
+      "limitations": "optimizes representation delivery under incomplete networking rather than reconstruction-state maintenance after physical world revisions",
+      "claims_relevant_to_maveb": "Kills independently addressable Gaussian dependency clusters and Gaussian-only dependency closure as standalone novelty.",
+      "overlap_with_candidate_maveb_contribution": "High overlap with the Gaussian/GPU delivery slice of S1, forcing MAVEB to retain the heterogeneous captured-world closure and full-reference work certificate as the actual candidate contribution.",
+      "potential_unexplored_gap": "Cross-representation revision closure from physical evidence through volumetric, surface, texture, publication and temporal-render state is not established by the inspected work."
     }
   ]
 }
