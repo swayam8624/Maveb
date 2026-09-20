@@ -64,6 +64,7 @@ def bundle(
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "replay-manifest.json"
     row = output_dir / "revision-row.json"
+    spatial = output_dir / "spatial-evidence.csv"
     rows_jsonl = output_dir / "revision-rows.jsonl"
     evaluation = output_dir / "evaluation.json"
 
@@ -80,6 +81,12 @@ def bundle(
     if work_cost_model is not None:
         bind_command.extend(["--work-cost-model", str(work_cost_model)])
     run_checked(bind_command)
+
+    manifest_payload = json.loads(manifest.read_text())
+    manifest_payload["spatial_output"] = str(spatial)
+    manifest.write_text(
+        json.dumps(manifest_payload, indent=2, sort_keys=True) + "\n"
+    )
 
     # Exit 3 from the native oracle means candidate local repair is certified
     # but outside tolerance; cbrc_replay converts it into an explicit FULL row.
@@ -116,6 +123,7 @@ def bundle(
         "row": row,
         "rows": rows_jsonl,
         "evaluation": evaluation,
+        "spatial": spatial,
     }
     if work_cost_model is not None:
         artifacts["workCostModel"] = work_cost_model
