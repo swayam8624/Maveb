@@ -44,6 +44,11 @@ TEMPLATES: tuple[dict[str, Any], ...] = (
     {"name":"adv-unstable-c","coupling":"adversarial","delta":0.6500,"eps":0.25/255,"stable":False,"weight":0.99,"entity_fraction":0.35,"axis":2,"sign":1},
 )
 
+# PersistentWorld DiffPolicy suppresses translations <= 0.01 world units as jitter.
+# Campaign inputs must therefore be effective authored edits before any outcome is observed.
+WORLD_DIFF_TRANSLATION_THRESHOLD = 0.01
+MINIMUM_EFFECTIVE_TRANSLATION = 0.0125
+
 
 def entity_for_fraction(candidate: base.Candidate, target: float) -> tuple[int, int]:
     counts = Counter(owner for owner in candidate.owners if owner in candidate.entities)
@@ -91,9 +96,11 @@ def build(
             ]
             target = list(translation)
             axis = int(template["axis"])
-            target[axis] += (
-                int(template["sign"]) * float(template["delta"]) * scale
-            )
+            requested_delta = float(template["delta"]) * scale
+            applied_delta = max(requested_delta, MINIMUM_EFFECTIVE_TRANSLATION)
+            if not math.isfinite(applied_delta) or applied_delta <= WORLD_DIFF_TRANSLATION_THRESHOLD:
+                raise ValueError("campaign-v2 produced a translation below the persistent-world effective-edit threshold")
+            target[axis] += int(template["sign"]) * applied_delta
 
             case_id = (
                 f"v2-{candidate.archive.stem}-{template_index:02d}-"
@@ -108,6 +115,9 @@ def build(
                 "edit_class": "gaussian",
                 "matrix_tags": {
                     "delta_fraction": float(template["delta"]),
+                    "requested_delta_world": requested_delta,
+                    "applied_delta_world": applied_delta,
+                    "world_diff_translation_threshold": WORLD_DIFF_TRANSLATION_THRESHOLD,
                     "entity_fraction_target": float(template["entity_fraction"]),
                     "history_weight": float(template["weight"]),
                     "history_stable": bool(template["stable"]),
@@ -144,6 +154,9 @@ def build(
                     "selected_entity_gaussians": owned_count,
                     "selected_fraction": owned_count / candidate.gaussian_count,
                     "scene_scale": scale,
+                    "requested_delta_world": requested_delta,
+                    "applied_delta_world": applied_delta,
+                    "world_diff_translation_threshold": WORLD_DIFF_TRANSLATION_THRESHOLD,
                     "matrix": case["matrix_tags"],
                     "epsilon": case["epsilon"],
                 }
@@ -151,8 +164,8 @@ def build(
 
     scenes = {case["scene_id"] for case in cases}
     campaign = {
-        "schemaVersion": 2,
-        "campaignId": "cbrc-public-real-v2",
+        "schemaVersion": 3,
+        "campaignId": "cbrc-public-real-v2.1-effective-edits",
         "minimum_revisions": len(cases),
         "minimum_scenes": len(scenes),
         "require_local_success": True,
@@ -160,20 +173,22 @@ def build(
         "require_high_coupling": True,
         "cases": cases,
         "freeze_note": (
-            "Paper-scale v2 matrix frozen before execution. Do not remove cases, "
+            "Paper-scale v2.1 matrix freezes the original regime matrix while enforcing the production persistent-world effective-edit precondition before execution. Do not remove cases, "
             "retune epsilon, transforms, entity choices, temporal stability, or "
             "history weights after inspecting outcomes."
         ),
     }
     provenance = {
-        "schemaVersion": 2,
-        "artifact": "maveb-cbrc-public-real-v2-freeze",
+        "schemaVersion": 3,
+        "artifact": "maveb-cbrc-public-real-v2.1-freeze",
         "generator": "benchmarks/scripts/cbrc_prepare_campaign_v2.py",
         "candidate_count": len(candidates),
         "scene_count": len(scenes),
         "case_count": len(cases),
         "cases_per_scene": cases_per_scene,
         "template_count_available": len(TEMPLATES),
+        "world_diff_translation_threshold": WORLD_DIFF_TRANSLATION_THRESHOLD,
+        "minimum_effective_translation": MINIMUM_EFFECTIVE_TRANSLATION,
         "frozen_inputs": frozen,
         "work_cost_model": (
             None
