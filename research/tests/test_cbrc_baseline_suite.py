@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -42,6 +45,18 @@ def graph():
 
 
 class CBRCBaselineSuiteTests(unittest.TestCase):
+    def test_cli_help_works_outside_repository_cwd(self):
+        with tempfile.TemporaryDirectory() as directory:
+            process = subprocess.run(
+                [sys.executable, str(SCRIPT), "--help"],
+                cwd=directory,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(process.returncode, 0, process.stderr)
+            self.assertIn("usage:", process.stdout.lower())
+
     def test_frozen_baselines_are_all_present(self):
         result = mod.run(graph())
         expected = {
