@@ -30,3 +30,12 @@ No frozen experiment was retuned. Baseline and ablation numbers are copied from
 the canonical public-v2.1 artifact. The baseline-suite native work ratio
 (0.047357...) is labeled separately from the public heterogeneous
 millisecond-calibrated headline ratio (0.369530...).
+
+
+11. Rebuilt Figure 2 as a publication-native vector version of the approved
+    "How Local Gaussian Revisions Propagate" visual. The new layout preserves
+    the complete state progression and LOCAL/FULL decision branches while
+    enlarging print-critical labels and replacing illustrative micro-metrics
+    with verified frozen public-v2.1 headline evidence.
+12. Enabled the manuscript build workflow on `main` so final source changes
+    regenerate PDF, DOCX, and package artifacts without a branch-only handoff.
