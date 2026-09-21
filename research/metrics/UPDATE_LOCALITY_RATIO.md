@@ -1,6 +1,6 @@
 # Update Locality Ratio (ULR) Evidence Contract
 
-**Status:** research metric specification  
+**Status:** research metric specification
 **Date:** 2026-09-20
 
 ## Motivation
