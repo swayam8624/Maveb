@@ -270,12 +270,13 @@ int main(int argc, char** argv) try {
                                     options->maximumGaussians);
     const std::size_t sampledCount =
         (mesh->vertices.size() + sampleStride - 1) / sampleStride;
+    const float densityScale = static_cast<float>(
+        0.65 * static_cast<double>(diagonal) /
+        std::cbrt(static_cast<double>(std::max<std::size_t>(sampledCount, 1))));
     const float gaussianScale =
         options->gaussianScaleMeters > 0.0F
             ? options->gaussianScaleMeters
-            : std::clamp(0.65F * diagonal /
-                             std::cbrt(static_cast<float>(std::max<std::size_t>(sampledCount, 1))),
-                         0.002F, std::max(0.002F, cellSize / 5.0F));
+            : std::clamp(densityScale, 0.002F, std::max(0.002F, cellSize / 5.0F));
 
     aether::gaussian::GaussianAsset asset;
     asset.name = options->proxy.stem().string() + "-real-capture-seed";
