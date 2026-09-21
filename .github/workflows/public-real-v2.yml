@@ -1,0 +1,79 @@
+name: Public Real CBRC Campaign V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run/public-real-v2
+    paths:
+      - .github/public-real-v2-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  paper-grade-v2:
+    runs-on: macos-15
+    timeout-minutes: 300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv-maveb
+          .venv-maveb/bin/python -m pip install --upgrade pip
+          .venv-maveb/bin/python -m pip install numpy pillow scipy
+
+      - name: Run 60-case paper-grade public campaign
+        shell: bash
+        env:
+          MAVEB_PYTHON: ${{ github.workspace }}/.venv-maveb/bin/python
+          MAVEB_PUBLIC_V2_RESULTS_DIR: ${{ github.workspace }}/build/public-real-v2
+        run: |
+          set -euo pipefail
+          chmod +x run_public_real_campaign_v2.sh
+          ./run_public_real_campaign_v2.sh
+
+      - name: Publish evidence summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.md build/public-real-v2/PAPER_GRADE_STATUS.json; do
+            if [[ -f "$file" ]]; then
+              cat "$file" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+      - name: Upload compact paper-grade evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maveb-public-v2-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            build/public-real-v2/source/PUBLIC_SOURCE_PROVENANCE.json
+            build/public-real-v2/worlds/*.source.json
+            build/public-real-v2/calibration/**
+            build/public-real-v2/sparse-discovery/**
+            build/public-real-v2/frozen-inputs/campaign-v2.json
+            build/public-real-v2/frozen-inputs/campaign-v2-freeze.json
+            build/public-real-v2/campaign/campaign-rows.jsonl
+            build/public-real-v2/campaign/campaign-baselines.jsonl
+            build/public-real-v2/campaign/campaign-timings.jsonl
+            build/public-real-v2/campaign/campaign-gates.json
+            build/public-real-v2/campaign/campaign-evaluation.json
+            build/public-real-v2/campaign/baseline-summary.json
+            build/public-real-v2/campaign/planner-parity.json
+            build/public-real-v2/campaign/empirical-heldout.json
+            build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.*
+            build/public-real-v2/campaign/paper-artifacts/**
+            build/public-real-v2/siggraph-visuals/**
+            build/public-real-v2/PAPER_GRADE_STATUS.json
