@@ -406,19 +406,19 @@ int main(int argc, char** argv) try {
 
     if (options->json) {
         std::ostringstream result;
-        result << std::setprecision(17)
-               << "{\"schemaVersion\":1,\"artifact\":\"maveb-real-capture-world-seed\","
-               << "\"world\":\"" << options->output.string() << "\","
-               << "\"sourceProxy\":\"" << options->proxy.string() << "\","
-               << "\"sourceVertices\":" << mesh->vertices.size() << ','
-               << "\"gaussians\":" << asset.gaussians.size() << ','
-               << "\"entities\":" << timeline.latest()->entities.size() << ','
-               << "\"sampleStride\":" << sampleStride << ','
-               << "\"cellSizeMetres\":" << cellSize << ','
-               << "\"gaussianScaleMetres\":" << gaussianScale << ','
-               << "\"opacity\":" << options->opacity << ','
-               << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\""
-               << "}\n";
+        result << std::setprecision(17);
+        result << "{\"schemaVersion\":1,\"artifact\":\"maveb-real-capture-world-seed\",";
+        result << "\"world\":\"" << options->output.string() << "\",";
+        result << "\"sourceProxy\":\"" << options->proxy.string() << "\",";
+        result << "\"sourceVertices\":" << mesh->vertices.size() << ',';
+        result << "\"gaussians\":" << asset.gaussians.size() << ',';
+        result << "\"entities\":" << timeline.latest()->entities.size() << ',';
+        result << "\"sampleStride\":" << sampleStride << ',';
+        result << "\"cellSizeMetres\":" << cellSize << ',';
+        result << "\"gaussianScaleMetres\":" << gaussianScale << ',';
+        result << "\"opacity\":" << options->opacity << ',';
+        result << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\"";
+        result << "}\n";
         std::cout << result.str();
     } else {
         std::cout << "Seeded real persistent world from " << mesh->vertices.size()
