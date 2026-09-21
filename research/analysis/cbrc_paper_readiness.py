@@ -50,8 +50,11 @@ def audit(
     local = sum(not bool(row.get("fallback_full", False)) for row in campaign_rows)
     full = sum(bool(row.get("fallback_full", False)) for row in campaign_rows)
     violations = []
+    source_effect_evidence_cases = 0
+    nontrivial_source_effect_cases = 0
     for row in campaign_rows:
-        for qoi_name, qoi in row.get("qois", {}).items():
+        row_qois = row.get("qois", {})
+        for qoi_name, qoi in row_qois.items():
             actual = float(qoi["measured_full_reference_error"])
             bound = float(qoi["certified_bound"])
             epsilon = float(qoi["epsilon"])
@@ -65,6 +68,17 @@ def audit(
                         "epsilon": epsilon,
                     }
                 )
+
+        rgb_qoi = row_qois.get("rgb_linf")
+        source_actual = row.get("candidateDiagnostics", {}).get(
+            "sourceEditActualRgbError"
+        )
+        if rgb_qoi is not None and source_actual is not None:
+            source_actual = float(source_actual)
+            source_epsilon = float(rgb_qoi["epsilon"])
+            source_effect_evidence_cases += 1
+            if source_actual > source_epsilon + 1e-12:
+                nontrivial_source_effect_cases += 1
 
     required_domains = {
         "gaussiansInspected",
@@ -85,6 +99,12 @@ def audit(
         "campaignGatePass": bool(gates.get("pass", False)),
         "strictEvaluationPass": bool(evaluation.get("pass", False)),
         "zeroCertificateViolations": not violations,
+        "sourceEditOracleEvidencePresent": (
+            source_effect_evidence_cases == len(campaign_rows)
+        ),
+        "majorityEditsHaveVisibleSourceEffect": (
+            nontrivial_source_effect_cases >= max(1, len(campaign_rows) // 2)
+        ),
         "hasCertifiedLocalCases": local > 0,
         "hasAutomaticFullFallbacks": full > 0,
         "millisecondCostModelBound": units == {"ms"},
@@ -114,7 +134,7 @@ def audit(
         value for key, value in checks.items() if key != "trained3dgsValidationPass"
     )
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "artifact": "maveb-cbrc-paper-readiness-audit",
         "paperAcceptancePrediction": None,
         "paperAcceptancePredictionNote": (
@@ -126,6 +146,13 @@ def audit(
         "localCases": local,
         "fullFallbackCases": full,
         "certificateViolations": violations,
+        "sourceEffectEvidenceCases": source_effect_evidence_cases,
+        "nontrivialSourceEffectCases": nontrivial_source_effect_cases,
+        "nontrivialSourceEffectRate": (
+            0.0
+            if not campaign_rows
+            else nontrivial_source_effect_cases / len(campaign_rows)
+        ),
         "workCostUnits": sorted(units),
         "workCostModelVersions": sorted(model_versions),
         "checks": checks,
