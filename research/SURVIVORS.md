@@ -1,6 +1,6 @@
 # MAVEB Surviving Research Directions
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Rule:** survival means "worth the next falsification step", not "novel" and not "paper-ready".
 
 ## Tier A — candidate headline contributions
