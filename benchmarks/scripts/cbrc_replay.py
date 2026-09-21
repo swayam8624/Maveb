@@ -2,13 +2,17 @@
 """Run one manifest-bound CBRC Gaussian full-reference replay.
 
 Exit semantics of the C++ oracle:
-  0: certificate holds and candidate bound <= epsilon
-  3: certificate holds but candidate bound > epsilon
-  4: certificate violation (fatal)
+  0: source-edit certificate holds and its raw effect bound <= epsilon
+  3: source-edit certificate holds but the raw edit-effect bound > epsilon
+  4: source-edit certificate violation (fatal)
   other: execution/configuration failure
 
-When code 3 is returned, this runner records the principled CBRC decision:
-fallback to FULL. The rejected local candidate remains in candidateDiagnostics.
+For production output-cone manifests, code 3 is not itself a reason to fall
+back: an intended edit may be much larger than epsilon while the selected
+repair still reproduces FULL-after within tolerance. In that path the final
+decision uses the production output plan plus independently measured
+post-repair residual evidence. Legacy fixtures without a production plan keep
+the older code-3 => FULL behavior.
 """
 from __future__ import annotations
 
