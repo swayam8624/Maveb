@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - docs/researchpaper-final-20260921
+      - researchpaper/final-manuscript-20260921
     paths:
       - 'researchpaper/**'
       - '.github/workflows/build-researchpaper.yml'
@@ -44,7 +45,7 @@ jobs:
       - name: Package manuscript
         run: |
           rm -f researchpaper/MAVEB_manuscript_package.zip
-          zip -r researchpaper/MAVEB_manuscript_package.zip researchpaper/main.tex researchpaper/references.bib researchpaper/README.md researchpaper/figures researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx
+          zip -r researchpaper/MAVEB_manuscript_package.zip researchpaper/main.tex researchpaper/references.bib researchpaper/README.md researchpaper/REVIEW_RESPONSE_2026-09-21.md researchpaper/supplement_gaussian_bound.tex researchpaper/figures researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx
 
       - name: Commit generated outputs
         run: |

@@ -1,9 +1,9 @@
 % MAVEB manuscript draft
-% Author-visible working version.
-% For SIGGRAPH / SIGGRAPH Asia anonymous review, change the next line to:
+% Author-visible working version: clean paper rendering without review line numbers.
+% For SIGGRAPH / SIGGRAPH Asia double-blind review, use:
 % \documentclass[acmtog,anonymous,review]{acmart}
-% and add: \acmSubmissionID{paperID}
-\documentclass[acmtog,review]{acmart}
+% \acmSubmissionID{paperID}
+\documentclass[acmtog]{acmart}
 
 \usepackage{amsmath}
 \usepackage{booktabs}
@@ -47,9 +47,9 @@
 \begin{abstract}
 Persistent captured-world systems maintain more than a geometric model: they accumulate observations, reconstruction state, explicit surface and appearance representations, GPU-published records, and temporal rendering history. When the physical world changes locally, the corresponding computational revision need not be local, and a spatially restricted update can leave stale dependent state outside the edited region. Rebuilding all state avoids this risk but discards locality when most of the world cannot affect the output of interest.
 
-We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system, a fail-closed revision framework that selects regional recomputation only when the unrepaired exterior can be conservatively bounded for an explicit quantity of interest. \method combines exact predecessor closure for structural dependencies, conservative finite-change bounds for certifiable soft dependencies, a quantity-of-interest error contract, a frozen heterogeneous work model, and an automatic \FULL{} fallback. Every selected result is replayed against an independent full-after reference; the experimental contract is measured full-reference error $\leq$ emitted bound $\leq$ declared tolerance.
+We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system, a fail-closed revision framework that selects regional recomputation only when the unrepaired exterior can be conservatively bounded for an explicit quantity of interest. \method{} combines exact predecessor closure for structural dependencies, conservative finite-change bounds for certifiable soft dependencies, a quantity-of-interest error contract, a frozen heterogeneous work model, and an automatic \FULL{} fallback. Every selected result is replayed against an independent full-after reference; the experimental contract is measured full-reference error $\leq$ emitted bound $\leq$ declared tolerance.
 
-In a frozen public campaign of 60 revisions across four RGB/SfM scenes, \method selected 44 certified-local repairs and 16 automatic full rebuilds, with zero observed certificate violations and native/reference-planner parity on all 60 cases. Fifty-six of the 60 source edits exceeded the protected RGB tolerance before repair. The frozen calibrated work model reports a median selected work ratio of 0.36953 of \FULL{} (2.706$\times$ lower calibrated work). A separate five-case validation on a pinned trained 3D Gaussian Splatting representation records four certified-local repairs, one fallback, and zero observed violations. We also identify a remaining systems bottleneck: the frozen end-to-end paths still inspect nearly the full Gaussian set, while a separate exact sparse-discovery study reduces median inspection to 1\% without changing candidate selection. These results support certified selective recomputation within the stated assumptions; they do not establish universal safety, global optimality, or end-to-end wall-clock speedup.
+In a frozen public campaign of 60 revisions across four RGB/SfM scenes, \method{} selected 44 certified-local repairs and 16 automatic full rebuilds, with zero observed certificate violations and native/reference-planner parity on all 60 cases. Fifty-six of the 60 source edits exceeded the protected RGB tolerance before repair. The frozen calibrated work model reports a median selected work ratio of 0.36953 of \FULL{} (2.706$\times$ lower calibrated work). A separate five-case validation on a pinned trained 3D Gaussian Splatting representation records four certified-local repairs, one fallback, and zero observed violations. We also identify a remaining systems bottleneck: the frozen end-to-end paths still inspect nearly the full Gaussian set, while a separate exact sparse-discovery study reduces median inspection to 1\% without changing candidate selection. These results support certified selective recomputation within the stated assumptions; they do not establish universal safety, global optimality, or end-to-end wall-clock speedup.
 \end{abstract}
 
 \begin{CCSXML}
@@ -79,6 +79,8 @@ In a frozen public campaign of 60 revisions across four RGB/SfM scenes, \method 
 
 \begin{document}
 \maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
 
 \section{Introduction}
 Persistent 3D systems are increasingly expected to outlive the capture session that created them. A reconstructed room is revisited after furniture moves; an augmented-reality map persists while objects appear and disappear; a digital twin is refreshed after a local physical intervention. In such systems, the computational state is heterogeneous. Observations feed volumetric or point-based geometry; geometry determines surface or Gaussian support; materials and textures depend on ownership and visibility; GPU records mirror persistent entities; temporal filters reuse prior screen-space state. A physical edit that is local in Euclidean space can therefore have a non-local computational footprint.
@@ -87,7 +89,7 @@ The classical response is to rebuild globally. Volumetric fusion and dense recon
 
 This paper asks a narrower systems question: \emph{when may a persistent captured world repair less than the whole world while retaining an explicit output-error contract?} The difficulty is not merely reachability. Some dependencies are exact and should never be approximated, such as ownership, record identity, publication, and unstable temporal invalidation. Others have implementation-backed finite influence, such as the display-space contribution of edited Gaussian support or stable temporal blending. A useful revision system must separate these cases, reason about the residual influence outside a proposed repair region, and choose a full rebuild when the residual cannot be bounded tightly enough.
 
-We introduce \emph{Criticality-Bounded Revision Cones} (\method). \method represents a revision over a typed dependency graph with three edge semantics: \hard{} edges encode exact structural requirements, \analytic{} edges carry conservative finite-change upper bounds, and \empirical{} edges may guide scheduling but are never used as a safety certificate. For a proposed repair cone $C$, the remaining exterior $O$ is certified against one or more quantities of interest. A local result is accepted only if (1) exact predecessors are closed, (2) the conservative exterior bound lies inside the declared tolerance, and (3) calibrated regional work is lower than the independently measured full baseline. Unsupported coupling, unstable analytic structure, or an unfavorable work crossover returns \FULL{}.
+We introduce \emph{Criticality-Bounded Revision Cones} (\method). \method{} represents a revision over a typed dependency graph with three edge semantics: \hard{} edges encode exact structural requirements, \analytic{} edges carry conservative finite-change upper bounds, and \empirical{} edges may guide scheduling but are never used as a safety certificate. For a proposed repair cone $C$, the remaining exterior $O$ is certified against one or more quantities of interest. We call the worst normalized certificate-to-tolerance ratio the \emph{revision criticality}; the boundary value is one. A local result is accepted only if (1) exact predecessors are closed, (2) revision criticality is at or below one for every protected output, and (3) calibrated regional work is lower than the independently measured full baseline. Unsupported coupling, supercritical residual influence, unstable analytic structure, or an unfavorable work crossover returns \FULL{}.
 
 The method is implemented in \system, a C++23 persistent-world research stack paired with a dense Python reference certifier and an independent full-after Gaussian oracle. Figure~\ref{fig:overview} shows the decision path. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. A certificate is not accepted because the planner predicts that the repair is safe; the selected result is independently replayed against \FULL{} and evaluated under the contract
 \begin{equation}
@@ -96,7 +98,7 @@ E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q,
 \end{equation}
 where $E_q^{\mathrm{full-ref}}$ is the measured discrepancy from an independent full-after reference, $B_q(C)$ is the emitted conservative bound, and $\varepsilon_q$ is the declared tolerance for quantity of interest $q$.
 
-Our evaluation freezes both protocol and claim boundaries before interpreting the final campaign. Across 60 public RGB/SfM revisions, \method selects 44 certified-local repairs and 16 automatic full rebuilds. No certificate violation is observed, native and Python planner decisions agree on all cases, and 56 of 60 source edits exceed the protected RGB tolerance before repair, which rules out the trivial explanation that the campaign contains only visually irrelevant edits. A frozen isolated millisecond cost model reports a median selected heterogeneous work ratio of 0.36953 of \FULL{}, equivalent to 2.706$\times$ lower calibrated work. This is a work result, not a paired wall-clock speedup. A second validation on a pinned trained 3D Gaussian Splatting representation records four local selections, one fallback, and zero observed violations. It also exposes the main remaining bottleneck: Gaussian discovery remains nearly global in the frozen end-to-end path.
+Our evaluation freezes both protocol and claim boundaries before interpreting the final campaign. Across 60 public RGB/SfM revisions, \method{} selects 44 certified-local repairs and 16 automatic full rebuilds. No certificate violation is observed, native and Python planner decisions agree on all cases, and 56 of 60 source edits exceed the protected RGB tolerance before repair, which rules out the trivial explanation that the campaign contains only visually irrelevant edits. A frozen isolated millisecond cost model reports a median selected heterogeneous work ratio of 0.36953 of \FULL{}, equivalent to 2.706$\times$ lower calibrated work. This is a work result, not a paired wall-clock speedup. A second validation on a pinned trained 3D Gaussian Splatting representation records four local selections, one fallback, and zero observed violations. It also exposes the main remaining bottleneck: Gaussian discovery remains nearly global in the frozen end-to-end path.
 
 The contributions are:
 \begin{itemize}
@@ -135,8 +137,10 @@ CL-Splats segments changed and static scene components to focus local Gaussian o
 \paragraph{Editing, change detection, and identity.}
 GaussianEditor and SC-GS show that Gaussian representations support precise or controllable local editing \citep{chen2024gaussianeditor,huang2024scgs}. Recent primitive-space change detection argues that Gaussian attributes can directly reveal structural and appearance change \citep{galappaththige2026pixels}. Consistent Instance Field models persistent probabilistic identity in dynamic Gaussian scenes \citep{wu2026cif}. These works are important collision classes: local editing, primitive change detection, and persistent identity are not claimed as novel here. \method{} begins after a revision has been specified or detected and asks whether the consequences outside a candidate repair cone can be bounded for a declared output.
 
-\paragraph{Incremental computation and error control.}
-The mathematical tools underlying \method{} are classical: graph closure, non-negative influence propagation, Neumann-series resolvents, norm bounds, and greedy search are not introduced by this work. The contribution lies in the captured-world specialization and the systems contract that keeps exact and approximate dependencies separate, binds the residual to an explicit output, compares regional work to an independent full baseline, and falsifies each selected repair against full replay. We therefore treat the mathematics as supporting machinery rather than as standalone novelty.
+\paragraph{Incremental rendering, change propagation, and goal-oriented error control.}
+Graphics systems have long exploited dependency structure to avoid global recomputation. Bala et al.\ track dependencies between edited world regions and bounded-error radiance interpolants using ray segment trees \citep{bala1999raysegment}. W\"orister et al.\ synthesize a dependency graph from scene-graph changes to rendering caches and update those caches incrementally \citep{woerister2013lazy}. Outside graphics, self-adjusting computation formalizes correct change propagation under mutation and reuse \citep{acar2013selfadjusting}, while goal-oriented error estimation allocates numerical work to control error in selected quantities of interest rather than a global state norm \citep{oden2001goal}. These traditions overlap with individual ingredients of \method{} and are therefore important novelty boundaries.
+
+The mathematical tools underlying \method{} remain classical: graph closure, non-negative influence propagation, Neumann-series resolvents, norm bounds, and greedy search are not introduced by this work. The claimed contribution is the captured-world systems contract that combines cross-derived exact dependencies, conservative finite-change bounds, rendered-output quantities of interest, heterogeneous work crossover, fail-closed \FULL{} fallback, and independent full-reference falsification in one revision decision. We therefore treat the mathematics as supporting machinery rather than as standalone novelty.
 
 \section{Problem Formulation}
 \subsection{Persistent captured-world state}
@@ -218,6 +222,15 @@ B_q(C)=\left\lVert |R_{q,O}|\hat{\delta}_O\right\rVert_\infty.
 \end{equation}
 A candidate cone is certificate-feasible only if $B_q(C)\le\varepsilon_q$ for all declared outputs. This allows two revisions with identical changed geometry to produce different decisions when their protected outputs differ. It also prevents an internal state norm from silently standing in for the user-visible error being claimed.
 
+\subsection{Revision criticality}
+We define the revision criticality of a candidate cone as the worst normalized certified residual
+\begin{equation}
+\chi(C)=\max_q
+\frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
+\label{eq:criticality}
+\end{equation}
+The threshold $\chi(C)=1$ is the certificate boundary: $\chi(C)\le1$ is certificate-feasible, whereas $\chi(C)>1$ is supercritical for at least one protected output and requires cone expansion or \FULL{}. The term \emph{criticality-bounded} refers to this explicit normalized output-error boundary; it is not intended as a new physical critical-phenomena model.
+
 \subsection{Gaussian display-space bound}
 For a projected Gaussian $i$ at pixel $p$, \system{} uses an effective alpha model consistent with the renderer,
 \begin{equation}
@@ -226,15 +239,22 @@ For a projected Gaussian $i$ at pixel $p$, \system{} uses an effective alpha mod
 \end{equation}
 where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. For edited set $E$, define aggregate opacity mass
 \begin{equation}
-A(E)=1-\prod_{i\in E}\left(1-\alpha_i\right).
+A_p(E)=1-\prod_{i\in E}\left(1-\alpha_i(p)\right).
 \end{equation}
-If the relevant color interval has width $C_{\mathrm{color}}$, adding or removing the edited set changes a pixel by at most $C_{\mathrm{color}}A(E)$. Comparing before and after edited sets $E_0,E_1$ gives
+
+\paragraph{Proposition 1 (Gaussian finite-edit display bound).}
+Let $U$ denote the unchanged Gaussian state and $E_0,E_1$ the complete before/after edited sets at a protected pixel $p$. Under the assumptions below,
 \begin{equation}
-\left\lVert R(U\cup E_0)-R(U\cup E_1)\right\rVert_\infty
-\le C_{\mathrm{color}}\min\left(1,A(E_0)+A(E_1)\right).
+\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty
+\le C_{\mathrm{color}}\min\left(1,A_p(E_0)+A_p(E_1)\right).
 \label{eq:gaussianbound}
 \end{equation}
-The protected-image certificate is the maximum of Eq.~\ref{eq:gaussianbound} over the declared pixel support. The bound is conservative by construction over the modeled edit and rendering assumptions; it is not a learned predictor of expected error.
+
+\paragraph{Assumptions.}
+The bound requires: (i) front-to-back alpha compositing with effective post-clamp/post-cutoff alpha in $[0,1]$; (ii) each protected color channel lies in an interval of width $C_{\mathrm{color}}$, including the bounded spherical-harmonic evaluation used by the renderer; (iii) $E_0,E_1$ contain every Gaussian whose projected opacity, color, insertion/deletion state, or depth relation to unchanged support can change because of the edit; and (iv) renderer behavior not represented by these bounded quantities is treated as unsupported and therefore promoted to an exact dependency or \FULL{} fallback.
+
+\paragraph{Proof sketch.}
+For one edited set, front-to-back compositing changes the final channel value by at most the channel range multiplied by the total opacity mass through which edited support can replace, attenuate, or reveal unchanged radiance. This gives $C_{\mathrm{color}}A_p(E)$. Insertion and deletion are the cases in which one edited set is empty. For a general before/after edit, apply the triangle inequality through the common unchanged state $U$ to obtain $C_{\mathrm{color}}(A_p(E_0)+A_p(E_1))$, then clamp by the maximum possible channel-range change $C_{\mathrm{color}}$. The protected-image certificate is the maximum of Eq.~\ref{eq:gaussianbound} over the declared pixel support. A fuller algebraic derivation is included with the manuscript supplement.
 
 \subsection{Stable temporal history}
 For stable temporal validation, let $E_c$ denote current-frame error, $E_h$ retained-history error, $E_n$ neighborhood or clamping error, and $w\in[0,1]$ the history weight. With $E_r=\max(E_h,E_n)$,
@@ -245,14 +265,10 @@ E_{\mathrm{resolved}}=(1-w)E_c+wE_r.
 If validation, reprojection, or disocclusion may itself change, \system{} promotes the relation to \hard{} invalidation instead of applying Eq.~\ref{eq:temporal}. Thus the temporal path demonstrates the central design rule: use a soft bound only while its preconditions are certifiable.
 
 \subsection{Greedy feasible-cone search and crossover}
-Define normalized violation
-\begin{equation}
-\phi(C)=\max_q \frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
-\end{equation}
-A passing cone has $\phi(C)\le1$. For a candidate expansion $C\rightarrow C'$, the v1 search scores
+The v1 search uses the revision criticality in Eq.~\ref{eq:criticality} directly. For a candidate expansion $C\rightarrow C'$, it scores
 \begin{equation}
 \mathrm{utility}(C\rightarrow C')=
-\frac{\phi(C)-\phi(C')}{W(C')-W(C)}.
+\frac{\chi(C)-\chi(C')}{W(C')-W(C)}.
 \label{eq:utility}
 \end{equation}
 Every candidate is first closed over exact predecessors and then re-certified. Search stops when a cone is both certificate-feasible and cheaper than \FULL{}, or when no useful local candidate remains. The algorithm claims a certified feasible cone, not the global minimum-work cone.
@@ -280,6 +296,9 @@ The final public v2.1 campaign freezes 60 revisions across Tanks \& Temples Trai
 
 For every selected repair, the campaign records the source edit, selected cone, local/full decision, certificate, independent full-reference residual, native work, calibrated work, and provenance. Fallback cases are retained as results rather than excluded from summary statistics.
 
+\paragraph{Runtime scope.}
+The current campaign does not contain paired end-to-end \LOCAL{}-versus-\FULL{} wall-clock trials under identical execution conditions. Accordingly, no speedup claim is made anywhere in the paper. The public headline is a frozen heterogeneous millisecond-calibrated work ratio, while the baseline suite below reports its own native work-ratio metric. These quantities are intentionally labeled separately.
+
 \subsection{Baselines and ablations}
 The implemented method-level suite contains \FULL{}, exact-only repair, fixed radius policies, a changed-fraction policy, a held-out empirical scheduler, and \method{}. The empirical signal is permitted to order work but is not certificate-eligible. Structural and analytic ablations remove or replace individual components, while a separately labeled deterministic mechanism-isolation suite constructs stress cases for exact closure, analytic Gaussian influence, temporal influence, quantity-of-interest specialization, hard/soft separation, graph-structured propagation, and fallback behavior.
 
@@ -300,6 +319,29 @@ The frozen isolated millisecond cost model reports a median selected heterogeneo
 \mathrm{median}\; W(C)/W_{\mathrm{full}} = 0.3695301,
 \end{equation}
 corresponding to 2.706$\times$ lower calibrated work. We intentionally do not call this a 2.706$\times$ speedup: the public scalar is constructed from frozen per-domain microbenchmarks, while campaign phase wall times are recorded separately. A paired local-versus-full end-to-end timing experiment would be required for a speedup claim.
+
+\subsection{Method comparison}
+Table~\ref{tab:baselines} reports the frozen method-level baseline suite on the same 60 cases. The suite re-certifies every selected cone with the conservative certificate, so \emph{certificate pass} is not an independent measured-error metric. In particular, exact-only, radius, and changed-fraction policies often choose very little work but fail the certificate on most cases. The empirical-order baseline uses empirical influence only to order expansion and is still re-certified analytically; the separately held-out changed-fraction heuristic is discussed below.
+
+\begin{table*}[t]
+\caption{Frozen public method comparison. The work column is the baseline suite's native work-ratio metric and is distinct from the calibrated heterogeneous headline ratio of 0.36953. \emph{Uncertified} means the selected cone failed the conservative certificate, not that an independent oracle violation was observed. All four tested radius policies produced the same aggregate values on this matrix.}
+\label{tab:baselines}
+\centering
+\scriptsize
+\rowcolors{2}{gray!8}{white}
+\begin{tabular}{lrrrrl}
+\toprule
+Method & Cert. pass & Uncertified & \FULL{} rate & Median native work/\FULL{} & Decision rule \\
+\midrule
+\FULL{} & 100.0\% & 0.0\% & 100.0\% & 1.00000 & full reference \\
+Exact only & 26.7\% & 73.3\% & 0.0\% & 0.00000 & exact closure only \\
+Radius 0--3 & 26.7\% & 73.3\% & 0.0\% & 0.00000 & fixed graph radius \\
+Changed fraction & 40.0\% & 60.0\% & 0.0\% & 0.00000 & threshold policy \\
+Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical ordering, analytic recertification \\
+\method{} & 100.0\% & 0.0\% & 26.7\% & 0.04736 & certificate + work crossover + fallback \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \begin{figure*}[t]
   \centering
@@ -383,7 +425,30 @@ Largest tested scale & 1,000,000 Gaussians \\
 \subsection{Empirical scheduling and ablations}
 The held-out changed-fraction scheduler produced no observed unsafe false-local decision on the frozen matrix. This is not evidence that empirical sensitivity is a general safety mechanism: the candidate full-reference residual is zero across these cases, so the matrix does not strongly separate empirical scheduling from certification. \method{} therefore keeps empirical edges outside the certificate by construction.
 
-Several real-matrix structural ablations are also non-discriminative. We do not reinterpret those neutral outcomes as support for component necessity. The deterministic mechanism-isolation suite is used only to show that each v1 mechanism has a constructed falsifying stress case. In particular, disabling fallback or substituting an overly global bound produces the expected failure or rebuild behavior in stress cases, while the real campaign remains the source for observed effect size.
+Table~\ref{tab:ablations} makes the real-matrix ablation behavior explicit. Five structural/analytic ablations are neutral on these 60 cases. The global-norm-tail replacement remains certificate-safe but collapses to \FULL{} on every case. Removing fallback has the opposite failure mode: it never selects \FULL{} and only 26.7\% of cases pass the certificate. The separately labeled mechanism-isolation suite contains seven deterministic synthetic stress cases, one for each v1 mechanism, and all seven separate in the expected safety/work direction. Those stress cases establish falsifiability of the mechanisms, not real-world effect size.
+
+\begin{table*}[t]
+\caption{Frozen real-matrix ablations and their deterministic mechanism-isolation interpretation. Native work ratios use the baseline-suite metric. Neutral means the real matrix matches \method{} on the reported aggregate fields; it is not claimed as evidence that the removed mechanism is unnecessary.}
+\label{tab:ablations}
+\centering
+\scriptsize
+\rowcolors{2}{gray!8}{white}
+\begin{tabularx}{\textwidth}{lrrrY}
+\toprule
+Ablation & Pass & \FULL{} rate & Median native work/\FULL{} & Reading \\
+\midrule
+Remove predecessor closure & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case exposes omitted required exact work \\
+Gaussian analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
+Temporal analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
+Remove QoI specialization & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case requires extra irrelevant work \\
+Collapse \hard{}/\analytic{} separation & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case becomes more conservative \\
+Global-norm exterior tail & 100.0\% & 100.0\% & 1.00000 & safe but destroys locality on all 60 real cases \\
+Remove certified fallback & 26.7\% & 0.0\% & 0.00000 & 44/60 real cases fail certification; synthetic case leaves an unsafe candidate \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The selected public residual is numerically zero in every frozen case at the reported precision, despite 56/60 source edits exceeding tolerance before repair. The real matrix therefore demonstrates selection/fallback correctness but does not estimate certificate tightness under non-zero accepted residual. We use the threshold-crossing mechanism-isolation cases only to show that the analytic machinery can change decisions when stressed; we do not present them as a substitute for real non-zero-residual evidence.
 
 \section{Discussion}
 \subsection{What the evidence establishes}
@@ -424,7 +489,7 @@ The canonical evidence freeze records workflow run IDs, artifact IDs, Git SHAs, 
 Scene-bearing figures retain the applicable upstream dataset or model terms. Original software is licensed under Apache-2.0, original research communication is scoped under CC BY 4.0, and third-party rights are recorded separately. For double-blind review, the identifiable public repository and author metadata should be replaced by an anonymized frozen supplement consistent with the target venue's policy.
 
 \section{Conclusion}
-We presented Criticality-Bounded Revision Cones, a fail-closed method for selective recomputation in persistent captured worlds. \method{} separates exact dependencies from conservative finite-change influence, binds the unrepaired exterior to explicit output tolerances, compares regional work against a full baseline, and independently replays every selected result against a full-after oracle. The frozen public and trained-representation campaigns show that local repair and full fallback can coexist under one auditable contract, while also exposing a near-global discovery bottleneck and the absence of a current wall-clock speedup claim. The central principle is simple: a persistent world should repair locally only when it can justify what it leaves untouched; otherwise it should rebuild.
+We presented Criticality-Bounded Revision Cones, where criticality is the worst normalized certificate-to-tolerance ratio for the protected outputs, as a fail-closed method for selective recomputation in persistent captured worlds. \method{} separates exact dependencies from conservative finite-change influence, binds the unrepaired exterior to explicit output tolerances, compares regional work against a full baseline, and independently replays every selected result against a full-after oracle. The frozen public and trained-representation campaigns show that local repair and full fallback can coexist under one auditable contract, while also exposing a near-global discovery bottleneck and the absence of a current wall-clock speedup claim. The central principle is simple: a persistent world should repair locally only when it can justify what it leaves untouched; otherwise it should rebuild.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}

@@ -30,3 +30,14 @@ The visible author version contains Swayam Singal and the requested email addres
 ## Claim discipline
 
 The manuscript distinguishes calibrated/native work reduction from wall-clock speedup, reports zero observed violations only within the frozen evaluation domain, describes the greedy cone as certified-feasible rather than globally optimal, and keeps the near-global Gaussian discovery bottleneck explicit.
+
+
+## Review-driven revision
+
+The current manuscript incorporates the 2026-09-21 review pass: quantitative
+baseline and ablation tables, explicit revision criticality, a formalized
+Gaussian finite-edit proposition, stronger incremental/error-control related
+work, simplified poster language, and clean author-visible formatting.
+
+See `REVIEW_RESPONSE_2026-09-21.md` for the revision ledger and
+`supplement_gaussian_bound.tex` for the extended Proposition 1 derivation.
