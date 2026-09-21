@@ -1,6 +1,6 @@
 # Negative result: canonical phase is not empirically superior to spatial density
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Probe:** local-canonical-phase-v3
 
 The raw anisotropic Gaussian-field phase was already rejected because covariance/opacity nuisance overwhelms geometry. This follow-up tested the narrowed, geometry-canonicalized center field.
