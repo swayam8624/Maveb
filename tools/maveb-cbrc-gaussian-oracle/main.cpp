@@ -442,10 +442,11 @@ int main(int argc, char** argv) try {
         maximumBound = std::max(maximumBound, bound);
         maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
         affectedPixels += static_cast<std::size_t>(repairedPixel);
-        certificateViolations +=
-            static_cast<std::size_t>(actual > bound + kOracleNumericalSlack);
-        toleranceViolations +=
-            static_cast<std::size_t>(actual > options->epsilon + kOracleNumericalSlack);
+        certificateViolations += static_cast<std::size_t>(
+            actual > bound + kOracleNumericalSlack);
+        const bool outsideTolerance =
+            actual > options->epsilon + kOracleNumericalSlack;
+        toleranceViolations += static_cast<std::size_t>(outsideTolerance);
     }
 
     if (!options->spatialOutputPath.empty()) {
@@ -474,9 +475,9 @@ int main(int argc, char** argv) try {
             const double actual = actualResiduals[pixel];
             const double bound = certificate->rgbLInfBounds[pixel];
             const double repairResidual = repairResiduals[pixel];
-            spatial << x << ',' << y << ',' << actual << ',' << bound << ','
-                    << repairResidual << ','
-                    << (actual > bound + kOracleNumericalSlack ? 1 : 0) << '\n';
+            spatial << x << ',' << y << ',' << actual << ',' << bound << ',';
+            spatial << repairResidual << ',';
+            spatial << (actual > bound + kOracleNumericalSlack ? 1 : 0) << '\n';
         }
         spatial.close();
         if (!spatial) {
@@ -500,11 +501,11 @@ int main(int argc, char** argv) try {
         static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
-    const double repairResidualBound =
-        certified ? kOracleNumericalSlack : maximumRepairResidual;
+    const double repairResidualBound = certified ? kOracleNumericalSlack : maximumRepairResidual;
+    const bool repairResidualCertified =
+        maximumRepairResidual <= repairResidualBound + 1.0e-12;
     const bool repairWithinTolerance =
-        maximumRepairResidual <= repairResidualBound + 1.0e-12 &&
-        repairResidualBound <= options->epsilon;
+        repairResidualCertified && repairResidualBound <= options->epsilon;
 
     std::cout << std::setprecision(17) << "{"
               << "\"schemaVersion\":1,"
@@ -529,8 +530,8 @@ int main(int argc, char** argv) try {
               << "\"toleranceViolationPixels\":" << toleranceViolations << ','
               << "\"certified\":" << (certified ? "true" : "false") << ','
               << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << ','
-              << "\"repairWithinTolerance\":"
-              << (repairWithinTolerance ? "true" : "false") << "}\n";
+              << "\"repairWithinTolerance\":" << (repairWithinTolerance ? "true" : "false")
+              << "}\n";
 
     if (!certified)
         return 4;
