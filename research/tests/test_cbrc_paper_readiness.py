@@ -98,7 +98,25 @@ class PaperReadinessTests(unittest.TestCase):
                     }
                 )
             )
-            result = mod.audit(campaign, calibration, sparse, empirical, visual)
+            stress = root / "ablation-stress.json"
+            stress.write_text(
+                json.dumps(
+                    {
+                        "pass": True,
+                        "syntheticMechanismIsolationOnly": True,
+                        "mechanismCount": 7,
+                        "separatedMechanisms": 7,
+                    }
+                )
+            )
+            result = mod.audit(
+                campaign,
+                calibration,
+                sparse,
+                empirical,
+                visual,
+                ablation_stress=stress,
+            )
             self.assertTrue(result["corePaperEvidenceReady"])
             self.assertTrue(all(result["checks"].values()))
             self.assertEqual(result["sourceEffectEvidenceCases"], 60)
