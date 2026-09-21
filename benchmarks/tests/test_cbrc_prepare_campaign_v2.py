@@ -61,6 +61,23 @@ class CampaignV2Tests(unittest.TestCase):
             self.assertEqual(len({c["scene_id"] for c in campaign["cases"]}), 4)
             self.assertTrue(any(not c["revision"]["history_stable"] for c in campaign["cases"]))
             self.assertTrue(any(c["coupling_regime"] == "adversarial" for c in campaign["cases"]))
+            self.assertEqual(campaign["campaignId"], "cbrc-public-real-v2.1-effective-edits")
+            for case in campaign["cases"]:
+                matrix = case["matrix_tags"]
+                self.assertGreater(matrix["applied_delta_world"], v2.WORLD_DIFF_TRANSLATION_THRESHOLD)
+                self.assertGreaterEqual(matrix["applied_delta_world"], matrix["requested_delta_world"])
+
+    def test_subthreshold_requested_edit_is_clamped_before_freeze(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidates = [candidate(root, "scene-a", 0.0), candidate(root, "scene-b", 1.0)]
+            campaign, freeze = v2.build(candidates, root / "freeze", cases_per_scene=1, work_cost_model=None)
+            case = campaign["cases"][0]
+            matrix = case["matrix_tags"]
+            self.assertLess(matrix["requested_delta_world"], v2.WORLD_DIFF_TRANSLATION_THRESHOLD)
+            self.assertEqual(matrix["applied_delta_world"], v2.MINIMUM_EFFECTIVE_TRANSLATION)
+            self.assertEqual(freeze["world_diff_translation_threshold"], v2.WORLD_DIFF_TRANSLATION_THRESHOLD)
+            self.assertEqual(freeze["minimum_effective_translation"], v2.MINIMUM_EFFECTIVE_TRANSLATION)
 
     def test_case_archives_are_independent_copies(self):
         with tempfile.TemporaryDirectory() as directory:
