@@ -364,10 +364,9 @@ int main(int argc, char** argv) try {
         std::cerr << "Unable to encode trained-3DGS world sidecars\n";
         return EXIT_FAILURE;
     }
-    const auto gaussianPath =
-        std::filesystem::path(options->output.string() + ".gaussians.r1.bin");
-    const auto ownershipPath =
-        std::filesystem::path(options->output.string() + ".ownership.r1.bin");
+    const std::string worldPath = options->output.string();
+    const std::filesystem::path gaussianPath = worldPath + ".gaussians.r1.bin";
+    const std::filesystem::path ownershipPath = worldPath + ".ownership.r1.bin";
     if (auto written = atomicWrite(gaussianPath, *gaussianBytes); !written) {
         std::cerr << written.error().describe() << '\n';
         return EXIT_FAILURE;
