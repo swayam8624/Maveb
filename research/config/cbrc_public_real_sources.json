@@ -1,33 +1,82 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceId": "graphdeco-tandt-db-v1",
-  "description": "Official GraphDECO COLMAP-ready Tanks & Temples + Deep Blending input bundle. MAVEB's primary public campaign extracts only Tanks & Temples train and truck.",
+  "description": "Official GraphDECO COLMAP-ready Tanks & Temples + Deep Blending input bundle. Pilot uses Tanks & Temples Train/Truck; campaign-v2 additionally includes Deep Blending Dr Johnson/Playroom for a four-scene real RGB/SfM matrix.",
   "url": "https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/datasets/input/tandt_db.zip",
   "expectedBytes": 682628995,
   "sha256": "816e62f22a161abbfe841d2a6b10cdf036e297c9fa289b3bfeee9c6ec526d7e1",
   "upstream": {
     "graphdecoRepository": "https://github.com/graphdeco-inria/gaussian-splatting",
-    "tanksAndTemples": "https://www.tanksandtemples.org/"
+    "tanksAndTemples": "https://www.tanksandtemples.org/",
+    "deepBlendingPaper": "https://visual.cs.ucl.ac.uk/pubs/deepblending/"
   },
   "primaryScenes": [
     {
       "id": "tandt-train",
-      "memberPrefix": "tandt/train/sparse/0/",
+      "memberPrefixes": [
+        "tandt/train/sparse/0/"
+      ],
       "dataset": "Tanks and Temples",
-      "scene": "Train"
+      "scene": "Train",
+      "license": "CC-BY-4.0"
     },
     {
       "id": "tandt-truck",
-      "memberPrefix": "tandt/truck/sparse/0/",
+      "memberPrefixes": [
+        "tandt/truck/sparse/0/"
+      ],
       "dataset": "Tanks and Temples",
-      "scene": "Truck"
+      "scene": "Truck",
+      "license": "CC-BY-4.0"
+    }
+  ],
+  "campaignV2Scenes": [
+    {
+      "id": "tandt-train",
+      "memberPrefixes": [
+        "tandt/train/sparse/0/"
+      ],
+      "dataset": "Tanks and Temples",
+      "scene": "Train",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": "tandt-truck",
+      "memberPrefixes": [
+        "tandt/truck/sparse/0/"
+      ],
+      "dataset": "Tanks and Temples",
+      "scene": "Truck",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "id": "db-drjohnson",
+      "memberPrefixes": [
+        "db/drjohnson/sparse/0/",
+        "deepblending/drjohnson/sparse/0/",
+        "drjohnson/sparse/0/"
+      ],
+      "dataset": "Deep Blending",
+      "scene": "Dr Johnson",
+      "licenseNote": "Use only for research/evaluation under the upstream dataset terms; preserve attribution."
+    },
+    {
+      "id": "db-playroom",
+      "memberPrefixes": [
+        "db/playroom/sparse/0/",
+        "deepblending/playroom/sparse/0/",
+        "playroom/sparse/0/"
+      ],
+      "dataset": "Deep Blending",
+      "scene": "Playroom",
+      "licenseNote": "Use only for research/evaluation under the upstream dataset terms; preserve attribution."
     }
   ],
   "license": {
-    "dataset": "Tanks and Temples",
-    "spdx": "CC-BY-4.0",
-    "url": "https://www.tanksandtemples.org/license/",
-    "note": "Primary MAVEB public evidence uses only the Tanks and Temples members of the GraphDECO bundle. Cite the Tanks and Temples benchmark in publications."
+    "primaryDataset": "Tanks and Temples",
+    "primarySpdx": "CC-BY-4.0",
+    "primaryUrl": "https://www.tanksandtemples.org/license/",
+    "note": "Pilot evidence uses only Tanks and Temples. Campaign-v2 may additionally use the Deep Blending members redistributed by GraphDECO; retain scene-level provenance and upstream terms."
   },
-  "integrityNote": "The archive size/SHA-256 are pinned for reproducibility. If upstream replaces the file, update this manifest only after independently validating the replacement and recording provenance."
+  "integrityNote": "Archive size/SHA-256 are pinned. Any upstream replacement must be independently validated and the manifest updated before use."
 }
