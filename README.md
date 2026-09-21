@@ -109,31 +109,31 @@ The notation below matches the reference implementation in `research/cbrc/core.p
 
 Let the captured-world dependency graph contain state blocks
 
-$
+$$
 V = \{1,\ldots,n\}.
-$
+$$
 
 A state block can represent an observation region, TSDF block, mesh patch, texture page, material state, Gaussian subset, GPU publication region, temporal-history region, or another derived unit.
 
 For one physical-world revision, CBRC chooses a **repair cone**
 
-$
+$$
 C \subseteq V
-$
+$$
 
 and calls the unrepaired state the **exterior**
 
-$
+$$
 O = V \setminus C.
-$
+$$
 
 HARD dependencies are exact. If node $v$ is repaired and $u$ is an exact predecessor required to reproduce $v$, then $u$ must also be repaired. Therefore an admissible cone must satisfy exact predecessor closure:
 
-$
+$$
 v\in C,\; u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
 \quad\Longrightarrow\quad
 u\in C.
-$
+$$
 
 This is why CBRC cannot simply select whichever nodes look cheap: the candidate cone must first be structurally valid.
 
@@ -141,15 +141,15 @@ This is why CBRC cannot simply select whichever nodes look cheap: the candidate 
 
 For ANALYTIC dependencies, define a componentwise non-negative matrix
 
-$
+$$
 K \in \mathbb{R}_{\ge 0}^{n\times n},
-$
+$$
 
 where
 
-$
+$$
 K_{vu}
-$
+$$
 
 is a conservative upper bound on how much normalized change in state block $u$ can influence state block $v$.
 
@@ -157,25 +157,25 @@ Only conservative, implementation-backed bounds are permitted in the certificate
 
 Let
 
-$
+$$
 b\in\mathbb{R}_{\ge0}^{n}
-$
+$$
 
 be the direct source-change envelope produced by the physical revision, and let
 
-$
+$$
 z\in\mathbb{R}_{\ge0}^{n}
-$
+$$
 
 contain known change bounds for repaired state.
 
 For the unrepaired exterior, conservative propagation satisfies
 
-$
+$$
 \delta_O
 \;\le\;
 b_O + K_{OC}z_C + K_{OO}\delta_O.
-$
+$$
 
 The first term is direct change reaching the exterior, the second is influence crossing from repaired state into unrepaired state, and the third is repeated propagation entirely inside the unrepaired exterior.
 
@@ -183,41 +183,41 @@ The first term is direct change reaching the exterior, the second is influence c
 
 If the exterior feedback is stable,
 
-$
+$$
 \rho(K_{OO}) < 1,
-$
+$$
 
 where $\rho$ is the spectral radius, then
 
-$
+$$
 (I-K_{OO})^{-1}
 =
 I + K_{OO} + K_{OO}^2 + \cdots
-$
+$$
 
 exists and is componentwise non-negative for the certified system.
 
 Define
 
-$
+$$
 G_O = (I-K_{OO})^{-1}.
-$
+$$
 
 Then CBRC obtains a finite conservative exterior envelope
 
-$
+$$
 \boxed{
 \hat\delta_O
 =
 G_O\left(b_O + K_{OC}z_C\right)
 }
-$
+$$
 
 such that the true unrepaired change is bounded componentwise by
 
-$
+$$
 \delta_O \le \hat\delta_O.
-$
+$$
 
 This equation is the mathematical core of the certificate: it accounts not only for one-hop influence, but also for arbitrarily many stable dependency-propagation steps in the unrepaired exterior.
 
@@ -229,19 +229,19 @@ A user does not usually care about abstract state error; they care about an outp
 
 For QoI $q$, let
 
-$
+$$
 R_q
-$
+$$
 
 map state perturbations to that output and let the allowed tolerance be
 
-$
+$$
 \varepsilon_q \ge 0.
-$
+$$
 
 Because the state envelope is componentwise non-negative, CBRC conservatively evaluates
 
-$
+$$
 \boxed{
 B_q(C)
 =
@@ -249,18 +249,18 @@ B_q(C)
 |R_{q,O}|\hat\delta_O
 \right\|_\infty
 }
-$
+$$
 
 and accepts the cone only when
 
-$
+$$
 B_q(C)\le\varepsilon_q
 \qquad\text{for every declared QoI }q.
-$
+$$
 
 The complete safety contract used by the experiment harness is stronger:
 
-$
+$$
 \boxed{
 E_q^{\mathrm{full-ref}}
 \le
@@ -268,7 +268,7 @@ B_q(C)
 \le
 \varepsilon_q
 }
-$
+$$
 
 where $E_q^{\mathrm{full-ref}}$ is the error measured against an independently replayed full-reference result. If measured error ever exceeds the certificate, that case is a correctness failure.
 
@@ -276,50 +276,50 @@ where $E_q^{\mathrm{full-ref}}$ is the error measured against an independently r
 
 For a projected Gaussian at pixel $p$, MAVEB uses the renderer-compatible effective alpha model
 
-$
+$$
 \alpha_i(p)
 =
 o_i\exp\left(-\frac12 q_i(p)\right),
-$
+$$
 
 where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. The implementation also mirrors the production compositor's cutoff/clamping rules.
 
 For an edited set $E$, define its aggregate opacity mass
 
-$
+$$
 A(E)
 =
 1-\prod_{i\in E}(1-\alpha_i).
-$
+$$
 
 If every relevant color channel lies in an interval of width $C_{\mathrm{color}}$, inserting/removing that edited subset changes one rendered channel by at most
 
-$
+$$
 \left\|R(U\cup E)-R(U)\right\|_\infty
 \le
 C_{\mathrm{color}}A(E).
-$
+$$
 
 For before/after edited states $E_0,E_1$,
 
-$
+$$
 \boxed{
 \left\|R(U\cup E_0)-R(U\cup E_1)\right\|_\infty
 \le
 C_{\mathrm{color}}
 \min\left(1,A(E_0)+A(E_1)\right)
 }
-$
+$$
 
 and over a protected camera/pixel set $P$,
 
-$
+$$
 B_P
 =
 \max_{p\in P}
 C_{\mathrm{color}}
 \min\left(1,A_{0,p}+A_{1,p}\right).
-$
+$$
 
 This is what lets a Gaussian edit become an **explicit display-space error certificate** rather than merely a heuristic "local update."
 
@@ -334,27 +334,27 @@ When temporal validation remains stable, let
 
 The retained history envelope is
 
-$
+$$
 E_r = \max(E_h,E_n),
-$
+$$
 
 and the resolved temporal output is bounded by
 
-$
+$$
 \boxed{
 E_{\mathrm{resolved}}
 =
 (1-w)E_c + wE_r.
 }
-$
+$$
 
 If the validation/disocclusion decision itself may change, MAVEB does not pretend this soft equation is sufficient: that dependency becomes HARD and the affected history is invalidated.
 
 For stable repeated history reuse, an initial history error also decays geometrically:
 
-$
+$$
 E_t \le E_0 w^t.
-$
+$$
 
 ### 7. Heterogeneous work model
 
@@ -367,25 +367,25 @@ For each work domain $d$, let
 
 The planner's scalar comparison is
 
-$
+$$
 \boxed{
 W(C)
 =
 \sum_d \kappa_d\,n_d(C).
 }
-$
+$$
 
 The full-reference baseline is independently measured as
 
-$
+$$
 W_{\mathrm{full}}.
-$
+$$
 
 A certified local cone is useful only when
 
-$
+$$
 W(C)<W_{\mathrm{full}}.
-$
+$$
 
 The coefficients $\kappa_d$ are frozen **before** the final campaign so the cost model cannot be tuned after seeing the desired result.
 
@@ -395,27 +395,27 @@ CBRC v1 solves for a certified **feasible** cone, not the globally optimal combi
 
 Define normalized certificate violation
 
-$
+$$
 \phi(C)
 =
 \max_q
 \frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
-$
+$$
 
 A passing cone has
 
-$
+$$
 \phi(C)\le1.
-$
+$$
 
 For a candidate expansion $C\rightarrow C'$, the greedy planner prefers high reduction in violation per added calibrated work:
 
-$
+$$
 \text{utility}(C\rightarrow C')
 =
 \frac{\phi(C)-\phi(C')}
 {W(C')-W(C)}.
-$
+$$
 
 Every candidate is first closed over HARD predecessors, re-certified, and compared against the independent full-work baseline. If no smaller safe cone remains worthwhile, CBRC returns FULL.
 
@@ -425,24 +425,24 @@ Two useful diagnostics are retained without confusing them with the proof itself
 
 Exterior susceptibility is
 
-$
+$$
 S_O
 =
 \left\|
 (I-K_{OO})^{-1}
 \right\|_1,
-$
+$$
 
 which indicates how strongly exterior dependencies can amplify perturbations.
 
 Certificate effectivity is
 
-$
+$$
 \eta
 =
 \frac{B_q(C)}
 {\max(E_q^{\mathrm{full-ref}},\epsilon_{\mathrm{num}})}.
-$
+$$
 
 A valid certificate requires $\eta\ge1$; values close to $1$ are tight, while very large values are safe but potentially too conservative to be useful.
 
