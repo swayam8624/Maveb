@@ -13,9 +13,9 @@ using aether::world::ChangeFlag;
 using aether::world::EntityId;
 using aether::world::EntityPatch;
 using aether::world::EntityState;
+using aether::world::hasFlag;
 using aether::world::PersistentWorldModel;
 using aether::world::RepresentationKind;
-using aether::world::hasFlag;
 
 int failures{};
 
@@ -31,8 +31,7 @@ EntityState observation(std::string name, std::string semantic, float x) {
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = 10;
     result.appearanceSignature = 20;
@@ -52,10 +51,10 @@ const EntityState* findByName(const PersistentWorldModel& model, const std::stri
 
 void testTranslationEditMovesBoundsAndCreatesRealityDiff() {
     PersistentWorldModel model;
-    expect(model.ingest(100, {observation("Desk", "desk", 0.0F),
-                              observation("Chair", "chair", 2.0F)})
-               .has_value(),
-           "edit fixture must initialize persistent world");
+    expect(
+        model.ingest(100, {observation("Desk", "desk", 0.0F), observation("Chair", "chair", 2.0F)})
+            .has_value(),
+        "edit fixture must initialize persistent world");
     const EntityState* desk = findByName(model, "Desk");
     expect(desk != nullptr, "desk must exist before authored edit");
     if (!desk)
@@ -95,10 +94,11 @@ void testTranslationEditMovesBoundsAndCreatesRealityDiff() {
 
 void testRemovalAndSemanticEdit() {
     PersistentWorldModel model;
-    expect(model.ingest(100, {observation("Desk", "object", 0.0F),
-                              observation("Chair", "chair", 2.0F)})
-               .has_value(),
-           "removal fixture must initialize world");
+    expect(
+        model
+            .ingest(100, {observation("Desk", "object", 0.0F), observation("Chair", "chair", 2.0F)})
+            .has_value(),
+        "removal fixture must initialize world");
     const EntityState* desk = findByName(model, "Desk");
     const EntityState* chair = findByName(model, "Chair");
     if (!desk || !chair) {

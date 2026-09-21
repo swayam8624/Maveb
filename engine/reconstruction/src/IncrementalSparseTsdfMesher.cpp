@@ -94,15 +94,15 @@ IncrementalSparseTsdfMesher::update(const SparseTsdfSnapshot& snapshot,
             static_cast<std::uint64_t>(minimum.y) * snapshot.config.blockResolution,
             static_cast<std::uint64_t>(minimum.z) * snapshot.config.blockResolution};
         const std::array<std::uint64_t, 3> last{
-            std::min<std::uint64_t>(
-                (static_cast<std::uint64_t>(maximum.x) + 1) * snapshot.config.blockResolution,
-                snapshot.config.volume.dimensions[0]),
-            std::min<std::uint64_t>(
-                (static_cast<std::uint64_t>(maximum.y) + 1) * snapshot.config.blockResolution,
-                snapshot.config.volume.dimensions[1]),
-            std::min<std::uint64_t>(
-                (static_cast<std::uint64_t>(maximum.z) + 1) * snapshot.config.blockResolution,
-                snapshot.config.volume.dimensions[2])};
+            std::min<std::uint64_t>((static_cast<std::uint64_t>(maximum.x) + 1) *
+                                        snapshot.config.blockResolution,
+                                    snapshot.config.volume.dimensions[0]),
+            std::min<std::uint64_t>((static_cast<std::uint64_t>(maximum.y) + 1) *
+                                        snapshot.config.blockResolution,
+                                    snapshot.config.volume.dimensions[1]),
+            std::min<std::uint64_t>((static_cast<std::uint64_t>(maximum.z) + 1) *
+                                        snapshot.config.blockResolution,
+                                    snapshot.config.volume.dimensions[2])};
 
         std::size_t fullVoxels = 1;
         std::size_t fullCells = 1;

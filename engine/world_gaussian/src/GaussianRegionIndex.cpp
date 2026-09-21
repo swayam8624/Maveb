@@ -24,8 +24,8 @@ namespace {
     return static_cast<std::int32_t>(scaled);
 }
 
-[[nodiscard]] Result<world::RegionKey>
-regionKey(const gaussian::Gaussian& primitive, float cellSizeMeters) {
+[[nodiscard]] Result<world::RegionKey> regionKey(const gaussian::Gaussian& primitive,
+                                                 float cellSizeMeters) {
     auto x = cellCoordinate(primitive.position[0], cellSizeMeters);
     auto y = cellCoordinate(primitive.position[1], cellSizeMeters);
     auto z = cellCoordinate(primitive.position[2], cellSizeMeters);
@@ -85,9 +85,8 @@ GaussianRegionIndexStatistics GaussianRegionIndex::statistics() const noexcept {
     return {
         .regionBuckets = buckets_.size(),
         .indexedGaussians = gaussianCount_,
-        .lowerBoundStorageBytes =
-            buckets_.capacity() * sizeof(Bucket) +
-            gaussianIndices_.capacity() * sizeof(std::size_t),
+        .lowerBoundStorageBytes = buckets_.capacity() * sizeof(Bucket) +
+                                  gaussianIndices_.capacity() * sizeof(std::size_t),
     };
 }
 
@@ -96,7 +95,8 @@ GaussianRegionIndex::select(const world::SelectiveUpdatePlan& worldUpdate,
                             const GaussianEntityOwnership* ownership,
                             GaussianLocalUpdatePolicy policy) const {
     if (!std::isfinite(worldUpdate.cellSizeMeters) || worldUpdate.cellSizeMeters <= 0.0F)
-        return fail(ErrorCode::invalidArgument, "World update cell size must be finite and positive");
+        return fail(ErrorCode::invalidArgument,
+                    "World update cell size must be finite and positive");
     if (worldUpdate.cellSizeMeters != cellSizeMeters_)
         return fail(ErrorCode::invalidArgument,
                     "Gaussian region index cell size does not match world update cell size");
@@ -118,11 +118,11 @@ GaussianRegionIndex::select(const world::SelectiveUpdatePlan& worldUpdate,
     GaussianIndexedSelectionResult result;
     for (const auto& [key, info] : dirty) {
         ++result.statistics.dirtyBucketsVisited;
-        const auto bucket = std::lower_bound(
-            buckets_.begin(), buckets_.end(), key,
-            [](const Bucket& candidate, const world::RegionKey& wanted) {
-                return candidate.key < wanted;
-            });
+        const auto bucket =
+            std::lower_bound(buckets_.begin(), buckets_.end(), key,
+                             [](const Bucket& candidate, const world::RegionKey& wanted) {
+                                 return candidate.key < wanted;
+                             });
         if (bucket == buckets_.end() || bucket->key != key)
             continue;
 
@@ -155,8 +155,7 @@ GaussianRegionIndex::select(const world::SelectiveUpdatePlan& worldUpdate,
     }
 
     std::sort(result.selection.gaussianIndices.begin(), result.selection.gaussianIndices.end());
-    result.selection.unaffectedGaussians =
-        gaussianCount_ - result.selection.gaussianIndices.size();
+    result.selection.unaffectedGaussians = gaussianCount_ - result.selection.gaussianIndices.size();
     return result;
 }
 

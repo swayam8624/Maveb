@@ -15,7 +15,9 @@
 
 struct Key {
     int x{}, y{}, z{};
-    bool operator==(const Key& o) const noexcept { return x == o.x && y == o.y && z == o.z; }
+    bool operator==(const Key& o) const noexcept {
+        return x == o.x && y == o.y && z == o.z;
+    }
 };
 struct Hash {
     std::size_t operator()(const Key& k) const noexcept {
@@ -27,16 +29,16 @@ struct Hash {
         return static_cast<std::size_t>(h);
     }
 };
-struct Point { float x{}, y{}, z{}; };
+struct Point {
+    float x{}, y{}, z{};
+};
 
 static Key regionKey(const Point& p, float cell) {
-    return {static_cast<int>(std::floor(p.x / cell)),
-            static_cast<int>(std::floor(p.y / cell)),
+    return {static_cast<int>(std::floor(p.x / cell)), static_cast<int>(std::floor(p.y / cell)),
             static_cast<int>(std::floor(p.z / cell))};
 }
 
-template <class Fn>
-double milliseconds(Fn&& fn) {
+template <class Fn> double milliseconds(Fn&& fn) {
     const auto start = std::chrono::steady_clock::now();
     fn();
     const auto end = std::chrono::steady_clock::now();
@@ -51,8 +53,8 @@ int main() {
     std::cout << "N,dirty_frac,occupied_cells,dirty_cells,selected,scan_inspections,"
                  "index_inspections,build_ms,scan_ms,index_ms,equal\n";
 
-    for (std::size_t count : {10'000ULL, 50'000ULL, 100'000ULL, 250'000ULL,
-                              500'000ULL, 1'000'000ULL}) {
+    for (std::size_t count :
+         {10'000ULL, 50'000ULL, 100'000ULL, 250'000ULL, 500'000ULL, 1'000'000ULL}) {
         std::vector<Point> points(count);
         for (auto& point : points)
             point = {uniform(rng), uniform(rng), uniform(rng)};
@@ -73,8 +75,8 @@ int main() {
         std::shuffle(occupied.begin(), occupied.end(), rng);
 
         for (double fraction : {0.01, 0.02, 0.05, 0.10, 0.25, 0.50}) {
-            std::size_t dirtyCount =
-                std::max<std::size_t>(1, static_cast<std::size_t>(std::ceil(index.size() * fraction)));
+            std::size_t dirtyCount = std::max<std::size_t>(
+                1, static_cast<std::size_t>(std::ceil(index.size() * fraction)));
             dirtyCount = std::min(dirtyCount, index.size());
 
             std::unordered_set<Key, Hash> dirty;

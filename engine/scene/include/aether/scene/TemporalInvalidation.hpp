@@ -26,8 +26,7 @@ struct TemporalInvalidationPlan final {
     [[nodiscard]] double pixelRatio() const noexcept {
         if (fullFramePixels == 0)
             return 0.0;
-        return static_cast<double>(invalidatedPixels) /
-               static_cast<double>(fullFramePixels);
+        return static_cast<double>(invalidatedPixels) / static_cast<double>(fullFramePixels);
     }
 };
 

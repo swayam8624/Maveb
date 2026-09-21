@@ -52,11 +52,8 @@ SelectiveUpdatePlan dirtyCells(std::initializer_list<RegionKey> keys) {
 void testOverlayMatchesFullScanAcrossRelocationAndReturnToBase() {
     GaussianAsset asset;
     asset.gaussians = {
-        gaussian(0.1F, 0.1F, 0.1F),
-        gaussian(0.2F, 0.1F, 0.1F),
-        gaussian(1.1F, 0.1F, 0.1F),
-        gaussian(2.1F, 0.1F, 0.1F),
-        gaussian(5.1F, 0.1F, 0.1F),
+        gaussian(0.1F, 0.1F, 0.1F), gaussian(0.2F, 0.1F, 0.1F), gaussian(1.1F, 0.1F, 0.1F),
+        gaussian(2.1F, 0.1F, 0.1F), gaussian(5.1F, 0.1F, 0.1F),
     };
     GaussianEntityOwnership ownership;
     ownership.owners = {EntityId{1}, EntityId{2}, EntityId{1}, EntityId{}, EntityId{1}};
@@ -110,10 +107,9 @@ void testOverlayMatchesFullScanAcrossRelocationAndReturnToBase() {
            "one relocated primitive must occupy one overlay delta entry");
 
     const GaussianRelocation returnToBase{4, newPosition, oldPosition};
-    expect(index->applyRelocations(
-                         std::span<const GaussianRelocation>(&returnToBase, 1))
-               .has_value(),
-           "overlay must accept relocation back to immutable base cell");
+    expect(
+        index->applyRelocations(std::span<const GaussianRelocation>(&returnToBase, 1)).has_value(),
+        "overlay must accept relocation back to immutable base cell");
     asset.gaussians[4].position = {oldPosition.x, oldPosition.y, oldPosition.z};
 
     const auto returnedStats = index->statistics();
@@ -151,8 +147,7 @@ void testRelocationBatchRejectsStaleAndDuplicateStateAtomically() {
     expect(index->statistics().deltaEntries == before.deltaEntries,
            "duplicate rejection must not mutate overlay delta state");
 
-    const GaussianRelocation stale{
-        1, simd_float3{9.1F, 0.1F, 0.1F}, simd_float3{4.1F, 0.1F, 0.1F}};
+    const GaussianRelocation stale{1, simd_float3{9.1F, 0.1F, 0.1F}, simd_float3{4.1F, 0.1F, 0.1F}};
     expect(!index->applyRelocations(std::span<const GaussianRelocation>(&stale, 1)).has_value(),
            "stale old position must reject relocation");
     expect(index->statistics().deltaEntries == before.deltaEntries,

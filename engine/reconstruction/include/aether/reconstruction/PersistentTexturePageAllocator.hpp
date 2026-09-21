@@ -40,8 +40,8 @@ class PersistentTexturePageAllocator final {
     [[nodiscard]] static Result<PersistentTexturePageAllocator>
     create(PersistentTexturePageConfig config);
 
-    [[nodiscard]] Result<PersistentTexturePageAddress>
-    allocate(std::uint64_t patchId, std::uint64_t localityKey);
+    [[nodiscard]] Result<PersistentTexturePageAddress> allocate(std::uint64_t patchId,
+                                                                std::uint64_t localityKey);
 
     [[nodiscard]] Result<void> release(std::uint64_t patchId);
 
@@ -66,8 +66,7 @@ class PersistentTexturePageAllocator final {
         std::uint64_t localityKey{};
     };
 
-    explicit PersistentTexturePageAllocator(PersistentTexturePageConfig config)
-        : config_(config) {}
+    explicit PersistentTexturePageAllocator(PersistentTexturePageConfig config) : config_(config) {}
 
     [[nodiscard]] Result<std::uint32_t> createPage(std::uint64_t localityKey);
 

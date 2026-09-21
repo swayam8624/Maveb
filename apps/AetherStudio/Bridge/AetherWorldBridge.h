@@ -10,7 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Stateful bridge between SwiftUI Studio and the C++ persistent-world engine.
 /// Heavy calls are synchronous and must be invoked away from the main actor.
 @interface AetherWorldBridge : NSObject {
-@private
+  @private
     void* _worldModel;
 }
 
@@ -45,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
                                         y:(float)y
                                         z:(float)z
                             semanticLabel:(NSString*)semanticLabel
-                   maximumDistanceMeters:(float)maximumDistanceMeters
+                    maximumDistanceMeters:(float)maximumDistanceMeters
                                maxResults:(NSUInteger)maxResults
                                     error:(NSError* _Nullable* _Nullable)error;
 - (NSData* _Nullable)relationsFromEntity:(uint64_t)subjectId
@@ -57,28 +57,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Exact C entry points intentionally mirror AetherValidateCaptureDirectory so Swift does not
 /// depend on Objective-C selector renaming heuristics.
-FOUNDATION_EXPORT BOOL AetherWorldLoadArchive(
-    AetherWorldBridge* bridge, NSURL* archiveURL, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT BOOL AetherWorldSaveArchive(
-    AetherWorldBridge* bridge, NSURL* archiveURL, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldIngestCanonical(
-    AetherWorldBridge* bridge, NSURL* directoryURL, uint64_t timestampNanoseconds,
-    NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldHistoryJSON(
-    AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldLatestDiffJSON(
-    AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherWorldLoadArchive(AetherWorldBridge* bridge, NSURL* archiveURL,
+                                              NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT BOOL AetherWorldSaveArchive(AetherWorldBridge* bridge, NSURL* archiveURL,
+                                              NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldIngestCanonical(AetherWorldBridge* bridge,
+                                                               NSURL* directoryURL,
+                                                               uint64_t timestampNanoseconds,
+                                                               NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldHistoryJSON(AetherWorldBridge* bridge,
+                                                           NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldLatestDiffJSON(AetherWorldBridge* bridge,
+                                                              NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldLatestEntitiesJSON(
     AetherWorldBridge* bridge, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldTranslateEntity(
-    AetherWorldBridge* bridge, uint64_t entityId, float x, float y, float z,
-    uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelabelEntity(
-    AetherWorldBridge* bridge, uint64_t entityId, NSString* semanticLabel,
-    uint64_t timestampNanoseconds, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldRemoveEntity(
-    AetherWorldBridge* bridge, uint64_t entityId, uint64_t timestampNanoseconds,
-    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldTranslateEntity(AetherWorldBridge* bridge,
+                                                               uint64_t entityId, float x, float y,
+                                                               float z,
+                                                               uint64_t timestampNanoseconds,
+                                                               NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelabelEntity(AetherWorldBridge* bridge,
+                                                             uint64_t entityId,
+                                                             NSString* semanticLabel,
+                                                             uint64_t timestampNanoseconds,
+                                                             NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRemoveEntity(AetherWorldBridge* bridge,
+                                                            uint64_t entityId,
+                                                            uint64_t timestampNanoseconds,
+                                                            NSError* _Nullable* _Nullable error);
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldRevertToRevision(
     AetherWorldBridge* bridge, uint64_t sourceRevision, uint64_t timestampNanoseconds,
     NSError* _Nullable* _Nullable error);
@@ -88,8 +94,9 @@ FOUNDATION_EXPORT NSData* _Nullable AetherWorldSemanticEntities(
 FOUNDATION_EXPORT NSData* _Nullable AetherWorldNearestEntities(
     AetherWorldBridge* bridge, float x, float y, float z, NSString* semanticLabel,
     float maximumDistanceMeters, NSUInteger maxResults, NSError* _Nullable* _Nullable error);
-FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelations(
-    AetherWorldBridge* bridge, uint64_t subjectId, uint64_t referenceId, float nearDistanceMeters,
-    NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT NSData* _Nullable AetherWorldRelations(AetherWorldBridge* bridge,
+                                                         uint64_t subjectId, uint64_t referenceId,
+                                                         float nearDistanceMeters,
+                                                         NSError* _Nullable* _Nullable error);
 
 NS_ASSUME_NONNULL_END

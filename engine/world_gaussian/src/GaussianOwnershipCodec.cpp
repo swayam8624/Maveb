@@ -44,7 +44,8 @@ GaussianOwnershipCodec::encode(const GaussianEntityOwnership& ownership) {
     constexpr std::size_t bytesPerOwner = sizeof(std::uint64_t);
     if (ownership.owners.size() >
         (std::numeric_limits<std::size_t>::max() - headerBytes) / bytesPerOwner) {
-        return fail(ErrorCode::resourceExhausted, "Gaussian ownership sidecar size overflows memory");
+        return fail(ErrorCode::resourceExhausted,
+                    "Gaussian ownership sidecar size overflows memory");
     }
 
     const std::size_t outputBytes = headerBytes + ownership.owners.size() * bytesPerOwner;
@@ -60,8 +61,8 @@ GaussianOwnershipCodec::encode(const GaussianEntityOwnership& ownership) {
     return output;
 }
 
-Result<GaussianEntityOwnership>
-GaussianOwnershipCodec::decode(std::span<const std::byte> bytes, std::size_t maximumGaussians) {
+Result<GaussianEntityOwnership> GaussianOwnershipCodec::decode(std::span<const std::byte> bytes,
+                                                               std::size_t maximumGaussians) {
     if (maximumGaussians == 0)
         return fail(ErrorCode::invalidArgument, "Gaussian ownership decode limit cannot be zero");
     if (bytes.size() < headerBytes)
@@ -87,7 +88,8 @@ GaussianOwnershipCodec::decode(std::span<const std::byte> bytes, std::size_t max
         return fail(ErrorCode::resourceExhausted, "Gaussian ownership sidecar byte size overflows");
     const std::size_t expectedBytes = headerBytes + count * bytesPerOwner;
     if (bytes.size() != expectedBytes)
-        return fail(ErrorCode::corruptData, "Gaussian ownership sidecar byte count is inconsistent");
+        return fail(ErrorCode::corruptData,
+                    "Gaussian ownership sidecar byte count is inconsistent");
 
     GaussianEntityOwnership ownership;
     ownership.owners.reserve(count);

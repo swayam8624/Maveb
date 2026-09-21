@@ -95,7 +95,8 @@ private final class WorldTimeMachineModel: ObservableObject {
         }.value
         archiveURL = url
         apply(history)
-        status = "Loaded \(revisions.count) immutable world revision\(revisions.count == 1 ? "" : "s")"
+        status =
+          "Loaded \(revisions.count) immutable world revision\(revisions.count == 1 ? "" : "s")"
       } catch {
         errorMessage = error.localizedDescription
         status = "World history load failed"
@@ -120,8 +121,9 @@ private final class WorldTimeMachineModel: ObservableObject {
       do {
         let result = try await Task.detached(priority: .userInitiated) {
           var bridgeError: NSError?
-          guard let reportData = AetherWorldRevertToRevision(
-            native.value, sourceRevision, timestamp, &bridgeError)
+          guard
+            let reportData = AetherWorldRevertToRevision(
+              native.value, sourceRevision, timestamp, &bridgeError)
           else {
             throw bridgeError ?? CocoaError(.fileWriteUnknown)
           }
@@ -346,9 +348,10 @@ struct WorldTimeMachineWindow: View {
         if revision.revision == model.latestRevision?.revision {
           Label(
             "This revision is already the present. Choose an earlier revision to travel back.",
-            systemImage: "checkmark.circle.fill")
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            systemImage: "checkmark.circle.fill"
+          )
+          .font(.callout)
+          .foregroundStyle(.secondary)
         } else {
           Text(
             "Restoring does not delete newer revisions. Maveb copies this historical state into a new revision, computes Reality Diff against the current present, schedules only affected spatial regions, and preserves the stable-ID allocator."
@@ -360,10 +363,11 @@ struct WorldTimeMachineWindow: View {
             Spacer()
             Button(
               "Restore as New Revision", systemImage: "arrow.uturn.backward.circle.fill",
-              action: model.restoreSelected)
-              .buttonStyle(.borderedProminent)
-              .controlSize(.large)
-              .disabled(!model.canRestore)
+              action: model.restoreSelected
+            )
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(!model.canRestore)
           }
         }
       }
@@ -400,10 +404,12 @@ struct WorldTimeMachineWindow: View {
           "Going back creates a new present; no committed revision is overwritten or erased.")
         invariant(
           "Identity never rewinds",
-          "Stable entity IDs allocated in later revisions remain retired even after restoring an older state.")
+          "Stable entity IDs allocated in later revisions remain retired even after restoring an older state."
+        )
         invariant(
           "Local reconstruction",
-          "The reversal is diffed against the current present and only affected metric regions are dirtied.")
+          "The reversal is diffed against the current present and only affected metric regions are dirtied."
+        )
       }
     }
   }

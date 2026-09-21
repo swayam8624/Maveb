@@ -42,8 +42,7 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
     double quaternionNormSquared{};
     for (const float value : gaussian.rotation)
         quaternionNormSquared += static_cast<double>(value) * value;
-    if (!std::isfinite(quaternionNormSquared) ||
-        std::abs(quaternionNormSquared - 1.0) > 1.0e-3) {
+    if (!std::isfinite(quaternionNormSquared) || std::abs(quaternionNormSquared - 1.0) > 1.0e-3) {
         return fail(ErrorCode::corruptData,
                     "Gaussian locality certificate requires normalized rotation");
     }
@@ -77,18 +76,16 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
     return result;
 }
 
-[[nodiscard]] Result<std::array<double, 6>>
-tailBounds(const gaussian::Gaussian& gaussian, const world::Bounds& volume) {
+[[nodiscard]] Result<std::array<double, 6>> tailBounds(const gaussian::Gaussian& gaussian,
+                                                       const world::Bounds& volume) {
     auto cov = covariance(gaussian);
     if (!cov)
         return std::unexpected(cov.error());
 
-    const std::array<double, 3> mean{
-        gaussian.position[0], gaussian.position[1], gaussian.position[2]};
-    const std::array<double, 3> minimum{
-        volume.minimum.x, volume.minimum.y, volume.minimum.z};
-    const std::array<double, 3> maximum{
-        volume.maximum.x, volume.maximum.y, volume.maximum.z};
+    const std::array<double, 3> mean{gaussian.position[0], gaussian.position[1],
+                                     gaussian.position[2]};
+    const std::array<double, 3> minimum{volume.minimum.x, volume.minimum.y, volume.minimum.z};
+    const std::array<double, 3> maximum{volume.maximum.x, volume.maximum.y, volume.maximum.z};
     const double alpha = sigmoid(gaussian.opacityLogit);
 
     std::array<double, 6> result{};
@@ -102,13 +99,9 @@ tailBounds(const gaussian::Gaussian& gaussian, const world::Bounds& volume) {
         const double toMaximum = maximum[axis] - mean[axis];
 
         result[axis * 2] =
-            toMinimum <= 0.0
-                ? alpha
-                : alpha * std::exp(-0.5 * toMinimum * toMinimum / variance);
+            toMinimum <= 0.0 ? alpha : alpha * std::exp(-0.5 * toMinimum * toMinimum / variance);
         result[axis * 2 + 1] =
-            toMaximum <= 0.0
-                ? alpha
-                : alpha * std::exp(-0.5 * toMaximum * toMaximum / variance);
+            toMaximum <= 0.0 ? alpha : alpha * std::exp(-0.5 * toMaximum * toMaximum / variance);
     }
     return result;
 }
@@ -132,10 +125,10 @@ Result<void> accumulate(std::array<double, 6>& faceBounds,
 
 } // namespace
 
-Result<GaussianTailLocalityCertificate> certifyGaussianDensityLocality(
-    std::span<const gaussian::Gaussian> beforeChanged,
-    std::span<const gaussian::Gaussian> afterChanged,
-    const world::Bounds& editVolume) {
+Result<GaussianTailLocalityCertificate>
+certifyGaussianDensityLocality(std::span<const gaussian::Gaussian> beforeChanged,
+                               std::span<const gaussian::Gaussian> afterChanged,
+                               const world::Bounds& editVolume) {
     if (!finiteBounds(editVolume))
         return fail(ErrorCode::invalidArgument,
                     "Gaussian locality certificate edit volume is invalid");

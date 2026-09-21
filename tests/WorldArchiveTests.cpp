@@ -31,8 +31,7 @@ EntityState observation(std::string name, std::string semantic, float x,
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -54,13 +53,15 @@ void testRoundTripPreservesHistoryAndIdentity() {
     cleanup(path);
 
     PersistentWorldModel model;
-    expect(model.ingest(100, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 20),
-                              observation("Chair", "chair", 1.0F, 30, 40)})
+    expect(model
+               .ingest(100, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 20),
+                             observation("Chair", "chair", 1.0F, 30, 40)})
                .has_value(),
            "archive fixture must create initial world revision");
-    expect(model.ingest(200, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 21),
-                              observation("Chair", "chair", 1.5F, 30, 40),
-                              observation("Lamp", "lamp", 3.0F, 50, 60)})
+    expect(model
+               .ingest(200, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 21),
+                             observation("Chair", "chair", 1.5F, 30, 40),
+                             observation("Lamp", "lamp", 3.0F, 50, 60)})
                .has_value(),
            "archive fixture must create second world revision");
 
@@ -90,11 +91,11 @@ void testRoundTripPreservesHistoryAndIdentity() {
     const auto historicalDiff = restored->timeline().latestDiff();
     expect(historicalDiff.has_value(), "restored timeline must remain fully diffable");
 
-    const auto continued = restored->ingest(
-        300, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 21),
-              observation("Chair", "chair", 1.5F, 30, 40),
-              observation("Lamp", "lamp", 3.0F, 50, 60),
-              observation("Plant", "plant", 5.0F, 70, 80)});
+    const auto continued =
+        restored->ingest(300, {observation("Desk \"A\"\nNorth", "desk", 0.0F, 10, 21),
+                               observation("Chair", "chair", 1.5F, 30, 40),
+                               observation("Lamp", "lamp", 3.0F, 50, 60),
+                               observation("Plant", "plant", 5.0F, 70, 80)});
     expect(continued.has_value(), "restored world must accept future observations normally");
     if (continued) {
         expect(continued->revision == 3, "restored world must continue revision numbering");

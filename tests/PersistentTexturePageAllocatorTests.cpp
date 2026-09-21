@@ -35,11 +35,9 @@ void testLocalityPackingAndStableAddresses() {
             first[id - 1] = *address;
     }
     for (std::uint64_t id = 101; id <= 112; ++id)
-        expect(allocator->allocate(id, 200).has_value(),
-               "second locality allocation must succeed");
+        expect(allocator->allocate(id, 200).has_value(), "second locality allocation must succeed");
 
-    expect(first[0].page == first[7].page,
-           "first eight same-locality patches must share one page");
+    expect(first[0].page == first[7].page, "first eight same-locality patches must share one page");
     expect(first[8].page != first[0].page,
            "same locality must spill into a second page only after capacity");
     expect(allocator->address(1).has_value() && *allocator->address(1) == first[0],
@@ -89,8 +87,7 @@ void testFragmentationAndBudgetsFailClosed() {
            "allocator must fail closed when maximum pages are exhausted");
     expect(allocator->release(1).has_value(), "release must succeed");
     const auto stats = allocator->statistics();
-    expect(stats.activeSlots == 1 && stats.freeSlots == 1 &&
-               stats.fragmentation == 0.5,
+    expect(stats.activeSlots == 1 && stats.freeSlots == 1 && stats.fragmentation == 0.5,
            "allocator must expose exact retained-page fragmentation");
     expect(!allocator->allocate(2, 6).has_value(),
            "existing patch cannot silently migrate between locality keys");

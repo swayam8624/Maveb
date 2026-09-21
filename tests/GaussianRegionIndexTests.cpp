@@ -62,8 +62,8 @@ void testIndexedSelectionMatchesFullScanExactly() {
     ownership.owners.reserve(count + 4);
 
     for (std::size_t index = 0; index < count; ++index) {
-        asset.gaussians.push_back(gaussian(position(generator), position(generator),
-                                           position(generator)));
+        asset.gaussians.push_back(
+            gaussian(position(generator), position(generator), position(generator)));
         ownership.owners.push_back(EntityId{static_cast<std::uint64_t>(owner(generator))});
     }
 
@@ -94,8 +94,7 @@ void testIndexedSelectionMatchesFullScanExactly() {
            "indexed selector must return exactly the same Gaussian indices as full scan");
     expect(reference->ownedMatches == indexed->selection.ownedMatches,
            "indexed selector must preserve owned-match semantics");
-    expect(reference->conservativeUnownedMatches ==
-               indexed->selection.conservativeUnownedMatches,
+    expect(reference->conservativeUnownedMatches == indexed->selection.conservativeUnownedMatches,
            "indexed selector must preserve unowned conservative matches");
     expect(reference->rejectedStableOwnedGaussians ==
                indexed->selection.rejectedStableOwnedGaussians,

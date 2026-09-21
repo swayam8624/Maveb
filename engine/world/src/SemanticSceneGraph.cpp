@@ -101,8 +101,8 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
         graph.nodeIndexById_.emplace(entity.id.value, nodeIndex);
         graph.semanticIndex_[entity.semanticLabel].push_back(entity.id);
         sweep.push_back(SweepItem{nodeIndex, entity.id, entity.worldBounds,
-                                 entity.worldBounds.minimum.x, entity.worldBounds.maximum.x,
-                                 boundsVolume(entity.worldBounds)});
+                                  entity.worldBounds.minimum.x, entity.worldBounds.maximum.x,
+                                  boundsVolume(entity.worldBounds)});
     }
 
     for (auto& [label, ids] : graph.semanticIndex_) {
@@ -124,9 +124,11 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
 
     for (std::size_t currentIndex = 0; currentIndex < sweep.size(); ++currentIndex) {
         const SweepItem& current = sweep[currentIndex];
-        active.erase(std::remove_if(active.begin(), active.end(), [&](std::size_t index) {
-                         return sweep[index].maximumX + policy.nearDistanceMeters < current.minimumX;
-                     }),
+        active.erase(std::remove_if(active.begin(), active.end(),
+                                    [&](std::size_t index) {
+                                        return sweep[index].maximumX + policy.nearDistanceMeters <
+                                               current.minimumX;
+                                    }),
                      active.end());
 
         for (const std::size_t activeIndex : active) {
@@ -151,7 +153,8 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
             }
 
             if (relationEdges.size() >= policy.maximumEdges)
-                return fail(ErrorCode::resourceExhausted, "Semantic scene graph exceeds edge budget");
+                return fail(ErrorCode::resourceExhausted,
+                            "Semantic scene graph exceeds edge budget");
 
             const EntityId source = other.id < current.id ? other.id : current.id;
             const EntityId target = other.id < current.id ? current.id : other.id;
@@ -159,7 +162,7 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
                 source,
                 target,
                 intersects(other.bounds, current.bounds) ? SceneRelationKind::intersects
-                                                          : SceneRelationKind::near,
+                                                         : SceneRelationKind::near,
                 separation,
             });
         }
@@ -174,7 +177,8 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
         child.parent = parent.id;
         const auto parentIndex = graph.nodeIndexById_.find(parent.id.value);
         if (parentIndex == graph.nodeIndexById_.end())
-            return fail(ErrorCode::internal, "Scene graph parent identity disappeared during build");
+            return fail(ErrorCode::internal,
+                        "Scene graph parent identity disappeared during build");
         graph.nodes_[parentIndex->second].children.push_back(child.id);
         if (relationEdges.size() >= policy.maximumEdges)
             return fail(ErrorCode::resourceExhausted, "Semantic scene graph exceeds edge budget");
@@ -184,10 +188,8 @@ Result<SemanticSceneGraph> SemanticSceneGraph::build(const WorldSnapshot& snapsh
 
     for (SceneGraphNode& node : graph.nodes_)
         std::sort(node.children.begin(), node.children.end());
-    std::sort(graph.nodes_.begin(), graph.nodes_.end(), [](const SceneGraphNode& lhs,
-                                                          const SceneGraphNode& rhs) {
-        return lhs.id < rhs.id;
-    });
+    std::sort(graph.nodes_.begin(), graph.nodes_.end(),
+              [](const SceneGraphNode& lhs, const SceneGraphNode& rhs) { return lhs.id < rhs.id; });
     graph.nodeIndexById_.clear();
     graph.nodeIndexById_.reserve(graph.nodes_.size());
     for (std::size_t index = 0; index < graph.nodes_.size(); ++index)

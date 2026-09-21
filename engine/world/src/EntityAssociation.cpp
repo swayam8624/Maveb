@@ -46,14 +46,12 @@ struct SpatialCellHash final {
     return (bounds.minimum + bounds.maximum) * 0.5F;
 }
 
-
 [[nodiscard]] bool finiteBounds(const Bounds& bounds) noexcept {
     const auto finite3 = [](simd_float3 value) {
         return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
     };
     return finite3(bounds.minimum) && finite3(bounds.maximum) &&
-           bounds.minimum.x <= bounds.maximum.x &&
-           bounds.minimum.y <= bounds.maximum.y &&
+           bounds.minimum.x <= bounds.maximum.x && bounds.minimum.y <= bounds.maximum.y &&
            bounds.minimum.z <= bounds.maximum.z;
 }
 
@@ -323,8 +321,8 @@ Result<AssociationResult> associateObservations(const WorldSnapshot& previous,
                 continue;
 
             const EntityState& prior = previous.entities[previousIndex];
-            const bool absenceIsEvidence = std::ranges::any_of(
-                policy.absenceEvidenceRegions, [&](const Bounds& evidence) {
+            const bool absenceIsEvidence =
+                std::ranges::any_of(policy.absenceEvidenceRegions, [&](const Bounds& evidence) {
                     return containsBounds(evidence, prior.worldBounds);
                 });
             if (absenceIsEvidence)

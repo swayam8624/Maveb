@@ -131,7 +131,8 @@ private final class WorldIntelligenceModel: ObservableObject {
       do {
         let envelope = try await Task.detached(priority: .userInitiated) {
           var bridgeError: NSError?
-          guard let data = AetherWorldSemanticEntities(native.value, label, 500, &bridgeError) else {
+          guard let data = AetherWorldSemanticEntities(native.value, label, 500, &bridgeError)
+          else {
             throw bridgeError ?? CocoaError(.fileReadCorruptFile)
           }
           return try JSONDecoder().decode(SemanticQueryEnvelope.self, from: data)
@@ -167,8 +168,9 @@ private final class WorldIntelligenceModel: ObservableObject {
       do {
         let envelope = try await Task.detached(priority: .userInitiated) {
           var bridgeError: NSError?
-          guard let data = AetherWorldNearestEntities(
-            native.value, Float(x), Float(y), Float(z), label, Float(distance), 100, &bridgeError)
+          guard
+            let data = AetherWorldNearestEntities(
+              native.value, Float(x), Float(y), Float(z), label, Float(distance), 100, &bridgeError)
           else {
             throw bridgeError ?? CocoaError(.fileReadCorruptFile)
           }
@@ -176,7 +178,8 @@ private final class WorldIntelligenceModel: ObservableObject {
         }.value
         nearestResults = envelope.results
         nearestRevision = envelope.revision
-        status = "Nearest query returned \(envelope.results.count) entities in r\(envelope.revision)"
+        status =
+          "Nearest query returned \(envelope.results.count) entities in r\(envelope.revision)"
       } catch {
         errorMessage = error.localizedDescription
         status = "Nearest query failed"
@@ -205,8 +208,9 @@ private final class WorldIntelligenceModel: ObservableObject {
       do {
         let envelope = try await Task.detached(priority: .userInitiated) {
           var bridgeError: NSError?
-          guard let data = AetherWorldRelations(
-            native.value, subject, reference, Float(threshold), &bridgeError)
+          guard
+            let data = AetherWorldRelations(
+              native.value, subject, reference, Float(threshold), &bridgeError)
           else {
             throw bridgeError ?? CocoaError(.fileReadCorruptFile)
           }
@@ -361,9 +365,11 @@ struct WorldIntelligenceWorkspace: View {
         HStack {
           TextField("Optional semantic label", text: $model.nearestSemanticLabel)
             .textFieldStyle(.roundedBorder)
-          Button("Find Nearest", systemImage: "location.magnifyingglass", action: model.runNearestQuery)
-            .buttonStyle(.borderedProminent)
-            .disabled(!model.hasWorld || model.isBusy)
+          Button(
+            "Find Nearest", systemImage: "location.magnifyingglass", action: model.runNearestQuery
+          )
+          .buttonStyle(.borderedProminent)
+          .disabled(!model.hasWorld || model.isBusy)
         }
 
         if let revision = model.nearestRevision {
@@ -385,8 +391,10 @@ struct WorldIntelligenceWorkspace: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                  Text("\(hit.pointToBoundsMeters.formatted(.number.precision(.fractionLength(3)))) m")
-                    .font(.callout.monospacedDigit().weight(.semibold))
+                  Text(
+                    "\(hit.pointToBoundsMeters.formatted(.number.precision(.fractionLength(3)))) m"
+                  )
+                  .font(.callout.monospacedDigit().weight(.semibold))
                   Text("surface distance")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -406,7 +414,8 @@ struct WorldIntelligenceWorkspace: View {
   private var relationsCard: some View {
     IntelligenceCard {
       VStack(alignment: .leading, spacing: 14) {
-        sectionTitle("Entity relations", symbol: "arrow.left.and.right.righttriangle.left.righttriangle.right")
+        sectionTitle(
+          "Entity relations", symbol: "arrow.left.and.right.righttriangle.left.righttriangle.right")
         Text(
           "Compute geometric relations between two stable IDs: intersection, containment, surface separation, center distance, and configurable nearness."
         )

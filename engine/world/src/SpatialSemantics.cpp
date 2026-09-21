@@ -75,7 +75,8 @@ Result<SemanticSpatialIndex> SemanticSpatialIndex::build(const WorldSnapshot& sn
     return index;
 }
 
-const SemanticSpatialIndex::IndexedEntity* SemanticSpatialIndex::entity(EntityId id) const noexcept {
+const SemanticSpatialIndex::IndexedEntity*
+SemanticSpatialIndex::entity(EntityId id) const noexcept {
     const auto match = indexById_.find(id.value);
     return match == indexById_.end() ? nullptr : &entities_[match->second];
 }
@@ -155,7 +156,8 @@ Result<std::vector<EntityId>> SemanticSpatialIndex::intersecting(const Bounds& r
     if (!validBounds(region))
         return fail(ErrorCode::invalidArgument, "Spatial intersection region is invalid");
     if (maximumResults == 0)
-        return fail(ErrorCode::invalidArgument, "Spatial intersection result budget cannot be zero");
+        return fail(ErrorCode::invalidArgument,
+                    "Spatial intersection result budget cannot be zero");
 
     std::vector<EntityId> result;
     const auto append = [&](const IndexedEntity& candidate) {

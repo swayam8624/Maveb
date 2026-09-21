@@ -50,9 +50,9 @@ namespace {
 }
 
 [[nodiscard]] Result<std::int32_t> checkedCellCoordinate(float coordinate, float cellSizeMeters,
-                                                          std::int64_t halo) {
-    const double cell = std::floor(static_cast<double>(coordinate) /
-                                   static_cast<double>(cellSizeMeters));
+                                                         std::int64_t halo) {
+    const double cell =
+        std::floor(static_cast<double>(coordinate) / static_cast<double>(cellSizeMeters));
     const double expanded = cell + static_cast<double>(halo);
     if (expanded < static_cast<double>(std::numeric_limits<std::int32_t>::min()) ||
         expanded > static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
@@ -109,8 +109,8 @@ Result<void> addDirtyBounds(std::map<RegionKey, RegionUpdate>& regions, const Bo
                     regions.emplace(key, std::move(update));
                 } else {
                     match->second.causes |= causes;
-                    if (std::find(match->second.entities.begin(), match->second.entities.end(), entity) ==
-                        match->second.entities.end()) {
+                    if (std::find(match->second.entities.begin(), match->second.entities.end(),
+                                  entity) == match->second.entities.end()) {
                         match->second.entities.push_back(entity);
                     }
                 }
@@ -123,12 +123,12 @@ Result<void> addDirtyBounds(std::map<RegionKey, RegionUpdate>& regions, const Bo
 } // namespace
 
 Result<SelectiveUpdatePlan> planSelectiveUpdates(const WorldSnapshot& before,
-                                                  const WorldSnapshot& after,
-                                                  const WorldDiff& diff,
-                                                  SelectiveUpdatePolicy policy) {
+                                                 const WorldSnapshot& after, const WorldDiff& diff,
+                                                 SelectiveUpdatePolicy policy) {
     if (!validPolicy(policy)) {
-        return fail(ErrorCode::invalidArgument,
-                    "Selective update policy requires a finite positive cell size and region budget");
+        return fail(
+            ErrorCode::invalidArgument,
+            "Selective update policy requires a finite positive cell size and region budget");
     }
     if (auto result = validateSnapshot(before); !result)
         return std::unexpected(result.error());
@@ -169,7 +169,8 @@ Result<SelectiveUpdatePlan> planSelectiveUpdates(const WorldSnapshot& before,
         Bounds affected;
         if (hasFlag(delta.flags, ChangeFlag::added)) {
             if (!afterEntity)
-                return fail(ErrorCode::corruptData, "Added Reality Diff entity is missing after state");
+                return fail(ErrorCode::corruptData,
+                            "Added Reality Diff entity is missing after state");
             affected = afterEntity->worldBounds;
         } else if (hasFlag(delta.flags, ChangeFlag::removed)) {
             if (!beforeEntity)

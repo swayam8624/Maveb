@@ -818,7 +818,8 @@ int main() {
     camera.debugOptions.x = 2;
     MTL::CommandBuffer* debugCommand = queue->commandBuffer();
     if (!debugCommand ||
-        !(*gaussianPipeline)->encode(debugCommand, camera, color.get(), depth.get(), ids.get(), 1)) {
+        !(*gaussianPipeline)
+             ->encode(debugCommand, camera, color.get(), depth.get(), ids.get(), 1)) {
         std::cerr << "Unable to encode Gaussian source-ID debug view\n";
         pool->release();
         return 1;
@@ -965,15 +966,16 @@ int main() {
         auto captureDesc = aether::metal::adopt(MTL::CaptureDescriptor::alloc()->init());
         captureDesc->setCaptureObject(device.get());
         captureDesc->setDestination(MTL::CaptureDestinationGPUTraceDocument);
-        
-        const std::filesystem::path tracePath = std::filesystem::path(AETHER_TEST_ARTIFACT_DIR) / "RendererValidation.gputrace";
+
+        const std::filesystem::path tracePath =
+            std::filesystem::path(AETHER_TEST_ARTIFACT_DIR) / "RendererValidation.gputrace";
         std::error_code ec;
         std::filesystem::remove_all(tracePath, ec);
-        
+
         NS::String* pathString = NS::String::string(tracePath.c_str(), NS::UTF8StringEncoding);
         NS::URL* traceURL = NS::URL::fileURLWithPath(pathString);
         captureDesc->setOutputURL(traceURL);
-        
+
         NS::Error* captureError = nullptr;
         if (captureManager->supportsDestination(MTL::CaptureDestinationGPUTraceDocument)) {
             std::cout << "Capturing API-validation GPU frame to " << tracePath << "...\n";
@@ -981,22 +983,25 @@ int main() {
                 // Submit one offscreen frame to capture all named passes and resources
                 testView->setDrawableSize(CGSizeMake(320.0, 180.0));
                 (*renderer)->draw(testView.get());
-                
+
                 // Wait for the frame to complete
-                for (std::uint32_t attempt = 0; attempt < 100 && (*renderer)->statistics().completedFrames < 3; ++attempt) {
+                for (std::uint32_t attempt = 0;
+                     attempt < 100 && (*renderer)->statistics().completedFrames < 3; ++attempt) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
-                
+
                 captureManager->stopCapture();
                 std::cout << "API-validation GPU frame capture completed.\n";
             } else {
-                const std::string desc = captureError ? captureError->localizedDescription()->utf8String() : "unknown";
+                const std::string desc =
+                    captureError ? captureError->localizedDescription()->utf8String() : "unknown";
                 std::cerr << "MTLCaptureManager startCapture failed: " << desc << "\n";
                 pool->release();
                 return 1;
             }
         } else {
-            std::cout << "GPUTraceDocument capture destination not supported on this configuration.\n";
+            std::cout
+                << "GPUTraceDocument capture destination not supported on this configuration.\n";
         }
     }
 

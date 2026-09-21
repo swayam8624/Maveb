@@ -5,8 +5,8 @@
 namespace aether::world {
 
 Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
-                                                        std::vector<EntityState> observations,
-                                                        const WorldIngestPolicy& policy) {
+                                                       std::vector<EntityState> observations,
+                                                       const WorldIngestPolicy& policy) {
     if (timestamp == 0) {
         return fail(ErrorCode::invalidArgument,
                     "Persistent world observation timestamp cannot be zero");
@@ -106,7 +106,8 @@ Result<WorldRevertResult> PersistentWorldModel::revertTo(std::uint64_t sourceRev
     auto diff = diffSnapshots(*previous, candidate, policy.diff);
     if (!diff)
         return std::unexpected(diff.error());
-    const std::size_t changed = diff->summary.added + diff->summary.removed + diff->summary.modified;
+    const std::size_t changed =
+        diff->summary.added + diff->summary.removed + diff->summary.modified;
     if (changed == 0) {
         return fail(ErrorCode::invalidArgument,
                     "Persistent world restore would create an identical no-op revision");

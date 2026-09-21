@@ -71,9 +71,8 @@ rangeFor(const std::vector<Entry>& entries, const Key& key) {
     dirty.reserve(wanted);
     // Deterministic evenly-spaced sampling avoids depending on hash/container order.
     for (std::size_t i = 0; i < wanted; ++i) {
-        const std::size_t at = std::min<std::size_t>(
-            occupied.size() - 1,
-            (i * occupied.size()) / wanted);
+        const std::size_t at =
+            std::min<std::size_t>(occupied.size() - 1, (i * occupied.size()) / wanted);
         dirty.push_back(occupied[at]);
     }
     std::sort(dirty.begin(), dirty.end());
@@ -103,11 +102,10 @@ rangeFor(const std::vector<Entry>& entries, const Key& key) {
     return delta;
 }
 
-[[nodiscard]] std::vector<std::uint32_t>
-queryOverlay(const std::vector<Entry>& base,
-             const std::vector<Entry>& delta,
-             std::span<const std::uint8_t> movedFromBase,
-             std::span<const Key> dirty) {
+[[nodiscard]] std::vector<std::uint32_t> queryOverlay(const std::vector<Entry>& base,
+                                                      const std::vector<Entry>& delta,
+                                                      std::span<const std::uint8_t> movedFromBase,
+                                                      std::span<const Key> dirty) {
     std::vector<std::uint32_t> result;
     for (const Key& key : dirty) {
         const auto [bf, bl] = rangeFor(base, key);
@@ -164,12 +162,12 @@ int main() try {
               << "  \"schemaVersion\": 1,\n"
               << "  \"experiment\": \"gaussian-index-overlay-v3\",\n"
               << "  \"status\": \"synthetic-linux-x86-probe\",\n"
-              << "  \"warning\": \"Not Apple-silicon, not Metal, and not a production scene benchmark. Timings are structural evidence only.\",\n"
+              << "  \"warning\": \"Not Apple-silicon, not Metal, and not a production scene "
+                 "benchmark. Timings are structural evidence only.\",\n"
               << "  \"configuration\": {\"gaussians\": " << gaussianCount
               << ", \"cellCoordinateExtent\": " << coordinateExtent
               << ", \"dirtyOccupiedCellFraction\": " << dirtyFraction
-              << ", \"queryRepeats\": " << queryRepeats
-              << ", \"seed\": " << seed << "},\n"
+              << ", \"queryRepeats\": " << queryRepeats << ", \"seed\": " << seed << "},\n"
               << "  \"baseBuildMs\": " << ms(baseBuildStart, baseBuildEnd) << ",\n"
               << "  \"baseStorageBytes\": " << base.capacity() * sizeof(Entry) << ",\n"
               << "  \"entryBytes\": " << sizeof(Entry) << ",\n"
@@ -231,10 +229,9 @@ int main() try {
             return EXIT_FAILURE;
         }
 
-        const std::size_t overlayStorage =
-            base.capacity() * sizeof(Entry) +
-            delta.capacity() * sizeof(Entry) +
-            moved.capacity() * sizeof(std::uint8_t);
+        const std::size_t overlayStorage = base.capacity() * sizeof(Entry) +
+                                           delta.capacity() * sizeof(Entry) +
+                                           moved.capacity() * sizeof(std::uint8_t);
         const std::size_t oracleStorage = oracle.capacity() * sizeof(Entry);
 
         std::cout << "    {\"changedFraction\": " << fraction

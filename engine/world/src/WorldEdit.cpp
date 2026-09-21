@@ -13,10 +13,10 @@ namespace {
 }
 
 [[nodiscard]] bool hasNonRemovalFields(const EntityPatch& patch) noexcept {
-    return patch.name.has_value() || patch.semanticLabel.has_value() || patch.transform.has_value() ||
-           patch.worldBounds.has_value() || patch.representation.has_value() ||
-           patch.geometrySignature.has_value() || patch.appearanceSignature.has_value() ||
-           patch.confidence.has_value();
+    return patch.name.has_value() || patch.semanticLabel.has_value() ||
+           patch.transform.has_value() || patch.worldBounds.has_value() ||
+           patch.representation.has_value() || patch.geometrySignature.has_value() ||
+           patch.appearanceSignature.has_value() || patch.confidence.has_value();
 }
 
 } // namespace
@@ -44,9 +44,11 @@ Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous, Timestam
     patchedIds.reserve(patches.size());
     for (const EntityPatch& patch : patches) {
         if (!patch.id.valid())
-            return fail(ErrorCode::invalidArgument, "Persistent world edit entity ID cannot be zero");
+            return fail(ErrorCode::invalidArgument,
+                        "Persistent world edit entity ID cannot be zero");
         if (!patchedIds.insert(patch.id.value).second) {
-            return fail(ErrorCode::invalidArgument, "Persistent world edit contains duplicate entity ID",
+            return fail(ErrorCode::invalidArgument,
+                        "Persistent world edit contains duplicate entity ID",
                         std::to_string(patch.id.value));
         }
         if (patch.remove && hasNonRemovalFields(patch)) {
@@ -55,10 +57,9 @@ Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous, Timestam
                         std::to_string(patch.id.value));
         }
 
-        const auto match = std::find_if(result.candidate.entities.begin(), result.candidate.entities.end(),
-                                        [&patch](const EntityState& entity) {
-                                            return entity.id == patch.id;
-                                        });
+        const auto match =
+            std::find_if(result.candidate.entities.begin(), result.candidate.entities.end(),
+                         [&patch](const EntityState& entity) { return entity.id == patch.id; });
         if (match == result.candidate.entities.end()) {
             return fail(ErrorCode::notFound, "Persistent world edit entity was not found",
                         std::to_string(patch.id.value));
@@ -106,9 +107,11 @@ Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous, Timestam
     auto diff = diffSnapshots(previous, result.candidate, policy.diff);
     if (!diff)
         return std::unexpected(diff.error());
-    const std::size_t changed = diff->summary.added + diff->summary.removed + diff->summary.modified;
+    const std::size_t changed =
+        diff->summary.added + diff->summary.removed + diff->summary.modified;
     if (changed == 0)
-        return fail(ErrorCode::invalidArgument, "Persistent world edit contains no effective changes");
+        return fail(ErrorCode::invalidArgument,
+                    "Persistent world edit contains no effective changes");
 
     auto selectiveUpdate =
         planSelectiveUpdates(previous, result.candidate, *diff, policy.selectiveUpdate);

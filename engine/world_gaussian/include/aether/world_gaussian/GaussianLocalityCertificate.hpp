@@ -35,9 +35,9 @@ struct GaussianTailLocalityCertificate final {
 ///
 /// This is a density-field certificate, not yet a rendered RGB/transmittance
 /// certificate.
-[[nodiscard]] Result<GaussianTailLocalityCertificate> certifyGaussianDensityLocality(
-    std::span<const gaussian::Gaussian> beforeChanged,
-    std::span<const gaussian::Gaussian> afterChanged,
-    const world::Bounds& editVolume);
+[[nodiscard]] Result<GaussianTailLocalityCertificate>
+certifyGaussianDensityLocality(std::span<const gaussian::Gaussian> beforeChanged,
+                               std::span<const gaussian::Gaussian> afterChanged,
+                               const world::Bounds& editVolume);
 
 } // namespace aether::world_gaussian

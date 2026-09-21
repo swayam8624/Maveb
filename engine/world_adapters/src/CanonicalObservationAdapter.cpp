@@ -66,9 +66,9 @@ struct LocalBounds final {
 
 [[nodiscard]] world::Bounds transformedBounds(const LocalBounds& local, simd_float4x4 transform) {
     world::Bounds result;
-    result.minimum = simd_float3{std::numeric_limits<float>::infinity(),
-                                 std::numeric_limits<float>::infinity(),
-                                 std::numeric_limits<float>::infinity()};
+    result.minimum =
+        simd_float3{std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity(),
+                    std::numeric_limits<float>::infinity()};
     result.maximum = -result.minimum;
 
     for (std::uint32_t corner = 0; corner < 8; ++corner) {
@@ -77,8 +77,8 @@ struct LocalBounds final {
             (corner & 2U) != 0 ? local.maximum.y : local.minimum.y,
             (corner & 4U) != 0 ? local.maximum.z : local.minimum.z,
         };
-        const simd_float4 worldPoint = simd_mul(
-            transform, simd_float4{localPoint.x, localPoint.y, localPoint.z, 1.0F});
+        const simd_float4 worldPoint =
+            simd_mul(transform, simd_float4{localPoint.x, localPoint.y, localPoint.z, 1.0F});
         const simd_float3 point{worldPoint.x, worldPoint.y, worldPoint.z};
         result.minimum = simd_min(result.minimum, point);
         result.maximum = simd_max(result.maximum, point);
@@ -131,7 +131,7 @@ void addTextureSignature(StableHash& hash, const mesh::MeshAsset& asset,
 }
 
 [[nodiscard]] std::uint64_t appearanceSignature(const mesh::MeshAsset& asset,
-                                                 const mesh::MeshPrimitive& primitive) noexcept {
+                                                const mesh::MeshPrimitive& primitive) noexcept {
     StableHash hash;
     if (primitive.materialIndex < asset.materials.size()) {
         const mesh::PbrMaterial& material = asset.materials[primitive.materialIndex];
@@ -202,8 +202,7 @@ void addTextureSignature(StableHash& hash, const mesh::MeshAsset& asset,
 }
 
 [[nodiscard]] std::string instanceName(const mesh::MeshInstance& instance,
-                                       const mesh::MeshPrimitive& primitive,
-                                       std::size_t index) {
+                                       const mesh::MeshPrimitive& primitive, std::size_t index) {
     if (!instance.name.empty())
         return instance.name;
     if (!primitive.name.empty())
@@ -215,7 +214,8 @@ void addTextureSignature(StableHash& hash, const mesh::MeshAsset& asset,
 
 Result<std::vector<world::EntityState>>
 observationsFromCanonicalAsset(const canonical::CanonicalAssetPayload& asset,
-                               world::TimestampNs timestamp, const CanonicalObservationConfig& config) {
+                               world::TimestampNs timestamp,
+                               const CanonicalObservationConfig& config) {
     if (timestamp == 0)
         return fail(ErrorCode::invalidArgument, "Canonical observation timestamp cannot be zero");
 
@@ -263,8 +263,8 @@ observationsFromCanonicalAsset(const canonical::CanonicalAssetPayload& asset,
         observation.name = instanceName(instance, primitive, index);
         observation.semanticLabel = config.semanticLabel;
         observation.transform = *transform;
-        observation.worldBounds = transformedBounds(localBounds[instance.primitiveIndex],
-                                                    instance.worldTransform);
+        observation.worldBounds =
+            transformedBounds(localBounds[instance.primitiveIndex], instance.worldTransform);
         observation.representation = world::RepresentationKind::mesh;
         observation.geometrySignature = geometrySignatures[instance.primitiveIndex];
         observation.appearanceSignature = appearanceSignatures[instance.primitiveIndex];

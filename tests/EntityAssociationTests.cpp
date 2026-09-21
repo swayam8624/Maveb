@@ -33,8 +33,7 @@ EntityState entity(std::uint64_t id, std::string name, std::string semantic, flo
     result.name = std::move(name);
     result.semanticLabel = std::move(semantic);
     result.transform.translation = {x, 0.0F, 0.0F};
-    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F},
-                                {x + 0.25F, 0.25F, 0.25F}};
+    result.worldBounds = Bounds{{x - 0.25F, -0.25F, -0.25F}, {x + 0.25F, 0.25F, 0.25F}};
     result.representation = RepresentationKind::hybrid;
     result.geometrySignature = geometrySignature;
     result.appearanceSignature = appearanceSignature;
@@ -114,7 +113,8 @@ void testSemanticMismatchDoesNotStealIdentity() {
     const EntityState* lamp = findByName(associated->snapshot, "Lamp");
     expect(lamp && lamp->id.value == 20,
            "nearby object with conflicting semantics must receive a new persistent ID");
-    expect(associated->reusedIds == 0, "semantic mismatch must not reuse prior identity by default");
+    expect(associated->reusedIds == 0,
+           "semantic mismatch must not reuse prior identity by default");
     expect(associated->createdIds == 1, "semantic mismatch must allocate one new identity");
     expect(associated->missingPreviousEntities == 1,
            "unobserved chair must remain missing rather than being relabeled as a lamp");
@@ -161,7 +161,6 @@ void testSpatialHashMatchesAcrossCellBoundary() {
            "cross-cell spatial association must retain the prior stable ID");
 }
 
-
 void testAbsenceEvidenceSeparatesUnknownFromRemoval() {
     WorldSnapshot previous;
     previous.timestamp = 100;
@@ -177,16 +176,13 @@ void testAbsenceEvidenceSeparatesUnknownFromRemoval() {
     };
 
     auto partial = aether::world::associateObservations(
-        previous, 200,
-        {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)},
-        3, preserveUnknown);
+        previous, 200, {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)}, 3, preserveUnknown);
     expect(partial.has_value(),
            "partial observation with explicit negative-evidence region must associate");
     if (!partial)
         return;
 
-    expect(partial->reusedIds == 1,
-           "visible desk must retain its persistent identity");
+    expect(partial->reusedIds == 1, "visible desk must retain its persistent identity");
     expect(partial->carriedForwardUnobservedEntities == 1,
            "hidden chair outside negative-evidence coverage must be carried forward");
     expect(partial->missingPreviousEntities == 0,
@@ -199,9 +195,7 @@ void testAbsenceEvidenceSeparatesUnknownFromRemoval() {
     confirmedAbsent.absenceEvidenceRegions.push_back(
         Bounds{{4.0F, -1.0F, -1.0F}, {6.0F, 1.0F, 1.0F}});
     auto removal = aether::world::associateObservations(
-        previous, 300,
-        {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)},
-        3, confirmedAbsent);
+        previous, 300, {entity(0, "Visible Desk", "desk", 0.01F, 10, 20, 0)}, 3, confirmedAbsent);
     expect(removal.has_value(),
            "negative evidence covering hidden chair must produce a valid removal candidate");
     if (!removal)
@@ -234,7 +228,8 @@ void testCandidateBudgetFailsClosed() {
     policy.maximumCandidatePairs = 1;
     const auto associated =
         aether::world::associateObservations(previous, 200, std::move(observations), 3, policy);
-    expect(!associated.has_value(), "association must fail when its explicit pair budget is exceeded");
+    expect(!associated.has_value(),
+           "association must fail when its explicit pair budget is exceeded");
     if (!associated) {
         expect(associated.error().code == ErrorCode::resourceExhausted,
                "candidate-pair budget failure must report resource exhaustion");

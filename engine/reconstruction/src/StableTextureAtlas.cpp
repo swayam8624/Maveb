@@ -6,14 +6,11 @@
 
 namespace aether::reconstruction {
 
-Result<StableTextureAtlasLayout>
-StableTextureAtlasLayout::create(StableTextureAtlasConfig config) {
-    if (config.atlasSize == 0 || config.slotCapacity == 0 ||
-        config.maximumAtlasPixels == 0 ||
+Result<StableTextureAtlasLayout> StableTextureAtlasLayout::create(StableTextureAtlasConfig config) {
+    if (config.atlasSize == 0 || config.slotCapacity == 0 || config.maximumAtlasPixels == 0 ||
         config.atlasSize > config.maximumAtlasPixels / config.atlasSize ||
         config.gutterPixels > config.atlasSize / 4) {
-        return fail(ErrorCode::invalidArgument,
-                    "Stable texture atlas configuration is invalid");
+        return fail(ErrorCode::invalidArgument, "Stable texture atlas configuration is invalid");
     }
 
     const double root = std::sqrt(static_cast<double>(config.slotCapacity));
@@ -23,12 +20,9 @@ StableTextureAtlasLayout::create(StableTextureAtlasConfig config) {
                     "Stable texture atlas slot capacity is too large");
     }
 
-    const std::size_t columns =
-        static_cast<std::size_t>(std::ceil(root));
-    const std::size_t rows =
-        (config.slotCapacity + columns - 1) / columns;
-    const std::size_t cell =
-        std::min(config.atlasSize / columns, config.atlasSize / rows);
+    const std::size_t columns = static_cast<std::size_t>(std::ceil(root));
+    const std::size_t rows = (config.slotCapacity + columns - 1) / columns;
+    const std::size_t cell = std::min(config.atlasSize / columns, config.atlasSize / rows);
 
     if (cell <= config.gutterPixels * 2 + 1) {
         return fail(ErrorCode::resourceExhausted,
@@ -38,8 +32,7 @@ StableTextureAtlasLayout::create(StableTextureAtlasConfig config) {
     return StableTextureAtlasLayout(config, columns, rows, cell, inner);
 }
 
-Result<StableTextureAtlasTile>
-StableTextureAtlasLayout::tile(std::size_t slot) const {
+Result<StableTextureAtlasTile> StableTextureAtlasLayout::tile(std::size_t slot) const {
     if (slot >= config_.slotCapacity) {
         return fail(ErrorCode::invalidArgument,
                     "Stable texture atlas slot is out of configured range");

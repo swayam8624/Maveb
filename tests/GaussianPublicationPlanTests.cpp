@@ -54,10 +54,10 @@ void testRejectsAmbiguousOrUnsafeInputs() {
            "out-of-range Gaussian ID must fail closed");
     expect(!aether::gaussian::planGaussianPublication({}, 100, 0).has_value(),
            "zero GPU record stride must fail closed");
-    expect(!aether::gaussian::planGaussianPublication(
-                {}, std::numeric_limits<std::size_t>::max(), 2)
-                .has_value(),
-           "full-buffer byte overflow must fail closed");
+    expect(
+        !aether::gaussian::planGaussianPublication({}, std::numeric_limits<std::size_t>::max(), 2)
+             .has_value(),
+        "full-buffer byte overflow must fail closed");
 }
 
 } // namespace

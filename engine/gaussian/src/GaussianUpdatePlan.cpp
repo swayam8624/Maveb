@@ -6,11 +6,12 @@
 
 namespace aether::gaussian {
 
-Result<GaussianPublicationPlan>
-planGaussianPublication(std::span<const std::uint32_t> indices, std::size_t recordCount,
-                        std::size_t recordBytes) {
+Result<GaussianPublicationPlan> planGaussianPublication(std::span<const std::uint32_t> indices,
+                                                        std::size_t recordCount,
+                                                        std::size_t recordBytes) {
     if (recordBytes == 0)
-        return fail(ErrorCode::invalidArgument, "Gaussian publication record size must be positive");
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian publication record size must be positive");
     if (recordCount > std::numeric_limits<std::size_t>::max() / recordBytes)
         return fail(ErrorCode::resourceExhausted, "Gaussian full-buffer byte count overflows");
 
@@ -23,12 +24,10 @@ planGaussianPublication(std::span<const std::uint32_t> indices, std::size_t reco
     std::sort(sorted.begin(), sorted.end());
 
     if (std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end()) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian publication indices must be unique");
+        return fail(ErrorCode::invalidArgument, "Gaussian publication indices must be unique");
     }
     if (static_cast<std::size_t>(sorted.back()) >= recordCount)
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian publication index is out of range");
+        return fail(ErrorCode::invalidArgument, "Gaussian publication index is out of range");
 
     result.touchedRecords = sorted.size();
     if (result.touchedRecords > std::numeric_limits<std::size_t>::max() / recordBytes)
@@ -43,8 +42,7 @@ planGaussianPublication(std::span<const std::uint32_t> indices, std::size_t reco
             previous = current;
             continue;
         }
-        result.ranges.push_back(
-            GaussianPublicationRange{first, previous - first + 1U});
+        result.ranges.push_back(GaussianPublicationRange{first, previous - first + 1U});
         first = current;
         previous = current;
     }

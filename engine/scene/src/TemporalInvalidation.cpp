@@ -22,19 +22,18 @@ namespace {
 
 } // namespace
 
-TemporalWorldBounds
-mergeTemporalWorldBounds(const TemporalWorldBounds& first,
-                         const TemporalWorldBounds& second) noexcept {
+TemporalWorldBounds mergeTemporalWorldBounds(const TemporalWorldBounds& first,
+                                             const TemporalWorldBounds& second) noexcept {
     return {
         .minimum = simd_min(first.minimum, second.minimum),
         .maximum = simd_max(first.maximum, second.maximum),
     };
 }
 
-Result<TemporalInvalidationPlan>
-planTemporalInvalidation(const TemporalWorldBounds& bounds, simd_float4x4 viewProjection,
-                         std::uint32_t width, std::uint32_t height,
-                         std::uint32_t expansionPixels) {
+Result<TemporalInvalidationPlan> planTemporalInvalidation(const TemporalWorldBounds& bounds,
+                                                          simd_float4x4 viewProjection,
+                                                          std::uint32_t width, std::uint32_t height,
+                                                          std::uint32_t expansionPixels) {
     if (width == 0 || height == 0)
         return fail(ErrorCode::invalidArgument, "Temporal invalidation viewport is empty");
     const bool invalidBounds = bounds.minimum.x > bounds.maximum.x ||
@@ -64,10 +63,10 @@ planTemporalInvalidation(const TemporalWorldBounds& bounds, simd_float4x4 viewPr
     float maximumV = -std::numeric_limits<float>::infinity();
 
     for (const simd_float3 corner : corners) {
-        const simd_float4 clip = simd_mul(
-            viewProjection, simd_float4{corner.x, corner.y, corner.z, 1.0F});
-        if (!std::isfinite(clip.x) || !std::isfinite(clip.y) ||
-            !std::isfinite(clip.w) || clip.w <= 1.0e-5F) {
+        const simd_float4 clip =
+            simd_mul(viewProjection, simd_float4{corner.x, corner.y, corner.z, 1.0F});
+        if (!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.w) ||
+            clip.w <= 1.0e-5F) {
             return TemporalInvalidationPlan{
                 .fullFrame = true,
                 .empty = false,
@@ -103,14 +102,12 @@ planTemporalInvalidation(const TemporalWorldBounds& bounds, simd_float4x4 viewPr
     maximumU = std::clamp(maximumU + expandU, 0.0F, 1.0F);
     maximumV = std::clamp(maximumV + expandV, 0.0F, 1.0F);
 
-    const auto firstX = static_cast<std::uint64_t>(
-        std::floor(minimumU * static_cast<float>(width)));
-    const auto firstY = static_cast<std::uint64_t>(
-        std::floor(minimumV * static_cast<float>(height)));
-    const auto lastX = static_cast<std::uint64_t>(
-        std::ceil(maximumU * static_cast<float>(width)));
-    const auto lastY = static_cast<std::uint64_t>(
-        std::ceil(maximumV * static_cast<float>(height)));
+    const auto firstX =
+        static_cast<std::uint64_t>(std::floor(minimumU * static_cast<float>(width)));
+    const auto firstY =
+        static_cast<std::uint64_t>(std::floor(minimumV * static_cast<float>(height)));
+    const auto lastX = static_cast<std::uint64_t>(std::ceil(maximumU * static_cast<float>(width)));
+    const auto lastY = static_cast<std::uint64_t>(std::ceil(maximumV * static_cast<float>(height)));
     const std::uint64_t invalidated =
         std::min<std::uint64_t>(lastX, width) - std::min<std::uint64_t>(firstX, width);
     const std::uint64_t invalidatedRows =

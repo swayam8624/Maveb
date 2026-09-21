@@ -163,9 +163,9 @@ struct Options final {
                                            const std::vector<RegionKey>& cells) {
     SelectiveUpdatePlan plan;
     plan.cellSizeMeters = options.cellSizeMeters;
-    const std::size_t dirtyCount = std::max<std::size_t>(
-        1, static_cast<std::size_t>(
-               std::ceil(static_cast<double>(cells.size()) * options.dirtyFraction)));
+    const std::size_t dirtyCount =
+        std::max<std::size_t>(1, static_cast<std::size_t>(std::ceil(
+                                     static_cast<double>(cells.size()) * options.dirtyFraction)));
     plan.dirtyRegions.reserve(dirtyCount);
     for (std::size_t index = 0; index < dirtyCount; ++index) {
         RegionUpdate update;
@@ -213,8 +213,8 @@ int main(int argc, char** argv) try {
         scanned = std::move(*scan);
 
         const auto indexedStart = Clock::now();
-        auto selected =
-            aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan, *spatialIndex);
+        auto selected = aether::world_gaussian::selectGaussiansForLocalUpdateIndexed(asset, plan,
+                                                                                     *spatialIndex);
         const auto indexedEnd = Clock::now();
         if (!selected) {
             std::cerr << selected.error().describe() << '\n';
@@ -243,9 +243,8 @@ int main(int argc, char** argv) try {
               << "\"indexedInspections\":" << indexed.inspectedGaussians << ','
               << "\"indexBuildMs\":" << elapsedMs(buildStart, buildEnd) << ','
               << "\"scanMeanMs\":" << scanTotalMs / static_cast<double>(options->repeats) << ','
-              << "\"indexedMeanMs\":"
-              << indexedTotalMs / static_cast<double>(options->repeats) << ','
-              << "\"repeats\":" << options->repeats << ','
+              << "\"indexedMeanMs\":" << indexedTotalMs / static_cast<double>(options->repeats)
+              << ',' << "\"repeats\":" << options->repeats << ','
               << "\"exactSelectionAgreement\":true"
               << "}\n";
     return EXIT_SUCCESS;

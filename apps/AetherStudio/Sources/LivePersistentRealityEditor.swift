@@ -61,7 +61,8 @@ private final class LivePersistentRealityModel: ObservableObject {
   @Published var revision: UInt64?
   @Published var ownership: LiveRealityOwnershipReport?
   @Published var lastEdit: LiveRealityEditReport?
-  @Published var status = "Open a persistent world archive, then import or restore its Gaussian field."
+  @Published var status =
+    "Open a persistent world archive, then import or restore its Gaussian field."
   @Published var errorMessage: String?
   @Published var isBusy = false
   @Published var gaussianStateLoaded = false
@@ -95,7 +96,8 @@ private final class LivePersistentRealityModel: ObservableObject {
     guard archiveURL != nil, !isBusy else { return }
     let panel = NSOpenPanel()
     panel.title = "Import Gaussian Field"
-    panel.message = "Choose the source-order 3D Gaussian PLY corresponding to this persistent world."
+    panel.message =
+      "Choose the source-order 3D Gaussian PLY corresponding to this persistent world."
     panel.canChooseDirectories = false
     panel.canChooseFiles = true
     panel.allowsMultipleSelection = false
@@ -114,7 +116,8 @@ private final class LivePersistentRealityModel: ObservableObject {
     if AetherPersistentLoadWorld(viewport, url, &bridgeError) {
       archiveURL = url
       refreshNativeState()
-      status = gaussianStateLoaded
+      status =
+        gaussianStateLoaded
         ? "Loaded live persistent revision \(revision ?? 0)"
         : "Loaded revision \(revision ?? 0). Import a Gaussian PLY to enable live captured-object edits."
     } else {
@@ -151,7 +154,8 @@ private final class LivePersistentRealityModel: ObservableObject {
     if AetherPersistentSaveState(viewport, &bridgeError) {
       status = "Persistent world, Gaussian field, and ownership saved"
     } else {
-      errorMessage = bridgeError?.localizedDescription ?? "Persistent visual state could not be saved."
+      errorMessage =
+        bridgeError?.localizedDescription ?? "Persistent visual state could not be saved."
       status = "Persistent save failed"
     }
     isBusy = false
@@ -173,8 +177,9 @@ private final class LivePersistentRealityModel: ObservableObject {
     errorMessage = nil
     status = "Committing World + Gaussian + Metal translation…"
     var bridgeError: NSError?
-    guard let data = AetherPersistentTranslateEntity(
-      viewport, selectedID, targetX, targetY, targetZ, timestamp, &bridgeError)
+    guard
+      let data = AetherPersistentTranslateEntity(
+        viewport, selectedID, targetX, targetY, targetZ, timestamp, &bridgeError)
     else {
       errorMessage = bridgeError?.localizedDescription ?? "Live persistent translation failed."
       status = "Live translation failed without committing a visual edit"
@@ -189,7 +194,8 @@ private final class LivePersistentRealityModel: ObservableObject {
       if report.persisted {
         status = "Revision \(report.revision) committed, rendered live, and persisted"
       } else {
-        errorMessage = report.persistenceError.isEmpty
+        errorMessage =
+          report.persistenceError.isEmpty
           ? "The edit is live in memory but persistent sidecar publication failed."
           : report.persistenceError
         status = "Revision \(report.revision) is live; save retry required"
@@ -314,8 +320,11 @@ struct LivePersistentRealityEditor: View {
           .controlSize(.small)
       }
       Button("Open World…", systemImage: "folder", action: model.chooseWorldArchive)
-      Button("Import PLY…", systemImage: "point.3.connected.trianglepath.dotted", action: model.chooseGaussianPLY)
-        .disabled(model.archiveURL == nil || model.isBusy)
+      Button(
+        "Import PLY…", systemImage: "point.3.connected.trianglepath.dotted",
+        action: model.chooseGaussianPLY
+      )
+      .disabled(model.archiveURL == nil || model.isBusy)
       Button("Save", systemImage: "square.and.arrow.down", action: model.save)
         .disabled(!model.gaussianStateLoaded || model.isBusy)
     }
@@ -372,7 +381,8 @@ struct LivePersistentRealityEditor: View {
             ContentUnavailableView(
               "Select an Entity",
               systemImage: "cursorarrow.click",
-              description: Text("Choose a stable entity whose owned Gaussian field you want to move."))
+              description: Text(
+                "Choose a stable entity whose owned Gaussian field you want to move."))
           }
         }
         .padding(14)
@@ -404,9 +414,11 @@ struct LivePersistentRealityEditor: View {
         }
         if let coverage = ownership.coverage {
           ProgressView(value: coverage)
-          Text("\(coverage.formatted(.percent.precision(.fractionLength(1)))) stable-entity ownership coverage")
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+          Text(
+            "\(coverage.formatted(.percent.precision(.fractionLength(1)))) stable-entity ownership coverage"
+          )
+          .font(.caption2)
+          .foregroundStyle(.secondary)
         }
       } else {
         Text("Import a Gaussian PLY to create persistent entity ownership.")
@@ -423,8 +435,9 @@ struct LivePersistentRealityEditor: View {
         ContentUnavailableView(
           "No World Entities",
           systemImage: "cube",
-          description: Text("Open a persistent world archive first."))
-          .frame(minHeight: 180)
+          description: Text("Open a persistent world archive first.")
+        )
+        .frame(minHeight: 180)
       } else {
         List(selection: Binding(get: { model.selectedID }, set: model.select)) {
           ForEach(model.entities) { entity in

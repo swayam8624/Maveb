@@ -231,8 +231,7 @@ void testIncrementalHaloMeshing() {
                    .has_value(),
                "mesh-cell locality must use the same Marching-Cubes cell unit in both paths");
     }
-    const auto blockRatio =
-        locality.counter(aether::world::LocalityDomain::tsdfBlocksRead).ratio();
+    const auto blockRatio = locality.counter(aether::world::LocalityDomain::tsdfBlocksRead).ratio();
     expect(blockRatio.has_value() && *blockRatio == 1.0,
            "current snapshot-map construction must honestly report globally scanning resident "
            "blocks");

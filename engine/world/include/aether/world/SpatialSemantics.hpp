@@ -59,9 +59,9 @@ class SemanticSpatialIndex final {
 
     /// Returns entities ordered by point-to-AABB distance and then stable ID.
     /// Empty semanticLabel means all entities; otherwise the semantic label must match exactly.
-    [[nodiscard]] Result<std::vector<SpatialHit>>
-    nearest(simd_float3 worldPoint, std::string_view semanticLabel = {},
-            SpatialQueryPolicy policy = {}) const;
+    [[nodiscard]] Result<std::vector<SpatialHit>> nearest(simd_float3 worldPoint,
+                                                          std::string_view semanticLabel = {},
+                                                          SpatialQueryPolicy policy = {}) const;
 
     /// Returns entities whose metric AABB intersects the supplied region.
     /// Empty semanticLabel means all entities.
@@ -71,7 +71,7 @@ class SemanticSpatialIndex final {
 
     /// Computes symmetric proximity/intersection and directional containment relations.
     [[nodiscard]] Result<SpatialRelations> relations(EntityId subject, EntityId reference,
-                                                      float nearDistanceMeters = 1.0F) const;
+                                                     float nearDistanceMeters = 1.0F) const;
 
   private:
     struct IndexedEntity final {

@@ -36,10 +36,10 @@ class GaussianRegionIndex final {
     static Result<GaussianRegionIndex> create(const gaussian::GaussianAsset& asset,
                                               float cellSizeMeters);
 
-    [[nodiscard]] Result<GaussianIndexedSelectionResult> select(
-        const world::SelectiveUpdatePlan& worldUpdate,
-        const GaussianEntityOwnership* ownership = nullptr,
-        GaussianLocalUpdatePolicy policy = {}) const;
+    [[nodiscard]] Result<GaussianIndexedSelectionResult>
+    select(const world::SelectiveUpdatePlan& worldUpdate,
+           const GaussianEntityOwnership* ownership = nullptr,
+           GaussianLocalUpdatePolicy policy = {}) const;
 
     [[nodiscard]] float cellSizeMeters() const noexcept {
         return cellSizeMeters_;

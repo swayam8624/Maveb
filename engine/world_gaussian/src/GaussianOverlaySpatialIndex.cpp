@@ -43,19 +43,15 @@ GaussianOverlaySpatialIndex::build(const gaussian::GaussianAsset& asset, float c
 }
 
 Result<world::RegionKey> GaussianOverlaySpatialIndex::regionKey(simd_float3 position) const {
-    if (!std::isfinite(position.x) || !std::isfinite(position.y) ||
-        !std::isfinite(position.z)) {
-        return fail(ErrorCode::corruptData,
-                    "Gaussian overlay index received non-finite position");
+    if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) {
+        return fail(ErrorCode::corruptData, "Gaussian overlay index received non-finite position");
     }
 
     const auto coordinate = [&](float value) -> Result<std::int32_t> {
         const double scaled =
             std::floor(static_cast<double>(value) / static_cast<double>(cellSizeMeters_));
-        constexpr double minimum =
-            static_cast<double>(std::numeric_limits<std::int32_t>::min());
-        constexpr double maximum =
-            static_cast<double>(std::numeric_limits<std::int32_t>::max());
+        constexpr double minimum = static_cast<double>(std::numeric_limits<std::int32_t>::min());
+        constexpr double maximum = static_cast<double>(std::numeric_limits<std::int32_t>::max());
         if (scaled < minimum || scaled > maximum) {
             return fail(ErrorCode::resourceExhausted,
                         "Gaussian overlay index coordinate exceeds int32 range");
@@ -92,8 +88,8 @@ Result<void> GaussianOverlaySpatialIndex::compact(const gaussian::GaussianAsset&
 
     for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
         const auto& primitive = asset.gaussians[index];
-        auto key = regionKey(simd_float3{primitive.position[0], primitive.position[1],
-                                         primitive.position[2]});
+        auto key = regionKey(
+            simd_float3{primitive.position[0], primitive.position[1], primitive.position[2]});
         if (!key)
             return std::unexpected(key.error());
         nextBase.push_back(Entry{*key, static_cast<std::uint32_t>(index)});
@@ -125,8 +121,7 @@ bool GaussianOverlaySpatialIndex::baseContains(world::RegionKey key,
 bool GaussianOverlaySpatialIndex::moved(std::uint32_t gaussianIndex) const noexcept {
     const std::size_t word = gaussianIndex / 64U;
     const std::size_t bit = gaussianIndex % 64U;
-    return word < movedBits_.size() &&
-           (movedBits_[word] & (std::uint64_t{1} << bit)) != 0;
+    return word < movedBits_.size() && (movedBits_[word] & (std::uint64_t{1} << bit)) != 0;
 }
 
 void GaussianOverlaySpatialIndex::setMoved(std::uint32_t gaussianIndex) noexcept {
@@ -140,8 +135,7 @@ Result<void>
 GaussianOverlaySpatialIndex::applyRelocations(std::span<const GaussianRelocation> relocations) {
     if (relocations.empty())
         return {};
-    if (primitiveCount_ >
-        static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+    if (primitiveCount_ > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
         return fail(ErrorCode::resourceExhausted,
                     "Gaussian overlay index primitive cardinality exceeds uint32 range");
     }
@@ -165,14 +159,14 @@ GaussianOverlaySpatialIndex::applyRelocations(std::span<const GaussianRelocation
             return std::unexpected(oldKey.error());
         if (!newKey)
             return std::unexpected(newKey.error());
-        updates.push_back(RelocationUpdate{
-            static_cast<std::uint32_t>(relocation.gaussianIndex), *oldKey, *newKey});
+        updates.push_back(RelocationUpdate{static_cast<std::uint32_t>(relocation.gaussianIndex),
+                                           *oldKey, *newKey});
     }
 
-    std::sort(updates.begin(), updates.end(), [](const RelocationUpdate& lhs,
-                                                 const RelocationUpdate& rhs) {
-        return lhs.gaussianIndex < rhs.gaussianIndex;
-    });
+    std::sort(updates.begin(), updates.end(),
+              [](const RelocationUpdate& lhs, const RelocationUpdate& rhs) {
+                  return lhs.gaussianIndex < rhs.gaussianIndex;
+              });
     for (std::size_t index = 1; index < updates.size(); ++index) {
         if (updates[index - 1].gaussianIndex == updates[index].gaussianIndex) {
             return fail(ErrorCode::invalidArgument,
@@ -181,11 +175,11 @@ GaussianOverlaySpatialIndex::applyRelocations(std::span<const GaussianRelocation
     }
 
     for (const RelocationUpdate& update : updates) {
-        const auto delta = std::lower_bound(
-            deltaByIndex_.begin(), deltaByIndex_.end(), update.gaussianIndex,
-            [](const DeltaByIndex& candidate, std::uint32_t wanted) {
-                return candidate.gaussianIndex < wanted;
-            });
+        const auto delta =
+            std::lower_bound(deltaByIndex_.begin(), deltaByIndex_.end(), update.gaussianIndex,
+                             [](const DeltaByIndex& candidate, std::uint32_t wanted) {
+                                 return candidate.gaussianIndex < wanted;
+                             });
 
         if (delta != deltaByIndex_.end() && delta->gaussianIndex == update.gaussianIndex) {
             if (!moved(update.gaussianIndex) || !sameKey(delta->key, update.oldKey)) {
@@ -263,12 +257,10 @@ GaussianOverlaySpatialIndex::applyRelocations(std::span<const GaussianRelocation
 }
 
 Result<GaussianOverlayRegionQueryStatistics>
-GaussianOverlaySpatialIndex::appendIndices(world::RegionKey key,
-                                           std::vector<std::size_t>& output,
+GaussianOverlaySpatialIndex::appendIndices(world::RegionKey key, std::vector<std::size_t>& output,
                                            std::size_t maximumOutputSize) const {
     if (maximumOutputSize == 0 || output.size() > maximumOutputSize) {
-        return fail(ErrorCode::invalidArgument,
-                    "Gaussian overlay query output budget is invalid");
+        return fail(ErrorCode::invalidArgument, "Gaussian overlay query output budget is invalid");
     }
 
     const Entry lower{key, 0};
@@ -288,8 +280,7 @@ GaussianOverlaySpatialIndex::appendIndices(world::RegionKey key,
         }
         ++appendCount;
     }
-    statistics.deltaEntriesVisited =
-        static_cast<std::size_t>(std::distance(deltaFirst, deltaLast));
+    statistics.deltaEntriesVisited = static_cast<std::size_t>(std::distance(deltaFirst, deltaLast));
     appendCount += statistics.deltaEntriesVisited;
 
     if (appendCount > maximumOutputSize - output.size()) {
@@ -316,21 +307,18 @@ GaussianOverlaySpatialIndex::appendIndices(world::RegionKey key,
 }
 
 GaussianOverlaySpatialIndexStatistics GaussianOverlaySpatialIndex::statistics() const noexcept {
-    const double fraction =
-        primitiveCount_ == 0
-            ? 0.0
-            : static_cast<double>(deltaByIndex_.size()) /
-                  static_cast<double>(primitiveCount_);
+    const double fraction = primitiveCount_ == 0 ? 0.0
+                                                 : static_cast<double>(deltaByIndex_.size()) /
+                                                       static_cast<double>(primitiveCount_);
     return {
         .primitiveCount = primitiveCount_,
         .baseEntries = baseByRegion_.size(),
         .deltaEntries = deltaByIndex_.size(),
         .movedPrimitives = deltaByIndex_.size(),
-        .lowerBoundStorageBytes =
-            baseByRegion_.capacity() * sizeof(Entry) +
-            deltaByIndex_.capacity() * sizeof(DeltaByIndex) +
-            deltaByRegion_.capacity() * sizeof(Entry) +
-            movedBits_.capacity() * sizeof(std::uint64_t),
+        .lowerBoundStorageBytes = baseByRegion_.capacity() * sizeof(Entry) +
+                                  deltaByIndex_.capacity() * sizeof(DeltaByIndex) +
+                                  deltaByRegion_.capacity() * sizeof(Entry) +
+                                  movedBits_.capacity() * sizeof(std::uint64_t),
         .compactionRecommended = fraction >= policy_.compactionFraction,
     };
 }

@@ -40,15 +40,15 @@ struct GaussianOverlayRegionQueryStatistics final {
 
 /// Compact exact spatial index for revision-local Gaussian updates.
 ///
-/// The immutable base stores one RegionKey/index pair per primitive in sorted order. Relocations are
-/// accumulated transactionally in two compact sorted delta views: one ordered by primitive index for
-/// update/consistency checks and one ordered by RegionKey for sparse lookup. A bitset suppresses stale
-/// base entries. This avoids rebuilding the million-entry base after every small world revision while
-/// keeping queries exact.
+/// The immutable base stores one RegionKey/index pair per primitive in sorted order. Relocations
+/// are accumulated transactionally in two compact sorted delta views: one ordered by primitive
+/// index for update/consistency checks and one ordered by RegionKey for sparse lookup. A bitset
+/// suppresses stale base entries. This avoids rebuilding the million-entry base after every small
+/// world revision while keeping queries exact.
 ///
-/// This v0 production probe intentionally supports same-cardinality relocation only. Birth/death and
-/// densification/pruning must either compact/rebuild from the authoritative GaussianAsset or use a
-/// future explicitly versioned extension; they never silently mutate cardinality here.
+/// This v0 production probe intentionally supports same-cardinality relocation only. Birth/death
+/// and densification/pruning must either compact/rebuild from the authoritative GaussianAsset or
+/// use a future explicitly versioned extension; they never silently mutate cardinality here.
 class GaussianOverlaySpatialIndex final {
   public:
     [[nodiscard]] static Result<GaussianOverlaySpatialIndex>
@@ -73,8 +73,12 @@ class GaussianOverlaySpatialIndex final {
     appendIndices(world::RegionKey key, std::vector<std::size_t>& output,
                   std::size_t maximumOutputSize) const;
 
-    [[nodiscard]] float cellSizeMeters() const noexcept { return cellSizeMeters_; }
-    [[nodiscard]] std::size_t primitiveCount() const noexcept { return primitiveCount_; }
+    [[nodiscard]] float cellSizeMeters() const noexcept {
+        return cellSizeMeters_;
+    }
+    [[nodiscard]] std::size_t primitiveCount() const noexcept {
+        return primitiveCount_;
+    }
     [[nodiscard]] GaussianOverlaySpatialIndexStatistics statistics() const noexcept;
 
   private:
@@ -97,7 +101,8 @@ class GaussianOverlaySpatialIndex final {
         : cellSizeMeters_(cellSizeMeters), policy_(policy) {}
 
     [[nodiscard]] Result<world::RegionKey> regionKey(simd_float3 position) const;
-    [[nodiscard]] bool baseContains(world::RegionKey key, std::uint32_t gaussianIndex) const noexcept;
+    [[nodiscard]] bool baseContains(world::RegionKey key,
+                                    std::uint32_t gaussianIndex) const noexcept;
     [[nodiscard]] bool moved(std::uint32_t gaussianIndex) const noexcept;
     void setMoved(std::uint32_t gaussianIndex) noexcept;
 

@@ -17,10 +17,9 @@ void expect(bool condition, const char* message) {
 }
 
 void testCompactVisibleRegion() {
-    aether::scene::TemporalWorldBounds bounds{{-0.1F, -0.1F, 0.2F},
-                                              {0.1F, 0.1F, 0.4F}};
-    auto plan = aether::scene::planTemporalInvalidation(
-        bounds, matrix_identity_float4x4, 1000, 1000, 0);
+    aether::scene::TemporalWorldBounds bounds{{-0.1F, -0.1F, 0.2F}, {0.1F, 0.1F, 0.4F}};
+    auto plan =
+        aether::scene::planTemporalInvalidation(bounds, matrix_identity_float4x4, 1000, 1000, 0);
     expect(plan.has_value(), "visible temporal invalidation plan must succeed");
     if (!plan)
         return;
@@ -31,10 +30,9 @@ void testCompactVisibleRegion() {
 }
 
 void testOffscreenRegionIsEmpty() {
-    aether::scene::TemporalWorldBounds bounds{{3.0F, 3.0F, 0.2F},
-                                              {4.0F, 4.0F, 0.4F}};
-    auto plan = aether::scene::planTemporalInvalidation(
-        bounds, matrix_identity_float4x4, 640, 480, 0);
+    aether::scene::TemporalWorldBounds bounds{{3.0F, 3.0F, 0.2F}, {4.0F, 4.0F, 0.4F}};
+    auto plan =
+        aether::scene::planTemporalInvalidation(bounds, matrix_identity_float4x4, 640, 480, 0);
     expect(plan.has_value() && plan->empty && plan->invalidatedPixels == 0,
            "fully off-screen bounds must preserve all temporal history");
 }
@@ -42,8 +40,7 @@ void testOffscreenRegionIsEmpty() {
 void testUnsafeProjectionFallsBackToFullFrame() {
     auto matrix = matrix_identity_float4x4;
     matrix.columns[3].w = -2.0F;
-    aether::scene::TemporalWorldBounds bounds{{-0.1F, -0.1F, -1.0F},
-                                              {0.1F, 0.1F, 1.0F}};
+    aether::scene::TemporalWorldBounds bounds{{-0.1F, -0.1F, -1.0F}, {0.1F, 0.1F, 1.0F}};
     auto plan = aether::scene::planTemporalInvalidation(bounds, matrix, 320, 200, 4);
     expect(plan.has_value() && plan->fullFrame,
            "unsafe camera-plane projection must fail safe to full-frame invalidation");
@@ -52,26 +49,21 @@ void testUnsafeProjectionFallsBackToFullFrame() {
 }
 
 void testDisjointPendingEditsUnionConservatively() {
-    const aether::scene::TemporalWorldBounds first{
-        {-2.0F, -1.0F, 1.0F}, {-1.0F, 0.0F, 2.0F}};
-    const aether::scene::TemporalWorldBounds second{
-        {3.0F, 2.0F, -4.0F}, {5.0F, 6.0F, -2.0F}};
+    const aether::scene::TemporalWorldBounds first{{-2.0F, -1.0F, 1.0F}, {-1.0F, 0.0F, 2.0F}};
+    const aether::scene::TemporalWorldBounds second{{3.0F, 2.0F, -4.0F}, {5.0F, 6.0F, -2.0F}};
     const auto merged = aether::scene::mergeTemporalWorldBounds(first, second);
-    expect(merged.minimum.x == -2.0F && merged.minimum.y == -1.0F &&
-               merged.minimum.z == -4.0F,
+    expect(merged.minimum.x == -2.0F && merged.minimum.y == -1.0F && merged.minimum.z == -4.0F,
            "temporal edit union must preserve the component-wise minimum");
-    expect(merged.maximum.x == 5.0F && merged.maximum.y == 6.0F &&
-               merged.maximum.z == 2.0F,
+    expect(merged.maximum.x == 5.0F && merged.maximum.y == 6.0F && merged.maximum.z == 2.0F,
            "temporal edit union must preserve the component-wise maximum");
 }
 
 void testExpansionIncreasesArea() {
-    aether::scene::TemporalWorldBounds bounds{{-0.2F, -0.2F, 0.2F},
-                                              {0.2F, 0.2F, 0.4F}};
-    auto tight = aether::scene::planTemporalInvalidation(
-        bounds, matrix_identity_float4x4, 800, 600, 0);
-    auto expanded = aether::scene::planTemporalInvalidation(
-        bounds, matrix_identity_float4x4, 800, 600, 8);
+    aether::scene::TemporalWorldBounds bounds{{-0.2F, -0.2F, 0.2F}, {0.2F, 0.2F, 0.4F}};
+    auto tight =
+        aether::scene::planTemporalInvalidation(bounds, matrix_identity_float4x4, 800, 600, 0);
+    auto expanded =
+        aether::scene::planTemporalInvalidation(bounds, matrix_identity_float4x4, 800, 600, 8);
     expect(tight.has_value() && expanded.has_value() &&
                expanded->invalidatedPixels > tight->invalidatedPixels,
            "safety expansion must conservatively increase invalidated area");

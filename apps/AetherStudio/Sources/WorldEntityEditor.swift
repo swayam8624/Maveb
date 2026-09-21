@@ -345,10 +345,11 @@ struct WorldEntityEditorWindow: View {
         Divider()
         Label(
           "Showing \(model.entities.count) of \(model.totalEntities)",
-          systemImage: "ellipsis.circle")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .padding(10)
+          systemImage: "ellipsis.circle"
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(10)
       }
     }
     .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 420)
@@ -373,8 +374,9 @@ struct WorldEntityEditorWindow: View {
           ContentUnavailableView(
             "Select an Entity",
             systemImage: "cursorarrow.click",
-            description: Text("Choose a stable persistent entity from the world list."))
-            .frame(maxWidth: .infinity, minHeight: 360)
+            description: Text("Choose a stable persistent entity from the world list.")
+          )
+          .frame(maxWidth: .infinity, minHeight: 360)
         }
       }
       .padding(24)
@@ -442,9 +444,11 @@ struct WorldEntityEditorWindow: View {
         TextField("Semantic label", text: $model.semanticLabel)
           .textFieldStyle(.roundedBorder)
         HStack {
-          Text("Current label: \(entity.semanticLabel.isEmpty ? "unlabeled" : entity.semanticLabel)")
-            .font(.caption)
-            .foregroundStyle(.secondary)
+          Text(
+            "Current label: \(entity.semanticLabel.isEmpty ? "unlabeled" : entity.semanticLabel)"
+          )
+          .font(.caption)
+          .foregroundStyle(.secondary)
           Spacer()
           Button("Commit Label", systemImage: "tag.fill", action: model.relabelSelected)
             .disabled(model.isBusy)
@@ -489,8 +493,9 @@ struct WorldEntityEditorWindow: View {
         Spacer()
         Button(
           "Remove Entity", systemImage: "trash", role: .destructive,
-          action: model.removeSelected)
-          .disabled(model.isBusy)
+          action: model.removeSelected
+        )
+        .disabled(model.isBusy)
       }
     }
   }

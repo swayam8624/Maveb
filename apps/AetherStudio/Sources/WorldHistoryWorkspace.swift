@@ -120,7 +120,8 @@ private final class WorldHistoryModel: ObservableObject {
             throw bridgeError ?? CocoaError(.fileWriteUnknown)
           }
         }.value
-        status = "Saved \(revisions.count) persistent world revision\(revisions.count == 1 ? "" : "s")"
+        status =
+          "Saved \(revisions.count) persistent world revision\(revisions.count == 1 ? "" : "s")"
       } catch {
         errorMessage = error.localizedDescription
         status = "World archive save failed"
@@ -140,8 +141,9 @@ private final class WorldHistoryModel: ObservableObject {
       do {
         let result = try await Task.detached(priority: .userInitiated) {
           var bridgeError: NSError?
-          guard let transactionData = AetherWorldIngestCanonical(
-            native.value, directory, timestamp, &bridgeError)
+          guard
+            let transactionData = AetherWorldIngestCanonical(
+              native.value, directory, timestamp, &bridgeError)
           else {
             throw bridgeError ?? CocoaError(.fileReadCorruptFile)
           }
@@ -157,7 +159,8 @@ private final class WorldHistoryModel: ObservableObject {
         }.value
         apply(result.0)
         latestIngest = result.1
-        status = autoSaveURL == nil
+        status =
+          autoSaveURL == nil
           ? "Committed revision \(result.1.revision) • unsaved"
           : "Committed and saved revision \(result.1.revision)"
       } catch {
@@ -330,9 +333,11 @@ struct WorldHistoryWorkspace: View {
         HStack(spacing: 10) {
           Button("Open World…", systemImage: "folder", action: openArchive)
             .disabled(model.isBusy)
-          Button("Ingest Canonical…", systemImage: "camera.metering.matrix", action: ingestCanonical)
-            .buttonStyle(.borderedProminent)
-            .disabled(model.isBusy)
+          Button(
+            "Ingest Canonical…", systemImage: "camera.metering.matrix", action: ingestCanonical
+          )
+          .buttonStyle(.borderedProminent)
+          .disabled(model.isBusy)
           Button("Save World As…", systemImage: "square.and.arrow.down", action: saveArchive)
             .disabled(model.isBusy || !model.hasWorld)
           Button("Refresh", systemImage: "arrow.clockwise", action: model.refresh)
@@ -422,9 +427,10 @@ struct WorldHistoryWorkspace: View {
             if diff.truncated == true {
               Label(
                 "Showing first \(diff.entities?.count ?? 0) of \(diff.totalEntityDeltas ?? 0)",
-                systemImage: "ellipsis.circle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                systemImage: "ellipsis.circle"
+              )
+              .font(.caption)
+              .foregroundStyle(.secondary)
             }
           }
 
@@ -438,9 +444,12 @@ struct WorldHistoryWorkspace: View {
               .foregroundStyle(.secondary)
           }
         } else {
-          Text(model.diff?.error ?? "Capture or author a second revision to compare reality across time.")
-            .font(.callout)
-            .foregroundStyle(.secondary)
+          Text(
+            model.diff?.error
+              ?? "Capture or author a second revision to compare reality across time."
+          )
+          .font(.callout)
+          .foregroundStyle(.secondary)
         }
       }
     }

@@ -30,8 +30,12 @@ class GaussianSpatialIndex final {
                                   simd_float3 newPosition);
 
     [[nodiscard]] std::span<const std::size_t> indices(world::RegionKey key) const noexcept;
-    [[nodiscard]] float cellSizeMeters() const noexcept { return cellSizeMeters_; }
-    [[nodiscard]] std::size_t primitiveCount() const noexcept { return primitiveCount_; }
+    [[nodiscard]] float cellSizeMeters() const noexcept {
+        return cellSizeMeters_;
+    }
+    [[nodiscard]] std::size_t primitiveCount() const noexcept {
+        return primitiveCount_;
+    }
     [[nodiscard]] Statistics statistics() const noexcept;
 
   private:

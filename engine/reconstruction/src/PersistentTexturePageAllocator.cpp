@@ -17,8 +17,7 @@ PersistentTexturePageAllocator::create(PersistentTexturePageConfig config) {
     return PersistentTexturePageAllocator(config);
 }
 
-Result<std::uint32_t>
-PersistentTexturePageAllocator::createPage(std::uint64_t localityKey) {
+Result<std::uint32_t> PersistentTexturePageAllocator::createPage(std::uint64_t localityKey) {
     if (pages_.size() >= config_.maximumPages)
         return fail(ErrorCode::resourceExhausted,
                     "Persistent texture page allocator exhausted configured pages");
@@ -85,8 +84,7 @@ Result<void> PersistentTexturePageAllocator::release(std::uint64_t patchId) {
         return fail(ErrorCode::notFound, "Persistent texture patch was not allocated");
 
     const auto location = entry->second.address;
-    if (location.page >= pages_.size() ||
-        location.slot >= pages_[location.page].slots.size()) {
+    if (location.page >= pages_.size() || location.slot >= pages_[location.page].slots.size()) {
         return fail(ErrorCode::corruptData,
                     "Persistent texture allocator entry points outside backing storage");
     }
@@ -121,8 +119,7 @@ PersistentTexturePageAllocator::dirtyPages(const std::vector<std::uint64_t>& pat
     return pages;
 }
 
-PersistentTexturePageStatistics
-PersistentTexturePageAllocator::statistics() const noexcept {
+PersistentTexturePageStatistics PersistentTexturePageAllocator::statistics() const noexcept {
     const std::size_t capacity = pages_.size() * config_.slotsPerPage;
     const std::size_t active = entries_.size();
     const std::size_t free = capacity >= active ? capacity - active : 0;
@@ -130,9 +127,8 @@ PersistentTexturePageAllocator::statistics() const noexcept {
         .pageCount = pages_.size(),
         .activeSlots = active,
         .freeSlots = free,
-        .fragmentation = capacity == 0 ? 0.0
-                                      : static_cast<double>(free) /
-                                            static_cast<double>(capacity),
+        .fragmentation =
+            capacity == 0 ? 0.0 : static_cast<double>(free) / static_cast<double>(capacity),
     };
 }
 
