@@ -28,6 +28,9 @@ using aether::gaussian::Gaussian;
 using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
 using Pixel = std::array<float, 4>;
+using Pixels = Pixels;
+using Path = std::filesystem::path;
+using WriteResult = aether::Result<void>;
 
 struct ImageExtent final {
     std::size_t width{};
@@ -316,8 +319,7 @@ template <std::size_t N>
     return static_cast<unsigned char>(std::lround(clamped * 255.0));
 }
 
-[[nodiscard]] aether::Result<void> writePpm(const std::filesystem::path& path, ImageExtent extent,
-                                             const std::vector<Pixel>& colors) {
+[[nodiscard]] WriteResult writePpm(const Path& path, ImageExtent extent, const Pixels& colors) {
     if (colors.size() != extent.width * extent.height)
         return aether::fail(aether::ErrorCode::invalidArgument,
                             "PPM color cardinality does not match image dimensions");
@@ -557,10 +559,10 @@ int main(int argc, char** argv) try {
 
     if (!options->visualOutputDir.empty()) {
         const std::filesystem::path visualRoot = options->visualOutputDir;
-        std::vector<Pixel> repairImage(oldImage->color.size());
-        std::vector<Pixel> supportHeat(oldImage->color.size());
-        std::vector<Pixel> effectHeat(oldImage->color.size());
-        std::vector<Pixel> residualHeat(oldImage->color.size());
+        Pixels repairImage(oldImage->color.size());
+        Pixels supportHeat(oldImage->color.size());
+        Pixels effectHeat(oldImage->color.size());
+        Pixels residualHeat(oldImage->color.size());
         for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
             const double bound = certificate->rgbLInfBounds[pixel];
             const bool repaired = bound > 0.0;
@@ -577,7 +579,7 @@ int main(int argc, char** argv) try {
             residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
         }
 
-        const std::array<std::pair<std::string_view, const std::vector<Pixel>*>, 6> images{{
+        const std::array<std::pair<std::string_view, const Pixels*>, 6> images{{
             {"before.ppm", &oldImage->color},
             {"full-after.ppm", &newImage->color},
             {"selected-repair.ppm", &repairImage},
