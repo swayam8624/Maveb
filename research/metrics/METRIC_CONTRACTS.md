@@ -1,6 +1,6 @@
 # MAVEB Research Metric Contracts
 
-**Frozen:** 2026-09-20  
+**Frozen:** 2026-09-20
 These definitions exist before medium/full experiments so later results cannot redefine success post hoc.
 
 ## 1. Update Locality Ratio (ULR)
