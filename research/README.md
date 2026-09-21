@@ -169,11 +169,13 @@ Fixtures and synthetic matrices remain implementation-validation evidence; the f
 1. [CBRC architecture and operator guide](../docs/research/CBRC.md)
 2. [Implementation status](design/CBRC_IMPLEMENTATION_STATUS.md)
 3. [Limitations and threat model](design/CBRC_LIMITATIONS.md)
-4. [Frozen paper claim ledger](results/CBRC_CLAIM_LEDGER_2026-09-21.md)
-5. [Cross-representation validation figure](results/F12_representation_comparison_2026-09-21.svg)
-6. [Experiment runbook](results/CBRC_EXPERIMENT_RUNBOOK.md)
-7. [Result schema](results/CBRC_RESULT_SCHEMA.md)
-8. [Schema/versioning policy](schema/README.md)
+4. [Canonical evidence freeze](results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
+5. [Machine-readable evidence manifest](results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json)
+6. [Frozen paper claim ledger](results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+7. [Cross-representation validation figure](results/F12_representation_comparison_2026-09-21.svg)
+8. [Experiment runbook](results/CBRC_EXPERIMENT_RUNBOOK.md)
+9. [Result schema](results/CBRC_RESULT_SCHEMA.md)
+10. [Schema/versioning policy](schema/README.md)
 
 ## Research discipline
 
