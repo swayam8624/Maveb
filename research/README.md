@@ -158,7 +158,7 @@ flowchart TD
 
 **Claim boundary**
 
-The public v2.1 median calibrated heterogeneous work is about 0.349 of FULL (about 2.87× lower calibrated work). The trained-3DGS validation reports about 0.03495 of FULL in its native temporal/output work metric (about 28.6× lower native work). Neither number is an end-to-end wall-clock speedup.
+The public v2.1 median calibrated heterogeneous work is about 0.36953 of FULL (about 2.706× lower calibrated work). The trained-3DGS validation reports about 0.03495 of FULL in its native temporal/output work metric (about 28.6× lower native work). Neither number is an end-to-end wall-clock speedup.
 
 The campaigns also reveal a current bottleneck: Gaussian inspection is still near-full in the frozen end-to-end runs. The separate sparse-discovery sweep demonstrates exact selection with far fewer inspections, but that optimization is not silently folded into the measured campaign claim.
 
