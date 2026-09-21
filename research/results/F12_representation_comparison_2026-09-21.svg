@@ -9,7 +9,7 @@
 <text x="120" y="335" class="b">certified local cases: 44</text>
 <text x="120" y="375" class="b">FULL fallbacks: 16</text>
 <text x="120" y="415" class="b">certificate violations: 0</text>
-<text x="120" y="455" class="b">median calibrated work/FULL: 0.349</text>
+<text x="120" y="455" class="b">median calibrated work/FULL: 0.370</text>
 <text x="120" y="495" class="b">work unit: frozen calibrated ms</text>
 <text x="120" y="560" class="b">real COLMAP SfM → isotropic seeded Gaussians</text>
 <rect x="790" y="170" width="630" height="500" rx="24" class="card"/>
