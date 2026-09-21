@@ -81,15 +81,14 @@ struct Cluster final {
 }
 
 void usage() {
-    std::cout
-        << "Usage: maveb-seed-world --proxy proxy.ply --output world.aetherworld [options]\n"
-        << "Options:\n"
-        << "  --cell-size METRES       spatial ownership cell size (default: auto)\n"
-        << "  --gaussian-scale METRES  isotropic Gaussian sigma (default: auto)\n"
-        << "  --opacity VALUE          Gaussian opacity in (0,1), default 0.85\n"
-        << "  --timestamp NS           initial world timestamp, default 1000000000\n"
-        << "  --max-gaussians N        deterministic sample cap, default 1000000\n"
-        << "  --json                   machine-readable summary\n";
+    std::cout << "Usage: maveb-seed-world --proxy proxy.ply --output world.aetherworld [options]\n"
+              << "Options:\n"
+              << "  --cell-size METRES       spatial ownership cell size (default: auto)\n"
+              << "  --gaussian-scale METRES  isotropic Gaussian sigma (default: auto)\n"
+              << "  --opacity VALUE          Gaussian opacity in (0,1), default 0.85\n"
+              << "  --timestamp NS           initial world timestamp, default 1000000000\n"
+              << "  --max-gaussians N        deterministic sample cap, default 1000000\n"
+              << "  --json                   machine-readable summary\n";
 }
 
 [[nodiscard]] std::optional<Options> parseOptions(int argc, char** argv) {
@@ -265,14 +264,13 @@ int main(int argc, char** argv) try {
     const float cellSize = options->cellSizeMeters > 0.0F
                                ? options->cellSizeMeters
                                : std::clamp(diagonal / 7.0F, 0.03F, 1.0F);
-    const std::size_t sampleStride =
-        std::max<std::size_t>(1, (mesh->vertices.size() + options->maximumGaussians - 1) /
-                                    options->maximumGaussians);
-    const std::size_t sampledCount =
-        (mesh->vertices.size() + sampleStride - 1) / sampleStride;
-    const float densityScale = static_cast<float>(
-        0.65 * static_cast<double>(diagonal) /
-        std::cbrt(static_cast<double>(std::max<std::size_t>(sampledCount, 1))));
+    const std::size_t sampleStride = std::max<std::size_t>(
+        1, (mesh->vertices.size() + options->maximumGaussians - 1) / options->maximumGaussians);
+    const std::size_t sampledCount = (mesh->vertices.size() + sampleStride - 1) / sampleStride;
+    const float densityScale =
+        static_cast<float>(0.65 * static_cast<double>(diagonal) /
+                           std::cbrt(static_cast<double>(
+                               std::max<std::size_t>(sampledCount, 1))));
     const float gaussianScale =
         options->gaussianScaleMeters > 0.0F
             ? options->gaussianScaleMeters
@@ -394,8 +392,7 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
-    const auto gaussianPath =
-        std::filesystem::path(options->output.string() + ".gaussians.r1.bin");
+    const auto gaussianPath = std::filesystem::path(options->output.string() + ".gaussians.r1.bin");
     const auto ownershipPath =
         std::filesystem::path(options->output.string() + ".ownership.r1.bin");
     if (auto result = atomicWrite(gaussianPath, *gaussianBytes); !result) {
@@ -415,9 +412,8 @@ int main(int argc, char** argv) try {
                   << "\"sourceVertices\":" << mesh->vertices.size() << ','
                   << "\"gaussians\":" << asset.gaussians.size() << ','
                   << "\"entities\":" << timeline.latest()->entities.size() << ','
-                  << "\"sampleStride\":" << sampleStride << ','
-                  << "\"cellSizeMetres\":" << cellSize << ','
-                  << "\"gaussianScaleMetres\":" << gaussianScale << ','
+                  << "\"sampleStride\":" << sampleStride << ',' << "\"cellSizeMetres\":"
+                  << cellSize << ',' << "\"gaussianScaleMetres\":" << gaussianScale << ','
                   << "\"opacity\":" << options->opacity << ','
                   << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\""
                   << "}\n";
