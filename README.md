@@ -651,6 +651,97 @@ MAVEB_WORK_COST=/absolute/path/frozen-work-cost.json \
 
 The real campaign is never faked when those external scene archives/sidecars are absent; the script reports it as pending and still completes all repository-contained validation.
 
+### Paper-grade research campaign and SIGGRAPH visual package
+
+After the five-case public pilot is green, the repository can execute the larger
+frozen research package without private data:
+
+```bash
+./run_public_real_campaign_v2.sh
+```
+
+Campaign-v2 expands the public matrix to four RGB/SfM scenes and 15 deterministic
+revision templates per scene (60 frozen cases). The matrix spans edit magnitude,
+entity size, temporal history weight, epsilon, stable/unstable temporal history,
+and low/medium/high/adversarial coupling labels. Cases are copied and hashed
+before outcomes are read; the runner must not delete or retune cases after seeing
+results.
+
+The v2 runner also:
+
+- freezes an isolated hardware-derived millisecond cost model for
+  `gaussiansInspected`, `gaussiansUpdated`, `gpuPublicationBytes`, and
+  `temporalPixelsInvalidated`;
+- records measured campaign phase wall times separately from the calibrated cost
+  estimate;
+- sweeps scan-vs-index candidate discovery from 10k to 1M Gaussians;
+- evaluates a fixed held-out empirical changed-fraction heuristic;
+- runs FULL, EXACT, radius, fraction, empirical-scheduling and CBRC baselines plus
+  required ablations;
+- generates the standard paper CSV/SVG artifacts and a reproducible visual package;
+- audits evidence completeness without predicting venue acceptance.
+
+The calibrated work model is **not** automatically an end-to-end runtime
+speedup. Phase wall-clock measurements and the isolated cost model are reported
+as different quantities.
+
+For a secondary representation check, MAVEB can fetch a public trained 3DGS PLY,
+preserve its SH/opacity/anisotropic scale/rotation fields, seed persistent spatial
+ownership, and execute the same certificate/oracle contract:
+
+```bash
+./run_trained_3dgs_campaign.sh
+```
+
+This trained-3DGS path is deliberately labeled as spatial ownership rather than
+semantic segmentation. If its source does not provide trustworthy metric scale,
+the seeder canonicalizes scene scale and records that provenance.
+
+To execute the full research package in sequence:
+
+```bash
+./run_paper_grade_research.sh
+```
+
+Key outputs:
+
+```text
+build/public-real-v2/
+├── calibration/work-cost-model.json
+├── sparse-discovery/F11_sparse_discovery.svg
+├── frozen-inputs/campaign-v2.json
+├── frozen-inputs/campaign-v2-freeze.json
+├── campaign/campaign-rows.jsonl
+├── campaign/campaign-timings.jsonl
+├── campaign/empirical-heldout.json
+├── campaign/paper-artifacts/
+├── siggraph-visuals/
+│   ├── figures/F0_hero.png
+│   ├── figures/F0_system_overview.svg
+│   ├── figures/F9_evidence_dashboard.png
+│   ├── figures/F10_case_mosaic.png
+│   └── video/
+│       ├── MAVEB_teaser.gif
+│       └── MAVEB_supplementary_cases.gif
+└── PAPER_GRADE_STATUS.json
+
+build/trained-3dgs-campaign/
+├── source/TRAINED_3DGS_SOURCE.json
+├── campaign/
+├── siggraph-visuals/
+└── TRAINED_3DGS_STATUS.json
+
+build/paper-grade-final/
+├── representation/F12_representation_comparison.svg
+└── PAPER_GRADE_STATUS.json
+```
+
+The visual system never redraws or beautifies scientific evidence by hand.
+Before/FULL-after/selected-repair/support/effect/residual frames come from the
+independent oracle, while labels and numbers are read from frozen campaign
+artifacts. The complete figure/video storyboard is in
+`research/visualization/SIGGRAPH_VISUAL_STORYBOARD.md`.
+
 ### Zero-input public real campaign (recommended)
 
 MAVEB does **not** require LiDAR or private data for its canonical research path. The default
