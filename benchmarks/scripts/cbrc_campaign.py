@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 import statistics
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -231,6 +232,7 @@ def main() -> int:
     all_rows: list[dict[str, Any]] = []
     all_baselines: list[dict[str, Any]] = []
     parity_results: list[dict[str, Any]] = []
+    timing_results: list[dict[str, Any]] = []
     spatial_for_figure: Path | None = None
 
     bundle_script = Path(__file__).resolve().with_name("cbrc_evidence_bundle.py")
@@ -243,6 +245,7 @@ def main() -> int:
     for case in campaign["cases"]:
         case_id = str(case["id"])
         case_dir = root / "cases" / case_id
+        capture_start = time.perf_counter()
         if isinstance(case.get("revision"), dict):
             if args.revision_tool is None:
                 raise ValueError(
@@ -260,6 +263,7 @@ def main() -> int:
             native_planner = (
                 None if native_value is None else Path(native_value)
             )
+        capture_wall_ms = (time.perf_counter() - capture_start) * 1000.0
 
         command = [
             sys.executable,
@@ -278,7 +282,9 @@ def main() -> int:
             command.extend(
                 ["--native-planner-certificate", str(native_planner)]
             )
+        evidence_start = time.perf_counter()
         run(command)
+        evidence_wall_ms = (time.perf_counter() - evidence_start) * 1000.0
 
         manifest_payload = json.loads((case_dir / "replay-manifest.json").read_text())
         planner_graph = manifest_payload.get("output_planner_graph")
@@ -291,6 +297,7 @@ def main() -> int:
             json.dumps(planner_graph, indent=2, sort_keys=True) + "\n"
         )
         baseline_path = case_dir / "baselines.json"
+        baseline_start = time.perf_counter()
         run(
             [
                 sys.executable,
@@ -301,6 +308,7 @@ def main() -> int:
                 str(baseline_path),
             ]
         )
+        baseline_wall_ms = (time.perf_counter() - baseline_start) * 1000.0
         baseline_result = json.loads(baseline_path.read_text())
         baseline_result["case_id"] = case_id
         baseline_result["scene_id"] = str(case["scene_id"])
@@ -322,12 +330,32 @@ def main() -> int:
             json.dumps(row, indent=2, sort_keys=True) + "\n"
         )
         all_rows.append(row)
+        timing_results.append(
+            {
+                "case_id": case_id,
+                "scene_id": str(case["scene_id"]),
+                "fallback_full": bool(row.get("fallback_full", False)),
+                "capture_wall_ms": capture_wall_ms,
+                "evidence_wall_ms": evidence_wall_ms,
+                "baseline_wall_ms": baseline_wall_ms,
+                "case_wall_ms": capture_wall_ms + evidence_wall_ms + baseline_wall_ms,
+                "work_ratio_full": (
+                    float(row["planner_work"]) / float(row["full_work"])
+                    if float(row["full_work"]) > 0.0
+                    else None
+                ),
+            }
+        )
         if spatial_for_figure is None:
             spatial_for_figure = case_dir / "spatial-evidence.csv"
 
     rows_path = root / "campaign-rows.jsonl"
     rows_path.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_rows)
+    )
+    timings_path = root / "campaign-timings.jsonl"
+    timings_path.write_text(
+        "".join(json.dumps(item, sort_keys=True) + "\n" for item in timing_results)
     )
     baselines_path = root / "campaign-baselines.jsonl"
     baselines_path.write_text(
