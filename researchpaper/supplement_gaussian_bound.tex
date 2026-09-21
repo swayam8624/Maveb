@@ -1,0 +1,46 @@
+% Supplementary derivation for Proposition 1
+% Separate from the main paper page budget.
+
+\section*{Supplement: Gaussian finite-edit display bound}
+
+For one protected pixel, let $U$ be the unchanged ordered Gaussian support and
+$E$ the complete edited support. Effective per-splat alpha is assumed to be
+post-clamp/post-cutoff and to satisfy $\alpha_i\in[0,1]$. Per-channel emitted
+color after spherical-harmonic evaluation is bounded to an interval of width
+$C_{\mathrm{color}}$.
+
+For edited support $E$, define
+\[
+A(E)=1-\prod_{i\in E}(1-\alpha_i).
+\]
+This is the maximum fraction of final transmittance whose contribution can be
+replaced, attenuated, or revealed through the edited splats. Since any channel
+value differs by at most $C_{\mathrm{color}}$,
+\[
+\|R(U\cup E)-R(U)\|_\infty \le C_{\mathrm{color}}A(E).
+\]
+
+For before/after edited sets $E_0,E_1$, insert the common unchanged state $U$
+and apply the triangle inequality:
+\[
+\begin{aligned}
+\|R(U\cup E_0)-R(U\cup E_1)\|_\infty
+&\le \|R(U\cup E_0)-R(U)\|_\infty\\
+&\quad+\|R(U)-R(U\cup E_1)\|_\infty\\
+&\le C_{\mathrm{color}}\left(A(E_0)+A(E_1)\right).
+\end{aligned}
+\]
+The output channel itself cannot change by more than its admissible interval
+width, hence
+\[
+\|R(U\cup E_0)-R(U\cup E_1)\|_\infty
+\le C_{\mathrm{color}}\min\{1,A(E_0)+A(E_1)\}.
+\]
+
+Insertion and deletion are obtained by taking one edited set to be empty.
+Depth-order changes involving edited splats are included because the edited set
+must contain every Gaussian whose projected opacity, color, or order relation
+can change. Renderer behavior outside these bounded assumptions is not softened
+into the certificate; it becomes an exact dependency or triggers FULL fallback.
+The image-space certificate is the maximum of the pixel bound over the declared
+protected support.
