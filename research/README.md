@@ -128,7 +128,7 @@ flowchart TD
 | [`results/`](results/) | Result schema and reproducible runbook |
 | [`theory/`](theory/) | Layer-bound derivations and assumptions |
 
-## Implementation vs evidence
+## Implementation and measured evidence
 
 **Implementation complete**
 
@@ -141,27 +141,39 @@ flowchart TD
 - evidence bundle;
 - campaign runner;
 - baseline/ablation suite;
-- paper-artifact generation.
+- paper-artifact and SIGGRAPH-visual generation.
 
-**Experiment pending**
+**Frozen evidence complete for the v1 paper line**
 
-- real captured persistent-world archives;
-- real hardware work-cost calibration;
-- repeated real campaign;
-- measured effectivity / work savings;
-- local-to-FULL crossover statistics;
-- final publication claims.
+- public v2.1 matrix: 60 revisions across four public RGB/SfM scenes;
+- 44 certified-local selections and 16 automatic FULL fallbacks;
+- zero observed certificate violations and 60/60 native↔Python planner parity;
+- 56/60 source edits exceed the protected RGB tolerance before repair, so the zero selected residual is not explained by an invisible-edit-only matrix;
+- frozen millisecond work calibration and measured campaign phase timings;
+- exact sparse-discovery sweep through one million Gaussians;
+- held-out empirical scheduling evaluation;
+- FULL/EXACT/radius/fraction/empirical baselines and required ablations;
+- secondary public trained-3DGS validation: 5 revisions, 4 local, 1 FULL, zero certificate violations;
+- reproducible paper tables, figures, evidence dashboard, case mosaic and video assets.
 
-Fixtures and synthetic matrices may validate the machinery, but they do not replace real-scene evidence.
+**Claim boundary**
+
+The public v2.1 median calibrated heterogeneous work is about 0.349 of FULL (about 2.87× lower calibrated work). The trained-3DGS validation reports about 0.03495 of FULL in its native temporal/output work metric (about 28.6× lower native work). Neither number is an end-to-end wall-clock speedup.
+
+The campaigns also reveal a current bottleneck: Gaussian inspection is still near-full in the frozen end-to-end runs. The separate sparse-discovery sweep demonstrates exact selection with far fewer inspections, but that optimization is not silently folded into the measured campaign claim.
+
+Fixtures and synthetic matrices remain implementation-validation evidence; the final claims are grounded in the frozen real-scene and trained-representation campaigns.
 
 ## Start here
 
 1. [CBRC architecture and operator guide](../docs/research/CBRC.md)
 2. [Implementation status](design/CBRC_IMPLEMENTATION_STATUS.md)
 3. [Limitations and threat model](design/CBRC_LIMITATIONS.md)
-4. [Experiment runbook](results/CBRC_EXPERIMENT_RUNBOOK.md)
-5. [Result schema](results/CBRC_RESULT_SCHEMA.md)
-6. [Schema/versioning policy](schema/README.md)
+4. [Frozen paper claim ledger](results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+5. [Cross-representation validation figure](results/F12_representation_comparison_2026-09-21.svg)
+6. [Experiment runbook](results/CBRC_EXPERIMENT_RUNBOOK.md)
+7. [Result schema](results/CBRC_RESULT_SCHEMA.md)
+8. [Schema/versioning policy](schema/README.md)
 
 ## Research discipline
 
