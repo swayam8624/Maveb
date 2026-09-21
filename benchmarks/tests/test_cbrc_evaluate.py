@@ -51,6 +51,14 @@ class CBRCEvaluationTests(unittest.TestCase):
         self.assertFalse(result["pass"])
         self.assertFalse(result["gates"]["C3NoCertifiedToleranceViolations"])
 
+    def test_zero_measured_error_does_not_create_giant_effectivity(self):
+        result = mod.evaluate([row(actual=0.0, bound=0.05)])
+        qoi = result["qois"]["rgb_linf"]
+        self.assertEqual(qoi["zeroMeasuredErrorCount"], 1)
+        self.assertEqual(qoi["definedEffectivityCount"], 0)
+        self.assertIsNone(qoi["medianEffectivity"])
+        self.assertIsNone(result["records"][0]["qois"]["rgb_linf"]["effectivity"])
+
     def test_fallback_rows_are_kept(self):
         result = mod.evaluate([row(fallback=True)])
         self.assertTrue(result["pass"])
