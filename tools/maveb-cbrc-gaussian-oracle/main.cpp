@@ -313,7 +313,7 @@ template <std::size_t N>
 
 [[nodiscard]] aether::Result<void>
 writePpm(const std::filesystem::path& path, std::size_t width, std::size_t height,
-         const std::vector<simd_float3>& colors) {
+         const std::vector<std::array<float, 4>>& colors) {
     if (colors.size() != width * height)
         return aether::fail(aether::ErrorCode::invalidArgument,
                             "PPM color cardinality does not match image dimensions");
@@ -326,11 +326,11 @@ writePpm(const std::filesystem::path& path, std::size_t width, std::size_t heigh
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     stream << "P6\n" << width << ' ' << height << "\n255\n";
-    for (const simd_float3 color : colors) {
+    for (const std::array<float, 4>& color : colors) {
         const std::array<unsigned char, 3> bytes{
-            toByte(color.x),
-            toByte(color.y),
-            toByte(color.z),
+            toByte(color[0]),
+            toByte(color[1]),
+            toByte(color[2]),
         };
         stream.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
     }
@@ -345,13 +345,13 @@ writePpm(const std::filesystem::path& path, std::size_t width, std::size_t heigh
     return {};
 }
 
-[[nodiscard]] simd_float3 heatColor(double value, double maximum) {
+[[nodiscard]] std::array<float, 4> heatColor(double value, double maximum) {
     const double t = maximum <= 0.0 ? 0.0 : std::clamp(value / maximum, 0.0, 1.0);
     // Perceptually ordered dark-blue -> cyan -> yellow -> white ramp.
     const double r = std::clamp(2.2 * t - 0.35, 0.0, 1.0);
     const double g = std::clamp(2.0 * t, 0.0, 1.0);
     const double b = std::clamp(1.4 - 1.6 * t, 0.0, 1.0);
-    return simd_float3{static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)};
+    return {static_cast<float>(r), static_cast<float>(g), static_cast<float>(b), 1.0F};
 }
 
 } // namespace
@@ -553,10 +553,10 @@ int main(int argc, char** argv) try {
 
     if (!options->visualOutputDir.empty()) {
         const std::filesystem::path visualRoot = options->visualOutputDir;
-        std::vector<simd_float3> repairImage(oldImage->color.size());
-        std::vector<simd_float3> supportHeat(oldImage->color.size());
-        std::vector<simd_float3> effectHeat(oldImage->color.size());
-        std::vector<simd_float3> residualHeat(oldImage->color.size());
+        std::vector<std::array<float, 4>> repairImage(oldImage->color.size());
+        std::vector<std::array<float, 4>> supportHeat(oldImage->color.size());
+        std::vector<std::array<float, 4>> effectHeat(oldImage->color.size());
+        std::vector<std::array<float, 4>> residualHeat(oldImage->color.size());
         for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
             const double bound = certificate->rgbLInfBounds[pixel];
             const bool repaired = bound > 0.0;
@@ -573,7 +573,7 @@ int main(int argc, char** argv) try {
             residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
         }
 
-        const std::array<std::pair<std::string_view, const std::vector<simd_float3>*>, 6> images{{
+        const std::array<std::pair<std::string_view, const std::vector<std::array<float, 4>>*>, 6> images{{
             {"before.ppm", &oldImage->color},
             {"full-after.ppm", &newImage->color},
             {"selected-repair.ppm", &repairImage},
