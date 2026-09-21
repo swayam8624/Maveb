@@ -4,7 +4,7 @@
               minimum height=19mm, text width=0.23\textwidth, inner sep=5pt},
   outcome/.style={box, minimum height=13mm},
   arr/.style={-{Latex[length=2.3mm]}, very thick, draw=mavebline},
-  join/.style={very thick, draw=mavebline},
+  joinline/.style={very thick, draw=mavebline},
   branchlabel/.style={font=\scriptsize, align=center, fill=white,
                       text width=0.23\textwidth, inner sep=2pt}
 ]
@@ -29,7 +29,7 @@
 \node[branchlabel] at (11.4,-2.3)
   {Unsupported coupling, failed bound,\\or unfavorable work crossover};
 \coordinate (merge) at (8.55,-4.85);
-\draw[join] (local.south) -- (5.7,-4.85) -- (merge);
-\draw[join] (full.south) -- (11.4,-4.85) -- (merge);
+\draw[joinline] (local.south) -- (5.7,-4.85) -- (merge);
+\draw[joinline] (full.south) -- (11.4,-4.85) -- (merge);
 \draw[arr] (merge) -- (oracle.north);
 \end{tikzpicture}
