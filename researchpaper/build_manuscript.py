@@ -31,11 +31,11 @@ def compile_tex(source, build, bibliography=False):
     run(command, ROOT, build / f'{stem}-final.txt')
     log = (build / f'{stem}.log').read_text()
     failures = re.findall(
-        r'Overfull \\\\[hv]box[^\\n]*|'
-        r"LaTeX Warning: Reference \`[^\\n]* undefined[^\\n]*|"
-        r"Package natbib Warning: Citation \`[^\\n]* undefined[^\\n]*|"
-        r'(?:LaTeX|Package natbib) Warning: There were undefined (?:references|citations)[^\\n]*|'
-        r'[^\\n]*multiply defined[^\\n]*|Missing character[^\\n]*',
+        r'Overfull \\[hv]box[^\n]*|'
+        r'LaTeX Warning: Reference [^\n]* undefined[^\n]*|'
+        r'Package natbib Warning: Citation [^\n]* undefined[^\n]*|'
+        r'(?:LaTeX|Package natbib) Warning: There were undefined (?:references|citations)[^\n]*|'
+        r'[^\n]*multiply defined[^\n]*|Missing character[^\n]*',
         log)
     if failures:
         raise RuntimeError('Typesetting validation failed:\n' + '\n'.join(failures))
