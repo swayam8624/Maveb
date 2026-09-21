@@ -181,6 +181,30 @@ if(AETHER_BUILD_TESTS)
         )
     endif()
 
+    if(TARGET maveb-seed-trained-3dgs-world)
+        add_test(
+            NAME MavebSeedTrained3DGSWorldFixture
+            COMMAND maveb-seed-trained-3dgs-world
+                --ply ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
+                --output ${CMAKE_CURRENT_BINARY_DIR}/test-artifacts/trained-seeded-fixture.aetherworld
+                --target-diagonal 2.0
+                --cell-size 0.25
+                --json
+        )
+    endif()
+
+    if(TARGET maveb-cbrc-work-bench)
+        add_test(
+            NAME MavebCBRCWorkBenchSmoke
+            COMMAND maveb-cbrc-work-bench
+                --gaussians 1024
+                --publication-bytes 4096
+                --pixels 4096
+                --repeats 1
+                --calibration-id ctest
+        )
+    endif()
+
     if(TARGET maveb-cbrc-gaussian-oracle)
         add_test(
             NAME MavebCBRCGaussianOracleFixture
