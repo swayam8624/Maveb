@@ -651,6 +651,75 @@ MAVEB_WORK_COST=/absolute/path/frozen-work-cost.json \
 
 The real campaign is never faked when those external scene archives/sidecars are absent; the script reports it as pending and still completes all repository-contained validation.
 
+### Zero-input public real campaign (recommended)
+
+MAVEB does **not** require LiDAR or private data for its canonical research path. The default
+reproducible real-world experiment downloads the public GraphDECO COLMAP-ready Tanks & Temples
+bundle and uses only the Tanks & Temples **Train** and **Truck** scenes:
+
+```bash
+chmod +x run_public_real_campaign.sh
+./run_public_real_campaign.sh
+```
+
+No file from the user is required. The pipeline performs:
+
+```text
+official public ordinary-RGB dataset
+    -> pinned HTTPS archive + SHA-256 verification
+    -> COLMAP sparse SfM points/colors
+    -> deterministic quality filtering
+    -> explicit canonical scene-scale normalization
+    -> isotropic Gaussian seed field
+    -> deterministic spatial persistent ownership
+    -> two native .aetherworld scenes
+    -> five frozen real revision cases
+    -> production CBRC planner
+    -> independent full-reference oracle
+    -> FULL / EXACT / RADIUS / FRACTION / EMPIRICAL baselines
+    -> required ablations + native/Python parity
+    -> paper artifacts + answer-first evidence report
+```
+
+The source archive is pinned in
+`research/config/cbrc_public_real_sources.json`. The primary public campaign extracts only the
+Tanks & Temples members, whose dataset license is CC BY 4.0. The archive is downloaded from
+GraphDECO's official 3D Gaussian Splatting dataset endpoint.
+
+COLMAP monocular SfM does not recover an absolute metric scale by itself. MAVEB therefore records
+`scaleSource = canonical-normalization-not-measured` and must **not** describe this public path as
+metric-scale reconstruction. Likewise, these are real RGB-derived SfM points initialized as
+isotropic Gaussians, not trained photorealistic 3DGS. Those boundaries are written into every
+world's provenance sidecar.
+
+Outputs:
+
+```text
+build/public-real-campaign/
+├── source/PUBLIC_SOURCE_PROVENANCE.json
+├── worlds/
+│   ├── tandt-train.aetherworld
+│   ├── tandt-train.aetherworld.gaussians.r1.bin
+│   ├── tandt-train.aetherworld.ownership.r1.bin
+│   ├── tandt-train.aetherworld.source.json
+│   ├── tandt-truck.aetherworld
+│   └── ...
+├── frozen-inputs/
+│   ├── campaign.json
+│   └── campaign-freeze.json
+└── campaign/
+    ├── campaign-gates.json
+    ├── baseline-summary.json
+    ├── REAL_CAMPAIGN_ANSWER.md
+    └── paper-artifacts/
+```
+
+If the official archive is already cached somewhere, avoid another download with:
+
+```bash
+MAVEB_PUBLIC_ARCHIVE=/absolute/path/tandt_db.zip ./run_public_real_campaign.sh
+```
+
 ### No real world yet: capture one
 
 If you do not already have a `.aetherworld` with Gaussian/ownership sidecars, create the first real
