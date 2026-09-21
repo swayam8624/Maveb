@@ -27,6 +27,7 @@ namespace {
 using aether::gaussian::Gaussian;
 using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
+using Pixel = std::array<float, 4>;
 
 struct Options final {
     std::string beforePath;
@@ -305,15 +306,14 @@ template <std::size_t N>
     return cap;
 }
 
-
 [[nodiscard]] unsigned char toByte(double value) {
     const double clamped = std::clamp(value, 0.0, 1.0);
     return static_cast<unsigned char>(std::lround(clamped * 255.0));
 }
 
-[[nodiscard]] aether::Result<void>
-writePpm(const std::filesystem::path& path, std::size_t width, std::size_t height,
-         const std::vector<std::array<float, 4>>& colors) {
+[[nodiscard]] aether::Result<void> writePpm(const std::filesystem::path& path,
+                                             std::size_t width, std::size_t height,
+                                             const std::vector<Pixel>& colors) {
     if (colors.size() != width * height)
         return aether::fail(aether::ErrorCode::invalidArgument,
                             "PPM color cardinality does not match image dimensions");
@@ -326,7 +326,7 @@ writePpm(const std::filesystem::path& path, std::size_t width, std::size_t heigh
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     stream << "P6\n" << width << ' ' << height << "\n255\n";
-    for (const std::array<float, 4>& color : colors) {
+    for (const Pixel& color : colors) {
         const std::array<unsigned char, 3> bytes{
             toByte(color[0]),
             toByte(color[1]),
@@ -345,7 +345,7 @@ writePpm(const std::filesystem::path& path, std::size_t width, std::size_t heigh
     return {};
 }
 
-[[nodiscard]] std::array<float, 4> heatColor(double value, double maximum) {
+[[nodiscard]] Pixel heatColor(double value, double maximum) {
     const double t = maximum <= 0.0 ? 0.0 : std::clamp(value / maximum, 0.0, 1.0);
     // Perceptually ordered dark-blue -> cyan -> yellow -> white ramp.
     const double r = std::clamp(2.2 * t - 0.35, 0.0, 1.0);
@@ -553,10 +553,10 @@ int main(int argc, char** argv) try {
 
     if (!options->visualOutputDir.empty()) {
         const std::filesystem::path visualRoot = options->visualOutputDir;
-        std::vector<std::array<float, 4>> repairImage(oldImage->color.size());
-        std::vector<std::array<float, 4>> supportHeat(oldImage->color.size());
-        std::vector<std::array<float, 4>> effectHeat(oldImage->color.size());
-        std::vector<std::array<float, 4>> residualHeat(oldImage->color.size());
+        std::vector<Pixel> repairImage(oldImage->color.size());
+        std::vector<Pixel> supportHeat(oldImage->color.size());
+        std::vector<Pixel> effectHeat(oldImage->color.size());
+        std::vector<Pixel> residualHeat(oldImage->color.size());
         for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
             const double bound = certificate->rgbLInfBounds[pixel];
             const bool repaired = bound > 0.0;
@@ -564,16 +564,17 @@ int main(int argc, char** argv) try {
             supportHeat[pixel] = heatColor(bound, maximumBound);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
-                actual =
-                    std::max(actual, std::abs(static_cast<double>(oldImage->color[pixel][channel]) -
-                                              static_cast<double>(newImage->color[pixel][channel])));
+                const double difference =
+                    static_cast<double>(oldImage->color[pixel][channel]) -
+                    static_cast<double>(newImage->color[pixel][channel]);
+                actual = std::max(actual, std::abs(difference));
             }
             const double residual = repaired ? 0.0 : actual;
             effectHeat[pixel] = heatColor(actual, maximumActual);
             residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
         }
 
-        const std::array<std::pair<std::string_view, const std::vector<std::array<float, 4>>*>, 6> images{{
+        const std::array<std::pair<std::string_view, const std::vector<Pixel>*>, 6> images{{
             {"before.ppm", &oldImage->color},
             {"full-after.ppm", &newImage->color},
             {"selected-repair.ppm", &repairImage},
