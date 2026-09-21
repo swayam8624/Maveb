@@ -1,7 +1,7 @@
 # Regional Temporal History Invalidation — Experiment Design
 
-**Date:** 2026-09-20  
-**Candidate:** S1 dependency-certified local repair  
+**Date:** 2026-09-20
+**Candidate:** S1 dependency-certified local repair
 **Status:** design only; implementation belongs on `research/maveb-discovery-persistent`.
 
 ## Existing behavior
