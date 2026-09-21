@@ -139,6 +139,66 @@ class CBRCReplayTests(unittest.TestCase):
         self.assertEqual(row["work_cost_model_version"], "fixture-cost-v1")
         self.assertEqual(row["work_cost_unit"], "ms")
 
+
+    def test_production_local_repair_uses_post_repair_residual_not_edit_magnitude(self):
+        m = manifest()
+        m["production_certificate"] = {
+            "maximumCurrentRgbBound": 0.5,
+            "invalidationCoversCertifiedSupport": True,
+            "outputConePlanner": {
+                "stable": True,
+                "passes": True,
+                "fullRepair": False,
+                "temporalRepairSelected": True,
+                "resolvedRgbBound": 0.0,
+            },
+        }
+        source = oracle(bound=0.5, actual=0.2, within=False)
+        source["repair_qois"] = {
+            "rgb_linf": {
+                "epsilon": 0.06,
+                "certified_bound": 2e-6,
+                "measured_full_reference_error": 0.0,
+            }
+        }
+        row = mod.finalize_row(m, source, 3)
+        self.assertFalse(row["fallback_full"])
+        self.assertEqual(row["planner_work"], 3.0)
+        self.assertAlmostEqual(row["qois"]["rgb_linf"]["certified_bound"], 2e-6)
+        self.assertEqual(
+            row["candidateDiagnostics"]["sourceEditActualRgbError"],
+            0.2,
+        )
+        self.assertTrue(
+            row["candidateDiagnostics"]["sourceEffectOnlyOracleReturnCode"]
+        )
+
+    def test_production_full_repair_remains_full_fallback(self):
+        m = manifest()
+        m["production_certificate"] = {
+            "maximumCurrentRgbBound": 0.5,
+            "invalidationCoversCertifiedSupport": True,
+            "outputConePlanner": {
+                "stable": True,
+                "passes": True,
+                "fullRepair": True,
+                "temporalRepairSelected": False,
+                "resolvedRgbBound": 0.0,
+            },
+        }
+        source = oracle(bound=0.5, actual=0.2, within=False)
+        source["repair_qois"] = {
+            "rgb_linf": {
+                "epsilon": 0.06,
+                "certified_bound": 2e-6,
+                "measured_full_reference_error": 0.0,
+            }
+        }
+        row = mod.finalize_row(m, source, 3)
+        self.assertTrue(row["fallback_full"])
+        self.assertEqual(row["planner_work"], 10.0)
+        self.assertEqual(row["qois"]["rgb_linf"]["certified_bound"], 0.0)
+
     def test_production_offline_bound_disagreement_is_fatal(self):
         m = manifest()
         m["production_certificate"] = {

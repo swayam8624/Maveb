@@ -2,13 +2,17 @@
 """Run one manifest-bound CBRC Gaussian full-reference replay.
 
 Exit semantics of the C++ oracle:
-  0: certificate holds and candidate bound <= epsilon
-  3: certificate holds but candidate bound > epsilon
-  4: certificate violation (fatal)
+  0: source-edit certificate holds and its raw effect bound <= epsilon
+  3: source-edit certificate holds but the raw edit-effect bound > epsilon
+  4: source-edit certificate violation (fatal)
   other: execution/configuration failure
 
-When code 3 is returned, this runner records the principled CBRC decision:
-fallback to FULL. The rejected local candidate remains in candidateDiagnostics.
+For production output-cone manifests, code 3 is not itself a reason to fall
+back: an intended edit may be much larger than epsilon while the selected
+repair still reproduces FULL-after within tolerance. In that path the final
+decision uses the production output plan plus independently measured
+post-repair residual evidence. Legacy fixtures without a production plan keep
+the older code-3 => FULL behavior.
 """
 from __future__ import annotations
 
@@ -160,12 +164,14 @@ def finalize_row(
     if total_nodes <= 0 or not (0 <= hard_nodes <= candidate_nodes <= total_nodes):
         raise ValueError("invalid hard/candidate/total node cardinalities")
 
-    candidate_qoi = oracle["qois"]["rgb_linf"]
+    source_qoi = oracle["qois"]["rgb_linf"]
 
     production = manifest.get("production_certificate")
+    selected_qoi = source_qoi
+    source_effect_only = False
     if production is not None:
         production_bound = float(production["maximumCurrentRgbBound"])
-        oracle_bound = float(candidate_qoi["certified_bound"])
+        oracle_bound = float(source_qoi["certified_bound"])
         agreement_tolerance = max(
             1e-8, 1e-6 * max(abs(production_bound), abs(oracle_bound), 1.0)
         )
@@ -182,14 +188,61 @@ def finalize_row(
                 f"{expected_changed_fraction} vs {actual_changed_fraction}"
             )
 
-    fallback = returncode == 3 or not bool(oracle.get("withinTolerance", False))
+        output_plan = production.get("outputConePlanner")
+        if not isinstance(output_plan, dict):
+            raise ValueError("production certificate requires outputConePlanner")
+        plan_stable = bool(output_plan.get("stable", False))
+        plan_passes = bool(output_plan.get("passes", False))
+        plan_full = bool(output_plan.get("fullRepair", False))
+        temporal_repair = bool(output_plan.get("temporalRepairSelected", False))
+        invalidation_covers = bool(
+            production.get("invalidationCoversCertifiedSupport", False)
+        )
+
+        repair_qois = oracle.get("repair_qois")
+        if not isinstance(repair_qois, dict) or "rgb_linf" not in repair_qois:
+            raise ValueError("oracle is missing post-repair residual evidence")
+        repair_qoi = repair_qois["rgb_linf"]
+        repair_actual = float(repair_qoi["measured_full_reference_error"])
+        repair_bound = float(repair_qoi["certified_bound"])
+        repair_epsilon = float(repair_qoi["epsilon"])
+        if repair_actual > repair_bound + 1e-12:
+            raise RuntimeError(
+                "post-repair full-reference residual exceeded its certified bound"
+            )
+        if abs(repair_epsilon - float(source_qoi["epsilon"])) > 1e-12:
+            raise RuntimeError("source and post-repair oracle epsilon disagree")
+
+        if not plan_full and (not plan_stable or not plan_passes):
+            raise RuntimeError(
+                "production planner rejected local repair without selecting FULL"
+            )
+        if not plan_full and (not temporal_repair or not invalidation_covers):
+            raise RuntimeError(
+                "local production plan lacks exact temporal repair coverage"
+            )
+
+        resolved_bound = float(output_plan.get("resolvedRgbBound", 0.0))
+        selected_qoi = {
+            "epsilon": repair_epsilon,
+            "certified_bound": resolved_bound + repair_bound,
+            "measured_full_reference_error": repair_actual,
+        }
+        source_effect_only = True
+        fallback = (
+            plan_full
+            or selected_qoi["certified_bound"] > selected_qoi["epsilon"] + 1e-12
+            or repair_actual > selected_qoi["epsilon"] + 1e-12
+        )
+    else:
+        fallback = returncode == 3 or not bool(oracle.get("withinTolerance", False))
 
     if fallback:
         # The selected execution becomes the full rebuild. Its stale-error
         # certificate relative to itself is exactly zero. Preserve the rejected
         # local candidate below for crossover analysis.
         qoi = {
-            "epsilon": float(candidate_qoi["epsilon"]),
+            "epsilon": float(selected_qoi["epsilon"]),
             "certified_bound": 0.0,
             "measured_full_reference_error": 0.0,
         }
@@ -197,10 +250,10 @@ def finalize_row(
         planner_work = full_work
     else:
         qoi = {
-            "epsilon": float(candidate_qoi["epsilon"]),
-            "certified_bound": float(candidate_qoi["certified_bound"]),
+            "epsilon": float(selected_qoi["epsilon"]),
+            "certified_bound": float(selected_qoi["certified_bound"]),
             "measured_full_reference_error": float(
-                candidate_qoi["measured_full_reference_error"]
+                selected_qoi["measured_full_reference_error"]
             ),
         }
         cone_nodes = candidate_nodes
@@ -237,11 +290,40 @@ def finalize_row(
         "candidateDiagnostics": {
             "candidateConeNodes": candidate_nodes,
             "candidateWork": candidate_work,
-            "candidateRgbBound": float(candidate_qoi["certified_bound"]),
+            "candidateRgbBound": float(selected_qoi["certified_bound"]),
             "candidateActualRgbError": float(
-                candidate_qoi["measured_full_reference_error"]
+                selected_qoi["measured_full_reference_error"]
             ),
-            "candidateWithinTolerance": bool(oracle.get("withinTolerance", False)),
+            "candidateWithinTolerance": (
+                float(selected_qoi["certified_bound"])
+                <= float(selected_qoi["epsilon"]) + 1e-12
+            ),
+            "sourceEditRgbBound": float(source_qoi["certified_bound"]),
+            "sourceEditActualRgbError": float(
+                source_qoi["measured_full_reference_error"]
+            ),
+            "sourceEditWithinTolerance": bool(
+                oracle.get("withinTolerance", False)
+            ),
+            "postRepairResidualBound": float(
+                oracle.get("repair_qois", {})
+                .get("rgb_linf", {})
+                .get("certified_bound", selected_qoi["certified_bound"])
+            ),
+            "postRepairActualRgbError": float(
+                oracle.get("repair_qois", {})
+                .get("rgb_linf", {})
+                .get(
+                    "measured_full_reference_error",
+                    selected_qoi["measured_full_reference_error"],
+                )
+            ),
+            "productionResolvedRgbBound": float(
+                manifest.get("production_certificate", {})
+                .get("outputConePlanner", {})
+                .get("resolvedRgbBound", 0.0)
+            ),
+            "sourceEffectOnlyOracleReturnCode": bool(source_effect_only and returncode == 3),
             "affectedPixelFraction": float(oracle["affectedPixelFraction"]),
             "effectivity": float(oracle["effectivity"]),
             "certificateViolationPixels": int(
