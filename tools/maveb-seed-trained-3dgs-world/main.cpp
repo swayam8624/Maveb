@@ -78,15 +78,14 @@ struct Cluster final {
 }
 
 void usage() {
-    std::cout
-        << "Usage: maveb-seed-trained-3dgs-world --ply point_cloud.ply "
-           "--output world.aetherworld [options]\n"
-        << "Options:\n"
-        << "  --target-diagonal N   canonical scene diagonal, default 2.0\n"
-        << "  --cell-size N         ownership grid cell size (default: diagonal/7)\n"
-        << "  --timestamp NS        initial world timestamp\n"
-        << "  --preserve-raw-scale  do not canonicalize PLY coordinates/scales\n"
-        << "  --json                machine-readable summary\n";
+    std::cout << "Usage: maveb-seed-trained-3dgs-world --ply point_cloud.ply "
+                 "--output world.aetherworld [options]\n"
+                 "Options:\n"
+                 "  --target-diagonal N   canonical scene diagonal, default 2.0\n"
+                 "  --cell-size N         ownership grid cell size (default: diagonal/7)\n"
+                 "  --timestamp NS        initial world timestamp\n"
+                 "  --preserve-raw-scale  do not canonicalize PLY coordinates/scales\n"
+                 "  --json                machine-readable summary\n";
 }
 
 [[nodiscard]] std::optional<Options> parseOptions(int argc, char** argv) {
@@ -297,10 +296,9 @@ int main(int argc, char** argv) try {
 
         Cluster& cluster = clusters[*key];
         cluster.indices.push_back(index);
-        cluster.minimum = simd_min(
-            cluster.minimum, position - simd_float3{support, support, support});
-        cluster.maximum = simd_max(
-            cluster.maximum, position + simd_float3{support, support, support});
+        const simd_float3 supportVector{support, support, support};
+        cluster.minimum = simd_min(cluster.minimum, position - supportVector);
+        cluster.maximum = simd_max(cluster.maximum, position + supportVector);
         cluster.sum += simd_double3{position.x, position.y, position.z};
     }
     if (clusters.size() < 2) {
@@ -379,6 +377,9 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
+    const std::string_view scaleSource =
+        options->preserveRawScale ? "source-preserved" : "canonical-normalization-not-measured";
+
     std::ostringstream summary;
     summary << std::setprecision(17);
     summary << "{\"schemaVersion\":1,\"artifact\":\"maveb-trained-3dgs-world-seed\",";
@@ -390,9 +391,7 @@ int main(int argc, char** argv) try {
     summary << "\"rawDiagonal\":" << rawDiagonal << ',';
     summary << "\"canonicalDiagonal\":" << diagonal << ',';
     summary << "\"uniformScale\":" << normalization << ',';
-    summary << "\"scaleSource\":\""
-            << (options->preserveRawScale ? "source-preserved" : "canonical-normalization-not-measured")
-            << "\",";
+    summary << "\"scaleSource\":\"" << scaleSource << "\",";
     summary << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\",";
     summary << "\"representation\":\"trained-3dgs-preserved-sh-opacity-scale-rotation\"";
     summary << "}\n";
