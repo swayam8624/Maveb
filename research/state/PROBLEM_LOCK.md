@@ -1,7 +1,7 @@
 # MAVEB S1 Problem Lock — MAVEB-CLOSURE
 
-**Locked:** 2026-09-20  
-**Status:** problem/method identity locked; experimental claim not yet proven  
+**Locked:** 2026-09-20
+**Status:** problem/method identity locked; experimental claim not yet proven
 **Paper-ready:** false
 
 ## The locked problem
@@ -199,7 +199,7 @@ timing, and competition. This lock is intended to maximize the chance of a defen
 submission by making the claim narrow, falsifiable, difficult to explain away, and aggressively
 benchmarked.
 
-PROBLEM_LOCKED = true  
-METHOD_IDENTITY_LOCKED = true  
-CLAIM_PROVEN = false  
+PROBLEM_LOCKED = true
+METHOD_IDENTITY_LOCKED = true
+CLAIM_PROVEN = false
 PAPER_READY = false

@@ -1,6 +1,6 @@
 # MAVEB Novelty Watch
 
-**Last refresh:** 2026-09-20  
+**Last refresh:** 2026-09-20
 **Rule:** discovering close prior art immediately narrows, pivots, or kills the candidate. This file records collisions; it is not a bibliography replacement.
 
 ## Hard kill / pivot events

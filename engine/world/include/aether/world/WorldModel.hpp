@@ -46,7 +46,7 @@ class PersistentWorldModel final {
   public:
     [[nodiscard]] Result<WorldIngestResult> ingest(TimestampNs timestamp,
                                                    std::vector<EntityState> observations,
-                                                   WorldIngestPolicy policy = {});
+                                                   const WorldIngestPolicy& policy = {});
 
     /// Applies sparse authored mutations to stable persistent entities as one world revision.
     [[nodiscard]] Result<WorldEditResult> edit(TimestampNs timestamp,

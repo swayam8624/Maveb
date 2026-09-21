@@ -1,8 +1,8 @@
 # Dependency Locality Audit v0
 
-**Date:** 2026-09-20  
-**Type:** source/evidence audit, not a fresh timing benchmark  
-**Main baseline:** `1d95c8f480fb2868d821fa107215311f1deab17c`  
+**Date:** 2026-09-20
+**Type:** source/evidence audit, not a fresh timing benchmark
+**Main baseline:** `1d95c8f480fb2868d821fa107215311f1deab17c`
 **PR #28 head:** `f157b2a40e2766bcb02d24ca055073e866140476`
 
 ## What is already solved internally

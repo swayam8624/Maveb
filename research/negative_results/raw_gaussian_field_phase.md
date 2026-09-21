@@ -1,6 +1,6 @@
 # Rejected variant: raw Gaussian-field phase as a geometry-only invariant
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Probe:** phase-representation-nuisance-v1
 
 ## Hypothesis attacked

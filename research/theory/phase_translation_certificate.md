@@ -1,6 +1,6 @@
 # Restricted Phase-Translation Certificate
 
-**Status:** mathematical working note, not a paper claim  
+**Status:** mathematical working note, not a paper claim
 **Date:** 2026-09-20
 
 ## 1. Scope

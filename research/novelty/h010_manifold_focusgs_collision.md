@@ -1,7 +1,7 @@
 # H010 Novelty Collision Audit — Manifold-GS and FocusGS
 
-**Date:** 2026-09-20  
-**Candidate:** H010 Gaussian tail locality certificate  
+**Date:** 2026-09-20
+**Candidate:** H010 Gaussian tail locality certificate
 **Decision:** SURVIVES NARROWLY; novelty remains unverified.
 
 ## Candidate H010

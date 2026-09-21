@@ -1,6 +1,6 @@
 # Gaussian Tail Locality Certificate — Research Note
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Status:** analytic candidate; novelty unverified; not yet a rendering-space theorem.
 
 ## Setup

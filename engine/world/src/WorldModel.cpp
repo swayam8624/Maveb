@@ -6,7 +6,7 @@ namespace aether::world {
 
 Result<WorldIngestResult> PersistentWorldModel::ingest(TimestampNs timestamp,
                                                         std::vector<EntityState> observations,
-                                                        WorldIngestPolicy policy) {
+                                                        const WorldIngestPolicy& policy) {
     if (timestamp == 0) {
         return fail(ErrorCode::invalidArgument,
                     "Persistent world observation timestamp cannot be zero");

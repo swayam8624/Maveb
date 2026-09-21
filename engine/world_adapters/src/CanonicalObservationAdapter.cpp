@@ -215,7 +215,7 @@ void addTextureSignature(StableHash& hash, const mesh::MeshAsset& asset,
 
 Result<std::vector<world::EntityState>>
 observationsFromCanonicalAsset(const canonical::CanonicalAssetPayload& asset,
-                               world::TimestampNs timestamp, CanonicalObservationConfig config) {
+                               world::TimestampNs timestamp, const CanonicalObservationConfig& config) {
     if (timestamp == 0)
         return fail(ErrorCode::invalidArgument, "Canonical observation timestamp cannot be zero");
 

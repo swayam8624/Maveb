@@ -1,6 +1,6 @@
 # Naive stable pages do not imply local texture writes
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Status:** rejected as the S1 texture mechanism when whole pages are the rewrite/invalidation unit.
 
 ## Hypothesis

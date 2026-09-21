@@ -1,6 +1,6 @@
 # Alpha-Mass Render Locality Bound
 
-**Status:** candidate theorem / engineering certificate; not yet a paper claim.  
+**Status:** candidate theorem / engineering certificate; not yet a paper claim.
 **Date:** 2026-09-20
 
 ## Setup

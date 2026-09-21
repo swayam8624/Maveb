@@ -1,7 +1,7 @@
 # Binding the Locality Certificate to MAVEB's Metal Gaussian Renderer
 
-**Renderer baseline:** main @ `1d95c8f480fb2868d821fa107215311f1deab17c`  
-**Shader:** `shaders/gaussian.metal`  
+**Renderer baseline:** main @ `1d95c8f480fb2868d821fa107215311f1deab17c`
+**Shader:** `shaders/gaussian.metal`
 **Status:** theory-to-implementation audit, 2026-09-20
 
 ## Exact current alpha path

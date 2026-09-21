@@ -1,6 +1,6 @@
 # Paged stable atlas dirty-granularity probe v2
 
-**Evidence class:** synthetic dependency-granularity kill probe.  
+**Evidence class:** synthetic dependency-granularity kill probe.
 **Not:** texture quality, GPU timing, or a novelty claim.
 
 The fixed-global stable atlas preserved UV addresses but failed capacity scaling. The next obvious

@@ -132,8 +132,27 @@ jobs:
           done < <(git diff --diff-filter=ACMR --name-only "$base" HEAD -- \
             'engine/**' 'apps/**' 'tools/**' 'tests/**' | \
             grep -E '\.(c|cc|cpp|cxx)$' || true)
-          if (( ${#sources[@]} )); then
+          # Analyze only translation units present in the CI compile database.
+          # Platform-gated sources may appear in the PR diff without a compile command.
+          compiled_sources=()
+          for file in "${sources[@]}"; do
+            if python3 - "$file" build/ci/compile_commands.json <<'PY'
+import json
+import os
+import sys
+
+source = os.path.realpath(sys.argv[1])
+with open(sys.argv[2], encoding="utf-8") as handle:
+    commands = json.load(handle)
+
+raise SystemExit(0 if any(os.path.realpath(entry["file"]) == source for entry in commands) else 1)
+PY
+            then
+              compiled_sources+=("$file")
+            fi
+          done
+          if (( ${#compiled_sources[@]} )); then
             "$(brew --prefix llvm@18)/bin/clang-tidy" -p build/ci \
               --extra-arg=-Wno-elaborated-enum-base \
-              --warnings-as-errors='*' "${sources[@]}"
+              --warnings-as-errors='*' "${compiled_sources[@]}"
           fi

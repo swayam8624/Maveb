@@ -112,8 +112,8 @@ recorded in `research/LOG.md`.
 
 ## Status
 
-PROBLEM_LOCKED = true  
-METHOD_IDENTITY_LOCKED = true  
-HYPOTHESIS_FILTER_COMPLETE = true  
-CLAIM_PROVEN = false  
+PROBLEM_LOCKED = true
+METHOD_IDENTITY_LOCKED = true
+HYPOTHESIS_FILTER_COMPLETE = true
+CLAIM_PROVEN = false
 PAPER_READY = false

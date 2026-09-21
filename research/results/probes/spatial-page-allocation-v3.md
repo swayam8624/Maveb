@@ -1,6 +1,6 @@
 # Spatially coherent stable texture page allocation probe v3
 
-**Evidence class:** synthetic dependency-allocation probe.  
+**Evidence class:** synthetic dependency-allocation probe.
 **Not:** rendered texture quality, production allocator behavior, GPU timing, or a standalone novelty claim.
 
 The previous paged-atlas probe rejected random/free-list whole-page updates because sparse changes

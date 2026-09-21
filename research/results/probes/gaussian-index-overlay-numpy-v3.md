@@ -1,6 +1,6 @@
 # Gaussian index base+delta overlay — NumPy reference probe v3
 
-**Evidence class:** cheap structural probe.  
+**Evidence class:** cheap structural probe.
 **Not:** production C++, Metal, M2 Pro, real-scene, or paper-level performance evidence.
 
 The probe uses one million deterministic packed region keys and compares a fully rebuilt sorted

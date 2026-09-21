@@ -33,7 +33,7 @@ void testCoalescesMinimalRanges() {
     expect(plan->touchedRecords == indices.size(), "touched-record accounting must be exact");
     expect(plan->touchedBytes == indices.size() * 256,
            "touched-byte accounting must use GPU record stride");
-    expect(plan->fullBufferBytes == 100 * 256,
+    expect(plan->fullBufferBytes == std::size_t{100} * 256U,
            "full-buffer byte baseline must use the same GPU record stride");
 }
 
