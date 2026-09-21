@@ -37,6 +37,9 @@ class PaperReadinessTests(unittest.TestCase):
                                 "measured_full_reference_error": 0.0005,
                             }
                         },
+                        "candidateDiagnostics": {
+                            "sourceEditActualRgbError": 0.02,
+                        },
                     }
                 )
             (campaign / "campaign-rows.jsonl").write_text(
@@ -98,6 +101,9 @@ class PaperReadinessTests(unittest.TestCase):
             result = mod.audit(campaign, calibration, sparse, empirical, visual)
             self.assertTrue(result["corePaperEvidenceReady"])
             self.assertTrue(all(result["checks"].values()))
+            self.assertEqual(result["sourceEffectEvidenceCases"], 60)
+            self.assertEqual(result["nontrivialSourceEffectCases"], 60)
+            self.assertEqual(result["nontrivialSourceEffectRate"], 1.0)
 
 
 if __name__ == "__main__":
