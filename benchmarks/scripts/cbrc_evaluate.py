@@ -20,6 +20,9 @@ from pathlib import Path
 from typing import Any
 
 
+EFFECTIVITY_ZERO_TOL = 1e-12
+
+
 def finite_nonnegative(value: Any, name: str) -> float:
     number = float(value)
     if not math.isfinite(number) or number < 0.0:
@@ -65,7 +68,12 @@ def normalize_qois(row: dict[str, Any], index: int) -> dict[str, dict[str, float
             "actual": actual,
             "certificateViolation": actual > bound + 1e-12,
             "toleranceViolation": actual > epsilon + 1e-12,
-            "effectivity": bound / max(actual, 1e-15),
+            "effectivity": None if actual <= EFFECTIVITY_ZERO_TOL else bound / actual,
+            "effectivityStatus": (
+                "undefined_zero_measured_error"
+                if actual <= EFFECTIVITY_ZERO_TOL
+                else "defined"
+            ),
         }
     return result
 
@@ -128,12 +136,17 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     certificate_violations = []
     tolerance_violations = []
     effectivity: dict[str, list[float]] = defaultdict(list)
+    zero_measured_errors: dict[str, int] = defaultdict(int)
     fallbacks = 0
 
     for record in records:
         fallbacks += int(record["fallbackFull"])
         for name, qoi in record["qois"].items():
-            effectivity[name].append(qoi["effectivity"])
+            values = effectivity[name]
+            if qoi["effectivity"] is None:
+                zero_measured_errors[name] += 1
+            else:
+                values.append(float(qoi["effectivity"]))
             if qoi["certificateViolation"]:
                 certificate_violations.append(
                     {
@@ -157,11 +170,14 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     qoi_summary = {}
     for name, values in effectivity.items():
+        zero_count = zero_measured_errors[name]
         qoi_summary[name] = {
-            "count": len(values),
-            "medianEffectivity": statistics.median(values),
+            "count": len(values) + zero_count,
+            "definedEffectivityCount": len(values),
+            "zeroMeasuredErrorCount": zero_count,
+            "medianEffectivity": statistics.median(values) if values else None,
             "p95Effectivity": percentile(values, 0.95),
-            "maximumEffectivity": max(values),
+            "maximumEffectivity": max(values) if values else None,
         }
 
     gates = {
@@ -172,7 +188,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "C5FallbacksRetained": True,
     }
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "experiment": "cbrc-certificate-evaluation",
         "recordCount": len(records),
         "fullFallbackCount": fallbacks,
@@ -184,7 +200,9 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "records": records,
         "interpretation": (
             "PASS means the supplied rows obey actual<=bound<=epsilon for every "
-            "declared QoI. It does not establish novelty, optimality, or external validity."
+            "declared QoI. Effectivity is undefined, rather than inflated by an arbitrary "
+            "denominator floor, when measured full-reference error is numerically zero. "
+            "It does not establish novelty, optimality, or external validity."
         ),
     }
 
