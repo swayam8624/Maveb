@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Fetch one public trained 3DGS PLY for zero-input validation.
 
-The default source is a public Hugging Face model repository containing many
-trained 3DGS variants. We query file metadata and deterministically choose the
-smallest non-empty point_cloud.ply unless --file is supplied. The exact repo
-revision, file path, size and SHA-256 are frozen in provenance.
+The default source is a pinned public trained GraphDECO-style 3DGS PLY. The
+repository revision, file path, byte size, and SHA-256 are verified before use
+and frozen in provenance.
 """
 
 from __future__ import annotations
@@ -42,12 +41,6 @@ def main() -> int:
         default="f03e4979ac27345da1422d960d604b98db9541bdb3586d135d64bb4d9bde8eb3",
     )
     parser.add_argument("--expected-bytes", type=int, default=265724108)
-    parser.add_argument(
-        "--target-bytes",
-        type=int,
-        default=100_000_000,
-        help="when --file is omitted, choose the trained PLY closest to this size",
-    )
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
 
