@@ -267,10 +267,10 @@ int main(int argc, char** argv) try {
     const std::size_t sampleStride = std::max<std::size_t>(
         1, (mesh->vertices.size() + options->maximumGaussians - 1) / options->maximumGaussians);
     const std::size_t sampledCount = (mesh->vertices.size() + sampleStride - 1) / sampleStride;
+    const double densityRoot =
+        std::cbrt(static_cast<double>(std::max<std::size_t>(sampledCount, 1)));
     const float densityScale =
-        static_cast<float>(0.65 * static_cast<double>(diagonal) /
-                           std::cbrt(static_cast<double>(
-                               std::max<std::size_t>(sampledCount, 1))));
+        static_cast<float>(0.65 * static_cast<double>(diagonal) / densityRoot);
     const float gaussianScale =
         options->gaussianScaleMeters > 0.0F
             ? options->gaussianScaleMeters
@@ -405,18 +405,21 @@ int main(int argc, char** argv) try {
     }
 
     if (options->json) {
-        std::cout << std::setprecision(17)
-                  << "{\"schemaVersion\":1,\"artifact\":\"maveb-real-capture-world-seed\","
-                  << "\"world\":\"" << options->output.string() << "\","
-                  << "\"sourceProxy\":\"" << options->proxy.string() << "\","
-                  << "\"sourceVertices\":" << mesh->vertices.size() << ','
-                  << "\"gaussians\":" << asset.gaussians.size() << ','
-                  << "\"entities\":" << timeline.latest()->entities.size() << ','
-                  << "\"sampleStride\":" << sampleStride << ',' << "\"cellSizeMetres\":"
-                  << cellSize << ',' << "\"gaussianScaleMetres\":" << gaussianScale << ','
-                  << "\"opacity\":" << options->opacity << ','
-                  << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\""
-                  << "}\n";
+        std::ostringstream result;
+        result << std::setprecision(17)
+               << "{\"schemaVersion\":1,\"artifact\":\"maveb-real-capture-world-seed\","
+               << "\"world\":\"" << options->output.string() << "\","
+               << "\"sourceProxy\":\"" << options->proxy.string() << "\","
+               << "\"sourceVertices\":" << mesh->vertices.size() << ','
+               << "\"gaussians\":" << asset.gaussians.size() << ','
+               << "\"entities\":" << timeline.latest()->entities.size() << ','
+               << "\"sampleStride\":" << sampleStride << ','
+               << "\"cellSizeMetres\":" << cellSize << ','
+               << "\"gaussianScaleMetres\":" << gaussianScale << ','
+               << "\"opacity\":" << options->opacity << ','
+               << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\""
+               << "}\n";
+        std::cout << result.str();
     } else {
         std::cout << "Seeded real persistent world from " << mesh->vertices.size()
                   << " proxy vertices: " << asset.gaussians.size() << " Gaussians, "
