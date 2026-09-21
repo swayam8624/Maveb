@@ -28,7 +28,7 @@ using aether::gaussian::Gaussian;
 using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
 using Pixel = std::array<float, 4>;
-using Pixels = Pixels;
+using Pixels = std::vector<Pixel>;
 using Path = std::filesystem::path;
 using WriteResult = aether::Result<void>;
 
