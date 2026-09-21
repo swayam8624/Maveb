@@ -29,6 +29,11 @@ using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
 using Pixel = std::array<float, 4>;
 
+struct ImageExtent final {
+    std::size_t width{};
+    std::size_t height{};
+};
+
 struct Options final {
     std::string beforePath;
     std::string afterPath;
@@ -311,10 +316,9 @@ template <std::size_t N>
     return static_cast<unsigned char>(std::lround(clamped * 255.0));
 }
 
-[[nodiscard]] aether::Result<void> writePpm(const std::filesystem::path& path,
-                                             std::size_t width, std::size_t height,
-                                             const std::vector<Pixel>& colors) {
-    if (colors.size() != width * height)
+[[nodiscard]] aether::Result<void>
+writePpm(const std::filesystem::path& path, ImageExtent extent, const std::vector<Pixel>& colors) {
+    if (colors.size() != extent.width * extent.height)
         return aether::fail(aether::ErrorCode::invalidArgument,
                             "PPM color cardinality does not match image dimensions");
     std::error_code error;
@@ -325,7 +329,7 @@ template <std::size_t N>
                             error.message());
     const auto temporary = path.string() + ".tmp";
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
-    stream << "P6\n" << width << ' ' << height << "\n255\n";
+    stream << "P6\n" << extent.width << ' ' << extent.height << "\n255\n";
     for (const Pixel& color : colors) {
         const std::array<unsigned char, 3> bytes{
             toByte(color[0]),
@@ -564,10 +568,9 @@ int main(int argc, char** argv) try {
             supportHeat[pixel] = heatColor(bound, maximumBound);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
-                const double difference =
-                    static_cast<double>(oldImage->color[pixel][channel]) -
-                    static_cast<double>(newImage->color[pixel][channel]);
-                actual = std::max(actual, std::abs(difference));
+                const double beforeChannel = oldImage->color[pixel][channel];
+                const double afterChannel = newImage->color[pixel][channel];
+                actual = std::max(actual, std::abs(beforeChannel - afterChannel));
             }
             const double residual = repaired ? 0.0 : actual;
             effectHeat[pixel] = heatColor(actual, maximumActual);
@@ -583,8 +586,8 @@ int main(int argc, char** argv) try {
             {"post-repair-residual.ppm", &residualHeat},
         }};
         for (const auto& [name, colors] : images) {
-            if (auto written = writePpm(visualRoot / name, camera.width, camera.height, *colors);
-                !written) {
+            const ImageExtent extent{camera.width, camera.height};
+            if (auto written = writePpm(visualRoot / name, extent, *colors); !written) {
                 std::cerr << written.error().describe() << '\n';
                 return EXIT_FAILURE;
             }
