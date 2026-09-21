@@ -1,6 +1,6 @@
 # Fixed global stable atlas does not scale to large persistent worlds
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Status:** rejected as a large-world production architecture; retained as a small/medium correctness fixture.
 
 ## Hypothesis
