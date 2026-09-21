@@ -651,6 +651,56 @@ MAVEB_WORK_COST=/absolute/path/frozen-work-cost.json \
 
 The real campaign is never faked when those external scene archives/sidecars are absent; the script reports it as pending and still completes all repository-contained validation.
 
+### No real world yet: capture one
+
+If you do not already have a `.aetherworld` with Gaussian/ownership sidecars, create the first real
+benchmark directly from a MavebCapture LiDAR scan.
+
+1. Record a real scene with the iPadOS `MavebCapture` app and export the complete
+   `Scan.mavebcapture` directory to the Mac.
+2. Run:
+
+```bash
+chmod +x capture_to_real_campaign.sh
+./capture_to_real_campaign.sh /absolute/path/Scan.mavebcapture
+```
+
+The pipeline performs:
+
+```text
+real ARKit RGB-D/LiDAR capture
+    -> hash-validated replay
+    -> metric TSDF fusion
+    -> real proxy mesh
+    -> deterministic isotropic Gaussian seed field
+    -> spatial persistent entities / ownership
+    -> WORLD.aetherworld
+    -> WORLD.aetherworld.gaussians.r1.bin
+    -> WORLD.aetherworld.ownership.r1.bin
+    -> frozen CBRC real campaign
+    -> independent full-reference oracle
+    -> baselines + ablations + paper artifacts
+```
+
+Final outputs are written below `build/real-capture-bootstrap/`, including:
+
+```text
+real-proxy.ply
+real-seeded.aetherworld
+real-seeded.aetherworld.gaussians.r1.bin
+real-seeded.aetherworld.ownership.r1.bin
+cbrc/campaign/REAL_CAMPAIGN_ANSWER.md
+cbrc/campaign/paper-artifacts/
+```
+
+The seed path is deliberately labeled
+`deterministic-spatial-grid-not-semantic`: ownership cells are deterministic spatial partitions,
+not semantic object segmentation. Likewise, the Gaussian field is initialized from real fused
+surface samples with isotropic kernels; it is valid real captured geometry for testing CBRC
+locality/certification, but it must not be described as a trained photorealistic 3DGS model.
+A later publication-strength campaign can replace the seeded field with trained Gaussians without
+changing the CBRC evidence machinery.
+
 ### Real campaign autopilot
 
 After the repository-contained verifier passes, the fastest real-data path is:
