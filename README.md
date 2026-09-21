@@ -655,31 +655,31 @@ The real campaign is never faked when those external scene archives/sidecars are
 
 After the repository-contained verifier passes, the fastest real-data path is:
 
-\`\`\`bash
+```bash
 ./run_real_campaign.sh
-\`\`\`
+```
 
-The autopilot searches the repository plus \`~/Desktop\`, \`~/Documents\`, and \`~/Downloads\` for complete real persistent worlds. A candidate is accepted only when the latest world revision has both immutable sidecars:
+The autopilot searches the repository plus `~/Desktop`, `~/Documents`, and `~/Downloads` for complete real persistent worlds. A candidate is accepted only when the latest world revision has both immutable sidecars:
 
-\`\`\`text
+```text
 WORLD.aetherworld
 WORLD.aetherworld.gaussians.rR.bin
 WORLD.aetherworld.ownership.rR.bin
-\`\`\`
+```
 
 For accepted real worlds it deterministically derives a framing camera, selects a meaningfully local owned entity, makes five independent before-state copies, freezes low/medium/high/adversarial edits before reading results, runs the independent full-reference oracle, baselines, ablations and parity gates, and writes an answer-first report at:
 
-\`\`\`text
+```text
 build/research-real/campaign/REAL_CAMPAIGN_ANSWER.md
-\`\`\`
+```
 
 To point directly at a known archive:
 
-\`\`\`bash
+```bash
 MAVEB_REAL_ARCHIVE=/absolute/path/world.aetherworld ./run_real_campaign.sh
-\`\`\`
+```
 
-A frozen heterogeneous millisecond cost model can still be supplied with \`MAVEB_WORK_COST\`. Without one, the headless real campaign uses the production planner's single-domain temporal-pixel work and reports native per-domain ratios separately; it does **not** mislabel those numbers as heterogeneous wall-clock speedup.
+A frozen heterogeneous millisecond cost model can still be supplied with `MAVEB_WORK_COST`. Without one, the headless real campaign uses the production planner's single-domain temporal-pixel work and reports native per-domain ratios separately; it does **not** mislabel those numbers as heterogeneous wall-clock speedup.
 
 ### Manual equivalent
 
