@@ -61,7 +61,9 @@ if(AETHER_BUILD_TOOLS)
     add_subdirectory(tools/maveb-gaussian-locality-bench)
     add_subdirectory(tools/maveb-cbrc-gaussian-oracle)
     add_subdirectory(tools/maveb-cbrc-revision)
+    add_subdirectory(tools/maveb-cbrc-work-bench)
     add_subdirectory(tools/maveb-seed-world)
+    add_subdirectory(tools/maveb-seed-trained-3dgs-world)
     if(APPLE)
         add_subdirectory(tools/aether-capture)
         add_subdirectory(tools/aether-keyframes)
@@ -176,6 +178,30 @@ if(AETHER_BUILD_TESTS)
                 --cell-size 0.25
                 --gaussian-scale 0.01
                 --json
+        )
+    endif()
+
+    if(TARGET maveb-seed-trained-3dgs-world)
+        add_test(
+            NAME MavebSeedTrained3DGSWorldFixture
+            COMMAND maveb-seed-trained-3dgs-world
+                --ply ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
+                --output ${CMAKE_CURRENT_BINARY_DIR}/test-artifacts/trained-seeded-fixture.aetherworld
+                --target-diagonal 2.0
+                --cell-size 0.25
+                --json
+        )
+    endif()
+
+    if(TARGET maveb-cbrc-work-bench)
+        add_test(
+            NAME MavebCBRCWorkBenchSmoke
+            COMMAND maveb-cbrc-work-bench
+                --gaussians 1024
+                --publication-bytes 4096
+                --pixels 4096
+                --repeats 1
+                --calibration-id ctest
         )
     endif()
 

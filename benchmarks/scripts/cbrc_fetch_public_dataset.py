@@ -93,7 +93,15 @@ def safe_extract_selected(
     destination: Path,
     scenes: list[dict],
 ) -> list[dict]:
-    prefixes = {str(scene["id"]): str(scene["memberPrefix"]) for scene in scenes}
+    prefixes: dict[str, list[str]] = {}
+    for scene in scenes:
+        scene_id = str(scene["id"])
+        raw = scene.get("memberPrefixes")
+        if raw is None:
+            raw = [scene.get("memberPrefix")]
+        if not isinstance(raw, list) or not raw or not all(isinstance(v, str) and v for v in raw):
+            raise ValueError(f"scene {scene_id} requires memberPrefix/memberPrefixes")
+        prefixes[scene_id] = [str(v) for v in raw]
     extracted: dict[str, list[str]] = {scene_id: [] for scene_id in prefixes}
     destination.mkdir(parents=True, exist_ok=True)
     destination_resolved = destination.resolve()
@@ -104,10 +112,13 @@ def safe_extract_selected(
             member = info.filename.replace("\\", "/")
             scene_id = None
             matched_prefix = None
-            for candidate_id, prefix in prefixes.items():
-                if member.startswith(prefix):
-                    scene_id = candidate_id
-                    matched_prefix = prefix
+            for candidate_id, candidates in prefixes.items():
+                for prefix in candidates:
+                    if member.startswith(prefix):
+                        scene_id = candidate_id
+                        matched_prefix = prefix
+                        break
+                if scene_id is not None:
                     break
             if scene_id is None or matched_prefix is None or info.is_dir():
                 continue
@@ -158,6 +169,12 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--archive", type=Path)
     parser.add_argument("--force-download", action="store_true")
+    parser.add_argument(
+        "--scene-set",
+        choices=("primary", "v2"),
+        default="primary",
+        help="primary=pilot T&T scenes; v2=four-scene paper campaign",
+    )
     args = parser.parse_args()
 
     manifest = load_manifest(args.manifest)
@@ -187,10 +204,13 @@ def main() -> int:
     )
 
     extracted_root = output / "extracted"
+    scene_key = "primaryScenes" if args.scene_set == "primary" else "campaignV2Scenes"
+    if scene_key not in manifest:
+        raise ValueError(f"source manifest missing {scene_key}")
     scenes = safe_extract_selected(
         archive,
         extracted_root,
-        list(manifest["primaryScenes"]),
+        list(manifest[scene_key]),
     )
 
     report = {
@@ -203,6 +223,7 @@ def main() -> int:
         "archiveBytes": integrity["bytes"],
         "archiveSha256": integrity["sha256"],
         "license": manifest.get("license"),
+        "sceneSet": args.scene_set,
         "scenes": scenes,
     }
     report_path = output / "PUBLIC_SOURCE_PROVENANCE.json"

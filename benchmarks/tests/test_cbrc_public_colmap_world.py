@@ -132,6 +132,40 @@ class PublicColmapWorldTests(unittest.TestCase):
             self.assertEqual(points[0].track_length, 3)
             self.assertAlmostEqual(points[1].xyz[0], 2.5)
 
+    def test_fetcher_accepts_multiple_candidate_member_prefixes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = root / "bundle.zip"
+            with zipfile.ZipFile(archive, "w") as handle:
+                handle.writestr(
+                    "deepblending/drjohnson/sparse/0/points3D.txt",
+                    "1 0 0 0 1 2 3 0.1\n",
+                )
+            output = root / "out"
+            report = fetch.safe_extract_selected(
+                archive,
+                output,
+                [
+                    {
+                        "id": "db-drjohnson",
+                        "memberPrefixes": [
+                            "db/drjohnson/sparse/0/",
+                            "deepblending/drjohnson/sparse/0/",
+                        ],
+                    }
+                ],
+            )
+            self.assertEqual(report[0]["sceneId"], "db-drjohnson")
+            self.assertTrue(
+                (
+                    output
+                    / "db-drjohnson"
+                    / "sparse"
+                    / "0"
+                    / "points3D.txt"
+                ).is_file()
+            )
+
     def test_fetcher_extracts_only_selected_sparse_members(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
