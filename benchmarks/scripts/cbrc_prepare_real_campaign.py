@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+import mmap
 import os
 import shutil
 import struct
@@ -37,7 +38,8 @@ class Candidate:
     ownership_sidecar: Path
     gaussian_count: int
     owners: tuple[int, ...]
-    positions: tuple[tuple[float, float, float], ...]
+    minimum: tuple[float, float, float]
+    maximum: tuple[float, float, float]
 
 
 def sha256(path: Path) -> str:
@@ -80,27 +82,39 @@ def latest_world(path: Path) -> tuple[int, int, dict[int, dict]]:
     return revision, timestamp, entities
 
 
-def read_gaussians(path: Path) -> tuple[int, tuple[tuple[float, float, float], ...]]:
-    data = path.read_bytes()
-    if len(data) < GAUSSIAN_HEADER_BYTES or data[:8] != GAUSSIAN_MAGIC:
+def read_gaussians(
+    path: Path,
+) -> tuple[int, tuple[float, float, float], tuple[float, float, float]]:
+    size = path.stat().st_size
+    if size < GAUSSIAN_HEADER_BYTES:
         raise ValueError("Gaussian sidecar header is invalid")
-    major = struct.unpack_from("<H", data, 8)[0]
-    stride = struct.unpack_from("<I", data, 12)[0]
-    count = struct.unpack_from("<Q", data, 16)[0]
-    degree = struct.unpack_from("<I", data, 24)[0]
-    if major != 1 or stride != GAUSSIAN_RECORD_BYTES or count <= 0 or degree > 3:
-        raise ValueError("Gaussian sidecar dimensions are invalid")
-    if GAUSSIAN_HEADER_BYTES + count * stride != len(data):
-        raise ValueError("Gaussian sidecar byte count is inconsistent")
 
-    positions = []
-    for index in range(count):
-        offset = GAUSSIAN_HEADER_BYTES + index * stride
-        xyz = struct.unpack_from("<3f", data, offset)
-        if not all(math.isfinite(v) and abs(v) <= 1.0e12 for v in xyz):
-            raise ValueError("Gaussian sidecar contains a non-finite position")
-        positions.append(tuple(float(v) for v in xyz))
-    return int(count), tuple(positions)
+    with path.open("rb") as stream, mmap.mmap(
+        stream.fileno(), 0, access=mmap.ACCESS_READ
+    ) as data:
+        if data[:8] != GAUSSIAN_MAGIC:
+            raise ValueError("Gaussian sidecar header is invalid")
+        major = struct.unpack_from("<H", data, 8)[0]
+        stride = struct.unpack_from("<I", data, 12)[0]
+        count = struct.unpack_from("<Q", data, 16)[0]
+        degree = struct.unpack_from("<I", data, 24)[0]
+        if major != 1 or stride != GAUSSIAN_RECORD_BYTES or count <= 0 or degree > 3:
+            raise ValueError("Gaussian sidecar dimensions are invalid")
+        if GAUSSIAN_HEADER_BYTES + count * stride != size:
+            raise ValueError("Gaussian sidecar byte count is inconsistent")
+
+        minimum = [float("inf")] * 3
+        maximum = [float("-inf")] * 3
+        for index in range(count):
+            offset = GAUSSIAN_HEADER_BYTES + index * stride
+            xyz = struct.unpack_from("<3f", data, offset)
+            if not all(math.isfinite(v) and abs(v) <= 1.0e12 for v in xyz):
+                raise ValueError("Gaussian sidecar contains a non-finite position")
+            for axis, value in enumerate(xyz):
+                minimum[axis] = min(minimum[axis], float(value))
+                maximum[axis] = max(maximum[axis], float(value))
+
+    return int(count), tuple(minimum), tuple(maximum)
 
 
 def read_ownership(path: Path) -> tuple[int, ...]:
@@ -129,7 +143,7 @@ def inspect_archive(path: Path) -> Candidate:
     if not ownership.is_file():
         raise FileNotFoundError(f"missing ownership sidecar: {ownership}")
 
-    count, positions = read_gaussians(gaussian)
+    count, minimum, maximum = read_gaussians(gaussian)
     owners = read_ownership(ownership)
     if len(owners) != count:
         raise ValueError("Gaussian/ownership sidecars disagree on cardinality")
@@ -145,7 +159,8 @@ def inspect_archive(path: Path) -> Candidate:
         ownership_sidecar=ownership.resolve(),
         gaussian_count=count,
         owners=owners,
-        positions=positions,
+        minimum=minimum,
+        maximum=maximum,
     )
 
 
@@ -214,8 +229,8 @@ def choose_entity(candidate: Candidate) -> tuple[int, int]:
 
 
 def bounds(candidate: Candidate) -> tuple[list[float], list[float], list[float]]:
-    mins = [min(p[i] for p in candidate.positions) for i in range(3)]
-    maxs = [max(p[i] for p in candidate.positions) for i in range(3)]
+    mins = list(candidate.minimum)
+    maxs = list(candidate.maximum)
     center = [(mins[i] + maxs[i]) * 0.5 for i in range(3)]
     return mins, maxs, center
 
