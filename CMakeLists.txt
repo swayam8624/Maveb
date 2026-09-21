@@ -167,6 +167,18 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebGaussianPublicationPlanTests)
     add_test(NAME MavebGaussianPublicationPlanTests COMMAND MavebGaussianPublicationPlanTests)
 
+    if(TARGET maveb-seed-world)
+        add_test(
+            NAME MavebSeedWorldFixture
+            COMMAND maveb-seed-world
+                --proxy ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/package-scene/proxy.ply
+                --output ${CMAKE_CURRENT_BINARY_DIR}/test-artifacts/seeded-fixture.aetherworld
+                --cell-size 0.25
+                --gaussian-scale 0.01
+                --json
+        )
+    endif()
+
     if(TARGET maveb-cbrc-gaussian-oracle)
         add_test(
             NAME MavebCBRCGaussianOracleFixture
