@@ -37,6 +37,7 @@ echo
 PREP_ARGS=(
   --output-dir "$PREP"
   --search-root "$ROOT"
+  --search-root "$ROOT/build"
   --search-root "$HOME/Desktop"
   --search-root "$HOME/Documents"
   --search-root "$HOME/Downloads"
