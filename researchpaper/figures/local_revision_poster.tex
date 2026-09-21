@@ -1,52 +1,202 @@
-\begin{tikzpicture}[font=\scriptsize, >=Latex]
-\node[draw=mavebline, rounded corners=2pt, very thick, fill=mavebblue,
-      minimum width=0.28\textwidth, minimum height=2.45cm, align=center] (s0) at (0,0) {};
-\node[draw=mavebline, rounded corners=2pt, very thick, fill=mavebblue,
-      minimum width=0.28\textwidth, minimum height=2.45cm, align=center] (s1) at (5.0,0) {};
-\node[draw=mavebline, rounded corners=2pt, very thick, fill=mavebamber,
-      minimum width=0.28\textwidth, minimum height=2.45cm, align=center] (s2) at (10.0,0) {};
-\node[anchor=north west,font=\small\bfseries] at ($(s0.north west)+(0.12,-0.12)$) {1  Initial state};
-\node[anchor=north west,font=\small\bfseries] at ($(s1.north west)+(0.12,-0.12)$) {2  Intended edit};
-\node[anchor=north west,font=\small\bfseries] at ($(s2.north west)+(0.12,-0.12)$) {3  Certified support};
-\foreach \x/\y/\r/\c in {-0.65/-0.2/0.28/gray!55,-0.25/0.25/0.34/gray!70,0.1/-0.18/0.31/gray!60,
-                          0.46/0.24/0.29/gray!75,0.74/-0.12/0.25/gray!50,-0.05/0.55/0.24/gray!50}
-  \fill[\c,opacity=.78] ($(s0.center)+(\x,\y-0.08)$) circle (\r);
-\foreach \x/\y/\r/\c in {-0.65/-0.2/0.28/gray!55,-0.25/0.25/0.34/gray!70,0.1/-0.18/0.31/gray!60,
-                          0.46/0.24/0.29/gray!75,0.74/-0.12/0.25/gray!50,-0.05/0.55/0.24/gray!50}
-  \fill[\c,opacity=.78] ($(s1.center)+(\x-0.15,\y-0.08)$) circle (\r);
-\fill[blue!65,opacity=.90] ($(s1.center)+(0.95,0.45)$) circle (.28);
-\draw[->,very thick,draw=mavebline] ($(s1.center)+(0.32,0.30)$) -- ($(s1.center)+(0.80,0.42)$);
-\foreach \x/\y/\r/\c in {-0.65/-0.2/0.28/gray!55,-0.25/0.25/0.34/gray!70,0.1/-0.18/0.31/gray!60,
-                          0.46/0.24/0.29/gray!75,0.74/-0.12/0.25/gray!50,-0.05/0.55/0.24/gray!50}
-  \fill[\c,opacity=.60] ($(s2.center)+(\x-0.1,\y-0.08)$) circle (\r);
-\fill[yellow!70,opacity=.95] ($(s2.center)+(0.45,-0.03)$) circle (.42);
-\fill[yellow!70,opacity=.95] ($(s2.center)+(0.78,0.27)$) circle (.32);
-\fill[blue!65,opacity=.95] ($(s2.center)+(0.95,0.47)$) circle (.25);
-\draw[yellow!60!black,very thick,dashed] ($(s2.center)+(0.58,0.10)$) circle (.78);
-\node[anchor=west] at ($(s2.center)+(1.20,0.43)$) {edited Gaussian};
-\node[anchor=west] at ($(s2.center)+(1.20,0.03)$) {candidate support};
-\draw[->,very thick,draw=mavebline] (s0.east) -- (s1.west);
-\draw[->,very thick,draw=mavebline] (s1.east) -- (s2.west);
+\begingroup
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[x=1cm,y=1cm,font=\sffamily,>=Latex,line cap=round,line join=round]
+\definecolor{figblue}{HTML}{1355FF}
+\definecolor{figbluebg}{HTML}{EAF2FF}
+\definecolor{figyellow}{HTML}{FFE600}
+\definecolor{figgreen}{HTML}{10A55A}
+\definecolor{figgreenbg}{HTML}{E5F7ED}
+\definecolor{figred}{HTML}{EF3636}
+\definecolor{figredbg}{HTML}{FDE9E9}
+\definecolor{figink}{HTML}{15244D}
+\definecolor{figmuted}{HTML}{586A92}
+\definecolor{figline}{HTML}{C8D8F0}
+\definecolor{figpanel}{HTML}{F5F9FF}
+\definecolor{figblack}{HTML}{090B10}
 
-\node[draw=mavebline,rounded corners=2pt,very thick,fill=white,
-      text width=0.33\textwidth,align=center,inner sep=6pt] (crit) at (5,-3.2)
-      {\textbf{Revision criticality}\\[2pt]
-       $\chi(C)=\max_q B_q(C)/\varepsilon_q$\\[2pt]
-       certify locality only when $\chi(C)\le1$ and $W(C)<W_{\mathrm{full}}$};
+\tikzset{
+  card/.style={draw=figline,rounded corners=1.7mm,very thick,fill=figpanel},
+  mini/.style={draw=figline,rounded corners=1.2mm,thick,fill=white},
+  flow/.style={->,very thick,draw=figblue},
+  lbl/.style={text=figink,font=\bfseries},
+  tinylabel/.style={text=figmuted,font=\scriptsize}
+}
 
-\node[draw=green!55!black,rounded corners=2pt,very thick,fill=mavebgreen,
-      minimum width=0.42\textwidth,minimum height=1.65cm,align=center,text width=0.38\textwidth] (ok) at (2.55,-5.4)
-      {\textbf{\large A \quad Certified local repair}\\[4pt]
-       Recompute the selected support; leave the certified exterior unchanged.\\
-       \textbf{Certified under the stated assumptions.}};
-\node[draw=red!65!black,rounded corners=2pt,very thick,fill=mavebrose,
-      minimum width=0.42\textwidth,minimum height=1.65cm,align=center,text width=0.38\textwidth] (bad) at (7.45,-5.4)
-      {\textbf{\large B \quad Automatic \FULL{} fallback}\\[4pt]
-       Rebuild when locality cannot be certified or when local work crosses the full baseline.\\
-       \textbf{Fails closed rather than forcing locality.}};
+\newcommand{\gaussianscene}[2]{%
+  \begin{scope}[shift={(#1,#2)}]
+    \fill[figblack,rounded corners=1mm] (0,0) rectangle (4.15,2.00);
+    \shade[ball color=gray!55,opacity=.72] (.42,1.18) circle (.13);
+    \foreach \x/\y/\r/\c in {
+      1.10/1.08/.31/gray!62,1.42/1.28/.34/gray!48,1.72/.98/.33/gray!70,
+      2.02/1.22/.34/gray!54,2.32/.94/.31/gray!68,2.60/1.18/.28/gray!44,
+      1.27/.73/.28/gray!58,1.60/.66/.31/gray!72,1.94/.68/.30/gray!50,
+      2.28/.65/.27/gray!64,2.70/.73/.24/gray!74,1.70/1.48/.24/gray!42,
+      2.16/1.48/.24/gray!72,2.52/1.45/.21/gray!55,2.92/1.10/.18/gray!78}
+      {\shade[ball color=\c,opacity=.94] (\x,\y) circle (\r);}
+    \shade[ball color=white,opacity=.78] (1.76,1.10) circle (.17);
+    \shade[ball color=white,opacity=.82] (2.68,1.18) circle (.14);
+  \end{scope}
+}
 
-\draw[->,very thick,draw=green!55!black] (crit.south) -- ++(0,-0.45) -| (ok.north);
-\draw[->,very thick,draw=red!65!black] (crit.south) -- ++(0,-0.45) -| (bad.north);
-\node[anchor=south, text=green!45!black] at ($(ok.north)+(0,0.12)$) {\scriptsize $\chi(C)\le1$ and local work is favorable};
-\node[anchor=south, text=red!55!black] at ($(bad.north)+(0,0.12)$) {\scriptsize supercritical, unsupported, or unfavorable crossover};
-\end{tikzpicture}
+\node[anchor=west,text=black,font=\bfseries\fontsize{19}{21}\selectfont] at (0.1,11.45)
+  {How Local Gaussian Revisions Propagate};
+\node[anchor=west,text=figmuted,font=\fontsize{10.2}{11.2}\selectfont] at (0.1,10.98)
+  {From intended physical edit to certified local repair or fail-closed \FULL{} fallback};
+\node[anchor=west,text=black,font=\bfseries\fontsize{11}{12}\selectfont] at (12.75,11.38) {MAVEB / CBRC};
+\node[anchor=west,text=figmuted,font=\fontsize{7.5}{8.4}\selectfont,align=left] at (12.75,10.93)
+  {Criticality-Bounded Revision Cones\\for Persistent Captured Worlds};
+
+\foreach \x/\n/\ttl in {0/1/Initial state,4.55/2/Intended edit / movement,9.10/3/Certified support formation}{
+  \node[card,minimum width=4.35cm,minimum height=3.05cm,anchor=south west] (top\n) at (\x,7.60) {};
+  \fill[figink] ($(top\n.north west)+(0.18,-0.18)$) circle (.16);
+  \node[text=white,font=\bfseries\scriptsize] at ($(top\n.north west)+(0.18,-0.18)$) {\n};
+  \node[anchor=north west,lbl,font=\bfseries\small] at ($(top\n.north west)+(0.44,-0.10)$) {\ttl};
+}
+\gaussianscene{0.10}{7.82}
+\gaussianscene{4.65}{7.82}
+\gaussianscene{9.20}{7.82}
+
+\shade[ball color=blue!45,draw=white,very thick] (7.78,9.45) circle (.20);
+\draw[->,very thick,draw=white,dashed] (7.28,9.26) -- (7.62,9.40);
+\node[anchor=west,text=white,font=\scriptsize] at (8.00,9.42) {edited Gaussian};
+
+\fill[figyellow,opacity=.83] (11.35,8.72) circle (.25);
+\fill[figyellow,opacity=.83] (11.76,8.98) circle (.29);
+\fill[figyellow,opacity=.83] (11.65,9.42) circle (.25);
+\shade[ball color=blue!45,draw=white,very thick] (12.22,9.28) circle (.19);
+\draw[figyellow!60!black,very thick,dashed] (11.75,9.12) ellipse (.88 and .75);
+\node[anchor=west,text=figyellow!55!black,font=\bfseries\scriptsize,align=left] at (12.52,9.55)
+ {certified support\\(local region)};
+
+\node[tinylabel,anchor=north] at (2.18,7.68) {Scene before edit};
+\node[tinylabel,anchor=north] at (6.73,7.68) {Example: translate a Gaussian primitive};
+\node[tinylabel,anchor=north] at (11.28,7.68) {Only certifiable influence enters support};
+
+\node[mini,minimum width=2.85cm,minimum height=6.25cm,anchor=north west] (legend) at (14.05,10.63) {};
+\node[anchor=north west,lbl,font=\bfseries\small] at ($(legend.north west)+(0.14,-0.13)$) {Legend};
+\shade[ball color=gray!55] ($(legend.north west)+(0.30,-0.65)$) circle (.11);
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.55,-0.65)$) {Gaussian state};
+\shade[ball color=blue!45] ($(legend.north west)+(0.30,-1.06)$) circle (.12);
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.55,-1.06)$) {intended edit};
+\fill[figyellow] ($(legend.north west)+(0.30,-1.47)$) circle (.12);
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.55,-1.47)$) {selected support};
+\fill[figblue,rounded corners=.5mm] ($(legend.north west)+(0.18,-1.92)$) rectangle ++(.34,.22);
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.55,-1.81)$) {mask / state};
+\fill[figgreen,rounded corners=.5mm] ($(legend.north west)+(0.14,-2.36)$) rectangle ++(.55,.22);
+\node[text=white,font=\bfseries\tiny] at ($(legend.north west)+(0.415,-2.25)$) {LOCAL};
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.76,-2.25)$) {certified};
+\fill[figred,rounded corners=.5mm] ($(legend.north west)+(0.14,-2.78)$) rectangle ++(.55,.22);
+\node[text=white,font=\bfseries\tiny] at ($(legend.north west)+(0.415,-2.67)$) {FULL};
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.76,-2.67)$) {fallback};
+\draw[figyellow!65!black,thick,dashed] ($(legend.north west)+(0.30,-3.20)$) circle (.13);
+\node[anchor=west,tinylabel] at ($(legend.north west)+(0.55,-3.20)$) {candidate cone};
+\node[anchor=north west,text=figmuted,font=\tiny,align=left,text width=2.35cm] at ($(legend.north west)+(0.14,-3.60)$)
+ {Blue is the authored change. Yellow is state CBRC proves must be revised. Green is a certified local outcome; red is the fail-closed path.};
+
+\node[card,minimum width=13.78cm,minimum height=3.14cm,anchor=north west] (pipe) at (0,7.38) {};
+\node[anchor=north west,lbl,font=\bfseries\small] at ($(pipe.north west)+(0.16,-0.13)$) {State transition pipeline};
+\node[anchor=north west,text=figmuted,font=\scriptsize] at ($(pipe.north west)+(2.55,-0.16)$)
+  {From edit to certified local repair, or fallback to \FULL{}.};
+
+\foreach \x/\n/\ttl in {0.20/1/Before,2.85/2/Edited support,5.50/3/Candidate cone,8.15/4/Selected repair,10.80/5/FULL-after oracle}{
+  \node[mini,minimum width=2.46cm,minimum height=2.20cm,anchor=north west] (p\n) at ($(pipe.north west)+(\x,-0.62)$) {};
+  \fill[figink] ($(p\n.north west)+(0.16,-0.16)$) circle (.13);
+  \node[text=white,font=\bfseries\tiny] at ($(p\n.north west)+(0.16,-0.16)$) {\n};
+  \node[anchor=north west,lbl,font=\bfseries\scriptsize] at ($(p\n.north west)+(0.35,-0.08)$) {\ttl};
+}
+\foreach \xx in {0.34,2.99,5.64,8.29,10.94}{
+  \begin{scope}[shift={($(pipe.north west)+(\xx,-1.03)$)}]
+    \fill[figblack,rounded corners=.6mm] (0,0) rectangle (1.10,.85);
+    \foreach \x/\y/\r/\c in {.25/.47/.12/gray!55,.43/.57/.13/gray!70,.59/.42/.13/gray!50,.73/.55/.12/gray!72,.87/.43/.10/gray!60,.48/.30/.11/gray!65}
+      {\shade[ball color=\c] (\x,\y) circle (\r);}
+  \end{scope}
+}
+\fill[figblue] ($(pipe.north west)+(1.53,-1.03)$) rectangle ++(.65,.85);
+\fill[figblue] ($(pipe.north west)+(4.18,-1.03)$) rectangle ++(.65,.85);
+\fill[figyellow] ($(pipe.north west)+(4.46,-.68)$) circle (.08);
+\fill[figblue] ($(pipe.north west)+(6.83,-1.03)$) rectangle ++(.65,.85);
+\fill[figyellow] ($(pipe.north west)+(7.14,-.72)$) circle (.16);
+\draw[figyellow!65!black,thick,dashed] ($(pipe.north west)+(6.18,-.59)$) circle (.35);
+\fill[figblue] ($(pipe.north west)+(9.48,-1.03)$) rectangle ++(.65,.85);
+\fill[figyellow] ($(pipe.north west)+(9.80,-.73)$) circle (.18);
+\fill[figblue] ($(pipe.north west)+(12.13,-1.03)$) rectangle ++(.65,.85);
+\foreach \a/\b in {p1/p2,p2/p3,p3/p4,p4/p5}{\draw[flow] (\a.east) -- (\b.west);}
+\node[tinylabel,anchor=north] at ($(p1.south)+(0,-.05)$) {no edit mask};
+\node[tinylabel,anchor=north] at ($(p2.south)+(0,-.05)$) {intended edit};
+\node[tinylabel,anchor=north] at ($(p3.south)+(0,-.05)$) {influence search};
+\node[tinylabel,anchor=north] at ($(p4.south)+(0,-.05)$) {certified support};
+\node[tinylabel,anchor=north] at ($(p5.south)+(0,-.05)$) {independent reference};
+
+\node[fill=white,draw=figline,rounded corners=1mm,anchor=south west,minimum width=13.40cm,minimum height=.43cm] at (0.18,4.35) {};
+\node[anchor=west,text=figmuted,font=\scriptsize] at (0.35,4.56)
+ {Frozen public-v2.1: \textbf{44/60 LOCAL} \quad 16/60 FULL \quad median calibrated work/FULL \textbf{0.36953} (\textbf{2.706$\times$} lower work) \quad max observed residual \textbf{0} \quad max selected bound \textbf{2e-6}};
+
+\node[fill=figpanel,rounded corners=2mm,minimum width=3.05cm,minimum height=.42cm] (check) at (6.90,3.92)
+  {\scriptsize\bfseries Check certification criteria};
+\draw[very thick,draw=figgreen] (6.55,4.34) -- ++(0,-.52) -| (3.25,3.55);
+\draw[very thick,draw=figred] (7.25,4.34) -- ++(0,-.52) -| (10.55,3.55);
+\node[anchor=south,text=figgreen,font=\scriptsize\bfseries] at (3.25,3.62) {passes bound and is cheaper};
+\node[anchor=south,text=figred,font=\scriptsize\bfseries] at (10.55,3.62) {supercritical, unsupported, or not efficient};
+
+\node[draw=figgreen!70!black,rounded corners=1.8mm,very thick,fill=figgreenbg,minimum width=6.70cm,minimum height=3.25cm,anchor=north west] (local) at (0,3.45) {};
+\fill[figgreen] ($(local.north west)+(0.32,-0.33)$) circle (.23);
+\node[text=white,font=\bfseries] at ($(local.north west)+(0.32,-0.33)$) {A};
+\node[anchor=north west,text=figink,font=\bfseries\small] at ($(local.north west)+(0.67,-0.18)$) {Certified local repair};
+\node[anchor=north east,fill=figgreen,rounded corners=.8mm,text=white,font=\bfseries\scriptsize,inner xsep=5pt,inner ysep=2.5pt] at ($(local.north east)+(-0.18,-0.18)$) {LOCAL / CERTIFIED};
+\begin{scope}[shift={($(local.south west)+(0.25,.42)$)}]
+  \fill[figblack,rounded corners=.6mm] (0,0) rectangle (1.55,1.20);
+  \foreach \x/\y/\r/\c in {.32/.66/.16/gray!55,.57/.78/.18/gray!68,.80/.59/.18/gray!50,1.02/.75/.16/gray!72,1.22/.58/.13/gray!60,.65/.39/.15/gray!64}
+    {\shade[ball color=\c] (\x,\y) circle (\r);}
+\end{scope}
+\fill[figblue] ($(local.south west)+(1.95,.42)$) rectangle ++(1.15,1.20);
+\fill[figyellow] ($(local.south west)+(2.55,1.02)$) circle (.19);
+\begin{scope}[shift={($(local.south west)+(3.30,.42)$)}]
+  \fill[figblack,rounded corners=.6mm] (0,0) rectangle (1.55,1.20);
+  \foreach \x/\y/\r/\c in {.32/.66/.16/gray!55,.57/.78/.18/gray!68,.80/.59/.18/gray!50,1.02/.75/.16/gray!72,1.22/.58/.13/gray!60,.65/.39/.15/gray!64}
+    {\shade[ball color=\c] (\x,\y) circle (\r);}
+\end{scope}
+\fill[figblue] ($(local.south west)+(5.00,.42)$) rectangle ++(1.15,1.20);
+\node[anchor=north west,text=figmuted,font=\tiny,align=left,text width=2.85cm] at ($(local.north west)+(3.63,-.63)$)
+  {$\checkmark$ exact predecessor closure\\
+   $\checkmark$ $\chi(C)=\max_q B_q/\varepsilon_q\le1$\\
+   $\checkmark$ $W(C)<W_{\mathrm{full}}$\\
+   $\checkmark$ replayed against FULL-after oracle};
+\node[anchor=south,text=figgreen!55!black,font=\bfseries\scriptsize] at ($(local.south)+(0,.10)$)
+  {Small localized changes: selective, bounded, fail-closed.};
+
+\node[draw=figred!75!black,rounded corners=1.8mm,very thick,fill=figredbg,minimum width=6.70cm,minimum height=3.25cm,anchor=north west] (full) at (7.08,3.45) {};
+\fill[figred] ($(full.north west)+(0.32,-0.33)$) circle (.23);
+\node[text=white,font=\bfseries] at ($(full.north west)+(0.32,-0.33)$) {B};
+\node[anchor=north west,text=figink,font=\bfseries\small] at ($(full.north west)+(0.67,-0.18)$) {Automatic \FULL{} fallback};
+\node[anchor=north east,fill=figred,rounded corners=.8mm,text=white,font=\bfseries\scriptsize,inner xsep=5pt,inner ysep=2.5pt] at ($(full.north east)+(-0.18,-0.18)$) {FAIL CLOSED};
+\begin{scope}[shift={($(full.south west)+(0.25,.42)$)}]
+  \fill[figblack,rounded corners=.6mm] (0,0) rectangle (1.55,1.20);
+  \foreach \x/\y/\r/\c in {.32/.66/.16/gray!55,.57/.78/.18/gray!68,.80/.59/.18/gray!50,1.02/.75/.16/gray!72,1.22/.58/.13/gray!60,.65/.39/.15/gray!64}
+    {\shade[ball color=\c] (\x,\y) circle (\r);}
+  \shade[ball color=blue!45] (1.27,.97) circle (.16);
+\end{scope}
+\fill[figblue] ($(full.south west)+(1.95,.42)$) rectangle ++(1.15,1.20);
+\fill[figyellow] ($(full.south west)+(2.53,1.02)$) circle (.43);
+\begin{scope}[shift={($(full.south west)+(3.30,.42)$)}]
+  \fill[figblack,rounded corners=.6mm] (0,0) rectangle (1.55,1.20);
+  \foreach \x/\y/\r/\c in {.32/.66/.16/gray!55,.57/.78/.18/gray!68,.80/.59/.18/gray!50,1.02/.75/.16/gray!72,1.22/.58/.13/gray!60,.65/.39/.15/gray!64}
+    {\shade[ball color=\c] (\x,\y) circle (\r);}
+\end{scope}
+\fill[figblue] ($(full.south west)+(5.00,.42)$) rectangle ++(1.15,1.20);
+\node[anchor=north west,text=figmuted,font=\tiny,align=left,text width=2.85cm] at ($(full.north west)+(3.63,-.63)$)
+  {$\bullet$ unsupported dependency\\
+   $\bullet$ residual bound exceeds tolerance\\
+   $\bullet$ local work crosses FULL baseline\\
+   $\bullet$ unstable / ambiguous analytic structure};
+\node[anchor=south,text=figred!70!black,font=\bfseries\scriptsize] at ($(full.south)+(0,.10)$)
+  {Large or ambiguous changes: rebuild to preserve the contract.};
+
+\node[draw=figline,rounded corners=1.2mm,very thick,fill=figpanel,minimum width=16.92cm,minimum height=.56cm,anchor=south west] at (0,-.02) {};
+\node[anchor=west,text=figink,font=\bfseries\scriptsize] at (.20,.26) {Key takeaway};
+\node[anchor=west,text=figink,font=\scriptsize] at (1.72,.26)
+  {MAVEB/CBRC repairs only what must change, proves the permitted exterior residual, and falls back to \FULL{} whenever locality cannot be certified.};
+\node[anchor=east,text=figgreen,font=\bfseries\scriptsize] at (16.68,.26)
+  {$\checkmark$ efficient when possible \quad $\checkmark$ provably bounded \quad $\checkmark$ robust via fallback};
+\end{tikzpicture}%
+}
+\endgroup

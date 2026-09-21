@@ -3,6 +3,7 @@ name: Build research paper
 on:
   push:
     branches:
+      - main
       - docs/researchpaper-final-20260921
       - researchpaper/final-manuscript-20260921
     paths:
