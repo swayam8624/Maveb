@@ -320,6 +320,29 @@ The frozen isolated millisecond cost model reports a median selected heterogeneo
 \end{equation}
 corresponding to 2.706$\times$ lower calibrated work. We intentionally do not call this a 2.706$\times$ speedup: the public scalar is constructed from frozen per-domain microbenchmarks, while campaign phase wall times are recorded separately. A paired local-versus-full end-to-end timing experiment would be required for a speedup claim.
 
+\subsection{Method comparison}
+Table~\ref{tab:baselines} reports the frozen method-level baseline suite on the same 60 cases. The suite re-certifies every selected cone with the conservative certificate, so \emph{certificate pass} is not an independent measured-error metric. In particular, exact-only, radius, and changed-fraction policies often choose very little work but fail the certificate on most cases. The empirical-order baseline uses empirical influence only to order expansion and is still re-certified analytically; the separately held-out changed-fraction heuristic is discussed below.
+
+\begin{table*}[t]
+\caption{Frozen public method comparison. The work column is the baseline suite's native work-ratio metric and is distinct from the calibrated heterogeneous headline ratio of 0.36953. \emph{Uncertified} means the selected cone failed the conservative certificate, not that an independent oracle violation was observed. All four tested radius policies produced the same aggregate values on this matrix.}
+\label{tab:baselines}
+\centering
+\scriptsize
+\rowcolors{2}{gray!8}{white}
+\begin{tabular}{lrrrrl}
+\toprule
+Method & Cert. pass & Uncertified & \FULL{} rate & Median native work/\FULL{} & Decision rule \\
+\midrule
+\FULL{} & 100.0\% & 0.0\% & 100.0\% & 1.00000 & full reference \\
+Exact only & 26.7\% & 73.3\% & 0.0\% & 0.00000 & exact closure only \\
+Radius 0--3 & 26.7\% & 73.3\% & 0.0\% & 0.00000 & fixed graph radius \\
+Changed fraction & 40.0\% & 60.0\% & 0.0\% & 0.00000 & threshold policy \\
+Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical ordering, analytic recertification \\
+\method{} & 100.0\% & 0.0\% & 26.7\% & 0.04736 & certificate + work crossover + fallback \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 \begin{figure*}[t]
   \centering
   \includegraphics[width=0.98\textwidth]{../research/results/visualizations/public/F0_hero.png}
@@ -402,7 +425,30 @@ Largest tested scale & 1,000,000 Gaussians \\
 \subsection{Empirical scheduling and ablations}
 The held-out changed-fraction scheduler produced no observed unsafe false-local decision on the frozen matrix. This is not evidence that empirical sensitivity is a general safety mechanism: the candidate full-reference residual is zero across these cases, so the matrix does not strongly separate empirical scheduling from certification. \method{} therefore keeps empirical edges outside the certificate by construction.
 
-Several real-matrix structural ablations are also non-discriminative. We do not reinterpret those neutral outcomes as support for component necessity. The deterministic mechanism-isolation suite is used only to show that each v1 mechanism has a constructed falsifying stress case. In particular, disabling fallback or substituting an overly global bound produces the expected failure or rebuild behavior in stress cases, while the real campaign remains the source for observed effect size.
+Table~\ref{tab:ablations} makes the real-matrix ablation behavior explicit. Five structural/analytic ablations are neutral on these 60 cases. The global-norm-tail replacement remains certificate-safe but collapses to \FULL{} on every case. Removing fallback has the opposite failure mode: it never selects \FULL{} and only 26.7\% of cases pass the certificate. The separately labeled mechanism-isolation suite contains seven deterministic synthetic stress cases, one for each v1 mechanism, and all seven separate in the expected safety/work direction. Those stress cases establish falsifiability of the mechanisms, not real-world effect size.
+
+\begin{table*}[t]
+\caption{Frozen real-matrix ablations and their deterministic mechanism-isolation interpretation. Native work ratios use the baseline-suite metric. Neutral means the real matrix matches \method{} on the reported aggregate fields; it is not claimed as evidence that the removed mechanism is unnecessary.}
+\label{tab:ablations}
+\centering
+\scriptsize
+\rowcolors{2}{gray!8}{white}
+\begin{tabularx}{\textwidth}{lrrrY}
+\toprule
+Ablation & Pass & \FULL{} rate & Median native work/\FULL{} & Reading \\
+\midrule
+Remove predecessor closure & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case exposes omitted required exact work \\
+Gaussian analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
+Temporal analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
+Remove QoI specialization & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case requires extra irrelevant work \\
+Collapse \hard{}/\analytic{} separation & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case becomes more conservative \\
+Global-norm exterior tail & 100.0\% & 100.0\% & 1.00000 & safe but destroys locality on all 60 real cases \\
+Remove certified fallback & 26.7\% & 0.0\% & 0.00000 & 44/60 real cases fail certification; synthetic case leaves an unsafe candidate \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The selected public residual is numerically zero in every frozen case at the reported precision, despite 56/60 source edits exceeding tolerance before repair. The real matrix therefore demonstrates selection/fallback correctness but does not estimate certificate tightness under non-zero accepted residual. We use the threshold-crossing mechanism-isolation cases only to show that the analytic machinery can change decisions when stressed; we do not present them as a substitute for real non-zero-residual evidence.
 
 \section{Discussion}
 \subsection{What the evidence establishes}
@@ -443,7 +489,7 @@ The canonical evidence freeze records workflow run IDs, artifact IDs, Git SHAs, 
 Scene-bearing figures retain the applicable upstream dataset or model terms. Original software is licensed under Apache-2.0, original research communication is scoped under CC BY 4.0, and third-party rights are recorded separately. For double-blind review, the identifiable public repository and author metadata should be replaced by an anonymized frozen supplement consistent with the target venue's policy.
 
 \section{Conclusion}
-We presented Criticality-Bounded Revision Cones, a fail-closed method for selective recomputation in persistent captured worlds. \method{} separates exact dependencies from conservative finite-change influence, binds the unrepaired exterior to explicit output tolerances, compares regional work against a full baseline, and independently replays every selected result against a full-after oracle. The frozen public and trained-representation campaigns show that local repair and full fallback can coexist under one auditable contract, while also exposing a near-global discovery bottleneck and the absence of a current wall-clock speedup claim. The central principle is simple: a persistent world should repair locally only when it can justify what it leaves untouched; otherwise it should rebuild.
+We presented Criticality-Bounded Revision Cones, where criticality is the worst normalized certificate-to-tolerance ratio for the protected outputs, as a fail-closed method for selective recomputation in persistent captured worlds. \method{} separates exact dependencies from conservative finite-change influence, binds the unrepaired exterior to explicit output tolerances, compares regional work against a full baseline, and independently replays every selected result against a full-after oracle. The frozen public and trained-representation campaigns show that local repair and full fallback can coexist under one auditable contract, while also exposing a near-global discovery bottleneck and the absence of a current wall-clock speedup claim. The central principle is simple: a persistent world should repair locally only when it can justify what it leaves untouched; otherwise it should rebuild.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
