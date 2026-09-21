@@ -247,10 +247,9 @@ fi
 chmod +x run_all.sh
 export MAVEB_PYTHON="$ROOT/.venv-maveb/bin/python"
 
-args=()
-if (( LAUNCH_STUDIO )); then
-  args+=(--launch-studio)
-fi
-
 echo "==> Starting complete MAVEB verification"
-exec "$ROOT/run_all.sh" "${args[@]}"
+if (( LAUNCH_STUDIO )); then
+  exec "$ROOT/run_all.sh" --launch-studio
+else
+  exec "$ROOT/run_all.sh"
+fi
