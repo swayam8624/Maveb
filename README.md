@@ -1126,6 +1126,8 @@ Full procedure: [CBRC experiment runbook](research/results/CBRC_EXPERIMENT_RUNBO
 - [CBRC architecture and operator guide](docs/research/CBRC.md)
 - [Implementation status](research/design/CBRC_IMPLEMENTATION_STATUS.md)
 - [Limitations and threat model](research/design/CBRC_LIMITATIONS.md)
+- [Frozen paper claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+- [Cross-representation validation figure](research/results/F12_representation_comparison_2026-09-21.svg)
 - [Result schema](research/results/CBRC_RESULT_SCHEMA.md)
 - [Experiment runbook](research/results/CBRC_EXPERIMENT_RUNBOOK.md)
 - [Machine-readable schemas](research/schema/README.md)
