@@ -9,7 +9,7 @@ The exploration phase is closed for the current paper.
 **Locked problem:** MAVEB-CLOSURE — dependency-certified heterogeneous minimal-work repair for
 persistent captured worlds.
 
-**Locked method identity:** Cross-Derived-State Revision Certificate (CDSRC).
+**Locked method identity:** Criticality-Bounded Revision Cones (CBRC), emitting a Cross-Derived-State Revision Certificate (CDSRC) for each accepted repair.
 
 The paper asks whether one localized physical-world revision can trigger a conservative dependency
 closure spanning observations/evidence, TSDF, explicit mesh, Gaussian state, texture/material state,
@@ -20,12 +20,11 @@ See `research/state/PROBLEM_LOCK.md`.
 
 ## Consolidated branch
 
-All current-paper work is consolidated on:
+All current-paper work is consolidated on the final integration line and is intended to land on:
 
-`research/maveb-s1-locked`
+`main`
 
-Historical branches remain useful as provenance and correctness oracles but are no longer the active
-execution source.
+Historical branches are provenance only and are not active execution sources.
 
 The locked line now contains:
 
@@ -92,7 +91,7 @@ the lock gates.
 ## Required next evidence
 
 1. Green CI / Studio / sanitizer validation for the consolidated locked head.
-2. Bind every required layer to one CDSRC transaction.
+2. Bind every required layer to one CBRC repair transaction and emitted CDSRC artifact.
 3. Run Apple-silicon sparse-change measurements.
 4. Execute the frozen 750-cell controlled matrix.
 5. Run public evolving-scene experiments including VG-Scene where licensing permits.

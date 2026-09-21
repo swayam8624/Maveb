@@ -270,6 +270,16 @@ Install the Metal compiler if needed:
 xcodebuild -downloadComponent metalToolchain
 ```
 
+### One-command verification
+
+Run the repository-wide implementation gates with:
+
+```bash
+./run_all.sh
+```
+
+This performs the CI build/tests, sanitizer build/tests, Python benchmark/research tests, the randomized CBRC theorem falsification chain, and a synthetic phase-behavior pilot. If a frozen real campaign manifest and work-cost calibration are available, pass them through the environment variables documented by `./run_all.sh --help` to include the real campaign in the same command.
+
 ### Development build
 
 ```bash

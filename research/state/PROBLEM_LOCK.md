@@ -25,9 +25,9 @@ The novelty target is **not** local Gaussian optimization, persistent IDs, TSDF+
 virtual texturing, incremental GPU uploads, regional TAA invalidation, or dependency graphs by
 themselves. Those are occupied ideas and are mechanisms only.
 
-## Method identity: MAVEB-CLOSURE
+## Method identity: Criticality-Bounded Revision Cones (CBRC)
 
-MAVEB-CLOSURE is a revision-scoped repair protocol over a heterogeneous captured-world dependency
+CBRC is the MAVEB-CLOSURE revision-scoped repair protocol over a heterogeneous captured-world dependency
 graph.
 
 A revision is accepted only after the system:
@@ -42,7 +42,7 @@ A revision is accepted only after the system:
 7. verifies the declared incremental/full-reference equivalence contract before committing the
    revision.
 
-The core scientific object is therefore a **Cross-Derived-State Revision Certificate (CDSRC)**:
+Each accepted CBRC repair emits the core scientific artifact, a **Cross-Derived-State Revision Certificate (CDSRC)**:
 
     revision Δ
       + dependency closure C(Δ)
