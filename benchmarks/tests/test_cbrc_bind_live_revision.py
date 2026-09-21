@@ -112,6 +112,9 @@ class CBRCLiveRevisionBinderTests(unittest.TestCase):
             graph["qois"][0]["weights"]["temporal_history"], 0.9
         )
         self.assertEqual(graph["hard_closure"], ["current_frame"])
+        self.assertEqual(result["native_scalar_work"]["candidate"], 0)
+        self.assertEqual(result["native_scalar_work"]["full"], 2048)
+        self.assertEqual(result["native_scalar_work"]["unit"], "temporal-pixels")
 
     def test_output_planner_epsilon_mismatch_fails_closed(self):
         c = certificate()

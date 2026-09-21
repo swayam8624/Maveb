@@ -20,6 +20,7 @@ from typing import Any
 
 GAUSSIAN_OUTPUT_GRAPH_VERSION = "gaussian-output-cone-v2"
 GAUSSIAN_TEMPORAL_BOUND_VERSION = "gaussian-image-temporal-v1"
+HEADLESS_TEMPORAL_PIXEL_COST_MODEL_VERSION = "temporal-pixel-work-v1"
 
 
 def load_object(path: Path) -> dict[str, Any]:
@@ -264,6 +265,12 @@ def bind(
                 "epsilon": planner_epsilon,
             },
         },
+    }
+    result["native_scalar_work"] = {
+        "candidate": planner_work,
+        "full": full_work,
+        "unit": "temporal-pixels",
+        "model_version": HEADLESS_TEMPORAL_PIXEL_COST_MODEL_VERSION,
     }
     if work_cost_model is not None:
         result["work_cost_model"] = work_cost_model

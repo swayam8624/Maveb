@@ -85,6 +85,22 @@ class CBRCReplayTests(unittest.TestCase):
         self.assertIn("--detect-changed", command)
         self.assertNotIn("--changed", command)
 
+    def test_native_scalar_work_supports_uncalibrated_real_campaign(self):
+        m = manifest()
+        m.pop("candidate_work")
+        m.pop("full_work")
+        m["native_scalar_work"] = {
+            "candidate": 64,
+            "full": 1024,
+            "unit": "temporal-pixels",
+            "model_version": "temporal-pixel-work-v1",
+        }
+        row = mod.finalize_row(m, oracle(), 0)
+        self.assertEqual(row["planner_work"], 64)
+        self.assertEqual(row["full_work"], 1024)
+        self.assertEqual(row["work_cost_model_version"], "temporal-pixel-work-v1")
+        self.assertEqual(row["work_cost_unit"], "temporal-pixels")
+
     def test_frozen_work_model_converts_native_ledger(self):
         m = manifest()
         m.pop("candidate_work")
