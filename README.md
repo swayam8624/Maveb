@@ -12,7 +12,7 @@ A research system for deciding how little of a captured 3D world can be recomput
 <img src="https://img.shields.io/badge/C%2B%2B-23-00599C" alt="C++23">
 <img src="https://img.shields.io/badge/Metal-3-black" alt="Metal">
 <img src="https://img.shields.io/badge/research-CBRC-7b2cbf" alt="CBRC">
-<img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License">
+<img src="https://img.shields.io/badge/software-Apache--2.0-blue" alt="Software license">\n<img src="https://img.shields.io/badge/research%20content-CC%20BY%204.0-lightgrey" alt="Research content license">
 </p>
 
 <p align="center">
@@ -135,30 +135,28 @@ The research problem is the gap between these choices.
 
 The objective is not to force local repair. The objective is to make locality conditional on a certificate.
 
-For a candidate regional repair \(C\), MAVEB requires
+For a candidate regional repair $C$, MAVEB requires
 
-$$
+```math
 E_q^{\mathrm{full-ref}}
 \le
 B_q(C)
 \le
 \varepsilon_q
-$$
-
-for every declared quantity of interest \(q\).
+```
+for every declared quantity of interest $q$.
 
 Here:
 
-- \(E_q^{\mathrm{full-ref}}\) is measured against an independent full-reference replay.
-- \(B_q(C)\) is the emitted conservative certificate.
-- \(\varepsilon_q\) is the declared application tolerance.
+- $E_q^{\mathrm{full-ref}}$ is measured against an independent full-reference replay.
+- $B_q(C)$ is the emitted conservative certificate.
+- $\varepsilon_q$ is the declared application tolerance.
 
 Any observed case with
 
-$$
+```math
 E_q^{\mathrm{full-ref}} > B_q(C)
-$$
-
+```
 is a correctness failure.
 
 # Research hypothesis
@@ -183,7 +181,7 @@ For one world revision, CBRC performs the following sequence.
 
 1. Detect the source change and construct a direct change envelope.
 2. Close all exact HARD predecessors required to reproduce affected state.
-3. Partition the graph into repair cone \(C\) and unrepaired exterior \(O\).
+3. Partition the graph into repair cone $C$ and unrepaired exterior $O$.
 4. Propagate conservative ANALYTIC influence through the exterior.
 5. Map the exterior envelope to protected output quantities.
 6. Compare every output bound with its declared tolerance.
@@ -208,132 +206,117 @@ The graph contains three edge classes.
 
 Let the captured-world state be represented by blocks
 
-$$
+```math
 V = \{1,\ldots,n\}.
-$$
-
+```
 A block may represent an observation region, TSDF block, mesh patch, texture page, Gaussian subset, GPU publication region, temporal-history region, or another derived state unit.
 
 For a revision, CBRC chooses a repair cone
 
-$$
+```math
 C \subseteq V
-$$
-
+```
 and defines the unrepaired exterior
 
-$$
+```math
 O = V \setminus C.
-$$
-
+```
 ## HARD predecessor closure
 
-If \(v\) is repaired and \(u\) is an exact predecessor required to reproduce \(v\), then
+If $v$ is repaired and $u$ is an exact predecessor required to reproduce $v$, then
 
-$$
+```math
 v\in C,\qquad
 u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
 \Longrightarrow
 u\in C.
-$$
-
+```
 A candidate cone that violates exact predecessor closure is invalid before analytic error is considered.
 
 ## Conservative influence matrix
 
 For ANALYTIC edges, define a componentwise non-negative matrix
 
-$$
+```math
 K \in \mathbb{R}_{\ge0}^{n\times n},
-$$
-
+```
 where
 
-$$
+```math
 K_{vu}
-$$
-
-is a conservative upper bound on how much normalized change in state block \(u\) can influence state block \(v\).
+```
+is a conservative upper bound on how much normalized change in state block $u$ can influence state block $v$.
 
 Let
 
-$$
+```math
 b\in\mathbb{R}_{\ge0}^{n}
-$$
-
+```
 be the direct source-change envelope and let
 
-$$
+```math
 z\in\mathbb{R}_{\ge0}^{n}
-$$
-
+```
 contain known change bounds for repaired state.
 
 For the exterior,
 
-$$
+```math
 \delta_O
 \le
 b_O + K_{OC}z_C + K_{OO}\delta_O.
-$$
-
+```
 The first term is direct change in the exterior. The second is influence crossing from repaired state to unrepaired state. The third is repeated propagation inside the exterior.
 
 ## Exterior resolvent
 
 When
 
-$$
+```math
 \rho(K_{OO}) < 1,
-$$
-
+```
 the resolvent
 
-$$
+```math
 G_O=(I-K_{OO})^{-1}
-$$
-
+```
 exists for the certified non-negative system.
 
 Using the Neumann expansion,
 
-$$
+```math
 (I-K_{OO})^{-1}
 =
 I+K_{OO}+K_{OO}^{2}+\cdots.
-$$
-
+```
 The exterior envelope becomes
 
-$$
+```math
 \boxed{
 \hat\delta_O
 =
 G_O\left(b_O+K_{OC}z_C\right)
 }
-$$
-
+```
 with
 
-$$
+```math
 \delta_O\le\hat\delta_O.
-$$
-
+```
 The matrix identity is classical. The research use is the captured-world specialization that connects implementation-backed dependency bounds to a revision decision.
 
 Unsupported analytic cycles or unstable exteriors fail closed.
 
 ## Quantity-of-interest certificate
 
-For output quantity \(q\), let \(R_q\) map state perturbations to the protected output and let the allowed tolerance be
+For output quantity $q$, let $R_q$ map state perturbations to the protected output and let the allowed tolerance be
 
-$$
+```math
 \varepsilon_q\ge0.
-$$
-
+```
 CBRC evaluates
 
-$$
+```math
 \boxed{
 B_q(C)
 =
@@ -341,19 +324,17 @@ B_q(C)
 |R_{q,O}|\hat\delta_O
 \right\|_\infty
 }
-$$
-
+```
 and accepts the cone only when
 
-$$
+```math
 B_q(C)\le\varepsilon_q
-$$
-
+```
 for every protected output.
 
 The experiment harness checks the stronger contract
 
-$$
+```math
 \boxed{
 E_q^{\mathrm{full-ref}}
 \le
@@ -361,146 +342,131 @@ B_q(C)
 \le
 \varepsilon_q.
 }
-$$
-
+```
 ## Gaussian rendering bound
 
-For a projected Gaussian at pixel \(p\), the renderer-compatible effective alpha model is
+For a projected Gaussian at pixel $p$, the renderer-compatible effective alpha model is
 
-$$
+```math
 \alpha_i(p)
 =
 o_i\exp\left(-\frac12q_i(p)\right),
-$$
+```
+where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space.
 
-where \(o_i\) is peak opacity and \(q_i(p)\) is squared Mahalanobis distance in projected Gaussian space.
+For edited set $E$, define aggregate opacity mass
 
-For edited set \(E\), define aggregate opacity mass
-
-$$
+```math
 A(E)=1-\prod_{i\in E}(1-\alpha_i).
-$$
+```
+If the relevant color interval has width $C_{\mathrm{color}}$,
 
-If the relevant color interval has width \(C_{\mathrm{color}}\),
-
-$$
+```math
 \left\|R(U\cup E)-R(U)\right\|_\infty
 \le
 C_{\mathrm{color}}A(E).
-$$
+```
+For before and after edited states $E_0,E_1$,
 
-For before and after edited states \(E_0,E_1\),
-
-$$
+```math
 \boxed{
 \left\|R(U\cup E_0)-R(U\cup E_1)\right\|_\infty
 \le
 C_{\mathrm{color}}
 \min\left(1,A(E_0)+A(E_1)\right)
 }
-$$
+```
+and over protected pixels $P$,
 
-and over protected pixels \(P\),
-
-$$
+```math
 B_P=
 \max_{p\in P}
 C_{\mathrm{color}}
 \min\left(1,A_{0,p}+A_{1,p}\right).
-$$
-
+```
 This turns Gaussian support into a display-space error certificate rather than a heuristic notion of locality.
 
 ## Temporal-history bound
 
 For stable temporal validation, let
 
-- \(E_c\) be current-frame error.
-- \(E_h\) be retained-history error.
-- \(E_n\) be neighborhood or clamping error.
-- \(w\in[0,1]\) be history weight.
+- $E_c$ be current-frame error.
+- $E_h$ be retained-history error.
+- $E_n$ be neighborhood or clamping error.
+- $w\in[0,1]$ be history weight.
 
 Define
 
-$$
+```math
 E_r=\max(E_h,E_n).
-$$
-
+```
 Then
 
-$$
+```math
 \boxed{
 E_{\mathrm{resolved}}
 =
 (1-w)E_c+wE_r.
 }
-$$
-
+```
 If validation or disocclusion itself may change, the dependency becomes HARD and the affected temporal history is invalidated.
 
 For repeated stable history reuse,
 
-$$
+```math
 E_t\le E_0w^t.
-$$
-
+```
 ## Heterogeneous work model
 
 The planner does not add incompatible counters directly.
 
-For work domain \(d\), let \(n_d(C)\) be native work and \(\kappa_d\) be a frozen calibrated cost per native unit.
+For work domain $d$, let $n_d(C)$ be native work and $\kappa_d$ be a frozen calibrated cost per native unit.
 
 The scalar comparison is
 
-$$
+```math
 \boxed{
 W(C)
 =
 \sum_d\kappa_dn_d(C).
 }
-$$
-
+```
 The independent full baseline is
 
-$$
+```math
 W_{\mathrm{full}}.
-$$
-
+```
 A certified local result is useful only when
 
-$$
+```math
 W(C)<W_{\mathrm{full}}.
-$$
-
+```
 The coefficients are frozen before the final campaign.
 
 ## Greedy cone expansion
 
 Define normalized violation
 
-$$
+```math
 \phi(C)
 =
 \max_q
 \frac{B_q(C)}
 {\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
-$$
-
+```
 A passing cone satisfies
 
-$$
+```math
 \phi(C)\le1.
-$$
+```
+For candidate expansion $C\rightarrow C'$, the greedy utility is
 
-For candidate expansion \(C\rightarrow C'\), the greedy utility is
-
-$$
+```math
 \operatorname{utility}(C\rightarrow C')
 =
 \frac{\phi(C)-\phi(C')}
 {W(C')-W(C)}.
-$$
-
+```
 Every candidate is closed over HARD predecessors, re-certified, and compared with FULL.
 
 The result is a certified feasible cone, not a proof of global combinatorial optimality.
@@ -509,26 +475,24 @@ The result is a certified feasible cone, not a proof of global combinatorial opt
 
 Exterior susceptibility is reported as
 
-$$
+```math
 S_O=
 \left\|
 (I-K_{OO})^{-1}
 \right\|_1.
-$$
-
+```
 It is a diagnostic for perturbation amplification, not a replacement for the QoI certificate.
 
 ## Effectivity
 
 For non-zero independent measured residual,
 
-$$
+```math
 \eta
 =
 \frac{B_q(C)}
 {E_q^{\mathrm{full-ref}}}.
-$$
-
+```
 When measured residual is numerically zero, effectivity is undefined. The reporting code does not divide by an arbitrary tiny denominator.
 
 # System architecture
@@ -738,7 +702,7 @@ Canonical evidence:
 | Median calibrated heterogeneous work / FULL | 0.36953 |
 | Calibrated work reduction factor | 2.706x |
 | Maximum measured selected RGB residual | 0.0 |
-| Maximum selected certified bound | \(2\times10^{-6}\) |
+| Maximum selected certified bound | $2\times10^{-6}$ |
 | Sparse-discovery median inspected fraction | 0.01 |
 | Sparse-discovery minimum inspected fraction | 0.001 |
 
@@ -759,7 +723,7 @@ The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian f
 | Native work reduction factor | 28.614x |
 | Median Gaussian inspection ratio | 0.9999972 |
 | Maximum measured selected RGB residual | 0.0 |
-| Maximum selected certified bound | \(2\times10^{-6}\) |
+| Maximum selected certified bound | $2\times10^{-6}$ |
 
 The 28.614x value is lower native temporal/output work under that campaign definition. It is not wall-clock speedup.
 
@@ -1128,6 +1092,21 @@ Maveb/
 +-- show_paper_visuals.sh
 +-- README.md
 </pre>
+
+# Licensing
+
+MAVEB uses scope-specific licensing rather than applying one blanket license to code, research writing, and third-party-derived scene material.
+
+| Material | License or terms |
+|---|---|
+| MAVEB/AETHER software, scripts, tests, and original source code | Apache License 2.0 |
+| Original project-authored research prose, mathematical exposition, diagrams, and figure composition that do not incorporate restricted third-party material | Creative Commons Attribution 4.0 International |
+| Scene-bearing figures, GIFs, and outputs derived from public datasets or externally trained representations | Project rights plus the applicable upstream dataset/model terms and attribution requirements |
+| Vendored or adapted third-party code | Its original license, recorded in the relevant source tree and third-party notices |
+
+The Apache-2.0 software license is retained because it permits broad academic and industrial reuse while providing an explicit patent grant. CC BY 4.0 is used for original research communication because it is better suited to papers, figures, diagrams, and educational reuse.
+
+See [LICENSE](LICENSE), [LICENSES.md](LICENSES.md), and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the exact scope and attribution rules.
 
 # Manuscript boundary
 
