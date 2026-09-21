@@ -2,30 +2,91 @@
 
 These metrics are research instruments, not marketing scores.
 
+## Certified QoI error
+
+For each declared quantity of interest:
+
+```
+actual = measured full-reference error
+bound  = emitted conservative certificate
+epsilon = frozen experiment tolerance
+```
+
+A certified row must satisfy:
+
+```
+actual <= bound <= epsilon
+```
+
+Any `actual > bound` is a certificate violation.
+
+## Effectivity
+
+Certificate tightness is reported as:
+
+```
+effectivity = certified_bound / max(actual, epsilon_floor)
+```
+
+A valid certificate should not systematically fall below one. Extremely large values indicate a safe but potentially useless bound.
+
 ## Unchanged World Damage (UWD)
 
-UWD measures damage **outside the intended changed/edit region**. Geometry displacement and render-space error remain separate distributions (mean/RMSE/p95/max). A method cannot hide geometric damage behind good pixels or vice versa.
+UWD measures damage **outside the intended changed/edit region**.
+
+Geometry displacement and render-space error remain separate distributions (mean/RMSE/p95/max). A method cannot hide geometric damage behind good pixels or vice versa.
 
 ## Update Locality Ratio (ULR)
 
-For each work counter:
+For each native work counter:
 
 ```
 ULR_component = incremental_work / equivalent_full_rebuild_work
 ```
 
-Examples include Gaussian primitive inspections, TSDF blocks fused/read back, mesh patches rebuilt, bytes uploaded, texture texels rewritten, GPU kernels dispatched, or measured milliseconds.
+Examples include:
 
-Different physical units are **never summed by default**. A single aggregate ULR is legal only when the experiment supplies explicit cost weights that map counters to a common cost model.
+- observations inspected;
+- TSDF blocks read/written;
+- mesh cells or patches regenerated;
+- Gaussian primitives inspected/updated;
+- texture pages/texels rewritten;
+- material states updated;
+- GPU publication bytes;
+- temporal pixels invalidated.
+
+Different physical units are **never summed by default**.
+
+## Calibrated scalar work
+
+When the planner needs one scalar cost, a frozen `WorkCostModel` maps each native unit into one common unit, normally milliseconds.
+
+The model must be calibrated on isolated pre-evaluation microbenchmarks and frozen before final outcomes are inspected.
+
+A non-zero ledger domain without a coefficient fails closed.
 
 ## Representation Churn
 
-Counts births, deaths, and representation switches (for example TSDF→mesh or Gaussian→mesh) relative to all identities present in either revision. High churn can reveal an unstable adaptive-representation policy even if per-frame quality is good.
+Counts births, deaths and representation switches relative to all identities present in either revision.
+
+High churn can reveal an unstable adaptive-representation policy even if frame-level quality looks acceptable.
 
 ## Identity Survival
 
-Given a ground-truth correspondence token set, reports correct survival, identity switches, and missing identities. This is intended for split/merge/prune/densify stress tests and should be paired with a downstream task metric.
+Given a ground-truth correspondence token set, reports correct survival, identity switches and missing identities.
 
-## Rule
+It should be paired with a downstream task metric rather than treated as a standalone success score.
 
-Every result table must expose the raw component counters used by these metrics. No hidden weighted score may replace the underlying measurements.
+## Reporting rule
+
+Every result table must expose the raw counters and QoI values behind aggregate claims.
+
+No hidden weighted score may replace:
+
+- actual error;
+- certified bound;
+- epsilon;
+- raw locality counters;
+- full-reference counters;
+- cost-model version;
+- fallback decision.
