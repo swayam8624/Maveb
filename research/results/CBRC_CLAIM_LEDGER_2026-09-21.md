@@ -22,8 +22,8 @@ It is intentionally stricter than promotional project language.
   the zero selected residual is not explained by a matrix containing only
   visually irrelevant edits.
 - The frozen isolated millisecond cost model reports a median selected
-  heterogeneous work ratio of approximately **0.349 of FULL**, equivalent to
-  approximately **2.87x lower calibrated work**.
+  heterogeneous work ratio of approximately **0.36953 of FULL**, equivalent to
+  approximately **2.706x lower calibrated work**.
 - The public campaign automatically crosses to FULL in high/unstable cases
   rather than forcing a local result.
 - The separate sparse-discovery sweep preserves exact candidate selection while
@@ -46,8 +46,8 @@ It is intentionally stricter than promotional project language.
 
 ## Supported, but only with explicit qualification
 
-- **“2.87x lower work”** is acceptable for the calibrated public work model.
-  **“2.87x speedup” is not.**
+- **“2.706x lower work”** is acceptable for the calibrated public work model.
+  **“2.706x speedup” is not.**
 - **“28.6x lower native work”** is acceptable for the trained-3DGS campaign.
   **“28.6x speedup” is not.**
 - **“No violations were observed in the frozen evaluated cases”** is
