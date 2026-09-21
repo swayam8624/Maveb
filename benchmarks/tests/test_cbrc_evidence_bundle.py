@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,6 +22,28 @@ class CBRCEvidenceBundleTests(unittest.TestCase):
                 mod.sha256(path),
                 hashlib.sha256(b"abc").hexdigest(),
             )
+
+    def test_pretty_json_is_rewritten_as_one_valid_jsonl_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "revision-row.json"
+            destination = root / "revision-rows.jsonl"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "scene_id": "real-scene",
+                        "qois": {"rgb_linf": {"certified_bound": 0.0}},
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+            mod.write_single_jsonl_row(source, destination)
+            lines = destination.read_text().splitlines()
+            self.assertEqual(len(lines), 1)
+            self.assertEqual(json.loads(lines[0])["scene_id"], "real-scene")
+            self.assertNotIn("\n", lines[0])
 
     def test_native_planner_certificate_matches_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
