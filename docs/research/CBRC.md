@@ -6,6 +6,55 @@ CBRC is MAVEB's fail-closed revision planner for persistent captured worlds. It 
 
 The implementation is deliberately conservative. Structural identity/provenance dependencies are exact. Only implementation-backed finite-change upper bounds are allowed to remain soft.
 
+## Problem
+
+Captured worlds are heterogeneous and persistent. A local physical edit can change one object while the system still carries state in multiple coupled representations:
+
+- observations and provenance;
+- TSDF blocks;
+- mesh ownership and topology;
+- texture pages and materials;
+- Gaussian primitives;
+- GPU publication buffers;
+- temporal history;
+- final rendered outputs.
+
+A full rebuild gives a strong reference but repeats unaffected work. Purely local heuristics can be cheaper but may miss hidden dependencies or long-range output effects.
+
+CBRC targets the middle ground:
+
+> **Execute less than a full rebuild only when the unrepaired exterior can be conservatively bounded for the requested quantity of interest.**
+
+The method is allowed to decide that no useful local repair exists.
+
+## Proposed research contribution
+
+The proposed novelty is not generic graph closure or a generic matrix resolvent. Those ideas have prior art.
+
+MAVEB's contribution is the end-to-end captured-world specialization:
+
+1. **typed repair semantics** — exact structural dependencies and analytic finite-change bounds live in the same revision graph;
+2. **QoI-specific certification** — the planner reasons about an explicit output tolerance rather than generic node change;
+3. **fail-closed use of evidence** — empirical influence may schedule work but does not certify;
+4. **heterogeneous work discipline** — blocks, Gaussians, bytes and pixels are never summed without a frozen unit conversion model;
+5. **automatic FULL fallback** — locality is an outcome of the certificate, not an assumption;
+6. **machine-auditable provenance** — graph, bounds, cost model, cone, camera and revision identity are serialized;
+7. **independent oracle replay** — the production decision is tested against a separate full-reference path.
+
+The novelty claim remains subject to literature review and peer review. This repository documents what is technically different; it does not use README language as evidence of uniqueness.
+
+## Potential impact
+
+If the real-scene campaign shows useful effectivity and work reduction, CBRC could support:
+
+- persistent XR scenes that update after localized physical changes;
+- digital twins that avoid unnecessary global recomputation;
+- reconstruction systems with one invalidation policy across TSDF, mesh, texture, Gaussian and temporal state;
+- performance optimizations that carry a machine-readable correctness argument;
+- negative-result workflows where a failed bound becomes a reproducible regression rather than disappearing from evaluation.
+
+These are potential impacts. Final performance claims remain gated on the frozen real-scene campaign.
+
 ## Architecture
 
 The end-to-end v1 chain is:
