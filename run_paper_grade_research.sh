@@ -33,7 +33,7 @@ mkdir -p "$COMPARE"
 "$PYTHON" research/visualization/cbrc_representation_comparison.py   --sfm-answer "$ROOT/build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.json"   --trained-answer "$ROOT/build/trained-3dgs-campaign/campaign/REAL_CAMPAIGN_ANSWER.json"   --output-dir "$COMPARE"
 
 echo "==> [E] Final evidence readiness audit including trained 3DGS"
-"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$ROOT/build/public-real-v2/campaign"   --calibration "$ROOT/build/public-real-v2/calibration/work-cost-model.json"   --sparse-summary "$ROOT/build/public-real-v2/sparse-discovery/sparse-discovery-summary.json"   --empirical "$ROOT/build/public-real-v2/campaign/empirical-heldout.json"   --visual-package "$ROOT/build/public-real-v2/siggraph-visuals/VISUAL_PACKAGE.json"   --trained-status "$ROOT/build/trained-3dgs-campaign/TRAINED_3DGS_STATUS.json"   --output "$FINAL/PAPER_GRADE_STATUS.json"
+"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$ROOT/build/public-real-v2/campaign"   --calibration "$ROOT/build/public-real-v2/calibration/work-cost-model.json"   --sparse-summary "$ROOT/build/public-real-v2/sparse-discovery/sparse-discovery-summary.json"   --empirical "$ROOT/build/public-real-v2/campaign/empirical-heldout.json"   --visual-package "$ROOT/build/public-real-v2/siggraph-visuals/VISUAL_PACKAGE.json"   --trained-status "$ROOT/build/trained-3dgs-campaign/TRAINED_3DGS_STATUS.json"   --ablation-stress "$FINAL/ABLATION_STRESS_STATUS.json"   --output "$FINAL/PAPER_GRADE_STATUS.json"
 
 cat <<EOF
 
