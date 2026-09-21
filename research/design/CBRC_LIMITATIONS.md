@@ -49,6 +49,17 @@ Synthetic matrices test theory and phase behavior, not real-world speedup. Real 
 
 Do not tune epsilon per scene after seeing results. Freeze strict/practical tolerance profiles first. Do not exclude fallback cases; they are a core result.
 
+## Measured campaign limitations
+
+The frozen v2.1 public campaign and the trained-3DGS validation expose several limitations that must stay visible in the paper.
+
+- **Gaussian discovery is still the main systems bottleneck.** Median `gaussiansInspected / FULL` remains approximately 1.0 in both frozen campaign paths, even though update, publication and temporal-invalidation ratios are much smaller.
+- **Sparse discovery is validated separately, not silently credited to the end-to-end campaign.** The index sweep preserves exact selection while reducing inspected fractions substantially through one million Gaussians, but the frozen campaign's measured ledger does not yet realize that benefit.
+- **Several structural ablations are non-discriminative on this matrix.** When an ablation has the same pass/work behavior as CBRC, report that neutral result rather than treating presence of the ablation as evidence of necessity.
+- **The held-out empirical scheduler is not a certificate.** Its zero unsafe-false-local rate on the frozen matrix must not be generalized into a safety guarantee, especially where independent candidate residuals are zero and therefore do not strongly separate scheduling strategies.
+- **Zero selected residual does not imply a trivial edit matrix.** Source-edit oracle evidence is retained; most public v2.1 source edits exceed the protected RGB tolerance before repair. The paper should report both source effect and selected residual.
+- **Calibrated work is not end-to-end speedup.** The public campaign's frozen millisecond cost model is derived from isolated microbenchmarks, while campaign phase wall times are recorded separately. A speedup claim requires paired local-vs-FULL end-to-end timing.
+
 ## Claim wording
 
 Safe after supporting evidence: "Across the evaluated certified revisions, measured QoI error did not exceed the emitted certificate."

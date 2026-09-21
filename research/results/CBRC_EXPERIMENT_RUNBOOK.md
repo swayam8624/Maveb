@@ -2,6 +2,27 @@
 
 This is the reproducible execution order for CBRC v1.
 
+## 0. Canonical paper-grade path
+
+For the current v1 paper line, the preferred top-level command is:
+
+```bash
+./run_paper_grade_research.sh
+```
+
+It executes the public v2.1 RGB/SfM campaign, the pinned trained-3DGS
+validation, the mechanism-isolation ablation stress suite, the
+cross-representation comparison artifact, and the final readiness audit.
+
+The public v2.1 campaign enforces the production persistent-world effective
+translation threshold before freezing cases. Sub-threshold requested edits are
+recorded together with the applied minimum effective translation; they are not
+silently passed to production as no-op edits.
+
+The final reporting code treats certificate effectivity as **undefined** when
+the independently measured residual is numerically zero. Do not manufacture a
+large ratio by dividing by an arbitrary tiny denominator floor.
+
 ## 1. Verify the implementation
 
 ```bash
@@ -156,6 +177,18 @@ Ablations include:
 
 Dense Python vs sparse native planner agreement is enforced separately by `planner-parity.json`.
 
+The frozen real campaign can be non-discriminative for some individual
+ablations. Do not retune the real matrix after seeing that result. Instead run
+the separately labeled synthetic mechanism-isolation suite:
+
+```bash
+python3 research/experiments/cbrc_ablation_stress_suite.py \
+  --output build/paper-grade-final/ABLATION_STRESS_STATUS.json
+```
+
+This suite is allowed to demonstrate mechanism necessity under targeted stress,
+but it must never be presented as real-world effect-size evidence.
+
 ## 9. Paper artifacts
 
 The campaign generates F1-F8 sources automatically. They can also be regenerated:
@@ -169,6 +202,10 @@ python3 research/analysis/cbrc_paper_artifacts.py \
 ```
 
 Do not manually transcribe numerical result tables when a machine-readable source exists.
+
+For zero measured residual, the F5/effectivity source marks the ratio as
+undefined and records the zero-residual count. Source-edit effectivity and
+selected-repair effectivity are named separately.
 
 ## 10. Archive a result
 
