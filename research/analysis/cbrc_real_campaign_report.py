@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Any
 
 
+EFFECTIVITY_ZERO_TOL = 1e-12
+
+
 def load_json(path: Path) -> Any:
     return json.loads(path.read_text())
 
@@ -39,7 +42,10 @@ def summarize(results_dir: Path) -> dict[str, Any]:
     local_rows = [row for row in rows if not bool(row.get("fallback_full", False))]
     fallback_rows = [row for row in rows if bool(row.get("fallback_full", False))]
     work_ratios = []
-    effectivities = []
+    candidate_effectivities = []
+    selected_effectivities = []
+    zero_measured_candidate_errors = 0
+    zero_measured_selected_errors = 0
     actuals = []
     bounds = []
     units = set()
@@ -60,10 +66,21 @@ def summarize(results_dir: Path) -> dict[str, Any]:
         actuals.append(actual)
         bounds.append(bound)
 
+        if actual <= EFFECTIVITY_ZERO_TOL:
+            zero_measured_selected_errors += 1
+        else:
+            selected_effectivities.append(bound / actual)
+
         diagnostics = row.get("candidateDiagnostics", {})
-        effectivity = float(diagnostics.get("effectivity", float("nan")))
-        if math.isfinite(effectivity):
-            effectivities.append(effectivity)
+        candidate_actual = float(
+            diagnostics.get("candidateActualRgbError", float("nan"))
+        )
+        candidate_bound = float(diagnostics.get("candidateRgbBound", float("nan")))
+        if math.isfinite(candidate_actual) and math.isfinite(candidate_bound):
+            if candidate_actual <= EFFECTIVITY_ZERO_TOL:
+                zero_measured_candidate_errors += 1
+            else:
+                candidate_effectivities.append(candidate_bound / candidate_actual)
 
         domains = row.get("work_ledger", {}).get("domains", {})
         if isinstance(domains, dict):
@@ -77,7 +94,7 @@ def summarize(results_dir: Path) -> dict[str, Any]:
 
     calibrated_ms = units == {"ms"}
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "artifact": "maveb-cbrc-real-campaign-answer",
         "campaignPass": bool(gates.get("pass", False)) and bool(evaluation.get("pass", False)),
         "rows": len(rows),
@@ -91,7 +108,12 @@ def summarize(results_dir: Path) -> dict[str, Any]:
             if not work_ratios or median(work_ratios) in (None, 0.0)
             else 1.0 / float(median(work_ratios))
         ),
-        "medianCandidateEffectivity": median(effectivities),
+        "medianCandidateEffectivity": median(candidate_effectivities),
+        "definedCandidateEffectivityCount": len(candidate_effectivities),
+        "zeroMeasuredCandidateErrorCount": zero_measured_candidate_errors,
+        "medianSelectedEffectivity": median(selected_effectivities),
+        "definedSelectedEffectivityCount": len(selected_effectivities),
+        "zeroMeasuredSelectedErrorCount": zero_measured_selected_errors,
         "maximumMeasuredSelectedError": max(actuals, default=None),
         "maximumSelectedCertifiedBound": max(bounds, default=None),
         "workCostUnits": sorted(units),
@@ -129,7 +151,10 @@ def markdown(summary: dict[str, Any]) -> str:
         f"- Certificate violations: {summary['certificateViolations']}",
         f"- Median selected work / FULL: {fmt(summary['medianSelectedWorkRatioFull'])}",
         f"- Median work-reduction factor: {fmt(summary['medianWorkReductionFactor'])}x",
-        f"- Median candidate effectivity: {fmt(summary['medianCandidateEffectivity'])}",
+        f"- Median defined selected effectivity: {fmt(summary['medianSelectedEffectivity'])}",
+        f"- Selected QoIs with numerically zero measured residual: {summary['zeroMeasuredSelectedErrorCount']}",
+        f"- Median defined candidate effectivity: {fmt(summary['medianCandidateEffectivity'])}",
+        f"- Candidate QoIs with numerically zero measured residual: {summary['zeroMeasuredCandidateErrorCount']}",
         f"- Maximum measured selected error: {fmt(summary['maximumMeasuredSelectedError'])}",
         f"- Maximum selected certified bound: {fmt(summary['maximumSelectedCertifiedBound'])}",
         "",
