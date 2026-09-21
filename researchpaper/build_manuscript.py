@@ -124,12 +124,13 @@ def export_word(build):
     normal.font.name, normal.font.size = 'Times New Roman', Pt(10)
     normal.paragraph_format.space_after = Pt(5)
     normal.paragraph_format.line_spacing = 1.05
-    style_names = {style.name for style in doc.styles}
-    for style in ['Title', 'Heading 1', 'Heading 2', 'Heading 3', 'Heading 4']:
-        if style not in style_names:
+    style_map = {style.name: style for style in doc.styles}
+    for style_name in ['Title', 'Heading 1', 'Heading 2', 'Heading 3', 'Heading 4']:
+        style = style_map.get(style_name)
+        if style is None:
             continue
-        doc.styles[style].font.name = 'Times New Roman'
-        doc.styles[style].font.color.rgb = RGBColor(0, 0, 0)
+        style.font.name = 'Times New Roman'
+        style.font.color.rgb = RGBColor(0, 0, 0)
     for shape in doc.inline_shapes:
         if shape.width > Inches(7.1):
             ratio = Inches(7.1) / shape.width
@@ -142,10 +143,10 @@ def export_word(build):
     assert len(doc.inline_shapes) == 3, 'Word export must include all three figures'
     for table, sizes in zip(doc.tables, widths):
         table.autofit = False
-        if 'Table Grid' in style_names:
-            table.style = 'Table Grid'
-        elif 'Table' in style_names:
-            table.style = 'Table'
+        if 'Table Grid' in style_map:
+            table.style = style_map['Table Grid']
+        elif 'Table' in style_map:
+            table.style = style_map['Table']
         borders = OxmlElement('w:tblBorders')
         for edge in ['top', 'bottom', 'insideH']:
             border = OxmlElement('w:' + edge)
