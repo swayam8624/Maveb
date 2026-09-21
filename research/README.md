@@ -1,4 +1,11 @@
-# MAVEB Research
+# MAVEB research hub
+
+Current manuscript handoff:
+
+- [MAVEB SIGGRAPH manuscript KT](manuscript/MAVEB_SIGGRAPH_KT.md)
+- [Manuscript media index](manuscript/MEDIA_INDEX.md)
+- [Manuscript package entry point](manuscript/README.md)
+
 
 > **Locked problem:** dependency-certified heterogeneous minimal-work repair for persistent captured worlds.
 
