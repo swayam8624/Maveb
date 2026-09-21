@@ -705,6 +705,36 @@ Install the Metal compiler if needed:
 xcodebuild -downloadComponent metalToolchain
 ```
 
+### If `xcode-select` points to CommandLineTools
+
+A common macOS setup has the standalone Command Line Tools selected even though full Xcode is installed:
+
+```text
+xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory
+'/Library/Developer/CommandLineTools' is a command line tools instance
+```
+
+For the current shell, prefer:
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcodebuild -version
+```
+
+Or switch the machine-wide developer directory:
+
+```bash
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+```
+
+If Xcode has just been installed, open it once or complete first-launch setup:
+
+```bash
+sudo xcodebuild -runFirstLaunch
+```
+
+The MAVEB bootstrap now detects a usable full Xcode installation under `/Applications` and sets `DEVELOPER_DIR` for its own process automatically, so a globally selected Command Line Tools directory no longer blocks the run.
+
 ### One-command verification
 
 For a first run after cloning, use:
