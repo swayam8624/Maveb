@@ -33,6 +33,7 @@ def audit(
     empirical: Path,
     visual_package: Path,
     trained_status: Path | None = None,
+    ablation_stress: Path | None = None,
 ) -> dict[str, Any]:
     campaign_rows = rows(campaign_dir / "campaign-rows.jsonl")
     gates = load(campaign_dir / "campaign-gates.json")
@@ -130,6 +131,16 @@ def audit(
         trained = load(trained_status)
         checks["trained3dgsValidationPass"] = bool(trained.get("pass", False))
 
+    stress = None
+    if ablation_stress is not None and ablation_stress.is_file():
+        stress = load(ablation_stress)
+        checks["ablationMechanismStressPass"] = (
+            bool(stress.get("pass", False))
+            and int(stress.get("separatedMechanisms", 0))
+            == int(stress.get("mechanismCount", -1))
+            and bool(stress.get("syntheticMechanismIsolationOnly", False))
+        )
+
     core_ready = all(checks.values()) if trained_status is not None else all(
         value for key, value in checks.items() if key != "trained3dgsValidationPass"
     )
@@ -158,6 +169,7 @@ def audit(
         "checks": checks,
         "corePaperEvidenceReady": core_ready,
         "trained3dgsStatus": trained,
+        "ablationStressStatus": stress,
         "interpretationBoundary": (
             "A calibrated heterogeneous cost model is an isolated hardware-derived work estimate. "
             "Measured campaign phase wall times are reported separately. Neither quantity should "
@@ -174,6 +186,7 @@ def main() -> int:
     parser.add_argument("--empirical", type=Path, required=True)
     parser.add_argument("--visual-package", type=Path, required=True)
     parser.add_argument("--trained-status", type=Path)
+    parser.add_argument("--ablation-stress", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = audit(
@@ -183,6 +196,7 @@ def main() -> int:
         args.empirical,
         args.visual_package,
         args.trained_status,
+        args.ablation_stress,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
