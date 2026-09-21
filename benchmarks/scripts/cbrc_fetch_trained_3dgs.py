@@ -30,6 +30,12 @@ def main() -> int:
     parser.add_argument("--repo-id", default="3DGSQA/recon_variants_v3")
     parser.add_argument("--repo-type", choices=("model", "dataset"), default="model")
     parser.add_argument("--file")
+    parser.add_argument(
+        "--target-bytes",
+        type=int,
+        default=100_000_000,
+        help="when --file is omitted, choose the trained PLY closest to this size",
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
 
@@ -53,7 +59,14 @@ def main() -> int:
     elif not candidates:
         raise RuntimeError(f"{args.repo_id} exposes no non-empty point_cloud.ply files")
     else:
-        candidates.sort(key=lambda s: (int(s.size), str(s.rfilename)))
+        if args.target_bytes <= 0:
+            parser.error("--target-bytes must be positive")
+        candidates.sort(
+            key=lambda s: (
+                abs(int(s.size) - args.target_bytes),
+                str(s.rfilename),
+            )
+        )
 
     selected = candidates[0]
     root = args.output_dir.resolve()
@@ -89,8 +102,11 @@ def main() -> int:
         "fileSha256": sha256(target),
         "license": license_value,
         "selectionRule": (
-            "explicit --file" if args.file else "smallest non-empty point_cloud.ply by Hub metadata"
+            "explicit --file"
+            if args.file
+            else f"point_cloud.ply closest to {args.target_bytes} bytes by Hub metadata"
         ),
+        "targetBytes": None if args.file else args.target_bytes,
         "redistribution": False,
         "scientificBoundary": (
             "Used as a secondary trained-3DGS interoperability/CBRC validation source. "
