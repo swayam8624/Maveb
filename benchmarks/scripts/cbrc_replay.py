@@ -121,6 +121,9 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
     spatial_output = manifest.get("spatial_output")
     if spatial_output:
         command.extend(["--spatial-output", str(spatial_output)])
+    visual_output_dir = manifest.get("visual_output_dir")
+    if visual_output_dir:
+        command.extend(["--visual-output-dir", str(visual_output_dir)])
 
     command.extend([
         "--width", str(int(camera["width"])),
