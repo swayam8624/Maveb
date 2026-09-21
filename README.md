@@ -549,7 +549,7 @@ The paper-grade v2.1 public campaign freezes **60 revisions across four public R
 | Median calibrated work reduction factor | 2.87× |
 | Source edits visibly exceeding the protected RGB tolerance | 56 / 60 |
 
-The calibrated public-campaign work model uses frozen isolated microbenchmarks in milliseconds. **2.87× is therefore a calibrated work-reduction factor, not a measured end-to-end speedup.** The campaign also exposes an important systems limitation: median Gaussian inspection remains approximately the full set even though Gaussian updates/publication and temporal invalidation are much smaller.
+The calibrated public-campaign work model uses frozen isolated microbenchmarks in milliseconds. **2.706× is therefore a calibrated work-reduction factor, not a measured end-to-end speedup.** The campaign also exposes an important systems limitation: median Gaussian inspection remains approximately the full set even though Gaussian updates/publication and temporal invalidation are much smaller.
 
 A secondary campaign uses a pinned **public trained 3DGS PLY** while preserving SH coefficients, opacity, anisotropic scale and rotation. It records **4/5 certified-local cases, 1/5 FULL fallback, and zero certificate violations**. Its median selected native temporal/output work is 0.03495 of FULL (about 28.6× lower native work), again **not wall-clock speedup**.
 
