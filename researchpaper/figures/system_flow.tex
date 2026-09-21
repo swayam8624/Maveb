@@ -1,0 +1,35 @@
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw=mavebline, rounded corners=2pt, very thick, align=center,
+              minimum height=10mm, text width=0.18\textwidth, inner sep=5pt},
+  smallbox/.style={draw=mavebline, rounded corners=2pt, very thick, align=center,
+                   minimum height=9mm, text width=0.17\textwidth, inner sep=4pt},
+  arr/.style={-{Latex[length=2.3mm]}, very thick, draw=mavebline}
+]
+\node[box, fill=mavebblue] (revision) at (0,0)
+  {\tbhead{Physical revision}\\Requested world edit and protected quantity of interest};
+\node[box, fill=mavebgreen] (graph) at (5.1,0)
+  {\tbhead{Typed revision graph}\\State blocks plus \hard{}, \analytic{}, and \empirical{} relations};
+\node[box, fill=mavebamber] (cert) at (10.2,0)
+  {\tbhead{Cone proposal and certification}\\Exact predecessor closure, exterior bound, and work estimate};
+\node[smallbox, fill=mavebgreen] (local) at (4.9,-3.0)
+  {\tbhead{Certified local repair}\\Execute regional recomputation};
+\node[smallbox, fill=mavebrose] (full) at (10.0,-3.0)
+  {\tbhead{Automatic \FULL{} fallback}\\Rebuild when certificate or work test fails};
+\node[box, fill=mavebblue] (oracle) at (7.45,-5.8)
+  {\tbhead{Independent full-after oracle}\\Replay selected result against full reference and emit evidence};
+\draw[arr] (revision.east) -- (graph.west);
+\draw[arr] (graph.east) -- (cert.west);
+\coordinate (split) at (7.45,-1.55);
+\draw[arr] (cert.south) -- (10.2,-1.55) -- (split);
+\draw[arr] (split) -- (4.9,-1.55) -- (local.north);
+\draw[arr] (split) -- (10.0,-1.55) -- (full.north);
+\node[align=center, anchor=south east] at (6.8,-1.48)
+  {\scriptsize certificate-feasible\\[-1pt]\scriptsize and cheaper than \FULL{}};
+\node[align=center, anchor=south west] at (8.1,-1.48)
+  {\scriptsize unsupported coupling, failed bound,\\[-1pt]\scriptsize or unfavorable work crossover};
+\coordinate (merge) at (7.45,-4.55);
+\draw[arr] (local.south) -- (4.9,-4.55) -- (merge);
+\draw[arr] (full.south) -- (10.0,-4.55) -- (merge);
+\draw[arr] (merge) -- (oracle.north);
+\end{tikzpicture}
