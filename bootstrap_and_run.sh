@@ -244,7 +244,7 @@ fi
 .venv-maveb/bin/python -m pip install --disable-pip-version-check --upgrade pip
 .venv-maveb/bin/python -m pip install --disable-pip-version-check numpy pillow scipy
 
-chmod +x run_all.sh
+chmod +x run_all.sh run_real_campaign.sh
 export MAVEB_PYTHON="$ROOT/.venv-maveb/bin/python"
 
 echo "==> Starting complete MAVEB verification"
