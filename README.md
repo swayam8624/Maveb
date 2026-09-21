@@ -1110,6 +1110,12 @@ See [LICENSE](LICENSE), [LICENSES.md](LICENSES.md), and [THIRD_PARTY_NOTICES.md]
 
 # Manuscript boundary
 
+Primary working paper title:
+
+**Repair What Matters: Criticality-Bounded Revision Cones for Persistent Captured Worlds**
+
+The complete paper handoff is maintained in [research/manuscript/MAVEB_SIGGRAPH_KT.md](research/manuscript/MAVEB_SIGGRAPH_KT.md), with the figure/video map in [research/manuscript/MEDIA_INDEX.md](research/manuscript/MEDIA_INDEX.md).
+
 This repository marks the end of the implementation and evidence-construction phase for the current CBRC v1 paper line.
 
 The following are frozen:
