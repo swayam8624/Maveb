@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760">
+<rect width="1500" height="760" rx="28" fill="#F7F8FA"/>
+<style>.t{font:700 36px sans-serif;fill:#10131A}.h{font:700 26px sans-serif;fill:#10131A}.b{font:20px sans-serif;fill:#475467}.n{font:700 32px monospace;fill:#7C5CFC}.card{fill:white;stroke:#D8DEE9;stroke-width:2}</style>
+<text x="70" y="70" class="t">F12 — CBRC across Gaussian representations</text>
+<text x="70" y="112" class="b">Coverage validation only — sources/work units are not matched, so no cross-representation performance ranking is implied.</text>
+<rect x="80" y="170" width="630" height="500" rx="24" class="card"/>
+<text x="120" y="225" class="h">RGB/SfM-seeded Gaussians</text>
+<text x="120" y="280" class="n">60 cases · 4 scenes</text>
+<text x="120" y="335" class="b">certified local cases: 44</text>
+<text x="120" y="375" class="b">FULL fallbacks: 16</text>
+<text x="120" y="415" class="b">certificate violations: 0</text>
+<text x="120" y="455" class="b">median calibrated work/FULL: 0.349</text>
+<text x="120" y="495" class="b">work unit: frozen calibrated ms</text>
+<text x="120" y="560" class="b">real COLMAP SfM → isotropic seeded Gaussians</text>
+<rect x="790" y="170" width="630" height="500" rx="24" class="card"/>
+<text x="830" y="225" class="h">Public trained 3DGS</text>
+<text x="830" y="280" class="n">5 cases · 1 scene</text>
+<text x="830" y="335" class="b">certified local cases: 4</text>
+<text x="830" y="375" class="b">FULL fallbacks: 1</text>
+<text x="830" y="415" class="b">certificate violations: 0</text>
+<text x="830" y="455" class="b">median native work/FULL: 0.0349</text>
+<text x="830" y="495" class="b">work unit: temporal pixels</text>
+<text x="830" y="560" class="b">trained anisotropic Gaussians; SH/opacity/scale/rotation preserved</text>
+<rect x="420" y="615" width="660" height="60" rx="18" fill="#18C6D9"/>
+<text x="750" y="654" text-anchor="middle" style="font:700 20px sans-serif;fill:white">same safety contract: measured ≤ certified bound ≤ ε</text>
+</svg>
