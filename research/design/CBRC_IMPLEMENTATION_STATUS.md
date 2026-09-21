@@ -1,6 +1,6 @@
 # CBRC v1 implementation status
 
-Status: **implementation complete; empirical campaign pending**
+Status: **v1 implementation and paper-grade evidence package complete; paper drafting remains**
 Canonical target: `main` (integration developed on `research/maveb-cbrc-implementation`)
 Method: Criticality-Bounded Revision Cones (CBRC)
 Problem: MAVEB-CLOSURE
@@ -136,20 +136,26 @@ The v1 line is expected to pass:
 
 A failure in any certificate correctness regression blocks evidence claims.
 
-## What is still pending
+## Frozen v1 evidence status
 
-The following are **experiments, not implementation tasks**:
+The v1 implementation has now completed its frozen paper-grade evidence campaign.
 
-1. provide one or more real captured persistent-world archives with Gaussian/ownership revision sidecars;
-2. freeze real hardware work-cost coefficients from isolated microbenchmarks;
-3. run the real campaign;
-4. collect at least one certified local case;
-5. collect at least one deliberate high-coupling/adversarial FULL fallback;
-6. verify every certified real row satisfies `actual <= bound <= epsilon`;
-7. run the larger repeated matrix and produce final statistics/figures;
-8. write performance/result claims from those measurements.
+- public v2.1: 60 revisions across four public RGB/SfM scenes;
+- 44 certified-local cases and 16 automatic FULL fallbacks;
+- zero observed certificate violations;
+- native/Python parity on all 60 revisions;
+- 56/60 source edits visibly exceed the protected RGB tolerance before repair;
+- frozen heterogeneous millisecond cost calibration plus separately recorded phase wall times;
+- exact sparse-discovery scaling through 1,000,000 Gaussians;
+- held-out empirical scheduling protocol;
+- baseline/ablation suite and SIGGRAPH-oriented evidence visual package;
+- pinned public trained-3DGS validation with 5 revisions, 4 certified-local cases, 1 FULL fallback and zero certificate violations.
 
-Fixtures, randomized theorem probes and synthetic matrices may validate implementation behavior, but they do not substitute for these real measurements.
+The measured public-campaign median calibrated heterogeneous work is approximately 0.349 of FULL. This is a **calibrated work estimate**, not a paired end-to-end speedup. The trained-3DGS campaign reports a median native temporal/output work ratio of approximately 0.03495, likewise not a wall-clock speedup.
+
+A measured systems limitation remains visible rather than hidden: the frozen end-to-end campaigns still inspect nearly the full Gaussian set. A separate exact sparse-discovery sweep demonstrates substantially smaller inspection fractions, so integrating that index into the complete measured campaign is a future optimization rather than part of the current claim.
+
+The remaining work for the current paper line is scientific writing, figure selection/captioning, related-work positioning, and submission packaging—not missing CBRC v1 implementation or missing frozen core evidence.
 
 ## Explicitly deferred v2 work
 
