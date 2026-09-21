@@ -34,6 +34,7 @@ struct Options final {
     std::string changedCsv;
     std::string inputFormat{"ply"};
     std::string spatialOutputPath;
+    std::string visualOutputDir;
     bool detectChanged{};
     std::size_t width{320};
     std::size_t height{180};
@@ -139,6 +140,11 @@ template <std::size_t N>
             if (!value)
                 return std::nullopt;
             options.spatialOutputPath = *value;
+        } else if (arg == "--visual-output-dir") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            options.visualOutputDir = *value;
         } else if (arg == "--world-to-camera") {
             auto value = requireValue(arg);
             if (!value)
@@ -201,6 +207,7 @@ template <std::size_t N>
                       << "  --input-format ply|aether-bin (default: ply)\n"
                       << "  --detect-changed compares stable source-order before/after records\n"
                       << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
+                      << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
                       << "  --width N --height N --focal-x F --focal-y F\n"
                       << "  --center-x F --center-y F --near F --far F\n"
                       << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
@@ -296,6 +303,55 @@ template <std::size_t N>
     if (!accumulate(before) || !accumulate(after))
         return std::numeric_limits<double>::quiet_NaN();
     return cap;
+}
+
+
+[[nodiscard]] unsigned char toByte(double value) {
+    const double clamped = std::clamp(value, 0.0, 1.0);
+    return static_cast<unsigned char>(std::lround(clamped * 255.0));
+}
+
+[[nodiscard]] aether::Result<void>
+writePpm(const std::filesystem::path& path, std::size_t width, std::size_t height,
+         const std::vector<simd_float3>& colors) {
+    if (colors.size() != width * height)
+        return aether::fail(aether::ErrorCode::invalidArgument,
+                            "PPM color cardinality does not match image dimensions");
+    std::error_code error;
+    if (!path.parent_path().empty())
+        std::filesystem::create_directories(path.parent_path(), error);
+    if (error)
+        return aether::fail(aether::ErrorCode::io, "Unable to create visual output directory",
+                            error.message());
+    const auto temporary = path.string() + ".tmp";
+    std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+    stream << "P6\n" << width << ' ' << height << "\n255\n";
+    for (const simd_float3 color : colors) {
+        const std::array<unsigned char, 3> bytes{
+            toByte(color.x),
+            toByte(color.y),
+            toByte(color.z),
+        };
+        stream.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    }
+    stream.close();
+    if (!stream)
+        return aether::fail(aether::ErrorCode::io, "Unable to write PPM", path.string());
+    std::filesystem::rename(temporary, path, error);
+    if (error) {
+        std::filesystem::remove(temporary, error);
+        return aether::fail(aether::ErrorCode::io, "Unable to publish PPM", error.message());
+    }
+    return {};
+}
+
+[[nodiscard]] simd_float3 heatColor(double value, double maximum) {
+    const double t = maximum <= 0.0 ? 0.0 : std::clamp(value / maximum, 0.0, 1.0);
+    // Perceptually ordered dark-blue -> cyan -> yellow -> white ramp.
+    const double r = std::clamp(2.2 * t - 0.35, 0.0, 1.0);
+    const double g = std::clamp(2.0 * t, 0.0, 1.0);
+    const double b = std::clamp(1.4 - 1.6 * t, 0.0, 1.0);
+    return simd_float3{static_cast<float>(r), static_cast<float>(g), static_cast<float>(b)};
 }
 
 } // namespace
@@ -495,6 +551,45 @@ int main(int argc, char** argv) try {
         }
     }
 
+    if (!options->visualOutputDir.empty()) {
+        const std::filesystem::path visualRoot = options->visualOutputDir;
+        std::vector<simd_float3> repairImage(oldImage->color.size());
+        std::vector<simd_float3> supportHeat(oldImage->color.size());
+        std::vector<simd_float3> effectHeat(oldImage->color.size());
+        std::vector<simd_float3> residualHeat(oldImage->color.size());
+        for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
+            const double bound = certificate->rgbLInfBounds[pixel];
+            const bool repaired = bound > 0.0;
+            repairImage[pixel] = repaired ? newImage->color[pixel] : oldImage->color[pixel];
+            supportHeat[pixel] = heatColor(bound, maximumBound);
+            double actual{};
+            for (std::size_t channel = 0; channel < 3; ++channel) {
+                actual =
+                    std::max(actual, std::abs(static_cast<double>(oldImage->color[pixel][channel]) -
+                                              static_cast<double>(newImage->color[pixel][channel])));
+            }
+            const double residual = repaired ? 0.0 : actual;
+            effectHeat[pixel] = heatColor(actual, maximumActual);
+            residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
+        }
+
+        const std::array<std::pair<std::string_view, const std::vector<simd_float3>*>, 6> images{{
+            {"before.ppm", &oldImage->color},
+            {"full-after.ppm", &newImage->color},
+            {"selected-repair.ppm", &repairImage},
+            {"certified-support.ppm", &supportHeat},
+            {"edit-effect.ppm", &effectHeat},
+            {"post-repair-residual.ppm", &residualHeat},
+        }};
+        for (const auto& [name, colors] : images) {
+            if (auto written = writePpm(visualRoot / name, camera.width, camera.height, *colors);
+                !written) {
+                std::cerr << written.error().describe() << '\n';
+                return EXIT_FAILURE;
+            }
+        }
+    }
+
     const double effectivity = maximumBound / std::max(maximumActual, 1.0e-15);
     const double affectedFraction =
         static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
@@ -517,6 +612,8 @@ int main(int argc, char** argv) try {
               << "\"affectedPixelFraction\":" << affectedFraction << ','
               << "\"spatialEvidenceWritten\":"
               << (!options->spatialOutputPath.empty() ? "true" : "false") << ','
+              << "\"visualEvidenceWritten\":"
+              << (!options->visualOutputDir.empty() ? "true" : "false") << ','
               << "\"colorUpperBound\":" << colorCap << ',' << "\"qois\":{\"rgb_linf\":{"
               << "\"epsilon\":" << options->epsilon << ',' << "\"certified_bound\":" << maximumBound
               << ',' << "\"measured_full_reference_error\":" << maximumActual << "}},"
