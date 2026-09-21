@@ -1,6 +1,6 @@
 # MAVEB Medium-Strength Shortlist v0
 
-**Date:** 2026-09-20  
+**Date:** 2026-09-20
 **Stage:** first pruning from 115 hypotheses; not finalists and not novelty claims.
 
 ## S1 — Dependency-certified heterogeneous minimal-work repair
