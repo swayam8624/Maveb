@@ -668,6 +668,27 @@ Closest collision classes that must be refreshed immediately before submission:
 
 A last literature refresh is mandatory because this area is moving quickly.
 
+# 13A. Highest-priority collision papers already in the project corpus
+
+These entries deserve explicit treatment in the related-work and novelty discussion because the internal literature matrix marks them as high or very high collision classes:
+
+- CL-Splats: Continual Learning of Gaussian Splatting with Local Optimization
+- GaussianUpdate: Continual 3D Gaussian Splatting Update for Changing Environments
+- Gaussian Mapping for Evolving Scenes (GaME)
+- From Pixels to Primitives: Scene Change Detection in 3D Gaussian Splatting
+- Consistent Instance Field for Dynamic Scene Understanding
+- EliGSiR: Continual RGB-D Mapping with Gaussian Splatting under Bounded Compute
+- SplaTAM
+- Gaussian Splatting SLAM / MonoGS
+- GaussianEditor variants
+- SC-GS
+- EditSplat
+- InterGSEdit
+- SuGaR
+- hierarchical 3D Gaussians
+
+The internal corpus also contains preprints and provisional metadata. Before any item is placed into the final bibliography, verify the title, authors, venue status, year, DOI/arXiv identifier, and publication state from an authoritative source. Do not cite placeholder metadata such as "authors per paper" or a generic venue landing page.
+
 # 14. Literature anchors already suitable for the paper
 
 Use the project literature database for exact BibTeX, but the conceptual anchors include:
