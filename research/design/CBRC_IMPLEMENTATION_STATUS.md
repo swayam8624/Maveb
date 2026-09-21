@@ -151,7 +151,7 @@ The v1 implementation has now completed its frozen paper-grade evidence campaign
 - baseline/ablation suite and SIGGRAPH-oriented evidence visual package;
 - pinned public trained-3DGS validation with 5 revisions, 4 certified-local cases, 1 FULL fallback and zero certificate violations.
 
-The measured public-campaign median calibrated heterogeneous work is approximately 0.349 of FULL. This is a **calibrated work estimate**, not a paired end-to-end speedup. The trained-3DGS campaign reports a median native temporal/output work ratio of approximately 0.03495, likewise not a wall-clock speedup.
+The measured public-campaign median calibrated heterogeneous work is approximately 0.36953 of FULL. This is a **calibrated work estimate**, not a paired end-to-end speedup. The trained-3DGS campaign reports a median native temporal/output work ratio of approximately 0.03495, likewise not a wall-clock speedup.
 
 A measured systems limitation remains visible rather than hidden: the frozen end-to-end campaigns still inspect nearly the full Gaussian set. A separate exact sparse-discovery sweep demonstrates substantially smaller inspection fractions, so integrating that index into the complete measured campaign is a future optimization rather than part of the current claim.
 
