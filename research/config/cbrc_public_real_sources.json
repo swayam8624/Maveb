@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "graphdeco-tandt-db-v1",
+  "description": "Official GraphDECO COLMAP-ready Tanks & Temples + Deep Blending input bundle. MAVEB's primary public campaign extracts only Tanks & Temples train and truck.",
+  "url": "https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/datasets/input/tandt_db.zip",
+  "expectedBytes": 682628995,
+  "sha256": "816e62f22a161abbfe841d2a6b10cdf036e297c9fa289b3bfeee9c6ec526d7e1",
+  "upstream": {
+    "graphdecoRepository": "https://github.com/graphdeco-inria/gaussian-splatting",
+    "tanksAndTemples": "https://www.tanksandtemples.org/"
+  },
+  "primaryScenes": [
+    {
+      "id": "tandt-train",
+      "memberPrefix": "tandt/train/sparse/0/",
+      "dataset": "Tanks and Temples",
+      "scene": "Train"
+    },
+    {
+      "id": "tandt-truck",
+      "memberPrefix": "tandt/truck/sparse/0/",
+      "dataset": "Tanks and Temples",
+      "scene": "Truck"
+    }
+  ],
+  "license": {
+    "dataset": "Tanks and Temples",
+    "spdx": "CC-BY-4.0",
+    "url": "https://www.tanksandtemples.org/license/",
+    "note": "Primary MAVEB public evidence uses only the Tanks and Temples members of the GraphDECO bundle. Cite the Tanks and Temples benchmark in publications."
+  },
+  "integrityNote": "The archive size/SHA-256 are pinned for reproducibility. If upstream replaces the file, update this manifest only after independently validating the replacement and recording provenance."
+}
