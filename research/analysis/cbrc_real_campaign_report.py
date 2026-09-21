@@ -42,10 +42,11 @@ def summarize(results_dir: Path) -> dict[str, Any]:
     local_rows = [row for row in rows if not bool(row.get("fallback_full", False))]
     fallback_rows = [row for row in rows if bool(row.get("fallback_full", False))]
     work_ratios = []
-    candidate_effectivities = []
+    source_effectivities = []
     selected_effectivities = []
-    zero_measured_candidate_errors = 0
+    zero_measured_source_errors = 0
     zero_measured_selected_errors = 0
+    source_effectivity_mismatches = 0
     actuals = []
     bounds = []
     units = set()
@@ -72,15 +73,31 @@ def summarize(results_dir: Path) -> dict[str, Any]:
             selected_effectivities.append(bound / actual)
 
         diagnostics = row.get("candidateDiagnostics", {})
-        candidate_actual = float(
-            diagnostics.get("candidateActualRgbError", float("nan"))
+        source_actual = float(
+            diagnostics.get("sourceEditActualRgbError", float("nan"))
         )
-        candidate_bound = float(diagnostics.get("candidateRgbBound", float("nan")))
-        if math.isfinite(candidate_actual) and math.isfinite(candidate_bound):
-            if candidate_actual <= EFFECTIVITY_ZERO_TOL:
-                zero_measured_candidate_errors += 1
+        source_bound = float(
+            diagnostics.get("sourceEditRgbBound", float("nan"))
+        )
+        stored_source_effectivity = float(
+            diagnostics.get("effectivity", float("nan"))
+        )
+        if math.isfinite(source_actual) and math.isfinite(source_bound):
+            if source_actual <= EFFECTIVITY_ZERO_TOL:
+                zero_measured_source_errors += 1
             else:
-                candidate_effectivities.append(candidate_bound / candidate_actual)
+                source_effectivity = source_bound / source_actual
+                source_effectivities.append(source_effectivity)
+                if (
+                    math.isfinite(stored_source_effectivity)
+                    and not math.isclose(
+                        stored_source_effectivity,
+                        source_effectivity,
+                        rel_tol=1e-9,
+                        abs_tol=1e-12,
+                    )
+                ):
+                    source_effectivity_mismatches += 1
 
         domains = row.get("work_ledger", {}).get("domains", {})
         if isinstance(domains, dict):
@@ -108,9 +125,14 @@ def summarize(results_dir: Path) -> dict[str, Any]:
             if not work_ratios or median(work_ratios) in (None, 0.0)
             else 1.0 / float(median(work_ratios))
         ),
-        "medianCandidateEffectivity": median(candidate_effectivities),
-        "definedCandidateEffectivityCount": len(candidate_effectivities),
-        "zeroMeasuredCandidateErrorCount": zero_measured_candidate_errors,
+        "medianSourceEditEffectivity": median(source_effectivities),
+        "definedSourceEditEffectivityCount": len(source_effectivities),
+        "zeroMeasuredSourceEditErrorCount": zero_measured_source_errors,
+        "sourceEffectivityMismatchCount": source_effectivity_mismatches,
+        "sourceEffectivityDefinition": (
+            "sourceEditRgbBound / sourceEditActualRgbError; undefined when "
+            "sourceEditActualRgbError is numerically zero"
+        ),
         "medianSelectedEffectivity": median(selected_effectivities),
         "definedSelectedEffectivityCount": len(selected_effectivities),
         "zeroMeasuredSelectedErrorCount": zero_measured_selected_errors,
@@ -153,8 +175,9 @@ def markdown(summary: dict[str, Any]) -> str:
         f"- Median work-reduction factor: {fmt(summary['medianWorkReductionFactor'])}x",
         f"- Median defined selected effectivity: {fmt(summary['medianSelectedEffectivity'])}",
         f"- Selected QoIs with numerically zero measured residual: {summary['zeroMeasuredSelectedErrorCount']}",
-        f"- Median defined candidate effectivity: {fmt(summary['medianCandidateEffectivity'])}",
-        f"- Candidate QoIs with numerically zero measured residual: {summary['zeroMeasuredCandidateErrorCount']}",
+        f"- Median defined source-edit effectivity: {fmt(summary['medianSourceEditEffectivity'])}",
+        f"- Source edits with numerically zero measured effect: {summary['zeroMeasuredSourceEditErrorCount']}",
+        f"- Stored/recomputed source-effectivity mismatches: {summary['sourceEffectivityMismatchCount']}",
         f"- Maximum measured selected error: {fmt(summary['maximumMeasuredSelectedError'])}",
         f"- Maximum selected certified bound: {fmt(summary['maximumSelectedCertifiedBound'])}",
         "",
