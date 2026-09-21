@@ -1,0 +1,67 @@
+name: Public Real RGB Campaign
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run/public-real-campaign
+    paths:
+      - .github/public-real-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  public-real-campaign:
+    runs-on: macos-15
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv-maveb
+          .venv-maveb/bin/python -m pip install --upgrade pip
+          .venv-maveb/bin/python -m pip install numpy pillow scipy
+
+      - name: Run zero-input public real campaign
+        shell: bash
+        env:
+          MAVEB_PYTHON: ${{ github.workspace }}/.venv-maveb/bin/python
+          MAVEB_PUBLIC_RESULTS_DIR: ${{ github.workspace }}/build/public-real-campaign
+        run: |
+          set -euo pipefail
+          chmod +x run_public_real_campaign.sh
+          ./run_public_real_campaign.sh
+
+      - name: Summarize evidence gate
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          answer="build/public-real-campaign/campaign/REAL_CAMPAIGN_ANSWER.md"
+          if [[ -f "$answer" ]]; then
+            cat "$answer" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## MAVEB public real campaign" >> "$GITHUB_STEP_SUMMARY"
+            echo "The answer report was not produced. Inspect the job logs and provenance artifacts." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload public campaign evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maveb-public-real-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            build/public-real-campaign/source/PUBLIC_SOURCE_PROVENANCE.json
+            build/public-real-campaign/worlds/*.source.json
+            build/public-real-campaign/frozen-inputs/**
+            build/public-real-campaign/campaign/**
