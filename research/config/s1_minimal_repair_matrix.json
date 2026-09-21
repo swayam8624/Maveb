@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "campaign": "s1-dependency-certified-minimal-repair",
+  "changedFractions": [0.001, 0.0025, 0.005, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1.0],
+  "methods": [
+    "full-rebuild",
+    "gaussian-local-only",
+    "spatial-local-all-layers",
+    "dependency-certified"
+  ],
+  "datasets": [
+    {"id": "synthetic-evolving-world", "kind": "deterministic", "seeds": [42]},
+    {"id": "vg-scene", "kind": "external", "seeds": [42]},
+    {"id": "maveb-real-revisit", "kind": "private-capture", "seeds": [42]}
+  ],
+  "resourceBudgets": [
+    {"name": "unbounded-reference", "gpuUpdateMs": null, "memoryMb": null},
+    {"name": "interactive-8ms", "gpuUpdateMs": 8.0, "memoryMb": 8192},
+    {"name": "interactive-4ms", "gpuUpdateMs": 4.0, "memoryMb": 4096}
+  ],
+  "metrics": {
+    "requiredLocalityDomains": [
+      "observationsInspected",
+      "tsdfBlocksRead",
+      "tsdfBlocksWritten",
+      "meshCellsRegenerated",
+      "gaussiansInspected",
+      "gaussiansUpdated",
+      "textureTexelsWritten",
+      "gpuPublicationBytes",
+      "temporalPixelsInvalidated"
+    ],
+    "quality": ["psnr", "ssim", "lpips"],
+    "geometry": ["depth_rmse", "chamfer", "normal_error"],
+    "continual": [
+      "change_iou",
+      "unchanged_damage",
+      "identity_survival",
+      "stale_geometry_lifetime"
+    ],
+    "performance": [
+      "update_wall_ms",
+      "gpu_p50_ms",
+      "gpu_p95_ms",
+      "gpu_p99_ms",
+      "peak_memory_mb"
+    ]
+  },
+  "gates": {
+    "exactFixturesRequireEquivalentOutput": true,
+    "realScenesRequireDeclaredTolerance": true,
+    "hiddenGlobalWorkIsFailure": true,
+    "minimumPublicDatasetFamilies": 2,
+    "minimumRealSequences": 3
+  }
+}

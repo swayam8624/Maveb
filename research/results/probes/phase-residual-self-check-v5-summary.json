@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-residual-self-check-v5",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-analysis-sandbox-probe",
+  "configuration": {
+    "grid": 28,
+    "margins": [
+      0.02,
+      0.06,
+      0.1,
+      0.14,
+      0.18,
+      0.22,
+      0.26,
+      0.3,
+      0.34,
+      0.38,
+      0.42,
+      0.46,
+      0.5
+    ],
+    "seedsPerMargin": 12,
+    "translation": [
+      0.02,
+      0.01,
+      -0.005
+    ],
+    "windowRadius": 0.8,
+    "windowTaper": 0.12
+  },
+  "recordCount": 156,
+  "summary": {
+    "pearson_residual_vs_error": 0.8947791221022736
+  },
+  "decision": "PROMISING SELF-CHECK: phase-model residual strongly tracks boundary-induced translation error in this synthetic sweep. Next test must calibrate thresholds on train scenes and evaluate error-bound coverage on held-out shapes/deformations.",
+  "interpretation": [
+    "Residual/error correlation is strong enough to justify a held-out calibration experiment.",
+    "This is not yet a certificate: correlation does not imply conservative coverage.",
+    "The next required result is coverage: for a chosen residual threshold or residual-to-error bound calibrated on training cases, what fraction of unseen edits satisfy actual error <= predicted bound?"
+  ]
+}

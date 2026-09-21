@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = ROOT / "benchmarks/manifests"
 RESULTS = ROOT / "benchmarks/results"
 ARKIT_ADAPTER = ROOT / "benchmarks/scripts/adapters/arkitscenes_to_aether.py"
+VGSCENE_ADAPTER = ROOT / "benchmarks/scripts/adapters/vgscene_to_temporal_manifest.py"
 GEOMETRY_EVALUATOR = ROOT / "benchmarks/scripts/evaluate_geometry.py"
 
 @dataclasses.dataclass(slots=True)
@@ -90,6 +91,20 @@ def resolve_input(m: dict[str, Any]) -> dict[str, Any]:
     elif kind == "video":
         videos = resolve_glob(root, m["videoGlob"]) if root.exists() else []
         r.update(videos=[str(v) for v in videos], video=str(videos[0]) if videos else None, ready=bool(videos))
+    elif kind == "vg-scene":
+        discovered = []
+        missing = []
+        for group in ("real", "synthetic"):
+            for name in m.get("sequences", {}).get(group, []):
+                candidates = (root / name, root / group / name)
+                sequence = next((p for p in candidates if p.is_dir()), None)
+                if sequence is None:
+                    missing.append({"kind": group, "name": name})
+                else:
+                    discovered.append({"kind": group, "name": name, "path": str(sequence)})
+        r.update(sequences=discovered, missingSequences=missing,
+                 ready=root.is_dir() and bool(discovered),
+                 complete=root.is_dir() and not missing)
     else:
         assets = {k: resolve_glob(root, p) if root.exists() else [] for k,p in m.get("requiredAssets",{}).items()}
         r.update(assets={k:[str(v) for v in values] for k,values in assets.items()}, ready=root.is_dir() and all(assets.values()))
@@ -173,6 +188,11 @@ def adapt_arkit(source:Path, output:Path,t:dict[str,str|None],a:argparse.Namespa
     if a.arkit_max_frames is not None: argv += ["--max-frames",str(a.arkit_max_frames)]
     return command_step(argv)
 
+def adapt_vgscene(sequence:Path, kind:str, output:Path)->tuple[str,dict[str,Any]]:
+    if not VGSCENE_ADAPTER.is_file(): return "blocked", {"reason":"vgscene-adapter-not-found"}
+    return command_step([sys.executable,str(VGSCENE_ADAPTER),str(sequence),
+                         "--kind",kind,"--output",str(output)])
+
 def fuse_arkit(capture:Path,output:Path,t:dict[str,str|None],a:argparse.Namespace)->tuple[str,dict[str,Any]]:
     if not t["aether-fuse"]: return "blocked", {"reason":"aether-fuse-not-found"}
     argv=[t["aether-fuse"],str(capture),"--output",str(output),"--auto-bounds","--max-axis",str(a.arkit_max_axis),
@@ -239,6 +259,24 @@ def run_dataset(a:argparse.Namespace,m:dict[str,Any],t:dict[str,str|None])->dict
             status,d=evaluate_metric_geometry(mesh,Path(resolved["referenceGeometry"]),run_dir/"geometry/evaluated-candidate.ply",t,a.geometry_max_points)
             record["steps"].append({"name":"geometry-evaluation","status":status,**d})
         record["status"]=status
+    elif kind=="vg-scene":
+        statuses=[]
+        for sequence in resolved.get("sequences",[]):
+            output=run_dir/"temporal"/f"{sequence['name']}.json"
+            status,d=adapt_vgscene(Path(sequence["path"]),sequence["kind"],output)
+            statuses.append(status)
+            record["steps"].append({"name":"vgscene-temporal-adapter","status":status,
+                                    "sequence":sequence["name"],"sequenceKind":sequence["kind"],**d})
+        if not statuses:
+            record["status"]="fail"
+        elif any(status=="fail" for status in statuses):
+            record["status"]="fail"
+        elif any(status=="blocked" for status in statuses):
+            record["status"]="blocked"
+        elif resolved.get("missingSequences"):
+            record["status"]="partial"
+        else:
+            record["status"]="pass"
     elif kind=="dtu":
         record["status"]="adapter-required"; record["steps"].append({"name":"adapter-status","status":"adapter-required","reason":"DTU camera/reference normalization is not yet mapped to AETHER's evaluation contract"})
     else:
@@ -266,6 +304,7 @@ def report_markdown(records:list[dict[str,Any]])->str:
                 evidence.append(f"Chamfer {metrics['chamferMean']:.4f}"); fs=metrics.get("fScores") or []
                 if fs: evidence.append(f"F@{fs[0]['threshold']:.2f} {fs[0]['fScore']:.3f}")
             if s["name"]=="arkitscenes-conversion" and p.get("frames") is not None: evidence.append(f"{p['frames']} RGB-D frames")
+            if s["name"]=="vgscene-temporal-adapter" and p.get("frameCount") is not None: evidence.append(f"{s.get('sequence','VG-Scene')}: {p['frameCount']} paired frames")
             if s["name"]=="aether-fuse-oracle" and p.get("vertices") is not None: evidence.append(f"{p['vertices']} mesh vertices")
             if s["name"]=="apple-photogrammetry" and p.get("images") is not None: evidence.append(f"USDZ from {p['images']} images")
             if s["name"]=="glb-conversion" and p.get("bytes") is not None: evidence.append(f"GLB {p['bytes']/1_000_000:.1f} MB")

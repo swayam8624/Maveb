@@ -1,5 +1,6 @@
 add_library(AetherGaussian STATIC
     src/GaussianCodec.cpp
+    src/GaussianUpdatePlan.cpp
     src/PlyLoader.cpp
     src/ReferenceRasterizer.cpp
 )

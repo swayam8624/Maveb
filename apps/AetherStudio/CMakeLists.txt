@@ -5,15 +5,24 @@ set(AETHER_STUDIO_SOURCES
     Sources/AetherStudioApp.swift
     Sources/ContentView.swift
     Sources/AetherViewport.swift
+    Sources/LivePersistentRealityEditor.swift
     Sources/ReconstructionReport.swift
     Sources/ReconstructionWorkspace.swift
     Sources/TrainingComparisonViewport.swift
+    Sources/WorldEntityEditor.swift
+    Sources/WorldHistoryWorkspace.swift
+    Sources/WorldIntelligenceWorkspace.swift
+    Sources/WorldTimeMachine.swift
     Bridge/AetherCaptureBridge.mm
+    Bridge/AetherPersistentGaussianBridge.mm
+    Bridge/AetherPersistentGaussianExports.mm
     Bridge/AetherViewportBridge.mm
+    Bridge/AetherWorldBridge.mm
 )
 
 add_executable(AetherStudio MACOSX_BUNDLE ${AETHER_STUDIO_SOURCES})
-target_link_libraries(AetherStudio PRIVATE Aether::Metal Aether::Capture
+target_link_libraries(AetherStudio PRIVATE Aether::Metal Aether::Capture Aether::WorldAdapters
+    Aether::WorldGaussian
     "-framework AppKit" "-framework Metal" "-framework MetalKit" "-framework SwiftUI")
 target_include_directories(AetherStudio PRIVATE Bridge)
 

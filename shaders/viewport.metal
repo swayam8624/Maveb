@@ -193,6 +193,11 @@ fragment TemporalOutput aetherTemporalResolveFragment(
         return output;
 
     const float2 uv = (float2(pixel) + 0.5f) / float2(dimensions);
+    if (temporal.historyParameters.w > 0.5f &&
+        all(uv >= temporal.invalidationRect.xy) &&
+        all(uv <= temporal.invalidationRect.zw))
+        return output;
+
     const float4 motion = currentMotion.read(pixel);
     if (motion.w < 0.5f)
         return output;

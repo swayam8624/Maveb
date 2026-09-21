@@ -30,13 +30,18 @@ if(APPLE)
     add_subdirectory(engine/capture)
 endif()
 add_subdirectory(engine/rendergraph)
+add_subdirectory(engine/revision)
 aether_resolve_fastgltf()
 add_subdirectory(engine/scene)
+add_subdirectory(engine/world)
 add_subdirectory(engine/mesh)
 add_subdirectory(engine/canonical)
 add_subdirectory(engine/gaussian)
 add_subdirectory(engine/reconstruction)
+add_subdirectory(engine/cbrc)
 add_subdirectory(engine/hybrid)
+add_subdirectory(engine/world_adapters)
+add_subdirectory(engine/world_gaussian)
 
 if(AETHER_BUILD_TOOLS)
     if(APPLE)
@@ -53,6 +58,9 @@ if(AETHER_BUILD_TOOLS)
     add_subdirectory(tools/maveb-u3-fuse)
     add_subdirectory(tools/maveb-gaussian-depth)
     add_subdirectory(tools/maveb-align-sensors)
+    add_subdirectory(tools/maveb-gaussian-locality-bench)
+    add_subdirectory(tools/maveb-cbrc-gaussian-oracle)
+    add_subdirectory(tools/maveb-cbrc-revision)
     if(APPLE)
         add_subdirectory(tools/aether-capture)
         add_subdirectory(tools/aether-keyframes)
@@ -86,6 +94,162 @@ if(AETHER_BUILD_TESTS)
     target_link_libraries(AetherUncertaintyTsdfTests PRIVATE Aether::Reconstruction)
     aether_configure_target(AetherUncertaintyTsdfTests)
     add_test(NAME AetherUncertaintyTsdfTests COMMAND AetherUncertaintyTsdfTests)
+
+    add_executable(MavebPersistentWorldTests tests/PersistentWorldTests.cpp)
+    target_link_libraries(MavebPersistentWorldTests PRIVATE Aether::World)
+    aether_configure_target(MavebPersistentWorldTests)
+    add_test(NAME MavebPersistentWorldTests COMMAND MavebPersistentWorldTests)
+
+    add_executable(MavebEntityAssociationTests tests/EntityAssociationTests.cpp)
+    target_link_libraries(MavebEntityAssociationTests PRIVATE Aether::World)
+    aether_configure_target(MavebEntityAssociationTests)
+    add_test(NAME MavebEntityAssociationTests COMMAND MavebEntityAssociationTests)
+
+    add_executable(MavebWorldModelTests tests/WorldModelTests.cpp)
+    target_link_libraries(MavebWorldModelTests PRIVATE Aether::World)
+    aether_configure_target(MavebWorldModelTests)
+    add_test(NAME MavebWorldModelTests COMMAND MavebWorldModelTests)
+
+    add_executable(MavebWorldArchiveTests tests/WorldArchiveTests.cpp)
+    target_link_libraries(MavebWorldArchiveTests PRIVATE Aether::World)
+    aether_configure_target(MavebWorldArchiveTests)
+    add_test(NAME MavebWorldArchiveTests COMMAND MavebWorldArchiveTests)
+
+    add_executable(MavebWorldEditTests tests/WorldEditTests.cpp)
+    target_link_libraries(MavebWorldEditTests PRIVATE Aether::World)
+    aether_configure_target(MavebWorldEditTests)
+    add_test(NAME MavebWorldEditTests COMMAND MavebWorldEditTests)
+
+    add_executable(MavebSpatialSemanticsTests tests/SpatialSemanticsTests.cpp)
+    target_link_libraries(MavebSpatialSemanticsTests PRIVATE Aether::World)
+    aether_configure_target(MavebSpatialSemanticsTests)
+    add_test(NAME MavebSpatialSemanticsTests COMMAND MavebSpatialSemanticsTests)
+
+    add_executable(MavebSemanticSceneGraphTests tests/SemanticSceneGraphTests.cpp)
+    target_link_libraries(MavebSemanticSceneGraphTests PRIVATE Aether::World)
+    aether_configure_target(MavebSemanticSceneGraphTests)
+    add_test(NAME MavebSemanticSceneGraphTests COMMAND MavebSemanticSceneGraphTests)
+
+    add_executable(MavebGaussianLocalUpdateTests tests/GaussianLocalUpdateTests.cpp)
+    target_link_libraries(MavebGaussianLocalUpdateTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianLocalUpdateTests)
+    add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
+
+
+    add_executable(MavebGaussianRegionIndexTests tests/GaussianRegionIndexTests.cpp)
+    target_link_libraries(MavebGaussianRegionIndexTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianRegionIndexTests)
+    add_test(NAME MavebGaussianRegionIndexTests COMMAND MavebGaussianRegionIndexTests)
+
+    add_executable(MavebGaussianLocalityCertificateTests tests/GaussianLocalityCertificateTests.cpp)
+    target_link_libraries(MavebGaussianLocalityCertificateTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianLocalityCertificateTests)
+    add_test(NAME MavebGaussianLocalityCertificateTests COMMAND MavebGaussianLocalityCertificateTests)
+
+    add_executable(MavebGaussianRenderCertificateTests tests/GaussianRenderCertificateTests.cpp)
+    target_link_libraries(MavebGaussianRenderCertificateTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianRenderCertificateTests)
+    add_test(NAME MavebGaussianRenderCertificateTests COMMAND MavebGaussianRenderCertificateTests)
+
+    add_executable(MavebGaussianImageRevisionCertificateTests tests/GaussianImageRevisionCertificateTests.cpp)
+    target_link_libraries(MavebGaussianImageRevisionCertificateTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianImageRevisionCertificateTests)
+    add_test(NAME MavebGaussianImageRevisionCertificateTests COMMAND MavebGaussianImageRevisionCertificateTests)
+
+    add_executable(MavebGaussianOverlaySpatialIndexTests tests/GaussianOverlaySpatialIndexTests.cpp)
+    target_link_libraries(MavebGaussianOverlaySpatialIndexTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianOverlaySpatialIndexTests)
+    add_test(NAME MavebGaussianOverlaySpatialIndexTests COMMAND MavebGaussianOverlaySpatialIndexTests)
+
+    add_executable(MavebGaussianPublicationPlanTests tests/GaussianPublicationPlanTests.cpp)
+    target_link_libraries(MavebGaussianPublicationPlanTests PRIVATE Aether::Gaussian)
+    aether_configure_target(MavebGaussianPublicationPlanTests)
+    add_test(NAME MavebGaussianPublicationPlanTests COMMAND MavebGaussianPublicationPlanTests)
+
+    if(TARGET maveb-cbrc-gaussian-oracle)
+        add_test(
+            NAME MavebCBRCGaussianOracleFixture
+            COMMAND maveb-cbrc-gaussian-oracle
+                --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
+                --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
+                --detect-changed
+                --width 64 --height 64
+                --focal-x 70 --focal-y 70
+                --center-x 32 --center-y 32
+                --epsilon 1.0
+        )
+    endif()
+
+
+    add_executable(MavebTemporalInvalidationTests tests/TemporalInvalidationTests.cpp)
+    target_link_libraries(MavebTemporalInvalidationTests PRIVATE Aether::Scene)
+    aether_configure_target(MavebTemporalInvalidationTests)
+    add_test(NAME MavebTemporalInvalidationTests COMMAND MavebTemporalInvalidationTests)
+
+    add_executable(MavebTemporalRevisionCertificateTests tests/TemporalRevisionCertificateTests.cpp)
+    target_link_libraries(MavebTemporalRevisionCertificateTests PRIVATE Aether::Scene)
+    aether_configure_target(MavebTemporalRevisionCertificateTests)
+    add_test(NAME MavebTemporalRevisionCertificateTests COMMAND MavebTemporalRevisionCertificateTests)
+
+
+    add_executable(MavebStableTextureAtlasTests tests/StableTextureAtlasTests.cpp)
+    target_link_libraries(MavebStableTextureAtlasTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebStableTextureAtlasTests)
+    add_test(NAME MavebStableTextureAtlasTests COMMAND MavebStableTextureAtlasTests)
+
+    add_executable(MavebPersistentTexturePageAllocatorTests
+        tests/PersistentTexturePageAllocatorTests.cpp)
+    target_link_libraries(MavebPersistentTexturePageAllocatorTests PRIVATE Aether::Reconstruction)
+    aether_configure_target(MavebPersistentTexturePageAllocatorTests)
+    add_test(NAME MavebPersistentTexturePageAllocatorTests
+        COMMAND MavebPersistentTexturePageAllocatorTests)
+
+    add_executable(MavebLocalityLedgerTests tests/LocalityLedgerTests.cpp)
+    target_link_libraries(MavebLocalityLedgerTests PRIVATE Aether::World)
+    aether_configure_target(MavebLocalityLedgerTests)
+    add_test(NAME MavebLocalityLedgerTests COMMAND MavebLocalityLedgerTests)
+
+    add_executable(MavebRevisionPlannerTests tests/RevisionPlannerTests.cpp)
+    target_link_libraries(MavebRevisionPlannerTests PRIVATE Aether::Revision)
+    aether_configure_target(MavebRevisionPlannerTests)
+    add_test(NAME MavebRevisionPlannerTests COMMAND MavebRevisionPlannerTests)
+
+    add_executable(MavebRevisionCertificateJsonTests
+        tests/RevisionCertificateJsonTests.cpp)
+    target_link_libraries(MavebRevisionCertificateJsonTests PRIVATE Aether::Revision)
+    aether_configure_target(MavebRevisionCertificateJsonTests)
+    add_test(NAME MavebRevisionCertificateJsonTests
+        COMMAND MavebRevisionCertificateJsonTests)
+
+    add_executable(MavebCapturedWorldRevisionGraphTests
+        tests/CapturedWorldRevisionGraphTests.cpp)
+    target_link_libraries(MavebCapturedWorldRevisionGraphTests PRIVATE Aether::CBRC)
+    aether_configure_target(MavebCapturedWorldRevisionGraphTests)
+    add_test(NAME MavebCapturedWorldRevisionGraphTests
+        COMMAND MavebCapturedWorldRevisionGraphTests)
+
+    if(TARGET maveb-cbrc-revision)
+        add_executable(MavebHeadlessCBRCRevisionToolTests
+            tests/HeadlessCBRCRevisionToolTests.cpp)
+        target_link_libraries(MavebHeadlessCBRCRevisionToolTests
+            PRIVATE Aether::Gaussian Aether::World Aether::WorldGaussian)
+        aether_configure_target(MavebHeadlessCBRCRevisionToolTests)
+        add_test(
+            NAME MavebHeadlessCBRCRevisionToolTests
+            COMMAND MavebHeadlessCBRCRevisionToolTests
+                $<TARGET_FILE:maveb-cbrc-revision>
+        )
+    endif()
+
+    add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
+    target_link_libraries(MavebGaussianOwnershipCodecTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianOwnershipCodecTests)
+    add_test(NAME MavebGaussianOwnershipCodecTests COMMAND MavebGaussianOwnershipCodecTests)
+
+    add_executable(MavebGaussianOwnershipAssignmentTests tests/GaussianOwnershipAssignmentTests.cpp)
+    target_link_libraries(MavebGaussianOwnershipAssignmentTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianOwnershipAssignmentTests)
+    add_test(NAME MavebGaussianOwnershipAssignmentTests COMMAND MavebGaussianOwnershipAssignmentTests)
 endif()
 
 if(AETHER_BUILD_EXAMPLES)

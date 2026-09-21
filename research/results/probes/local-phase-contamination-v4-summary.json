@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "experiment": "local-phase-contamination-v4",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-analysis-sandbox-probe",
+  "recordCount": 540,
+  "configuration": {
+    "seeds": 20,
+    "pointsPerNeighborhood": 64,
+    "grid": 28,
+    "splitEpsilons": [
+      0.005,
+      0.01,
+      0.02,
+      0.03
+    ],
+    "mergeFractions": [
+      0.1,
+      0.2,
+      0.35
+    ],
+    "translations": [
+      0.01,
+      0.02,
+      0.04,
+      0.06,
+      0.08
+    ],
+    "stationaryFractions": [
+      0,
+      0.1,
+      0.25,
+      0.5
+    ]
+  },
+  "summary": {
+    "split": {
+      "medianSpuriousShift": 0.000015163846330200022,
+      "p95SpuriousShift": 0.00012853077642189376
+    },
+    "merge": {
+      "medianSpuriousShift": 0.00026367186409741205,
+      "p95SpuriousShift": 0.0010410107669910954
+    },
+    "translation_stationary_0": {
+      "medianAbsoluteError": 1.0881939812958908e-9,
+      "medianRelativeError": 3.297452224374663e-8,
+      "p95RelativeError": 1.082223104795667e-7,
+      "medianPhaseModelRmse": 2.3157479002492925e-9,
+      "medianCoherence": 0.9999999999999979
+    },
+    "translation_stationary_0_1": {
+      "medianAbsoluteError": 0.0035202997327670963,
+      "medianRelativeError": 0.08952767210322532,
+      "p95RelativeError": 0.11866572786623283,
+      "medianPhaseModelRmse": 0.0014527628283404236,
+      "medianCoherence": 0.9999989447414481
+    },
+    "translation_stationary_0_25": {
+      "medianAbsoluteError": 0.010131276990040051,
+      "medianRelativeError": 0.2532819247510013,
+      "p95RelativeError": 0.29846053698884933,
+      "medianPhaseModelRmse": 0.0021168786850926224,
+      "medianCoherence": 0.9999977590660944
+    },
+    "translation_stationary_0_5": {
+      "medianAbsoluteError": 0.020066068821502095,
+      "medianRelativeError": 0.5034787653440657,
+      "p95RelativeError": 0.5749452964928902,
+      "medianPhaseModelRmse": 0.002782579664132821,
+      "medianCoherence": 0.9999961279907603
+    }
+  },
+  "decision": "PHASE REMAINS USEFUL FOR COHERENT LOCAL TRANSLATION BUT FAILS AS A STANDALONE MAX-DISPLACEMENT CERTIFICATE UNDER PARTIAL MOTION.",
+  "interpretation": [
+    "Split/merge nuisance causes very small spurious displacement estimates in this synthetic probe.",
+    "Coherent local translation is recovered to numerical precision in the low-frequency regime.",
+    "Partial stationary contamination biases the estimate roughly in proportion to stationary support.",
+    "Residual coherence remains deceptively high, so phase alone does not reveal the mixture.",
+    "A rigorous preservation certificate therefore needs support partitioning, multi-component motion, or another coverage/residual constraint."
+  ]
+}

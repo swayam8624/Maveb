@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-window-boundary-v4",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-analysis-sandbox-probe",
+  "configuration": {
+    "grid": 40,
+    "windowRadius": 0.8,
+    "windowTaper": 0.12,
+    "clusterSigma": 0.05,
+    "kernelSigma": 0.07,
+    "translation": [
+      0.02,
+      0.01,
+      -0.005
+    ],
+    "margins": [
+      0.5,
+      0.35,
+      0.25,
+      0.18,
+      0.12,
+      0.08,
+      0.05,
+      0.02
+    ],
+    "seedsPerMargin": 20,
+    "kmax": 10
+  },
+  "recordCount": 160,
+  "summary": {
+    "0.5": {
+      "median_error": 6.259949289595266e-7,
+      "p95_error": 0.0000019782187132203365
+    },
+    "0.35": {
+      "median_error": 0.00027594858935029495,
+      "p95_error": 0.00038053808244226095
+    },
+    "0.25": {
+      "median_error": 0.0024292922814109605,
+      "p95_error": 0.0029812925359820205
+    },
+    "0.18": {
+      "median_error": 0.005825234399614012,
+      "p95_error": 0.006650754009615288
+    },
+    "0.12": {
+      "median_error": 0.009093367883036357,
+      "p95_error": 0.00988267972990779
+    },
+    "0.08": {
+      "median_error": 0.011091985169420206,
+      "p95_error": 0.011724196342492789
+    },
+    "0.05": {
+      "median_error": 0.012367597614619913,
+      "p95_error": 0.0128617709795757
+    },
+    "0.02": {
+      "median_error": 0.013411802276314923,
+      "p95_error": 0.013967669461945846
+    }
+  },
+  "decision": "SURVIVES WITH A VALIDITY CONDITION: phase-derived local displacement is trustworthy only when analyzed support remains sufficiently inside the tapered window. Boundary proximity must be part of any certificate.",
+  "interpretation": [
+    "At 0.50 margin, recovery error is essentially numerical noise.",
+    "Error grows sharply as support approaches the local analysis boundary.",
+    "At 0.25 margin median error is already about 0.00243 scene units.",
+    "At 0.02 margin median error is about 0.01341, a large fraction of the applied translation magnitude.",
+    "A local certificate therefore requires an explicit interior-support/taper condition or an added boundary-error term."
+  ]
+}

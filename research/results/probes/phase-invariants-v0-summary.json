@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-invariants-v0",
+  "executedAt": "2026-09-20",
+  "executionNote": "Executed in analysis sandbox; committed probe deterministically regenerates the full 608-record output. Clean-checkout reproduction on user hardware remains pending.",
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux x86_64",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "record_count": 608,
+  "summary": {
+    "density_l2": {
+      "split_median": 0.01002566364072639,
+      "split_p95": 0.041834229751154035,
+      "merge_median": 0.05057567748037217,
+      "merge_p95": 0.13474524580814734,
+      "translation_median": 0.18635797225974587,
+      "rotation_median": 0.32153887212476695,
+      "translation_vs_split_auc": 0.9752604166666666,
+      "rotation_vs_split_auc": 0.993896484375,
+      "translation_vs_merge_auc": 0.8350694444444444,
+      "rotation_vs_merge_auc": 0.88525390625,
+      "spearman_with_chamfer": 0.7325779687939182
+    },
+    "amplitude": {
+      "split_median": 0.00047126647893952283,
+      "split_p95": 0.0020277872229623093,
+      "merge_median": 0.0012863843621474663,
+      "merge_p95": 0.003158568229894231,
+      "translation_median": 0.003615565781510852,
+      "rotation_median": 0.007385323627284995,
+      "translation_vs_split_auc": 0.9041341145833334,
+      "rotation_vs_split_auc": 0.9490966796875,
+      "translation_vs_merge_auc": 0.8024631076388888,
+      "rotation_vs_merge_auc": 0.8812934027777778,
+      "spearman_with_chamfer": 0.8077541809152932
+    },
+    "phase": {
+      "split_median": 0.011361140482187488,
+      "split_p95": 0.06255045544063204,
+      "merge_median": 0.10284031816822492,
+      "merge_p95": 0.2559010467663282,
+      "translation_median": 0.2976070191420248,
+      "rotation_median": 0.522152968634586,
+      "translation_vs_split_auc": 0.9842936197916666,
+      "rotation_vs_split_auc": 0.9936116536458334,
+      "translation_vs_merge_auc": 0.8031141493055556,
+      "rotation_vs_merge_auc": 0.8362630208333334,
+      "spearman_with_chamfer": 0.7130119860158167
+    },
+    "pair_hist": {
+      "split_median": 0.014239914829899983,
+      "split_p95": 0.035474982584455854,
+      "merge_median": 0.012218740887850271,
+      "merge_p95": 0.02083214367404226,
+      "translation_median": 0.0163464851719088,
+      "rotation_median": 0,
+      "translation_vs_split_auc": 0.5326741536458334,
+      "rotation_vs_split_auc": 0,
+      "translation_vs_merge_auc": 0.6340603298611112,
+      "rotation_vs_merge_auc": 0,
+      "spearman_with_chamfer": -0.05628694352677418
+    },
+    "moments": {
+      "split_median": 0.00024650335494148465,
+      "split_p95": 0.0009321585978753573,
+      "merge_median": 0.0003614804303243483,
+      "merge_p95": 0.0011598881209154825,
+      "translation_median": 0.02540435024167858,
+      "rotation_median": 9.344947617188851e-17,
+      "translation_vs_split_auc": 1,
+      "rotation_vs_split_auc": 0,
+      "translation_vs_merge_auc": 1,
+      "rotation_vs_merge_auc": 0,
+      "spearman_with_chamfer": -0.1300268506622854
+    }
+  },
+  "decision": "CONTINUE-NARROWLY: phase separates split-resampling from tested edits but is not uniquely superior to simpler descriptors; hard resampling and representation nuisance remain.",
+  "interpretation": [
+    "Phase strongly separates tested translation/rotation edits from split nuisance.",
+    "Merge nuisance substantially reduces phase separation.",
+    "Simple moments beat phase on the tested translation probe but completely miss rigid rotation; pair-distance histograms also miss rotation.",
+    "Normalized spatial density L2 performs similarly to phase and is a mandatory simpler baseline.",
+    "No phase-based claim is justified from this probe."
+  ]
+}

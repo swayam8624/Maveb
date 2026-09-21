@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "frozen_on": "2026-09-20",
+  "method": "CBRC",
+  "dimensions": {
+    "scene_sizes": ["tiny", "small", "medium", "large", "stress"],
+    "edit_classes": ["geometry", "appearance", "gaussian", "publication", "history"],
+    "magnitudes": [0.02, 0.05, 0.10, 0.20, 0.40],
+    "coupling_regimes": ["low", "medium", "high"],
+    "qoi_profiles": ["strict", "practical"]
+  },
+  "cells": 750,
+  "baselines": ["FULL", "EXACT", "RADIUS_0", "RADIUS_1", "RADIUS_2", "RADIUS_3", "FRACTION", "EMPIRICAL", "CBRC"],
+  "synthetic_final_repeats": 30,
+  "required_real_scene_repeats": 5,
+  "freeze_note": "Change only by documented amendment committed before examining affected final results."
+}

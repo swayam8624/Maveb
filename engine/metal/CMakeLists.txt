@@ -8,8 +8,11 @@ find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
 add_library(AetherMetal STATIC
     src/FrameContext.cpp
     src/GaussianPipeline.cpp
+    src/GaussianPipelineUpdates.cpp
     src/MetalSymbols.cpp
     src/Renderer.cpp
+    src/RendererGaussianScene.cpp
+    src/RendererGaussianUpdates.cpp
     src/ShaderABI.cpp
     src/SparseMetalTsdfVolume.cpp
 )
@@ -23,6 +26,8 @@ target_include_directories(AetherMetal SYSTEM PUBLIC ${PROJECT_SOURCE_DIR}/exter
 target_link_libraries(AetherMetal
     PUBLIC Aether::Core Aether::RenderGraph Aether::Scene Aether::Mesh Aether::Gaussian Aether::Hybrid Aether::Package Aether::Reconstruction
     PRIVATE
+        Aether::WorldGaussian
+        Aether::Revision
         ${METAL_FRAMEWORK}
         ${METALKIT_FRAMEWORK}
         ${FOUNDATION_FRAMEWORK}

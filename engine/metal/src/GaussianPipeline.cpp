@@ -1,9 +1,11 @@
 #include <aether/metal/GaussianPipeline.hpp>
+#include <aether/world_gaussian/GaussianRenderCertificate.hpp>
 
 #include <Foundation/Foundation.hpp>
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <limits>
 #include <string>
@@ -11,7 +13,7 @@
 namespace aether::metal {
 namespace {
 
-enum PipelineIndex : std::size_t {
+enum PipelineIndex : std::uint8_t {
     project = 0,
     scanBlocks = 1,
     scanBlockSums = 2,
@@ -134,9 +136,16 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
         asset.gaussians.size() > std::numeric_limits<std::uint32_t>::max()) {
         return fail(ErrorCode::resourceExhausted, "Gaussian asset count is empty or exceeds Metal");
     }
+    double sceneColorUpperBound = 1.0;
     std::vector<AetherGaussianGpu> converted(asset.gaussians.size());
     for (std::size_t index = 0; index < asset.gaussians.size(); ++index) {
         const gaussian::Gaussian& source = asset.gaussians[index];
+        auto colorBound = world_gaussian::gaussianRendererColorUpperBound(source);
+        if (!colorBound)
+            return std::unexpected(colorBound.error());
+        for (const double channel : *colorBound)
+            sceneColorUpperBound = std::max(sceneColorUpperBound, channel);
+
         AetherGaussianGpu& destination = converted[index];
         destination.positionOpacity = {source.position[0], source.position[1], source.position[2],
                                        source.opacityLogit};
@@ -149,8 +158,17 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
             destination.shRest[coefficient / 4][coefficient % 4] = source.rest[coefficient];
         }
     }
-    auto gaussians = makeBuffer(device_.get(), converted.size() * sizeof(AetherGaussianGpu),
-                                MTL::ResourceStorageModeShared, "Canonical Gaussians");
+    std::array<MetalPtr<MTL::Buffer>, gaussianSourceBufferCount_> gaussianSources;
+    for (std::size_t slot = 0; slot < gaussianSources.size(); ++slot) {
+        auto source = makeBuffer(device_.get(), converted.size() * sizeof(AetherGaussianGpu),
+                                 MTL::ResourceStorageModeShared, "Versioned Canonical Gaussians");
+        if (!source)
+            return std::unexpected(source.error());
+        std::memcpy((*source)->contents(), converted.data(),
+                    converted.size() * sizeof(AetherGaussianGpu));
+        gaussianSources[slot] = std::move(*source);
+    }
+
     auto projectedBuffer =
         makeBuffer(device_.get(), converted.size() * sizeof(AetherProjectedGaussian),
                    MTL::ResourceStorageModePrivate, "Projected Gaussians");
@@ -161,8 +179,6 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
     const std::size_t scanBlockCount = (converted.size() + 255U) / 256U;
     auto scanBlockSums = makeBuffer(device_.get(), scanBlockCount * sizeof(std::uint32_t),
                                     MTL::ResourceStorageModePrivate, "Gaussian Scan Block Sums");
-    if (!gaussians)
-        return std::unexpected(gaussians.error());
     if (!projectedBuffer)
         return std::unexpected(projectedBuffer.error());
     if (!counts)
@@ -171,14 +187,23 @@ Result<void> GaussianPipeline::load(const gaussian::GaussianAsset& asset) {
         return std::unexpected(offsets.error());
     if (!scanBlockSums)
         return std::unexpected(scanBlockSums.error());
-    std::memcpy((*gaussians)->contents(), converted.data(),
-                converted.size() * sizeof(AetherGaussianGpu));
-    gaussians_ = std::move(*gaussians);
+    {
+        std::scoped_lock lock(publicationMutex_);
+        gaussianSources_ = std::move(gaussianSources);
+        canonicalGaussians_ = std::move(converted);
+        pendingRevisionBefore_.clear();
+        sceneColorUpperBound_ = sceneColorUpperBound;
+        sourceVersions_.fill(0);
+        currentVersion_ = 0;
+        publicationJournal_.clear();
+        lastPublicationStatistics_ = {};
+        lastFramePublicationStatistics_ = {};
+        gaussianCount_ = static_cast<std::uint32_t>(canonicalGaussians_.size());
+    }
     projected_ = std::move(*projectedBuffer);
     tileCounts_ = std::move(*counts);
     offsets_ = std::move(*offsets);
     scanBlockSums_ = std::move(*scanBlockSums);
-    gaussianCount_ = static_cast<std::uint32_t>(converted.size());
     return {};
 }
 
@@ -214,9 +239,15 @@ GaussianPipeline::dispatch1D(MTL::CommandBuffer* commandBuffer, MTL::ComputePipe
 
 Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
                                       AetherGaussianCamera camera, MTL::Texture* color,
-                                      MTL::Texture* depth, MTL::Texture* ids) {
-    if (!commandBuffer || !gaussians_ || !color || !depth || !ids || color->width() == 0 ||
-        color->height() == 0 || depth->width() != color->width() ||
+                                      MTL::Texture* depth, MTL::Texture* ids,
+                                      std::size_t frameSlot) {
+    if (frameSlot >= gaussianSources_.size())
+        return fail(ErrorCode::invalidArgument, "Gaussian frame source slot is out of range");
+    if (auto published = publishFrameSlot(frameSlot); !published)
+        return std::unexpected(published.error());
+
+    if (!commandBuffer || !gaussianSources_[frameSlot] || !color || !depth || !ids ||
+        color->width() == 0 || color->height() == 0 || depth->width() != color->width() ||
         depth->height() != color->height() || ids->width() != color->width() ||
         ids->height() != color->height() || depth->pixelFormat() != MTL::PixelFormatR32Float ||
         ids->pixelFormat() != MTL::PixelFormatR32Uint) {
@@ -249,7 +280,7 @@ Result<void> GaussianPipeline::encode(MTL::CommandBuffer* commandBuffer,
     if (auto result = dispatch1D(commandBuffer, pipelines_[project].get(), gaussianCount_,
                                  "Gaussian Projection",
                                  [&](MTL::ComputeCommandEncoder* encoder) {
-                                     encoder->setBuffer(gaussians_.get(), 0, 0);
+                                     encoder->setBuffer(gaussianSources_[frameSlot].get(), 0, 0);
                                      encoder->setBytes(&camera, sizeof(camera), 1);
                                      encoder->setBuffer(projected_.get(), 0, 2);
                                      encoder->setBuffer(counters_.get(), 0, 3);

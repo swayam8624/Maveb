@@ -752,7 +752,7 @@ int main() {
     camera.focalCenter = {8.0F, 8.0F, 4.5F, 4.5F};
     camera.depthViewport = {0.01F, 100.0F, static_cast<float>(width), static_cast<float>(height)};
     auto encoded =
-        (*gaussianPipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get());
+        (*gaussianPipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get(), 0);
     if (!encoded) {
         std::cerr << encoded.error().describe() << '\n';
         pool->release();
@@ -818,7 +818,8 @@ int main() {
     camera.debugOptions.x = 2;
     MTL::CommandBuffer* debugCommand = queue->commandBuffer();
     if (!debugCommand ||
-        !(*gaussianPipeline)->encode(debugCommand, camera, color.get(), depth.get(), ids.get())) {
+        !(*gaussianPipeline)
+             ->encode(debugCommand, camera, color.get(), depth.get(), ids.get(), 1)) {
         std::cerr << "Unable to encode Gaussian source-ID debug view\n";
         pool->release();
         return 1;
@@ -838,7 +839,7 @@ int main() {
         MTL::CommandBuffer* visualizationCommand = queue->commandBuffer();
         if (!visualizationCommand ||
             !(*gaussianPipeline)
-                 ->encode(visualizationCommand, camera, color.get(), depth.get(), ids.get())) {
+                 ->encode(visualizationCommand, camera, color.get(), depth.get(), ids.get(), 2)) {
             std::cerr << "Unable to encode Gaussian representation visualization\n";
             pool->release();
             return 1;
@@ -874,7 +875,7 @@ int main() {
         !multiBlockCommand ||
         !(*multiBlockPipeline)
              ->encode(multiBlockCommand, camera, multiBlockColor.get(), multiBlockDepth.get(),
-                      multiBlockIds.get())) {
+                      multiBlockIds.get(), 0)) {
         std::cerr << "Unable to encode multi-block Gaussian scan test\n";
         pool->release();
         return 1;
@@ -902,6 +903,37 @@ int main() {
         return 1;
     }
 
+    constexpr std::array<std::uint32_t, 3> versionedEditIds{1U, 256U, 512U};
+    if (!(*multiBlockPipeline)->translate(versionedEditIds, simd_float3{0.0F, 0.0F, 0.0F})) {
+        std::cerr << "Unable to journal sparse Gaussian publication fixture\n";
+        pool->release();
+        return 1;
+    }
+    const auto logicalPublication = (*multiBlockPipeline)->publicationStatistics();
+    MTL::CommandBuffer* versionedPublicationCommand = queue->commandBuffer();
+    if (!versionedPublicationCommand ||
+        !(*multiBlockPipeline)
+             ->encode(versionedPublicationCommand, camera, multiBlockColor.get(),
+                      multiBlockDepth.get(), multiBlockIds.get(), 1)) {
+        std::cerr << "Unable to publish sparse Gaussian revision into recycled frame slot\n";
+        pool->release();
+        return 1;
+    }
+    versionedPublicationCommand->commit();
+    versionedPublicationCommand->waitUntilCompleted();
+    const auto framePublication = (*multiBlockPipeline)->framePublicationStatistics();
+    if (logicalPublication.touchedRecords != versionedEditIds.size() ||
+        logicalPublication.contiguousRanges != versionedEditIds.size() ||
+        framePublication.touchedRecords != versionedEditIds.size() ||
+        framePublication.touchedBytes != versionedEditIds.size() * sizeof(AetherGaussianGpu) ||
+        framePublication.fullBufferBytes !=
+            multiBlockAsset.gaussians.size() * sizeof(AetherGaussianGpu) ||
+        !(framePublication.byteRatio() < 0.01)) {
+        std::cerr << "Versioned Gaussian publication did not remain sparse\n";
+        pool->release();
+        return 1;
+    }
+
     auto boundedPipeline = aether::metal::GaussianPipeline::create(device.get(), library.get(), 1);
     auto boundedColor = makeTexture(device.get(), MTL::PixelFormatRGBA32Float, 32, 32);
     auto boundedDepth = makeTexture(device.get(), MTL::PixelFormatR32Float, 32, 32);
@@ -914,7 +946,7 @@ int main() {
     if (!boundedPipeline || !(*boundedPipeline)->load(*gaussianAsset) || !boundedCommand ||
         !(*boundedPipeline)
              ->encode(boundedCommand, boundedCamera, boundedColor.get(), boundedDepth.get(),
-                      boundedIds.get())) {
+                      boundedIds.get(), 0)) {
         std::cerr << "Unable to encode bounded Gaussian tile test\n";
         pool->release();
         return 1;
@@ -934,15 +966,16 @@ int main() {
         auto captureDesc = aether::metal::adopt(MTL::CaptureDescriptor::alloc()->init());
         captureDesc->setCaptureObject(device.get());
         captureDesc->setDestination(MTL::CaptureDestinationGPUTraceDocument);
-        
-        const std::filesystem::path tracePath = std::filesystem::path(AETHER_TEST_ARTIFACT_DIR) / "RendererValidation.gputrace";
+
+        const std::filesystem::path tracePath =
+            std::filesystem::path(AETHER_TEST_ARTIFACT_DIR) / "RendererValidation.gputrace";
         std::error_code ec;
         std::filesystem::remove_all(tracePath, ec);
-        
+
         NS::String* pathString = NS::String::string(tracePath.c_str(), NS::UTF8StringEncoding);
         NS::URL* traceURL = NS::URL::fileURLWithPath(pathString);
         captureDesc->setOutputURL(traceURL);
-        
+
         NS::Error* captureError = nullptr;
         if (captureManager->supportsDestination(MTL::CaptureDestinationGPUTraceDocument)) {
             std::cout << "Capturing API-validation GPU frame to " << tracePath << "...\n";
@@ -950,22 +983,25 @@ int main() {
                 // Submit one offscreen frame to capture all named passes and resources
                 testView->setDrawableSize(CGSizeMake(320.0, 180.0));
                 (*renderer)->draw(testView.get());
-                
+
                 // Wait for the frame to complete
-                for (std::uint32_t attempt = 0; attempt < 100 && (*renderer)->statistics().completedFrames < 3; ++attempt) {
+                for (std::uint32_t attempt = 0;
+                     attempt < 100 && (*renderer)->statistics().completedFrames < 3; ++attempt) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
-                
+
                 captureManager->stopCapture();
                 std::cout << "API-validation GPU frame capture completed.\n";
             } else {
-                const std::string desc = captureError ? captureError->localizedDescription()->utf8String() : "unknown";
+                const std::string desc =
+                    captureError ? captureError->localizedDescription()->utf8String() : "unknown";
                 std::cerr << "MTLCaptureManager startCapture failed: " << desc << "\n";
                 pool->release();
                 return 1;
             }
         } else {
-            std::cout << "GPUTraceDocument capture destination not supported on this configuration.\n";
+            std::cout
+                << "GPUTraceDocument capture destination not supported on this configuration.\n";
         }
     }
 

@@ -111,6 +111,45 @@ The first real baseline on Apple Silicon used ETH3D Pipes with the pinned depend
 Those numbers are a smoke baseline, not a final quality claim. Regenerate geometry metrics locally
 with the committed benchmark rather than copying numbers into future reports.
 
+## CBRC evidence campaign
+
+MavebBench is also the execution layer for the final CBRC real-scene campaign.
+
+The CBRC pipeline is intentionally separate from ordinary reconstruction smoke tests:
+
+```mermaid
+flowchart LR
+    A["Persistent world + edit"] --> B["Headless revision capture"]
+    B --> C["Production certificate"]
+    C --> D["Independent full-reference oracle"]
+    D --> E["Strict evaluator"]
+    E --> F["Baselines + ablations"]
+    F --> G["Campaign gates + F1–F8 artifacts"]
+```
+
+Start from `research/config/cbrc_real_campaign.example.json`, replace fixture paths with frozen real persistent-world archives, calibrate the work model independently, and run:
+
+```bash
+python3 benchmarks/scripts/cbrc_campaign.py \
+  --campaign /absolute/path/campaign.json \
+  --oracle build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle \
+  --revision-tool build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision \
+  --git-sha "$(git rev-parse HEAD)" \
+  --output-dir /absolute/path/cbrc-results
+```
+
+A successful campaign requires zero certificate violations and, by default, includes both a certified local case and an automatic FULL fallback case.
+
+The strict safety condition is:
+
+```
+measured_full_reference_error <= certified_bound <= epsilon
+```
+
+Synthetic CBRC experiments exercise theory and implementation behavior. They are not substituted for this real-scene campaign.
+
+See [the full experiment runbook](../research/results/CBRC_EXPERIMENT_RUNBOOK.md).
+
 ## Dataset policy
 
 Dataset licenses are independent of the Apache-2.0 source license. MavebBench never vendors the

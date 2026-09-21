@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "experiment": "spatial-page-allocation-v3",
+  "status": "synthetic-dependency-allocation-probe",
+  "warning": "Not a texture-quality, renderer, allocator-fragmentation-over-time, or GPU timing benchmark. It isolates how stable slot assignment affects whole-page dirty scope for axis-aligned local 3D edits.",
+  "source": {
+    "commit": "f4b577368ce2ddbf025b1058870bc5752d026c8c",
+    "blobSha": "077c5cc581ae191ef84915c1f5bf58620c378d39",
+    "path": "research/probes/spatial_page_allocation_v3.py"
+  },
+  "configuration": {
+    "grid": [64, 64, 64],
+    "activeSlots": 262144,
+    "pageSizes": [64, 256, 1024, 4096],
+    "cubeSides": [6, 14, 24],
+    "seeds": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],
+    "randomAllocationSeed": 20260920
+  },
+  "runtime": {
+    "python": "3.13.5",
+    "numpy": "2.3.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64"
+  },
+  "rows": [
+    {"cubeSide":6,"changedSlots":216,"actualChangedFraction":0.000823974609375,"slotsPerPage":64,"allocatedPages":4096,"idealWholePageFraction":0.0009765625,"mortonDirtyPageFractionMean":0.00294189453125,"mortonDirtyPageFractionP95":0.0045043945312500016,"randomDirtyPageFractionMean":0.05135498046875,"randomDirtyPageFractionP95":0.052490234375,"mortonCapacityAmplificationMean":3.5703703703703704,"randomCapacityAmplificationMean":62.325925925925915,"unchangedAddressSurvival":1.0},
+    {"cubeSide":6,"changedSlots":216,"actualChangedFraction":0.000823974609375,"slotsPerPage":256,"allocatedPages":1024,"idealWholePageFraction":0.0009765625,"mortonDirtyPageFractionMean":0.00556640625,"mortonDirtyPageFractionP95":0.008007812500000003,"randomDirtyPageFractionMean":0.19013671875,"randomDirtyPageFractionP95":0.1962890625,"mortonCapacityAmplificationMean":6.755555555555555,"randomCapacityAmplificationMean":230.75555555555556,"unchangedAddressSurvival":1.0},
+    {"cubeSide":6,"changedSlots":216,"actualChangedFraction":0.000823974609375,"slotsPerPage":1024,"allocatedPages":256,"idealWholePageFraction":0.00390625,"mortonDirtyPageFractionMean":0.0126953125,"mortonDirtyPageFractionP95":0.01640625000000001,"randomDirtyPageFractionMean":0.573828125,"randomDirtyPageFractionP95":0.5978515625,"mortonCapacityAmplificationMean":15.407407407407405,"randomCapacityAmplificationMean":696.4148148148148,"unchangedAddressSurvival":1.0},
+    {"cubeSide":6,"changedSlots":216,"actualChangedFraction":0.000823974609375,"slotsPerPage":4096,"allocatedPages":64,"idealWholePageFraction":0.015625,"mortonDirtyPageFractionMean":0.03359375,"mortonDirtyPageFractionP95":0.06562500000000004,"randomDirtyPageFractionMean":0.978125,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":40.770370370370365,"randomCapacityAmplificationMean":1187.0814814814817,"unchangedAddressSurvival":1.0},
+    {"cubeSide":14,"changedSlots":2744,"actualChangedFraction":0.010467529296875,"slotsPerPage":64,"allocatedPages":4096,"idealWholePageFraction":0.010498046875,"mortonDirtyPageFractionMean":0.01812744140625,"mortonDirtyPageFractionP95":0.020080566406250007,"randomDirtyPageFractionMean":0.49072265625,"randomDirtyPageFractionP95":0.49591064453125,"mortonCapacityAmplificationMean":1.7317784256559765,"randomCapacityAmplificationMean":46.8804664723032,"unchangedAddressSurvival":1.0},
+    {"cubeSide":14,"changedSlots":2744,"actualChangedFraction":0.010467529296875,"slotsPerPage":256,"allocatedPages":1024,"idealWholePageFraction":0.0107421875,"mortonDirtyPageFractionMean":0.029248046875,"mortonDirtyPageFractionP95":0.035595703125,"randomDirtyPageFractionMean":0.933935546875,"randomDirtyPageFractionP95":0.94453125,"mortonCapacityAmplificationMean":2.794169096209912,"randomCapacityAmplificationMean":89.22215743440233,"unchangedAddressSurvival":1.0},
+    {"cubeSide":14,"changedSlots":2744,"actualChangedFraction":0.010467529296875,"slotsPerPage":1024,"allocatedPages":256,"idealWholePageFraction":0.01171875,"mortonDirtyPageFractionMean":0.04609375,"mortonDirtyPageFractionP95":0.0703125,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":4.403498542274051,"randomCapacityAmplificationMean":95.53352769679302,"unchangedAddressSurvival":1.0},
+    {"cubeSide":14,"changedSlots":2744,"actualChangedFraction":0.010467529296875,"slotsPerPage":4096,"allocatedPages":64,"idealWholePageFraction":0.015625,"mortonDirtyPageFractionMean":0.090625,"mortonDirtyPageFractionP95":0.125,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":8.657725947521866,"randomCapacityAmplificationMean":95.53352769679302,"unchangedAddressSurvival":1.0},
+    {"cubeSide":24,"changedSlots":13824,"actualChangedFraction":0.052734375,"slotsPerPage":64,"allocatedPages":4096,"idealWholePageFraction":0.052734375,"mortonDirtyPageFractionMean":0.07509765625,"mortonDirtyPageFractionP95":0.083740234375,"randomDirtyPageFractionMean":0.9698974609375,"randomDirtyPageFractionP95":0.9727294921875,"mortonCapacityAmplificationMean":1.424074074074074,"randomCapacityAmplificationMean":18.39212962962963,"unchangedAddressSurvival":1.0},
+    {"cubeSide":24,"changedSlots":13824,"actualChangedFraction":0.052734375,"slotsPerPage":256,"allocatedPages":1024,"idealWholePageFraction":0.052734375,"mortonDirtyPageFractionMean":0.0998046875,"mortonDirtyPageFractionP95":0.109375,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":1.8925925925925928,"randomCapacityAmplificationMean":18.962962962962955,"unchangedAddressSurvival":1.0},
+    {"cubeSide":24,"changedSlots":13824,"actualChangedFraction":0.052734375,"slotsPerPage":1024,"allocatedPages":256,"idealWholePageFraction":0.0546875,"mortonDirtyPageFractionMean":0.137109375,"mortonDirtyPageFractionP95":0.1875,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":2.6,"randomCapacityAmplificationMean":18.962962962962955,"unchangedAddressSurvival":1.0},
+    {"cubeSide":24,"changedSlots":13824,"actualChangedFraction":0.052734375,"slotsPerPage":4096,"allocatedPages":64,"idealWholePageFraction":0.0625,"mortonDirtyPageFractionMean":0.19609375,"mortonDirtyPageFractionP95":0.2882812500000001,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionP95":1.0,"mortonCapacityAmplificationMean":3.7185185185185183,"randomCapacityAmplificationMean":18.962962962962955,"unchangedAddressSurvival":1.0}
+  ]
+}

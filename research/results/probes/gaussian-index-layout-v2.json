@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-index-layout-v2",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-linux-layout-probe",
+  "warning": "Not Apple-silicon or production MAVEB timing; RSS includes process/vector overhead and should be used only comparatively.",
+  "configuration": {
+    "gaussians": 1000000,
+    "sceneExtent": "[-25,25]^3",
+    "cellSizeMeters": 0.5,
+    "dirtyOccupiedCellFraction": 0.01,
+    "seed": 42
+  },
+  "variants": [
+    {
+      "layout": "unordered_map<RegionKey, vector<uint32_t>>",
+      "buildMs": 674.414,
+      "queryMs": 1.3774,
+      "occupiedCells": 632659,
+      "selected": 9963,
+      "maxRssKb": 88428
+    },
+    {
+      "layout": "sorted vector<pair<RegionKey,uint32_t>> + binary equal-range",
+      "buildMs": 302.618,
+      "queryMs": 9.44456,
+      "occupiedCells": 632659,
+      "selected": 10080,
+      "maxRssKb": 41256
+    }
+  ],
+  "interpretation": [
+    "Hash buckets prioritize dirty-region lookup latency but carry substantially higher memory/pointer overhead in this probe.",
+    "Sorted compact storage roughly halves peak RSS and builds faster here, but binary range queries are materially slower.",
+    "The two selected counts differ because each layout samples 1% of its occupied-cell ordering independently; this probe compares structure cost, not selected-set equivalence.",
+    "Production evaluation should add Morton-sorted ranges with a compact region directory, flat/open-addressing hash, clustered real scenes, and incremental relocation cost."
+  ],
+  "decision": "DO NOT FREEZE DATA STRUCTURE. Preserve GaussianSpatialIndex abstraction; benchmark flat hash / compact sorted-Morton designs on M2 Pro before claiming locality efficiency."
+}

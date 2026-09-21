@@ -9,6 +9,8 @@ add_library(AetherReconstruction STATIC
     src/GeometryEvaluation.cpp
     src/RecordedProviders.cpp
     src/TextureBaker.cpp
+    src/StableTextureAtlas.cpp
+    src/PersistentTexturePageAllocator.cpp
     src/ColmapCameraRig.cpp
     src/SensorAlignment.cpp
 )

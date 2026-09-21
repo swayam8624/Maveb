@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Unit fixture only. Values are synthetic and MUST NOT be reported as MAVEB research results.",
+  "budgets": {
+    "memoryBytes": 420,
+    "renderMs": 4.8,
+    "updateMs": 5
+  },
+  "regions": [
+    {
+      "id": "planar-wall",
+      "weight": 1,
+      "candidates": [
+        {
+          "representation": "tsdf",
+          "qualityLoss": 0.08,
+          "memoryBytes": 140,
+          "renderMs": 1.4,
+          "updateMs": 0.8
+        },
+        {
+          "representation": "mesh",
+          "qualityLoss": 0.02,
+          "memoryBytes": 60,
+          "renderMs": 0.6,
+          "updateMs": 1
+        },
+        {
+          "representation": "gaussian",
+          "qualityLoss": 0.04,
+          "memoryBytes": 120,
+          "renderMs": 1,
+          "updateMs": 0.9
+        }
+      ]
+    },
+    {
+      "id": "specular-object",
+      "weight": 1.2,
+      "candidates": [
+        {
+          "representation": "tsdf",
+          "qualityLoss": 0.18,
+          "memoryBytes": 130,
+          "renderMs": 1.2,
+          "updateMs": 0.8
+        },
+        {
+          "representation": "mesh",
+          "qualityLoss": 0.15,
+          "memoryBytes": 70,
+          "renderMs": 0.7,
+          "updateMs": 1
+        },
+        {
+          "representation": "gaussian",
+          "qualityLoss": 0.03,
+          "memoryBytes": 150,
+          "renderMs": 1.1,
+          "updateMs": 1.1
+        }
+      ]
+    },
+    {
+      "id": "frequently-changing",
+      "weight": 1,
+      "candidates": [
+        {
+          "representation": "tsdf",
+          "qualityLoss": 0.05,
+          "memoryBytes": 110,
+          "renderMs": 1,
+          "updateMs": 0.5
+        },
+        {
+          "representation": "mesh",
+          "qualityLoss": 0.04,
+          "memoryBytes": 80,
+          "renderMs": 0.7,
+          "updateMs": 1.8
+        },
+        {
+          "representation": "gaussian",
+          "qualityLoss": 0.03,
+          "memoryBytes": 130,
+          "renderMs": 1,
+          "updateMs": 1
+        }
+      ]
+    }
+  ]
+}

@@ -2,6 +2,8 @@
 
 #include <aether/core/Clock.hpp>
 #include <aether/core/Error.hpp>
+#include <aether/gaussian/GaussianAsset.hpp>
+#include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/mesh/MeshAsset.hpp>
 #include <aether/metal/FrameContext.hpp>
 #include <aether/metal/GaussianPipeline.hpp>
@@ -10,6 +12,7 @@
 #include <aether/scene/ImageBasedLighting.hpp>
 #include <aether/scene/Lighting.hpp>
 #include <aether/scene/Shadows.hpp>
+#include <aether/scene/TemporalInvalidation.hpp>
 #include <shared/AetherShaderTypes.h>
 
 #include <Metal/Metal.hpp>
@@ -18,12 +21,14 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstddef>
 #include <dispatch/dispatch.h>
 #include <filesystem>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -46,6 +51,46 @@ struct RendererStatistics {
 struct ProxyMeshStatistics {
     std::uint32_t vertices{};
     std::uint32_t triangles{};
+};
+
+struct GaussianEditPublicationStatistics final {
+    GaussianPublicationStatistics sourceBuffer;
+    std::size_t frameSlotsQuiesced{};
+    bool globalTemporalHistoryInvalidated{};
+};
+
+struct GaussianOutputConePlannerStatistics final {
+    bool available{};
+    bool stable{};
+    bool passes{};
+    bool temporalValidationStable{};
+    bool temporalRepairSelected{};
+    bool fullRebuild{};
+    double resolvedRgbBound{};
+    double epsilon{};
+    double historyWeight{};
+    double temporalRepairWork{};
+    double plannerWork{};
+    double fullWork{};
+};
+
+struct GaussianRevisionCertificateStatistics final {
+    bool available{};
+    bool invalidationCoversCertifiedSupport{};
+    bool temporalFullFrameFallback{};
+    std::uint64_t revisionVersion{};
+    std::size_t changedGaussians{};
+    std::uint64_t affectedPixels{};
+    std::uint64_t fullFramePixels{};
+    double maximumCurrentRgbBound{};
+    double sceneColorUpperBound{};
+    gaussian::ReferenceCamera camera{};
+
+    [[nodiscard]] double affectedPixelRatio() const noexcept {
+        if (fullFramePixels == 0)
+            return 0.0;
+        return static_cast<double>(affectedPixels) / static_cast<double>(fullFramePixels);
+    }
 };
 
 struct FrameCapture final {
@@ -83,8 +128,8 @@ struct CameraSnapshot final {
 
 class Renderer final {
   public:
-    static Result<std::unique_ptr<Renderer>> create(MTL::Device* device,
-                                                    std::filesystem::path shaderLibraryPath = {});
+    static Result<std::unique_ptr<Renderer>>
+    create(MTL::Device* device, const std::filesystem::path& shaderLibraryPath = {});
     ~Renderer();
 
     Renderer(const Renderer&) = delete;
@@ -99,6 +144,24 @@ class Renderer final {
     void detachDynamicGltf() noexcept;
     [[nodiscard]] Result<void> loadPly(const std::filesystem::path& path);
     [[nodiscard]] Result<void> loadAether(const std::filesystem::path& path);
+
+    /// Replaces the active captured Gaussian scene directly from a validated in-memory asset.
+    /// Used by persistent-reality state reloads after authored edits.
+    [[nodiscard]] Result<void> loadGaussianAsset(const gaussian::GaussianAsset& asset);
+    void clearCapturedGaussianScene() noexcept;
+
+    /// Validates a source-order subset translation against the currently loaded shared GPU buffer
+    /// without mutating visible state.
+    [[nodiscard]] Result<void>
+    validateGaussianTranslation(std::span<const std::uint32_t> gaussianIndices,
+                                simd_float3 translationDelta) const;
+
+    /// Applies one transactional source-order subset translation to canonical CPU Gaussian state.
+    /// GPU publication is deferred to each recycled frame slot, avoiding global frame quiescence.
+    /// Temporal history invalidation is retained only over conservative projected edit bounds.
+    [[nodiscard]] Result<void> translateGaussians(std::span<const std::uint32_t> gaussianIndices,
+                                                  simd_float3 translationDelta);
+
     [[nodiscard]] Result<void> selectAnimation(std::size_t clipIndex, bool loop = true);
     void setAnimationPlaying(bool playing) noexcept {
         animationPlaying_ = playing;
@@ -167,6 +230,32 @@ class Renderer final {
         return capabilities_;
     }
     [[nodiscard]] RendererStatistics statistics() const noexcept;
+    [[nodiscard]] GaussianEditPublicationStatistics
+    gaussianEditPublicationStatistics() const noexcept {
+        return lastGaussianEditPublicationStatistics_;
+    }
+    [[nodiscard]] const scene::TemporalInvalidationPlan&
+    lastTemporalInvalidationPlan() const noexcept {
+        return lastTemporalInvalidationPlan_;
+    }
+    [[nodiscard]] GaussianRevisionCertificateStatistics
+    gaussianRevisionCertificateStatistics() const noexcept {
+        return lastGaussianRevisionCertificateStatistics_;
+    }
+    [[nodiscard]] GaussianOutputConePlannerStatistics
+    gaussianOutputConePlannerStatistics() const noexcept {
+        return lastGaussianOutputConePlannerStatistics_;
+    }
+    [[nodiscard]] Result<void> setGaussianRevisionRgbTolerance(double epsilon) noexcept {
+        if (!std::isfinite(epsilon) || epsilon < 0.0)
+            return fail(ErrorCode::invalidArgument,
+                        "Gaussian revision RGB tolerance must be finite and non-negative");
+        gaussianRevisionRgbTolerance_ = epsilon;
+        return {};
+    }
+    [[nodiscard]] double gaussianRevisionRgbTolerance() const noexcept {
+        return gaussianRevisionRgbTolerance_;
+    }
     /// Returns zero counts when the active scene has no canonical proxy mesh.
     [[nodiscard]] ProxyMeshStatistics proxyMeshStatistics() const noexcept {
         return {proxyVertexCount_, proxyIndexCount_ / 3U};
@@ -304,6 +393,8 @@ class Renderer final {
     std::array<MetalPtr<MTL::Texture>, 2> temporalDepthHistory_;
     simd_float4x4 previousViewProjection_{matrix_identity_float4x4};
     bool temporalHistoryValid_{};
+    std::optional<scene::TemporalWorldBounds> pendingTemporalInvalidationBounds_;
+    scene::TemporalInvalidationPlan lastTemporalInvalidationPlan_{};
     std::uint32_t sceneTargetWidth_{};
     std::uint32_t sceneTargetHeight_{};
     std::uint32_t gaussianTargetWidth_{};
@@ -316,6 +407,10 @@ class Renderer final {
     std::uint32_t shadowDebugSlice_{};
     std::uint32_t selectedMeshEntity_{};
     std::uint32_t gizmoMode_{};
+    GaussianEditPublicationStatistics lastGaussianEditPublicationStatistics_{};
+    GaussianRevisionCertificateStatistics lastGaussianRevisionCertificateStatistics_{};
+    GaussianOutputConePlannerStatistics lastGaussianOutputConePlannerStatistics_{};
+    double gaussianRevisionRgbTolerance_{1.0 / 255.0};
     Clock::TimePoint previousFrameTime_ = Clock::now();
 };
 
