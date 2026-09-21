@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - finalize/maveb-fig2-manuscript-20260921
       - docs/researchpaper-final-20260921
       - researchpaper/final-manuscript-20260921
     paths:
