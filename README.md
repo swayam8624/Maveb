@@ -770,6 +770,25 @@ independent oracle, while labels and numbers are read from frozen campaign
 artifacts. The complete figure/video storyboard is in
 `research/visualization/SIGGRAPH_VISUAL_STORYBOARD.md`.
 
+### View the complete paper visualization package
+
+After `./run_paper_grade_research.sh` completes, open the main scientific
+figures, dashboards, case mosaics, GIFs and cross-representation figure on
+macOS with:
+
+```bash
+bash show_paper_visuals.sh
+```
+
+To open the generated visualization folders in Finder instead:
+
+```bash
+bash show_paper_visuals.sh --folders
+```
+
+The viewer never generates substitute images: it only opens artifacts that were
+produced from the machine-readable campaign evidence.
+
 ### Zero-input public real campaign (recommended)
 
 MAVEB does **not** require LiDAR or private data for its canonical research path. The default
