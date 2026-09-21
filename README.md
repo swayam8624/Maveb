@@ -1,148 +1,250 @@
-# MAVEB / AETHER
+<h1 align="center">MAVEB</h1>
 
-> **Dependency-certified minimal-work repair for persistent captured worlds, implemented inside a Metal-native reconstruction and rendering research engine.**
+<h3 align="center">Criticality-Bounded Revision Cones for Persistent Captured Worlds</h3>
 
-[![CI](https://github.com/swayam8624/Maveb/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/swayam8624/Maveb/actions/workflows/ci.yml)
-[![AetherStudio](https://github.com/swayam8624/Maveb/actions/workflows/studio-compile.yml/badge.svg?branch=main)](https://github.com/swayam8624/Maveb/actions/workflows/studio-compile.yml)
-[![Apple Silicon GPU](https://github.com/swayam8624/Maveb/actions/workflows/apple-silicon-gpu.yml/badge.svg?branch=main)](https://github.com/swayam8624/Maveb/actions/workflows/apple-silicon-gpu.yml)
-![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C)
-![Metal](https://img.shields.io/badge/Metal-3-black)
-![Research](https://img.shields.io/badge/research-CBRC-7b2cbf)
-![License](https://img.shields.io/badge/code-Apache--2.0-blue)
+<p align="center">
+A research system for deciding how little of a captured 3D world can be recomputed after a physical edit while keeping the final output inside an explicit error tolerance.
+</p>
 
-MAVEB is the research project. **AETHER** is the engine and captured-world systems stack used to test it.
+<p align="center">
+<a href="https://github.com/swayam8624/Maveb/actions/workflows/ci.yml"><img src="https://github.com/swayam8624/Maveb/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+<a href="https://github.com/swayam8624/Maveb/actions/workflows/studio-compile.yml"><img src="https://github.com/swayam8624/Maveb/actions/workflows/studio-compile.yml/badge.svg?branch=main" alt="AetherStudio"></a>
+<img src="https://img.shields.io/badge/C%2B%2B-23-00599C" alt="C++23">
+<img src="https://img.shields.io/badge/Metal-3-black" alt="Metal">
+<img src="https://img.shields.io/badge/research-CBRC-7b2cbf" alt="CBRC">
+<img src="https://img.shields.io/badge/code-Apache--2.0-blue" alt="License">
+</p>
 
-The central research question is simple to state and difficult to make safe:
+<p align="center">
+<img src="research/results/visualizations/public/MAVEB_teaser.gif" width="900" alt="MAVEB animated teaser">
+</p>
 
-> **When a small part of a persistent captured world changes, how little work can we redo without silently changing the final output beyond a declared tolerance?**
+MAVEB is the research project. AETHER is the reconstruction, persistent-world, rendering, revision, and evidence stack used to test it.
 
-A full rebuild is safe but expensive. A local heuristic is cheap but can miss hidden dependencies. MAVEB's proposed contribution is **Criticality-Bounded Revision Cones (CBRC)**: a fail-closed planner that mixes exact structural closure with conservative analytic change bounds and automatically falls back to a full rebuild when locality cannot be certified.
+The project asks one question:
 
-> [!IMPORTANT]
-> **CBRC v1 implementation and the frozen real-scene evidence campaign are complete.**
-> The public v2.1 campaign contains 60 frozen revisions across four real RGB/SfM scenes: 44 certified-local repairs, 16 automatic FULL fallbacks, and zero observed certificate violations. A secondary public trained-3DGS campaign also passes the same certificate/oracle contract. Reported work reductions are not relabeled as end-to-end speedup.
+> When a small part of a captured world changes, how little work can be redone without allowing the final output to drift beyond a declared tolerance?
 
----
+The central method is **Criticality-Bounded Revision Cones**, abbreviated **CBRC**. CBRC combines exact dependency closure, conservative finite-change bounds, quantity-of-interest tolerances, a heterogeneous work model, and an automatic full-rebuild fallback. A regional repair is accepted only when the unrepaired exterior can be certified. If the system cannot prove locality, it rebuilds.
 
-## The problem
+The v1 implementation, frozen public real-scene campaign, trained-3DGS validation, sparse-discovery study, mechanism-isolation suite, publication figures, animated supplementary material, and reproducibility infrastructure are complete. The next stage is manuscript construction.
 
-Persistent captured worlds are not one representation. A physical edit can propagate through a heterogeneous stack:
+## Contents
 
-- observations and provenance;
-- sparse TSDF state;
-- mesh ownership and topology;
-- texture pages and material state;
-- Gaussian primitives;
-- GPU publication buffers;
-- temporal history;
-- final rendered quantities of interest.
+1. [Visual overview](#visual-overview)
+2. [Problem statement](#problem-statement)
+3. [Research hypothesis](#research-hypothesis)
+4. [CBRC in one page](#cbrc-in-one-page)
+5. [Mathematical formulation](#mathematical-formulation)
+6. [System architecture](#system-architecture)
+7. [Visual results](#visual-results)
+8. [Frozen evidence](#frozen-evidence)
+9. [Research journey](#research-journey)
+10. [Literature lineage](#literature-lineage)
+11. [Novelty boundary](#novelty-boundary)
+12. [Impact](#impact)
+13. [Limitations](#limitations)
+14. [Reproducibility](#reproducibility)
+15. [Repository map](#repository-map)
+16. [Manuscript boundary](#manuscript-boundary)
+17. [References](#references)
 
-That creates an uncomfortable tradeoff.
+# Visual overview
 
-| Strategy | Safety | Work | Main failure mode |
-|---|---|---:|---|
-| Full rebuild | Strong | High | Recomputes unaffected state |
-| Fixed spatial radius | Heuristic | Often low | Misses non-local dependencies |
-| Changed-fraction threshold | Heuristic | Low | Ignores coupling structure |
-| Empirical influence model | Predictive | Variable | Prediction is not a certificate |
-| **CBRC** | **Fail-closed certificate** | **Adaptive** | Falls back to FULL when a safe local cone cannot be justified |
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/public/F0_hero.png">
+<img src="research/results/visualizations/public/F0_hero.png" width="100%" alt="MAVEB public campaign hero">
+</a>
+<br>
+<sub>Public real-scene campaign. Revise locally when the exterior can be bounded, otherwise rebuild.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/public/F0_system_overview.svg">
+<img src="research/results/visualizations/public/F0_system_overview.svg" width="100%" alt="MAVEB system overview">
+</a>
+<br>
+<sub>System view of the revision graph, certificate path, selected cone, full fallback, and independent oracle.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/public/F9_evidence_dashboard.png">
+<img src="research/results/visualizations/public/F9_evidence_dashboard.png" width="100%" alt="Public campaign evidence dashboard">
+</a>
+<br>
+<sub>Public campaign evidence dashboard.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/public/F10_case_mosaic.png">
+<img src="research/results/visualizations/public/F10_case_mosaic.png" width="100%" alt="Public campaign case mosaic">
+</a>
+<br>
+<sub>Frozen public revision cases shown as a compact visual matrix.</sub>
+</td>
+</tr>
+</table>
 
-The target is not "always incremental." The target is:
+The repository stores inline motion material as GIFs so GitHub renders and plays it directly inside the README. Full-resolution figures are linked through the images themselves.
 
-> **Use a smaller repair cone only when the unrepaired exterior is conservatively bounded for the declared output. Otherwise rebuild.**
+<table>
+<tr>
+<td width="50%" align="center">
+<img src="research/results/visualizations/public/MAVEB_teaser.gif" width="100%" alt="MAVEB public teaser animation">
+<br>
+<sub>Public campaign teaser.</sub>
+</td>
+<td width="50%" align="center">
+<img src="research/results/visualizations/public/MAVEB_supplementary_cases.gif" width="100%" alt="MAVEB public supplementary animation">
+<br>
+<sub>Public supplementary revision cases.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<img src="research/results/visualizations/trained-3dgs/MAVEB_teaser.gif" width="100%" alt="MAVEB trained 3DGS teaser animation">
+<br>
+<sub>Trained-3DGS validation teaser.</sub>
+</td>
+<td width="50%" align="center">
+<img src="research/results/visualizations/trained-3dgs/MAVEB_supplementary_cases.gif" width="100%" alt="MAVEB trained 3DGS supplementary animation">
+<br>
+<sub>Trained-3DGS supplementary cases.</sub>
+</td>
+</tr>
+</table>
 
----
+# Problem statement
 
-## Proposed novel solution: Criticality-Bounded Revision Cones
+Persistent captured worlds are not one representation. A practical system may contain observations, camera calibration, sparse or dense geometry, ownership records, texture pages, materials, Gaussian primitives, GPU publication buffers, temporal history, visibility state, and final display-space outputs.
 
-CBRC models one world revision as a typed dependency graph.
+A physical edit that looks local in world space can therefore have a non-local computational footprint.
 
-Each dependency is one of:
+Consider a reconstructed room. A chair moves by a few centimetres. A naive incremental system can choose a spatial radius and update only nearby data. That may be fast, but the radius does not establish that the unchanged exterior is actually safe. A conservative system can rebuild the entire world. That is reliable, but it discards locality even when most captured state cannot influence the protected output.
 
-- **HARD** — exact identity, topology, ownership, provenance, publication, or invalidation dependency;
-- **ANALYTIC** — a conservative finite-change upper bound with explicit provenance;
-- **EMPIRICAL** — useful for scheduling experiments, but never trusted as a certificate.
+The research problem is the gap between these choices.
 
-For a candidate repair cone (C), CBRC asks whether every declared quantity of interest can satisfy:
+| Strategy | Main advantage | Main weakness |
+|---|---|---|
+| Full rebuild | Simple reference behavior | Recomputes unaffected state |
+| Fixed-radius update | Cheap and intuitive | Radius is not an output-error certificate |
+| Changed-fraction threshold | Simple scheduling signal | Ignores dependency structure |
+| Learned or empirical influence | Can predict useful locality | Prediction is not a conservative certificate |
+| CBRC | Output-specific, fail-closed regional repair | Can become conservative and fall back to FULL |
 
-```
-certified_bound(C) <= epsilon
-```
+The objective is not to force local repair. The objective is to make locality conditional on a certificate.
 
-while exact dependencies remain closed. If yes, the cone is feasible. If not, the planner expands the cone or chooses the full reference rebuild.
+For a candidate regional repair \(C\), MAVEB requires
 
-The implementation also checks the emitted certificate against an independent full-reference replay:
+$$
+E_q^{\mathrm{full-ref}}
+\le
+B_q(C)
+\le
+\varepsilon_q
+$$
 
-```
-measured_full_reference_error <= certified_bound <= epsilon
-```
+for every declared quantity of interest \(q\).
 
-Any observed `actual > bound` is a correctness failure, not a noisy data point.
+Here:
 
-### Why this angle matters
+- \(E_q^{\mathrm{full-ref}}\) is measured against an independent full-reference replay.
+- \(B_q(C)\) is the emitted conservative certificate.
+- \(\varepsilon_q\) is the declared application tolerance.
 
-The graph traversal itself is not the research novelty. Classical closure, resolvents, and sensitivity propagation already exist.
+Any observed case with
 
-The proposed contribution is the **captured-world specialization and end-to-end systems contract**:
+$$
+E_q^{\mathrm{full-ref}} > B_q(C)
+$$
 
-1. exact and analytic dependencies coexist in one heterogeneous revision graph;
-2. only implementation-backed conservative bounds are certificate-eligible;
-3. the repair objective is tied to explicit output QoIs rather than generic "change";
-4. unsupported cycles and uncertain dependencies fail closed;
-5. heterogeneous work is compared through a frozen versioned cost model rather than by adding incompatible counters;
-6. every decision is serialized into machine-readable provenance and replayed against an independent full reference.
+is a correctness failure.
 
-Novelty remains a research claim to be tested against prior art and peer review, not something the README can prove by assertion.
+# Research hypothesis
 
----
+The v1 hypothesis is:
 
+> A persistent captured-world revision can often be restricted to a dependency-certified repair cone that is cheaper than a full rebuild, provided exact dependencies are closed, soft dependencies are bounded conservatively, and unsupported coupling triggers a full fallback.
 
-## Mathematics behind CBRC
+The hypothesis is deliberately narrow.
 
-CBRC is not based on a fixed spatial radius. It treats a captured world as a **typed dependency system** and asks a mathematical question:
+A small spatial edit is not automatically a small computational edit.
 
-> if we repair only a subset of the changed dependency graph, can we upper-bound the error left outside that repair set below the requested tolerance?
+Empirical influence is not accepted as proof.
 
-The notation below matches the reference implementation in `research/cbrc/core.py`.
+A safe algorithm is allowed to choose FULL.
 
-### 1. State graph and repair cone
+The current search claims a certified feasible cone, not a globally optimal minimum-work cone.
 
-Let the captured-world dependency graph contain state blocks
+# CBRC in one page
+
+For one world revision, CBRC performs the following sequence.
+
+1. Detect the source change and construct a direct change envelope.
+2. Close all exact HARD predecessors required to reproduce affected state.
+3. Partition the graph into repair cone \(C\) and unrepaired exterior \(O\).
+4. Propagate conservative ANALYTIC influence through the exterior.
+5. Map the exterior envelope to protected output quantities.
+6. Compare every output bound with its declared tolerance.
+7. Expand the cone when necessary.
+8. Compare calibrated regional work with an independently measured full-work baseline.
+9. Return a local repair only when it is both certified and useful.
+10. Otherwise return FULL.
+11. Replay the selected result against an independent full reference.
+12. Preserve the decision, bound, work model, provenance, and oracle result as machine-readable evidence.
+
+The graph contains three edge classes.
+
+| Edge class | Meaning | Safety role |
+|---|---|---|
+| HARD | Exact dependency, identity, ownership, topology, publication, or invalidation requirement | Exact closure |
+| ANALYTIC | Conservative implementation-backed finite-change upper bound | Certificate eligible |
+| EMPIRICAL | Measured or learned influence useful for scheduling | Never treated as proof |
+
+# Mathematical formulation
+
+## State graph
+
+Let the captured-world state be represented by blocks
 
 $$
 V = \{1,\ldots,n\}.
 $$
 
-A state block can represent an observation region, TSDF block, mesh patch, texture page, material state, Gaussian subset, GPU publication region, temporal-history region, or another derived unit.
+A block may represent an observation region, TSDF block, mesh patch, texture page, Gaussian subset, GPU publication region, temporal-history region, or another derived state unit.
 
-For one physical-world revision, CBRC chooses a **repair cone**
+For a revision, CBRC chooses a repair cone
 
 $$
 C \subseteq V
 $$
 
-and calls the unrepaired state the **exterior**
+and defines the unrepaired exterior
 
 $$
 O = V \setminus C.
 $$
 
-HARD dependencies are exact. If node $v$ is repaired and $u$ is an exact predecessor required to reproduce $v$, then $u$ must also be repaired. Therefore an admissible cone must satisfy exact predecessor closure:
+## HARD predecessor closure
+
+If \(v\) is repaired and \(u\) is an exact predecessor required to reproduce \(v\), then
 
 $$
-v\in C,\; u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
-\quad\Longrightarrow\quad
+v\in C,\qquad
+u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
+\Longrightarrow
 u\in C.
 $$
 
-This is why CBRC cannot simply select whichever nodes look cheap: the candidate cone must first be structurally valid.
+A candidate cone that violates exact predecessor closure is invalid before analytic error is considered.
 
-### 2. Conservative influence matrix
+## Conservative influence matrix
 
-For ANALYTIC dependencies, define a componentwise non-negative matrix
+For ANALYTIC edges, define a componentwise non-negative matrix
 
 $$
-K \in \mathbb{R}_{\ge 0}^{n\times n},
+K \in \mathbb{R}_{\ge0}^{n\times n},
 $$
 
 where
@@ -151,9 +253,7 @@ $$
 K_{vu}
 $$
 
-is a conservative upper bound on how much normalized change in state block $u$ can influence state block $v$.
-
-Only conservative, implementation-backed bounds are permitted in the certificate matrix. Learned or empirical influence estimates can help schedule experiments, but they do **not** enter the safety proof.
+is a conservative upper bound on how much normalized change in state block \(u\) can influence state block \(v\).
 
 Let
 
@@ -161,7 +261,7 @@ $$
 b\in\mathbb{R}_{\ge0}^{n}
 $$
 
-be the direct source-change envelope produced by the physical revision, and let
+be the direct source-change envelope and let
 
 $$
 z\in\mathbb{R}_{\ge0}^{n}
@@ -169,77 +269,69 @@ $$
 
 contain known change bounds for repaired state.
 
-For the unrepaired exterior, conservative propagation satisfies
+For the exterior,
 
 $$
 \delta_O
-\;\le\;
+\le
 b_O + K_{OC}z_C + K_{OO}\delta_O.
 $$
 
-The first term is direct change reaching the exterior, the second is influence crossing from repaired state into unrepaired state, and the third is repeated propagation entirely inside the unrepaired exterior.
+The first term is direct change in the exterior. The second is influence crossing from repaired state to unrepaired state. The third is repeated propagation inside the exterior.
 
-### 3. Resolvent certificate
+## Exterior resolvent
 
-If the exterior feedback is stable,
+When
 
 $$
 \rho(K_{OO}) < 1,
 $$
 
-where $\rho$ is the spectral radius, then
+the resolvent
+
+$$
+G_O=(I-K_{OO})^{-1}
+$$
+
+exists for the certified non-negative system.
+
+Using the Neumann expansion,
 
 $$
 (I-K_{OO})^{-1}
 =
-I + K_{OO} + K_{OO}^2 + \cdots
+I+K_{OO}+K_{OO}^{2}+\cdots.
 $$
 
-exists and is componentwise non-negative for the certified system.
-
-Define
-
-$$
-G_O = (I-K_{OO})^{-1}.
-$$
-
-Then CBRC obtains a finite conservative exterior envelope
+The exterior envelope becomes
 
 $$
 \boxed{
 \hat\delta_O
 =
-G_O\left(b_O + K_{OC}z_C\right)
+G_O\left(b_O+K_{OC}z_C\right)
 }
 $$
 
-such that the true unrepaired change is bounded componentwise by
+with
 
 $$
-\delta_O \le \hat\delta_O.
+\delta_O\le\hat\delta_O.
 $$
 
-This equation is the mathematical core of the certificate: it accounts not only for one-hop influence, but also for arbitrarily many stable dependency-propagation steps in the unrepaired exterior.
+The matrix identity is classical. The research use is the captured-world specialization that connects implementation-backed dependency bounds to a revision decision.
 
-If the exterior cannot be certified—for example $\rho(K_{OO})\ge1$, the analytic assumptions are unsupported, or the graph contains an unsupported analytic cycle—CBRC **fails closed**. It expands $C$, converts the unsafe dependency to exact work, or falls back to a full rebuild.
+Unsupported analytic cycles or unstable exteriors fail closed.
 
-### 4. Quantity-of-interest error bound
+## Quantity-of-interest certificate
 
-A user does not usually care about abstract state error; they care about an output such as protected RGB pixels, geometry, or another declared quantity of interest (QoI).
-
-For QoI $q$, let
+For output quantity \(q\), let \(R_q\) map state perturbations to the protected output and let the allowed tolerance be
 
 $$
-R_q
+\varepsilon_q\ge0.
 $$
 
-map state perturbations to that output and let the allowed tolerance be
-
-$$
-\varepsilon_q \ge 0.
-$$
-
-Because the state envelope is componentwise non-negative, CBRC conservatively evaluates
+CBRC evaluates
 
 $$
 \boxed{
@@ -255,10 +347,11 @@ and accepts the cone only when
 
 $$
 B_q(C)\le\varepsilon_q
-\qquad\text{for every declared QoI }q.
 $$
 
-The complete safety contract used by the experiment harness is stronger:
+for every protected output.
+
+The experiment harness checks the stronger contract
 
 $$
 \boxed{
@@ -266,33 +359,29 @@ E_q^{\mathrm{full-ref}}
 \le
 B_q(C)
 \le
-\varepsilon_q
+\varepsilon_q.
 }
 $$
 
-where $E_q^{\mathrm{full-ref}}$ is the error measured against an independently replayed full-reference result. If measured error ever exceeds the certificate, that case is a correctness failure.
+## Gaussian rendering bound
 
-### 5. Gaussian rendering bound
-
-For a projected Gaussian at pixel $p$, MAVEB uses the renderer-compatible effective alpha model
+For a projected Gaussian at pixel \(p\), the renderer-compatible effective alpha model is
 
 $$
 \alpha_i(p)
 =
-o_i\exp\left(-\frac12 q_i(p)\right),
+o_i\exp\left(-\frac12q_i(p)\right),
 $$
 
-where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. The implementation also mirrors the production compositor's cutoff/clamping rules.
+where \(o_i\) is peak opacity and \(q_i(p)\) is squared Mahalanobis distance in projected Gaussian space.
 
-For an edited set $E$, define its aggregate opacity mass
+For edited set \(E\), define aggregate opacity mass
 
 $$
-A(E)
-=
-1-\prod_{i\in E}(1-\alpha_i).
+A(E)=1-\prod_{i\in E}(1-\alpha_i).
 $$
 
-If every relevant color channel lies in an interval of width $C_{\mathrm{color}}$, inserting/removing that edited subset changes one rendered channel by at most
+If the relevant color interval has width \(C_{\mathrm{color}}\),
 
 $$
 \left\|R(U\cup E)-R(U)\right\|_\infty
@@ -300,7 +389,7 @@ $$
 C_{\mathrm{color}}A(E).
 $$
 
-For before/after edited states $E_0,E_1$,
+For before and after edited states \(E_0,E_1\),
 
 $$
 \boxed{
@@ -311,885 +400,790 @@ C_{\mathrm{color}}
 }
 $$
 
-and over a protected camera/pixel set $P$,
+and over protected pixels \(P\),
 
 $$
-B_P
-=
+B_P=
 \max_{p\in P}
 C_{\mathrm{color}}
 \min\left(1,A_{0,p}+A_{1,p}\right).
 $$
 
-This is what lets a Gaussian edit become an **explicit display-space error certificate** rather than merely a heuristic "local update."
+This turns Gaussian support into a display-space error certificate rather than a heuristic notion of locality.
 
-### 6. Temporal-history bound
+## Temporal-history bound
 
-When temporal validation remains stable, let
+For stable temporal validation, let
 
-- $E_c$ be current-frame error,
-- $E_h$ be retained-history error,
-- $E_n$ be neighborhood-extrema/clamping error,
-- $w\in[0,1]$ be history weight.
+- \(E_c\) be current-frame error.
+- \(E_h\) be retained-history error.
+- \(E_n\) be neighborhood or clamping error.
+- \(w\in[0,1]\) be history weight.
 
-The retained history envelope is
+Define
 
 $$
-E_r = \max(E_h,E_n),
+E_r=\max(E_h,E_n).
 $$
 
-and the resolved temporal output is bounded by
+Then
 
 $$
 \boxed{
 E_{\mathrm{resolved}}
 =
-(1-w)E_c + wE_r.
+(1-w)E_c+wE_r.
 }
 $$
 
-If the validation/disocclusion decision itself may change, MAVEB does not pretend this soft equation is sufficient: that dependency becomes HARD and the affected history is invalidated.
+If validation or disocclusion itself may change, the dependency becomes HARD and the affected temporal history is invalidated.
 
-For stable repeated history reuse, an initial history error also decays geometrically:
+For repeated stable history reuse,
 
 $$
-E_t \le E_0 w^t.
+E_t\le E_0w^t.
 $$
 
-### 7. Heterogeneous work model
+## Heterogeneous work model
 
-The system deliberately does **not** add incompatible counters such as TSDF blocks + pixels + bytes + Gaussians.
+The planner does not add incompatible counters directly.
 
-For each work domain $d$, let
+For work domain \(d\), let \(n_d(C)\) be native work and \(\kappa_d\) be a frozen calibrated cost per native unit.
 
-- $n_d(C)$ be native work performed by cone $C$,
-- $\kappa_d$ be a frozen pre-calibrated cost per native unit.
-
-The planner's scalar comparison is
+The scalar comparison is
 
 $$
 \boxed{
 W(C)
 =
-\sum_d \kappa_d\,n_d(C).
+\sum_d\kappa_dn_d(C).
 }
 $$
 
-The full-reference baseline is independently measured as
+The independent full baseline is
 
 $$
 W_{\mathrm{full}}.
 $$
 
-A certified local cone is useful only when
+A certified local result is useful only when
 
 $$
 W(C)<W_{\mathrm{full}}.
 $$
 
-The coefficients $\kappa_d$ are frozen **before** the final campaign so the cost model cannot be tuned after seeing the desired result.
+The coefficients are frozen before the final campaign.
 
-### 8. Greedy cone expansion
+## Greedy cone expansion
 
-CBRC v1 solves for a certified **feasible** cone, not the globally optimal combinatorial cone.
-
-Define normalized certificate violation
+Define normalized violation
 
 $$
 \phi(C)
 =
 \max_q
-\frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
+\frac{B_q(C)}
+{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
 $$
 
-A passing cone has
+A passing cone satisfies
 
 $$
 \phi(C)\le1.
 $$
 
-For a candidate expansion $C\rightarrow C'$, the greedy planner prefers high reduction in violation per added calibrated work:
+For candidate expansion \(C\rightarrow C'\), the greedy utility is
 
 $$
-\text{utility}(C\rightarrow C')
+\operatorname{utility}(C\rightarrow C')
 =
 \frac{\phi(C)-\phi(C')}
 {W(C')-W(C)}.
 $$
 
-Every candidate is first closed over HARD predecessors, re-certified, and compared against the independent full-work baseline. If no smaller safe cone remains worthwhile, CBRC returns FULL.
+Every candidate is closed over HARD predecessors, re-certified, and compared with FULL.
 
-### 9. Diagnostics: susceptibility and effectivity
+The result is a certified feasible cone, not a proof of global combinatorial optimality.
 
-Two useful diagnostics are retained without confusing them with the proof itself.
+## Susceptibility
 
-Exterior susceptibility is
+Exterior susceptibility is reported as
 
 $$
-S_O
-=
+S_O=
 \left\|
 (I-K_{OO})^{-1}
-\right\|_1,
+\right\|_1.
 $$
 
-which indicates how strongly exterior dependencies can amplify perturbations.
+It is a diagnostic for perturbation amplification, not a replacement for the QoI certificate.
 
-Certificate effectivity is
+## Effectivity
+
+For non-zero independent measured residual,
 
 $$
 \eta
 =
 \frac{B_q(C)}
-{\max(E_q^{\mathrm{full-ref}},\epsilon_{\mathrm{num}})}.
+{E_q^{\mathrm{full-ref}}}.
 $$
 
-A valid certificate requires $\eta\ge1$; values close to $1$ are tight, while very large values are safe but potentially too conservative to be useful.
+When measured residual is numerically zero, effectivity is undefined. The reporting code does not divide by an arbitrary tiny denominator.
 
-The implementation corresponding to these equations lives in:
+# System architecture
 
-- `research/cbrc/core.py` — cone certification, resolvent, QoI bounds and greedy search;
-- `research/cbrc/layer_bounds.py` — Gaussian and temporal analytic bounds;
-- `research/cbrc/work.py` — frozen heterogeneous work-cost model;
-- `engine/revision/` — sparse native C++ planner;
-- `research/theory/alpha_locality_bound.md` — Gaussian compositing derivation.
+<pre>
+Physical revision
+       |
+       v
+Source change envelope
+       |
+       v
+Exact HARD closure
+       |
+       v
+Typed revision graph
+       |
+       v
+Analytic exterior propagation
+       |
+       v
+QoI certificate <= tolerance?
+       |
+   +---+---+
+   |       |
+  yes      no
+   |       |
+   v       v
+candidate  expand cone
+local      or FULL
+   |       |
+   +---+---+
+       |
+       v
+Compare regional work with FULL
+       |
+       v
+Execute selected repair
+       |
+       v
+Atomic publication and temporal handling
+       |
+       v
+Native certificate artifact
+       |
+       v
+Independent full-reference replay
+       |
+       v
+measured error <= certificate?
+       |
+   +---+---+
+   |       |
+  yes      no
+   |       |
+evidence   correctness failure
+row        and regression
+</pre>
 
----
-
-## Architecture
-
-```mermaid
-flowchart LR
-    A["Physical-world revision"] --> B["Exact HARD closure"]
-    B --> C["Typed heterogeneous revision graph"]
-    C --> D["Analytic frontier propagation"]
-    D --> E{"QoI bound <= epsilon?"}
-    E -- yes --> F["Certified regional repair"]
-    E -- no --> G["Expand cone"]
-    G --> E
-    G --> H["FULL rebuild fallback"]
-    F --> I["Atomic publication + temporal handling"]
-    H --> I
-    I --> J["Native certificate artifact"]
-    J --> K["Independent full-reference oracle"]
-    K --> L{"actual <= bound?"}
-    L -- yes --> M["Evidence row / campaign"]
-    L -- no --> N["Kill claim + regression"]
-```
-
-### V1 dependency boundary
-
-**Analytic soft bounds**
-
-- Gaussian revision → current-image RGB L∞ bound;
-- stable temporal history/current image → resolved-image bound.
-
-**Exact HARD dependencies by design**
-
-- observation → TSDF;
-- TSDF → mesh ownership/support;
-- mesh → texture-page identity;
-- texture page → material-state identity;
-- Gaussian source record → GPU publication;
-- unstable temporal validation / disocclusion.
-
-Those HARD edges are not unfinished approximation work. V1 intentionally refuses to weaken dependencies without a useful conservative theorem.
-
----
-
-## What is implemented
-
-| Layer | Status |
+| Component | Role |
 |---|---|
-| Dense Python reference planner | ✅ complete |
-| Sparse C++23 planner | ✅ complete |
-| HARD / ANALYTIC / EMPIRICAL edge semantics | ✅ complete |
-| Greedy certified cone search | ✅ complete |
-| FULL rebuild fallback | ✅ complete |
-| Gaussian image certificate | ✅ complete |
-| Temporal certificate / hard invalidation | ✅ complete |
-| Observation→TSDF→mesh→texture/material graph | ✅ complete |
-| Gaussian→GPU publication graph | ✅ complete |
-| Heterogeneous `LocalityLedger` accounting | ✅ complete |
-| Frozen scalar work-cost model | ✅ complete |
-| Indexed persistent Gaussian edits | ✅ complete |
-| Immutable revision sidecars | ✅ complete |
-| Native deterministic certificate JSON | ✅ complete |
-| Headless revision tool | ✅ complete |
-| Independent Gaussian full-reference oracle | ✅ complete |
-| Replay + strict evaluator | ✅ complete |
-| Evidence bundle hashing | ✅ complete |
-| Native ↔ Python planner parity gate | ✅ complete |
-| Baselines + ablations | ✅ complete |
-| Real-campaign automation | ✅ complete |
-| F1–F8 paper-artifact generation | ✅ complete |
-| CPU / sanitizer / static-analysis / app CI | ✅ complete |
-| Frozen public real-scene campaign v2.1 | ✅ 60 cases / 4 scenes; 44 local, 16 FULL; 0 certificate violations |
-| Public trained-3DGS validation | ✅ 5 cases; 4 local, 1 FULL; 0 certificate violations |
-| Frozen calibrated heterogeneous-work evidence | ✅ complete |
-| End-to-end local-vs-FULL wall-clock speedup claim | intentionally not claimed without a paired timing experiment |
+| [engine/revision](engine/revision) | Sparse native C++ revision planning and execution |
+| [research/cbrc](research/cbrc) | Dense reference certifier, bounds, search, and work model |
+| [tools/maveb-cbrc-gaussian-oracle](tools/maveb-cbrc-gaussian-oracle) | Independent full-reference Gaussian oracle |
+| [benchmarks/scripts](benchmarks/scripts) | Campaign execution, replay, evaluation, calibration, sparse discovery |
+| [research/analysis](research/analysis) | Paper artifacts, evidence checks, and readiness |
+| [research/experiments](research/experiments) | Baselines, ablations, and falsification |
+| [research/results](research/results) | Frozen evidence and publication visuals |
 
-See [the exact v1 boundary](research/design/CBRC_IMPLEMENTATION_STATUS.md).
+## V1 dependency boundary
 
----
+Analytic soft bounds:
 
-## Frozen measured evidence
+- Gaussian revision to protected current-image RGB.
+- Stable current-image and temporal-history error to resolved output.
 
-The paper-grade v2.1 public campaign freezes **60 revisions across four public RGB/SfM scenes** before outcomes are inspected.
+Exact dependencies by design:
 
-| Evidence | Measured result |
+- Observation to TSDF.
+- TSDF to mesh support and ownership.
+- Mesh to texture-page identity.
+- Texture page to material-state identity.
+- Gaussian source record to GPU publication.
+- Unstable temporal validation or disocclusion to temporal invalidation.
+
+A dependency is weakened only when a useful conservative finite-change theorem exists.
+
+# Visual results
+
+## Core paper figures
+
+<table>
+<tr>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F1_actual_vs_bound.svg">
+<img src="research/results/visualizations/paper/F1_actual_vs_bound.svg" width="100%" alt="F1 actual error versus certified bound">
+</a><br><sub>F1. Independent measured error against emitted certificate.</sub>
+</td>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F2_work_vs_changed_fraction.svg">
+<img src="research/results/visualizations/paper/F2_work_vs_changed_fraction.svg" width="100%" alt="F2 work versus changed fraction">
+</a><br><sub>F2. Selected work as revision size changes.</sub>
+</td>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F3_coupling_cone.svg">
+<img src="research/results/visualizations/paper/F3_coupling_cone.svg" width="100%" alt="F3 coupling and repair cone">
+</a><br><sub>F3. Coupling structure and repair-cone response.</sub>
+</td>
+</tr>
+<tr>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F4_fallback_crossover.svg">
+<img src="research/results/visualizations/paper/F4_fallback_crossover.svg" width="100%" alt="F4 fallback crossover">
+</a><br><sub>F4. Local-to-FULL crossover under increasing coupling.</sub>
+</td>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F5_effectivity.svg">
+<img src="research/results/visualizations/paper/F5_effectivity.svg" width="100%" alt="F5 certificate effectivity">
+</a><br><sub>F5. Certificate effectivity where independent residual is non-zero.</sub>
+</td>
+<td width="33%" align="center">
+<a href="research/results/visualizations/paper/F6_layer_work.svg">
+<img src="research/results/visualizations/paper/F6_layer_work.svg" width="100%" alt="F6 layer work">
+</a><br><sub>F6. Work distribution across captured-world layers.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/paper/F7_cone_support_residual.svg">
+<img src="research/results/visualizations/paper/F7_cone_support_residual.svg" width="100%" alt="F7 cone support residual">
+</a><br><sub>F7. Spatial support, selected cone, and residual structure.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/paper/F8_adversarial_fallback.svg">
+<img src="research/results/visualizations/paper/F8_adversarial_fallback.svg" width="100%" alt="F8 adversarial fallback">
+</a><br><sub>F8. Adversarial or unstable cases trigger fail-closed behavior.</sub>
+</td>
+</tr>
+</table>
+
+## Sparse discovery and representation validation
+
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/sparse/F11_sparse_discovery.svg">
+<img src="research/results/visualizations/sparse/F11_sparse_discovery.svg" width="100%" alt="F11 sparse discovery scaling">
+</a><br><sub>F11. Exact sparse candidate discovery through the scaling sweep.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/representation/F12_representation_comparison.svg">
+<img src="research/results/visualizations/representation/F12_representation_comparison.svg" width="100%" alt="F12 representation comparison">
+</a><br><sub>F12. Public RGB/SfM campaign and trained-3DGS validation under the same safety contract.</sub>
+</td>
+</tr>
+</table>
+
+## Trained-3DGS validation
+
+<table>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/trained-3dgs/F0_trained_3dgs_hero.png">
+<img src="research/results/visualizations/trained-3dgs/F0_trained_3dgs_hero.png" width="100%" alt="Trained 3DGS hero">
+</a><br><sub>Trained-3DGS hero frame.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/trained-3dgs/F0_system_overview.svg">
+<img src="research/results/visualizations/trained-3dgs/F0_system_overview.svg" width="100%" alt="Trained 3DGS system overview">
+</a><br><sub>Trained-3DGS system view.</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center">
+<a href="research/results/visualizations/trained-3dgs/F9_trained_3dgs_evidence_dashboard.png">
+<img src="research/results/visualizations/trained-3dgs/F9_trained_3dgs_evidence_dashboard.png" width="100%" alt="Trained 3DGS evidence dashboard">
+</a><br><sub>Trained-3DGS evidence dashboard.</sub>
+</td>
+<td width="50%" align="center">
+<a href="research/results/visualizations/trained-3dgs/F10_trained_3dgs_case_mosaic.png">
+<img src="research/results/visualizations/trained-3dgs/F10_trained_3dgs_case_mosaic.png" width="100%" alt="Trained 3DGS case mosaic">
+</a><br><sub>Trained-3DGS revision mosaic.</sub>
+</td>
+</tr>
+</table>
+
+All committed visual files, including canonical packaging aliases, live under [research/results/visualizations](research/results/visualizations).
+
+# Frozen evidence
+
+Canonical evidence:
+
+- [Machine-readable evidence manifest](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json)
+- [Human-readable evidence freeze](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
+- [Strict claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+
+## Public RGB/SfM campaign
+
+| Measurement | Frozen result |
 |---|---:|
-| Frozen revisions | 60 |
+| Revision cases | 60 |
 | Public scenes | 4 |
 | Certified-local selections | 44 |
 | Automatic FULL fallbacks | 16 |
-| Certificate violations | 0 |
-| Native ↔ Python planner parity | 60 / 60 |
-| Median calibrated heterogeneous work / FULL | 0.349 |
-| Median calibrated work reduction factor | 2.87× |
-| Source edits visibly exceeding the protected RGB tolerance | 56 / 60 |
+| Observed certificate violations | 0 |
+| Native/Python planner parity | 60 / 60 |
+| Source edits above protected RGB tolerance before repair | 56 / 60 |
+| Median calibrated heterogeneous work / FULL | 0.36953 |
+| Calibrated work reduction factor | 2.706x |
+| Maximum measured selected RGB residual | 0.0 |
+| Maximum selected certified bound | \(2\times10^{-6}\) |
+| Sparse-discovery median inspected fraction | 0.01 |
+| Sparse-discovery minimum inspected fraction | 0.001 |
 
-The calibrated public-campaign work model uses frozen isolated microbenchmarks in milliseconds. **2.706× is therefore a calibrated work-reduction factor, not a measured end-to-end speedup.** The campaign also exposes an important systems limitation: median Gaussian inspection remains approximately the full set even though Gaussian updates/publication and temporal invalidation are much smaller.
+The 2.706x value is a reduction in calibrated heterogeneous work under the frozen millisecond model. It is not a paired end-to-end wall-clock speedup.
 
-A secondary campaign uses a pinned **public trained 3DGS PLY** while preserving SH coefficients, opacity, anisotropic scale and rotation. It records **4/5 certified-local cases, 1/5 FULL fallback, and zero certificate violations**. Its median selected native temporal/output work is 0.03495 of FULL (about 28.6× lower native work), again **not wall-clock speedup**.
+The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian field is seeded from real SfM points and is not described as trained photorealistic 3DGS.
 
-The separate sparse-discovery sweep preserves exact selection while reducing inspection to a median 1% of a full scan (minimum 0.1% through 1M Gaussians). That result shows a path to removing the current near-full-inspection bottleneck; it is reported separately because the frozen end-to-end public campaign has not yet integrated that optimization into its measured work ledger.
+## Trained-3DGS validation
 
-The canonical machine-readable evidence snapshot is maintained under `research/results/`.
+| Measurement | Frozen result |
+|---|---:|
+| Revision cases | 5 |
+| Trained public scenes | 1 |
+| Certified-local selections | 4 |
+| Automatic FULL fallbacks | 1 |
+| Observed certificate violations | 0 |
+| Median native temporal/output work / FULL | 0.03495 |
+| Native work reduction factor | 28.614x |
+| Median Gaussian inspection ratio | 0.9999972 |
+| Maximum measured selected RGB residual | 0.0 |
+| Maximum selected certified bound | \(2\times10^{-6}\) |
 
----
+The 28.614x value is lower native temporal/output work under that campaign definition. It is not wall-clock speedup.
 
-## Research funnel
+The pinned source PLY SHA-256 is:
 
-MAVEB did not start by coding a favorite idea.
+<pre>f03e4979ac27345da1422d960d604b98db9541bdb3586d135d64bb4d9bde8eb3</pre>
 
-The committed hypothesis bank contains **119 candidates**. The final filter froze the current paper line into:
+The representation preserves spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Persistent spatial ownership is deterministic rather than semantic segmentation.
 
-- **5 locked headline hypotheses**;
-- **16 required mechanisms**;
-- **6 evaluation / ablation hypotheses**;
-- **92 deferred follow-ups**.
+## Sparse discovery
 
-The locked problem is:
+The frozen end-to-end paths still inspect almost the complete Gaussian set.
 
-> **Dependency-certified heterogeneous minimal-work repair for persistent captured worlds.**
+A separate sparse-discovery sweep preserves exact candidate selection while reducing the inspected fraction to a median of 1 percent, with a minimum of 0.1 percent through the sweep up to one million Gaussians.
 
-The policy is intentionally adversarial: cheapest falsification first; kill or defer ideas when prior art, probes, held-out scenes, or ablations remove the claimed effect.
+This result is reported separately because the frozen end-to-end work number does not silently credit an optimization that was not integrated into that measured ledger.
 
-Start at [research/README.md](research/README.md).
+# Research journey
 
----
+MAVEB was developed as a falsification-first research program rather than by fixing a desired conclusion and constructing evidence around it.
 
-## Expected impact
+The hypothesis bank reached 119 candidates.
 
-If the certificate remains useful on real scenes, the practical impact is broader than one renderer.
+| Research-funnel state | Count |
+|---|---:|
+| Locked headline hypotheses | 5 |
+| Required mechanisms | 16 |
+| Evaluation and ablation hypotheses | 6 |
+| Deferred follow-ups | 92 |
 
-### Persistent XR and digital twins
+The final problem became:
 
-A local physical edit should not force an entire room, site, or digital twin to be reconstructed and republished when most state is provably irrelevant to the requested output.
+> Dependency-certified heterogeneous minimal-work repair for persistent captured worlds.
 
-### Incremental reconstruction systems
+## Mathematical viability
 
-CBRC provides a common decision layer over representations that normally have separate invalidation rules: TSDF, meshes, textures, Gaussians, GPU resources, and temporal state.
+The first phase asked whether conservative exterior response could survive cheap counterexamples.
 
-### Safer performance optimization
+This established exact predecessor closure, non-negative analytic influence, finite or stable exterior propagation, QoI-specific bounds, fail-closed handling of unsupported coupling, Gaussian display-space bounds, and temporal-history bounds.
 
-Instead of saying "this update probably stays local," the system emits the assumptions, cone, bound, cost model, fallback decision, and replay evidence that justify the optimization.
+Randomized Gaussian and temporal falsification was used before expensive systems integration.
 
-### Research reproducibility
+## Dense reference implementation
 
-A failed certificate is preserved as an artifact and becomes a regression. The project is designed so a negative result is useful rather than something to hide.
+A Python implementation was built as the correctness reference.
 
-> [!NOTE]
-> These remain **potential impacts** beyond the evaluated workloads. The frozen campaigns establish certificate behavior and measured/calibrated work on the stated representations; they do not establish a universal or end-to-end wall-clock speedup claim.
+It supplies certificate construction, resolvent evaluation, QoI bounds, greedy cone expansion, work accounting, baselines, ablations, and synthetic mechanism-isolation cases.
 
----
+## Native system integration
 
-## Engine and systems stack
+The method was then integrated into the C++23 persistent-world stack.
 
-AETHER provides the experimental substrate:
+The native path includes sparse revision planning, persistent ownership, Gaussian publication planning, temporal invalidation, immutable revision records, deterministic certificate JSON, and headless execution tools.
 
-- C++23 core with structured errors, profiling and deterministic resource handling;
-- Metal renderer with bounded frames in flight and offline metallib compilation;
-- SwiftUI macOS AetherStudio with an Objective-C++ bridge;
-- Swift 6 iPad RGB + LiDAR capture companion;
-- versioned `.aether` package format;
-- canonical textured GLB export;
-- standard 3D Gaussian Splatting PLY ingestion;
-- CPU reference Gaussian rasterizer plus Metal 3 Gaussian path;
-- reverse-Z proxy mesh G-buffer and Gaussian occlusion;
-- glTF metallic-roughness material path;
-- deterministic sparse CPU/Metal TSDF infrastructure;
-- halo-consistent incremental CPU meshing;
-- persistent-world revisions and locality evidence;
-- [MavebBench](benchmarks/README.md) real-data evidence harness.
+Native and Python planner decisions are checked for parity.
 
-<details>
-<summary><strong>What the repository deliberately does not claim</strong></summary>
+## Independent oracle
 
-- CBRC v1 is not a proof of global minimum-work optimality; the current search is greedy.
-- Empirical Jacobians and learned sensitivities are not certificates.
-- Unsupported analytic cycles are not assumed safe.
-- Synthetic matrices do not establish real-world speedup.
-- A full rebuild can be the correct answer for globally coupled edits.
-- GPU-resident meshing and some broader production reconstruction gates remain separate roadmap items.
-- Publication claims are restricted to the frozen measured campaigns and their stated provenance; the project does not convert calibrated work into an end-to-end speedup claim.
+A certifier cannot be trusted merely because its own internal checks pass.
 
-See [CBRC limitations and threat model](research/design/CBRC_LIMITATIONS.md).
+The final campaign compares every selected repair with an independent full-reference replay.
 
-</details>
+<pre>independent measured error <= certificate <= tolerance</pre>
 
----
+## Public campaign
 
+The final public campaign was frozen before outcomes were interpreted.
 
-## Clone and run
+An early v2 execution exposed a protocol issue: one requested translation was below the production effective-edit threshold. That run remains preserved as protocol history.
 
-### Fastest path
+The campaign was corrected by enforcing the production precondition before freezing v2.1 revisions.
 
-On an Apple-silicon Mac with Xcode installed:
+The corrected campaign was then rerun and frozen.
 
-```bash
-git clone https://github.com/swayam8624/Maveb.git
+## Trained-3DGS representation check
+
+The public RGB/SfM path was not treated as sufficient evidence of transfer to a trained Gaussian representation.
+
+A second path therefore uses a pinned public trained 3DGS PLY while preserving SH coefficients, opacity, anisotropic scale, and rotation.
+
+## Claim freeze
+
+The implementation phase ended by separating supported statements from attractive but unsupported statements.
+
+The repository now preserves the canonical evidence manifest, claim ledger, limitations, visual package, mechanism-isolation suite, and reproducibility scripts.
+
+# Literature lineage
+
+MAVEB sits at the intersection of real-time reconstruction, persistent scene representations, neural rendering, Gaussian rendering, dynamic scene models, and incremental map maintenance.
+
+The literature below is a lineage, not an assertion that any one prior system solves the same decision problem.
+
+## Volumetric reconstruction
+
+Curless and Levoy established volumetric integration as a foundational approach for combining range observations into an implicit surface.
+
+KinectFusion demonstrated real-time dense mapping and camera tracking by fusing depth into a global implicit surface model and tracking against the growing model.
+
+These systems establish persistent fused scene state. They do not by themselves give a general output-error certificate for selecting a heterogeneous subset of reconstruction, rendering, publication, and temporal work after a persistent-world revision.
+
+## Surfel maps and reintegration
+
+Surfels established point-oriented surface elements without explicit mesh connectivity.
+
+ElasticFusion demonstrated incremental dense surfel mapping with local and global model correction.
+
+BundleFusion showed real-time globally consistent reconstruction with online surface reintegration.
+
+These systems are close conceptual antecedents because they maintain and revise persistent map state. MAVEB asks a different question: given a revision and a protected output tolerance, can a smaller repair be certified against the result of rebuilding everything?
+
+## Neural scene representations
+
+NeRF established continuous neural radiance fields for novel-view synthesis.
+
+iMAP brought a scene-specific neural implicit representation into live SLAM.
+
+NICE-SLAM introduced hierarchical local scene information to improve scalability and reconstruction detail.
+
+These methods changed both the representation and the cost structure of map updates. They strengthen the motivation for explicit reasoning about which state must be revisited after change.
+
+CBRC is representation-agnostic at the top level. It requires exact dependencies and conservative finite-change bounds rather than a particular representation class.
+
+## Gaussian scene representations
+
+3D Gaussian Splatting introduced an explicit anisotropic Gaussian scene representation with high-quality real-time radiance-field rendering.
+
+Dynamic 3D Gaussians and 4D Gaussian Splatting extended Gaussian representations toward persistent motion and dynamic rendering.
+
+These works are directly relevant because explicit Gaussian support, opacity, covariance, and color can be related to conservative display-space bounds.
+
+MAVEB does not claim to invent Gaussian rendering or dynamic Gaussian representations. Its Gaussian role is to connect implementation-compatible splat support to a fail-closed revision certificate.
+
+## The gap addressed by MAVEB
+
+The ingredients around MAVEB already exist independently:
+
+- incremental state update;
+- local map maintenance;
+- spatial support;
+- dependency graphs;
+- matrix resolvents;
+- sensitivity propagation;
+- output-error estimation;
+- empirical influence prediction;
+- full-reference evaluation.
+
+The proposed contribution is the captured-world specialization that places them under one revision contract:
+
+1. Exact and analytic dependencies coexist.
+2. Safety is defined at an explicit output quantity.
+3. A local result is accepted only when its exterior is conservatively bounded.
+4. Unsupported coupling selects FULL.
+5. Heterogeneous work is compared under a frozen model.
+6. The selected result is checked against an independent full reference.
+7. Every decision and failure is preserved as evidence.
+
+Peer review, broader comparison, and independent replication remain necessary to establish generality and novelty beyond the evaluated system.
+
+# Novelty boundary
+
+## Not claimed as novel
+
+MAVEB does not claim to invent graph reachability, transitive closure, predecessor closure, spectral radius, Neumann-series resolvents, matrix sensitivity propagation, Gaussian splatting, alpha compositing, TSDF fusion, temporal filtering, greedy search, learned scheduling heuristics, or full-reference evaluation.
+
+## Proposed contribution
+
+The proposed contribution is:
+
+- a typed revision graph spanning heterogeneous captured-world and runtime state;
+- exact HARD closure and conservative ANALYTIC bounds in one planner;
+- display-space or task-space quantities of interest;
+- fail-closed unsupported coupling;
+- heterogeneous work-aware cone selection;
+- native and reference planner parity;
+- independent full-reference falsification;
+- machine-readable evidence for every decision.
+
+## Claims intentionally not made
+
+The current evidence does not establish universal safety outside stated assumptions and the tested domain, global combinatorial minimum-work optimality, paired end-to-end wall-clock speedup over FULL, semantic object ownership in the trained-3DGS validation, metric-scale reconstruction in the public RGB/SfM path, necessity of every mechanism on every real workload, safety of empirical influence prediction, or publication acceptance.
+
+# Impact
+
+## Persistent XR
+
+Persistent XR systems accumulate world state over long periods. Real spaces change. Furniture moves, surfaces change, objects appear, and earlier captured geometry becomes stale.
+
+A full reconstruction after every edit is wasteful. An unconstrained local update can preserve stale dependent state.
+
+CBRC supplies a decision layer between these extremes.
+
+## Digital twins
+
+Digital twins combine geometry, appearance, sensor history, simulation state, and GPU resources.
+
+A local physical change can require selective invalidation across several representations.
+
+A typed revision graph provides one place to express those dependencies.
+
+## Incremental reconstruction
+
+Many reconstruction systems already perform local work.
+
+CBRC adds a different requirement: local work should be justified against an explicit output tolerance when a conservative bound is available.
+
+## Rendering systems
+
+The same principle applies beyond reconstruction.
+
+A renderer with persistent caches, temporal history, visibility structures, explicit scene primitives, and publication buffers can expose a revision graph.
+
+The method is therefore best interpreted as a framework for certified recomputation rather than a single Gaussian optimization.
+
+## Reproducible systems research
+
+Failed certificates remain scientific artifacts.
+
+A violation is not averaged away. It becomes a regression target.
+
+This makes correctness failures visible alongside performance results.
+
+# Limitations
+
+## Gaussian discovery remains expensive
+
+Median Gaussian inspection relative to FULL remains approximately 1.0 in both frozen end-to-end campaign paths.
+
+Update, publication, and temporal work can be much smaller, but discovery still scans almost the entire field.
+
+Sparse discovery shows a route toward removing this bottleneck, but the frozen end-to-end headline number does not include that unintegrated gain.
+
+## Conservative bounds can eliminate locality
+
+A correct bound can be too loose to save work.
+
+This is expected behavior.
+
+A method that always returns a local result would conflict with the fail-closed objective.
+
+## Some real-matrix ablations are neutral
+
+Several structural ablations do not separate strongly on the frozen real matrix.
+
+The project does not retune the real campaign to force a desired result.
+
+A separately labeled mechanism-isolation suite constructs deterministic stress cases instead.
+
+Synthetic stress establishes mechanism behavior, not real-world effect size.
+
+## Empirical scheduling is not a certificate
+
+The held-out empirical scheduler has zero observed unsafe false-LOCAL decisions on the frozen matrix, but independent candidate residuals are zero in those cases.
+
+That observation is not a safety theorem.
+
+## Zero selected residual does not mean zero source effect
+
+The selected public repairs match the independent full reference at the reported precision.
+
+However, 56 of 60 source edits exceed protected RGB tolerance before repair.
+
+Source effect and selected residual are therefore reported separately.
+
+## Work reduction is not speedup
+
+The public headline value uses a frozen heterogeneous millisecond cost model.
+
+The trained-3DGS result uses native temporal/output work.
+
+Neither is described as paired end-to-end wall-clock speedup.
+
+## Greedy search is not global optimization
+
+CBRC v1 returns a certified feasible cone.
+
+It does not prove that no cheaper safe cone exists.
+
+## Assumptions are representation-specific
+
+New shaders, temporal rules, publication mechanisms, scene representations, or ownership semantics can invalidate existing analytic bounds.
+
+Such changes require new bound metadata and new regression evidence.
+
+# Reproducibility
+
+## Clone
+
+<pre><code class="language-bash">git clone https://github.com/swayam8624/Maveb.git
 cd Maveb
-chmod +x bootstrap_and_run.sh run_all.sh
-./bootstrap_and_run.sh
-```
+git submodule update --init --recursive</code></pre>
 
-That command validates the machine, prepares Python dependencies, configures and builds the CI and sanitizer targets, compiles AetherStudio, executes CTest and Python tests, runs the randomized CBRC falsification test, and produces the synthetic CBRC pilot artifacts.
+## Complete verification
 
-To compile, validate, and then launch AetherStudio:
+<pre><code class="language-bash">chmod +x bootstrap_and_run.sh
+./bootstrap_and_run.sh</code></pre>
 
-```bash
-./bootstrap_and_run.sh --launch-studio
-```
+## Complete paper-grade execution
 
-To let the bootstrap script install missing Homebrew packages such as CMake and Ninja:
+<pre><code class="language-bash">./run_paper_grade_research.sh</code></pre>
 
-```bash
-./bootstrap_and_run.sh --install-deps
-```
+This executes the public v2.1 campaign, frozen hardware work calibration, sparse discovery, full and heuristic baselines, ablations, planner parity, held-out empirical evaluation, trained-3DGS validation, mechanism-isolation suite, cross-representation figure, and readiness audit.
 
-To execute a frozen **real** CBRC campaign in the same run:
+## Open generated visuals
 
-```bash
-MAVEB_CAMPAIGN=/absolute/path/campaign.json \
-MAVEB_WORK_COST=/absolute/path/frozen-work-cost.json \
-./bootstrap_and_run.sh
-```
+<pre><code class="language-bash">bash show_paper_visuals.sh</code></pre>
 
-The real campaign is never faked when those external scene archives/sidecars are absent; the script reports it as pending and still completes all repository-contained validation.
+Open the generated folders instead:
 
-### Paper-grade research campaign and SIGGRAPH visual package
+<pre><code class="language-bash">bash show_paper_visuals.sh --folders</code></pre>
 
-After the five-case public pilot is green, the repository can execute the larger
-frozen research package without private data:
+## Direct tests
 
-```bash
-./run_public_real_campaign_v2.sh
-```
-
-Campaign-v2 expands the public matrix to four RGB/SfM scenes and 15 deterministic
-revision templates per scene (60 frozen cases). The matrix spans edit magnitude,
-entity size, temporal history weight, epsilon, stable/unstable temporal history,
-and low/medium/high/adversarial coupling labels. Cases are copied and hashed
-before outcomes are read; the runner must not delete or retune cases after seeing
-results.
-
-The v2 runner also:
-
-- freezes an isolated hardware-derived millisecond cost model for
-  `gaussiansInspected`, `gaussiansUpdated`, `gpuPublicationBytes`, and
-  `temporalPixelsInvalidated`;
-- records measured campaign phase wall times separately from the calibrated cost
-  estimate;
-- sweeps scan-vs-index candidate discovery from 10k to 1M Gaussians;
-- evaluates a fixed held-out empirical changed-fraction heuristic;
-- runs FULL, EXACT, radius, fraction, empirical-scheduling and CBRC baselines plus
-  required ablations;
-- generates the standard paper CSV/SVG artifacts and a reproducible visual package;
-- audits evidence completeness without predicting venue acceptance.
-
-The calibrated work model is **not** automatically an end-to-end runtime
-speedup. Phase wall-clock measurements and the isolated cost model are reported
-as different quantities.
-
-For a secondary representation check, MAVEB can fetch a public trained 3DGS PLY,
-preserve its SH/opacity/anisotropic scale/rotation fields, seed persistent spatial
-ownership, and execute the same certificate/oracle contract:
-
-```bash
-./run_trained_3dgs_campaign.sh
-```
-
-This trained-3DGS path is deliberately labeled as spatial ownership rather than
-semantic segmentation. If its source does not provide trustworthy metric scale,
-the seeder canonicalizes scene scale and records that provenance.
-
-To execute the full research package in sequence:
-
-```bash
-./run_paper_grade_research.sh
-```
-
-Key outputs:
-
-```text
-build/public-real-v2/
-├── calibration/work-cost-model.json
-├── sparse-discovery/F11_sparse_discovery.svg
-├── frozen-inputs/campaign-v2.json
-├── frozen-inputs/campaign-v2-freeze.json
-├── campaign/campaign-rows.jsonl
-├── campaign/campaign-timings.jsonl
-├── campaign/empirical-heldout.json
-├── campaign/paper-artifacts/
-├── siggraph-visuals/
-│   ├── figures/F0_hero.png
-│   ├── figures/F0_system_overview.svg
-│   ├── figures/F9_evidence_dashboard.png
-│   ├── figures/F10_case_mosaic.png
-│   └── video/
-│       ├── MAVEB_teaser.gif
-│       └── MAVEB_supplementary_cases.gif
-└── PAPER_GRADE_STATUS.json
-
-build/trained-3dgs-campaign/
-├── source/TRAINED_3DGS_SOURCE.json
-├── campaign/
-├── siggraph-visuals/
-└── TRAINED_3DGS_STATUS.json
-
-build/paper-grade-final/
-├── representation/F12_representation_comparison.svg
-└── PAPER_GRADE_STATUS.json
-```
-
-The visual system never redraws or beautifies scientific evidence by hand.
-Before/FULL-after/selected-repair/support/effect/residual frames come from the
-independent oracle, while labels and numbers are read from frozen campaign
-artifacts. The complete figure/video storyboard is in
-`research/visualization/SIGGRAPH_VISUAL_STORYBOARD.md`.
-
-### View the complete paper visualization package
-
-After `./run_paper_grade_research.sh` completes, open the main scientific
-figures, dashboards, case mosaics, GIFs and cross-representation figure on
-macOS with:
-
-```bash
-bash show_paper_visuals.sh
-```
-
-To open the generated visualization folders in Finder instead:
-
-```bash
-bash show_paper_visuals.sh --folders
-```
-
-The viewer never generates substitute images: it only opens artifacts that were
-produced from the machine-readable campaign evidence.
-
-### Zero-input public real campaign (recommended)
-
-MAVEB does **not** require LiDAR or private data for its canonical research path. The default
-reproducible real-world experiment downloads the public GraphDECO COLMAP-ready Tanks & Temples
-bundle and uses only the Tanks & Temples **Train** and **Truck** scenes:
-
-```bash
-chmod +x run_public_real_campaign.sh
-./run_public_real_campaign.sh
-```
-
-No file from the user is required. The pipeline performs:
-
-```text
-official public ordinary-RGB dataset
-    -> pinned HTTPS archive + SHA-256 verification
-    -> COLMAP sparse SfM points/colors
-    -> deterministic quality filtering
-    -> explicit canonical scene-scale normalization
-    -> isotropic Gaussian seed field
-    -> deterministic spatial persistent ownership
-    -> two native .aetherworld scenes
-    -> five frozen real revision cases
-    -> production CBRC planner
-    -> independent full-reference oracle
-    -> FULL / EXACT / RADIUS / FRACTION / EMPIRICAL baselines
-    -> required ablations + native/Python parity
-    -> paper artifacts + answer-first evidence report
-```
-
-The source archive is pinned in
-`research/config/cbrc_public_real_sources.json`. The primary public campaign extracts only the
-Tanks & Temples members, whose dataset license is CC BY 4.0. The archive is downloaded from
-GraphDECO's official 3D Gaussian Splatting dataset endpoint.
-
-COLMAP monocular SfM does not recover an absolute metric scale by itself. MAVEB therefore records
-`scaleSource = canonical-normalization-not-measured` and must **not** describe this public path as
-metric-scale reconstruction. Likewise, these are real RGB-derived SfM points initialized as
-isotropic Gaussians, not trained photorealistic 3DGS. Those boundaries are written into every
-world's provenance sidecar.
-
-Outputs:
-
-```text
-build/public-real-campaign/
-├── source/PUBLIC_SOURCE_PROVENANCE.json
-├── worlds/
-│   ├── tandt-train.aetherworld
-│   ├── tandt-train.aetherworld.gaussians.r1.bin
-│   ├── tandt-train.aetherworld.ownership.r1.bin
-│   ├── tandt-train.aetherworld.source.json
-│   ├── tandt-truck.aetherworld
-│   └── ...
-├── frozen-inputs/
-│   ├── campaign.json
-│   └── campaign-freeze.json
-└── campaign/
-    ├── campaign-gates.json
-    ├── baseline-summary.json
-    ├── REAL_CAMPAIGN_ANSWER.md
-    └── paper-artifacts/
-```
-
-If the official archive is already cached somewhere, avoid another download with:
-
-```bash
-MAVEB_PUBLIC_ARCHIVE=/absolute/path/tandt_db.zip ./run_public_real_campaign.sh
-```
-
-### No real world yet: capture one
-
-If you do not already have a `.aetherworld` with Gaussian/ownership sidecars, create the first real
-benchmark directly from a MavebCapture LiDAR scan.
-
-1. Record a real scene with the iPadOS `MavebCapture` app and export the complete
-   `Scan.mavebcapture` directory to the Mac.
-2. Run:
-
-```bash
-chmod +x capture_to_real_campaign.sh
-./capture_to_real_campaign.sh /absolute/path/Scan.mavebcapture
-```
-
-The pipeline performs:
-
-```text
-real ARKit RGB-D/LiDAR capture
-    -> hash-validated replay
-    -> metric TSDF fusion
-    -> real proxy mesh
-    -> deterministic isotropic Gaussian seed field
-    -> spatial persistent entities / ownership
-    -> WORLD.aetherworld
-    -> WORLD.aetherworld.gaussians.r1.bin
-    -> WORLD.aetherworld.ownership.r1.bin
-    -> frozen CBRC real campaign
-    -> independent full-reference oracle
-    -> baselines + ablations + paper artifacts
-```
-
-Final outputs are written below `build/real-capture-bootstrap/`, including:
-
-```text
-real-proxy.ply
-real-seeded.aetherworld
-real-seeded.aetherworld.gaussians.r1.bin
-real-seeded.aetherworld.ownership.r1.bin
-cbrc/campaign/REAL_CAMPAIGN_ANSWER.md
-cbrc/campaign/paper-artifacts/
-```
-
-The seed path is deliberately labeled
-`deterministic-spatial-grid-not-semantic`: ownership cells are deterministic spatial partitions,
-not semantic object segmentation. Likewise, the Gaussian field is initialized from real fused
-surface samples with isotropic kernels; it is valid real captured geometry for testing CBRC
-locality/certification, but it must not be described as a trained photorealistic 3DGS model.
-A later publication-strength campaign can replace the seeded field with trained Gaussians without
-changing the CBRC evidence machinery.
-
-### Real campaign autopilot
-
-After the repository-contained verifier passes, the fastest real-data path is:
-
-```bash
-./run_real_campaign.sh
-```
-
-The autopilot searches the repository plus `~/Desktop`, `~/Documents`, and `~/Downloads` for complete real persistent worlds. A candidate is accepted only when the latest world revision has both immutable sidecars:
-
-```text
-WORLD.aetherworld
-WORLD.aetherworld.gaussians.rR.bin
-WORLD.aetherworld.ownership.rR.bin
-```
-
-For accepted real worlds it deterministically derives a framing camera, selects a meaningfully local owned entity, makes five independent before-state copies, freezes low/medium/high/adversarial edits before reading results, runs the independent full-reference oracle, baselines, ablations and parity gates, and writes an answer-first report at:
-
-```text
-build/research-real/campaign/REAL_CAMPAIGN_ANSWER.md
-```
-
-To point directly at a known archive:
-
-```bash
-MAVEB_REAL_ARCHIVE=/absolute/path/world.aetherworld ./run_real_campaign.sh
-```
-
-A frozen heterogeneous millisecond cost model can still be supplied with `MAVEB_WORK_COST`. Without one, the headless real campaign uses the production planner's single-domain temporal-pixel work and reports native per-domain ratios separately; it does **not** mislabel those numbers as heterogeneous wall-clock speedup.
-
-### Manual equivalent
-
-```bash
-git clone https://github.com/swayam8624/Maveb.git
-cd Maveb
-
-cmake --preset ci
-cmake --build --preset ci --parallel
-ctest --preset ci
-
-cmake --preset sanitizer
-cmake --build --preset sanitizer --parallel
-ctest --test-dir build/sanitizer --output-on-failure
-
-cmake --preset debug -DAETHER_REQUIRE_METAL_TOOLCHAIN=OFF
-cmake --build --preset debug --target AetherStudio --parallel
-
-python3 -m venv .venv-maveb
-.venv-maveb/bin/python -m pip install --upgrade pip
-.venv-maveb/bin/python -m pip install numpy pillow scipy
-.venv-maveb/bin/python -m unittest discover -s benchmarks/tests -p 'test_*.py'
-.venv-maveb/bin/python -m unittest discover -s research/tests -p 'test_*.py'
-
-.venv-maveb/bin/python research/experiments/cbrc_gaussian_temporal_chain.py \
-  --seed 20260920 --trials 100000
-
-.venv-maveb/bin/python research/experiments/cbrc_synthetic_benchmark.py \
-  --out build/research-final/cbrc-synthetic-pilot.jsonl \
-  --seed 20260920 --repeats 1 --pilot
-```
-
----
-
-## Build
-
-### Requirements
-
-- Git;
-- Apple-silicon Mac;
-- macOS 15 or newer;
-- Xcode 26 or newer;
-- CMake 3.28 or newer;
-- Ninja;
-- Python 3 with `venv` support;
-- separately downloadable Xcode Metal Toolchain for full Metal compilation.
-
-`bootstrap_and_run.sh --install-deps` can install missing Homebrew `cmake`, `ninja`, and `python` packages and request the Metal Toolchain. It deliberately does not install Homebrew or Xcode itself.
-
-Install the Metal compiler if needed:
-
-```bash
-xcodebuild -downloadComponent metalToolchain
-```
-
-### If `xcode-select` points to CommandLineTools
-
-A common macOS setup has the standalone Command Line Tools selected even though full Xcode is installed:
-
-```text
-xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory
-'/Library/Developer/CommandLineTools' is a command line tools instance
-```
-
-For the current shell, prefer:
-
-```bash
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-xcodebuild -version
-```
-
-Or switch the machine-wide developer directory:
-
-```bash
-sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-```
-
-If Xcode has just been installed, open it once or complete first-launch setup:
-
-```bash
-sudo xcodebuild -runFirstLaunch
-```
-
-The MAVEB bootstrap now detects a usable full Xcode installation under `/Applications` and sets `DEVELOPER_DIR` for its own process automatically, so a globally selected Command Line Tools directory no longer blocks the run.
-
-### One-command verification
-
-For a first run after cloning, use:
-
-```bash
-./bootstrap_and_run.sh
-```
-
-The bootstrap validates the supported Mac/Xcode/CMake environment, initializes submodules, creates an isolated Python virtual environment, installs the Python benchmark dependencies, and then invokes the complete verifier.
-
-For later runs inside an already prepared clone:
-
-```bash
-./run_all.sh
-```
-
-`run_all.sh` performs the warnings-as-errors CI build/tests, sanitizer build/tests, AetherStudio compile, Python benchmark/research tests, 100,000 randomized certificate falsification trials, the synthetic CBRC pilot, native-tool smoke validation, and—when supplied—the frozen real campaign. Use `./run_all.sh --help` for environment variables and launch options.
-
-### Development build
-
-```bash
-cmake --preset debug
-cmake --build --preset debug
-ctest --preset debug
-open build/debug/apps/AetherStudio/AetherStudio.app
-```
-
-### CI-equivalent CPU build
-
-```bash
-cmake --preset ci
+<pre><code class="language-bash">cmake --preset ci
 cmake --build --preset ci
 ctest --preset ci
-```
 
-### Sanitizers
-
-```bash
 cmake --preset sanitizer
 cmake --build --preset sanitizer
 ctest --test-dir build/sanitizer --output-on-failure
-```
 
----
+python3 -m unittest discover -s benchmarks/tests -p 'test_*.py'
+python3 -m unittest discover -s research/tests -p 'test_*.py'</code></pre>
 
-## Run one certified revision
+## Randomized certificate falsification
 
-```bash
-build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision \
-  --archive /absolute/path/world.aetherworld \
-  --entity 42 \
-  --target 0.05,0.0,0.0 \
-  --timestamp 1000000001 \
-  --output-dir /tmp/cbrc-case \
-  --width 1280 --height 720 \
-  --focal-x 900 --focal-y 900 \
-  --center-x 640 --center-y 360 \
-  --epsilon 0.01
-```
+<pre><code class="language-bash">python3 research/experiments/cbrc_gaussian_temporal_chain.py \
+  --seed 20260920 \
+  --trials 100000</code></pre>
 
-The headless path writes:
+## Mechanism-isolation suite
 
-- `translation.json`;
-- `certificate.json`;
-- `native-planner-certificate.json`;
-- new immutable Gaussian and ownership revision sidecars.
+<pre><code class="language-bash">python3 research/experiments/cbrc_ablation_stress_suite.py \
+  --output build/paper-grade-final/ABLATION_STRESS_STATUS.json</code></pre>
 
-See [the full CBRC guide](docs/research/CBRC.md).
+## Inspect canonical evidence
 
----
+<pre><code class="language-bash">python3 -m json.tool \
+  research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json</code></pre>
 
-## Run the frozen real campaign
+# Repository map
 
-Start from [the campaign template](research/config/cbrc_real_campaign.example.json), freeze hardware work coefficients, then run:
+<pre>
+Maveb/
++-- engine/
+|   +-- revision/                 native revision graph and planner
+|   +-- gaussian/                 Gaussian representation and update path
+|   +-- world/                    persistent captured-world state
+|   +-- ...
++-- tools/
+|   +-- maveb-cbrc-revision/
+|   +-- maveb-cbrc-gaussian-oracle/
+|   +-- maveb-cbrc-work-bench/
+|   +-- maveb-seed-trained-3dgs-world/
++-- benchmarks/
+|   +-- scripts/                  campaign, replay, calibration, evaluation
+|   +-- tests/
++-- research/
+|   +-- cbrc/                     mathematical reference implementation
+|   +-- experiments/              falsification, baselines, ablations
+|   +-- analysis/                 paper evidence and readiness
+|   +-- design/                   implementation boundary and limitations
+|   +-- results/                  canonical evidence and visualizations
+|   +-- theory/                   derivations
+|   +-- visualization/            publication visual generation
++-- run_paper_grade_research.sh
++-- show_paper_visuals.sh
++-- README.md
+</pre>
 
-```bash
-python3 benchmarks/scripts/cbrc_campaign.py \
-  --campaign /absolute/path/campaign.json \
-  --oracle build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle \
-  --revision-tool build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision \
-  --git-sha "$(git rev-parse HEAD)" \
-  --output-dir /absolute/path/cbrc-results
-```
+# Manuscript boundary
 
-Default campaign gates require:
+This repository marks the end of the implementation and evidence-construction phase for the current CBRC v1 paper line.
 
-- a minimum revision count;
-- at least one certified local case;
-- at least one high/adversarial-coupling case;
-- at least one automatic FULL fallback;
-- zero certificate violations;
-- native/Python planner parity.
+The following are frozen:
 
-Full procedure: [CBRC experiment runbook](research/results/CBRC_EXPERIMENT_RUNBOOK.md).
+- the v1 research question;
+- the method boundary;
+- public and trained-representation evidence;
+- canonical run provenance;
+- quantitative headline values;
+- supported and unsupported claim wording;
+- measured limitations;
+- publication figures;
+- animated supplementary material;
+- reproducibility scripts.
 
----
+The next stage is manuscript construction.
 
-## Repository map
+The manuscript should not introduce new headline measurements by manual transcription. Every result should trace to the canonical machine-readable evidence.
 
-| Path | Purpose |
-|---|---|
-| [`engine/revision/`](engine/revision/) | Native typed revision graph and CBRC planner |
-| [`engine/cbrc/`](engine/cbrc/) | Captured-world heterogeneous graph adapter |
-| [`engine/world_gaussian/`](engine/world_gaussian/) | Gaussian ownership, locality and image certificates |
-| [`engine/scene/`](engine/scene/) | Temporal revision certificate |
-| [`engine/world/`](engine/world/) | Persistent-world and locality ledger |
-| [`research/`](research/) | Hypotheses, theory, falsification, analysis and schemas |
-| [`benchmarks/`](benchmarks/) | Real-data reconstruction and CBRC evidence campaigns |
-| [`tools/maveb-cbrc-revision/`](tools/maveb-cbrc-revision/) | Headless persistent revision capture |
-| [`tools/maveb-cbrc-gaussian-oracle/`](tools/maveb-cbrc-gaussian-oracle/) | Independent full-reference image oracle |
-| [`apps/AetherStudio/`](apps/AetherStudio/) | macOS interactive application |
-| [`apps/MavebCapture/`](apps/MavebCapture/) | iPad RGB + LiDAR capture companion |
+The manuscript should preserve the distinctions enforced here:
 
----
+- work reduction versus wall-clock speedup;
+- no observed violation versus universal safety;
+- certified feasible cone versus global optimum;
+- deterministic spatial ownership versus semantic segmentation;
+- real-scene evidence versus synthetic mechanism isolation.
 
-## Documentation
+# References
 
-**Research**
+1. Brian Curless and Marc Levoy. A Volumetric Method for Building Complex Models from Range Images. SIGGRAPH, 1996. [Project material](https://graphics.stanford.edu/papers/volrange/)
 
-- [Research hub](research/README.md)
-- [CBRC architecture and operator guide](docs/research/CBRC.md)
-- [Implementation status](research/design/CBRC_IMPLEMENTATION_STATUS.md)
-- [Limitations and threat model](research/design/CBRC_LIMITATIONS.md)
-- [Canonical evidence freeze](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
-- [Canonical machine-readable evidence manifest](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json)
-- [Frozen paper claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
-- [Cross-representation validation figure](research/results/F12_representation_comparison_2026-09-21.svg)
-- [Result schema](research/results/CBRC_RESULT_SCHEMA.md)
-- [Experiment runbook](research/results/CBRC_EXPERIMENT_RUNBOOK.md)
-- [Machine-readable schemas](research/schema/README.md)
+2. Hanspeter Pfister, Matthias Zwicker, Jeroen van Baar, and Markus Gross. Surfels: Surface Elements as Rendering Primitives. SIGGRAPH, 2000. [DOI](https://doi.org/10.1145/344779.344936)
 
-**Engine / formats**
+3. Richard A. Newcombe, Shahram Izadi, Otmar Hilliges, David Molyneaux, David Kim, Andrew J. Davison, Pushmeet Kohli, Jamie Shotton, Steve Hodges, and Andrew Fitzgibbon. KinectFusion: Real-Time Dense Surface Mapping and Tracking. ISMAR, 2011. [Microsoft Research](https://www.microsoft.com/en-us/research/publication/kinectfusion-real-time-dense-surface-mapping-tracking/)
 
-- [Roadmap](docs/ROADMAP.md)
-- [Benchmark contract](docs/BENCHMARKING.md)
-- [AETHER package format](docs/formats/AETHER_PACKAGE.md)
-- [Canonical Asset v1](docs/formats/CANONICAL_ASSET.md)
-- [Native GLB export](docs/formats/NATIVE_GLB_EXPORT.md)
-- [Gaussian PLY profile](docs/formats/GAUSSIAN_PLY.md)
-- [Reconstruction truth ADR](docs/adr/0005-reconstruction-truth-and-oracle-first.md)
+4. Thomas Whelan, Stefan Leutenegger, Renato F. Salas-Moreno, Ben Glocker, and Andrew J. Davison. ElasticFusion: Dense SLAM Without A Pose Graph. Robotics: Science and Systems, 2015. [RSS proceedings](https://www.roboticsproceedings.org/rss11/p01.html)
 
----
+5. Angela Dai, Matthias Nießner, Michael Zollhöfer, Shahram Izadi, and Christian Theobalt. BundleFusion: Real-time Globally Consistent 3D Reconstruction Using On-the-fly Surface Re-integration. ACM Transactions on Graphics, 2017. [Project repository](https://github.com/niessner/BundleFusion)
 
-## Evidence philosophy
+6. Ben Mildenhall, Pratul P. Srinivasan, Matthew Tancik, Jonathan T. Barron, Ravi Ramamoorthi, and Ren Ng. NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis. ECCV, 2020. [arXiv](https://arxiv.org/abs/2003.08934)
 
-> [!CAUTION]
-> A certificate violation is never averaged away.
+7. Edgar Sucar, Shikun Liu, Joseph Ortiz, and Andrew J. Davison. iMAP: Implicit Mapping and Positioning in Real-Time. ICCV, 2021. [CVF Open Access](https://openaccess.thecvf.com/content/ICCV2021/html/Sucar_iMAP_Implicit_Mapping_and_Positioning_in_Real-Time_ICCV_2021_paper.html)
 
-Every certified result must satisfy:
+8. Zihan Zhu, Songyou Peng, Viktor Larsson, Weiwei Xu, Hujun Bao, Zhaopeng Cui, Martin R. Oswald, and Marc Pollefeys. NICE-SLAM: Neural Implicit Scalable Encoding for SLAM. CVPR, 2022. [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2022/html/Zhu_NICE-SLAM_Neural_Implicit_Scalable_Encoding_for_SLAM_CVPR_2022_paper.html)
 
-```
-measured_full_reference_error <= certified_bound <= epsilon
-```
+9. Bernhard Kerbl, Georgios Kopanas, Thomas Leimkühler, and George Drettakis. 3D Gaussian Splatting for Real-Time Radiance Field Rendering. ACM Transactions on Graphics, 2023. [DOI](https://doi.org/10.1145/3592433)
 
-Every result archive should retain the exact git SHA, graph/bound/cost-model versions, input revisions, camera, chosen cone, full-reference output, raw heterogeneous work counters, and failed artifacts.
+10. Jonathon Luiten, Georgios Kopanas, Bastian Leibe, and Deva Ramanan. Dynamic 3D Gaussians: Tracking by Persistent Dynamic View Synthesis. 3DV, 2024. [Project repository](https://github.com/JonathonLuiten/Dynamic3DGaussians)
 
-That is the standard the project uses before paper prose is allowed to become a performance claim.
+11. Guanjun Wu, Taoran Yi, Jiemin Fang, Lingxi Xie, Xiaopeng Zhang, Wei Wei, Wenyu Liu, Qi Tian, and Xinggang Wang. 4D Gaussian Splatting for Real-Time Dynamic Scene Rendering. CVPR, 2024. [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2024/html/Wu_4D_Gaussian_Splatting_for_Real-Time_Dynamic_Scene_Rendering_CVPR_2024_paper.html)
 
----
+# Project status
 
-## Repository history
+CBRC v1 implementation and evidence construction are complete.
 
-The original Metal learning tree is preserved on `archive/metal-practice-2026-07-12`. The maintained tutorial starts under `examples/00_triangle`.
-
-Historical research branches are provenance-only working lines. **`main` is the canonical MAVEB/CBRC project branch.**
-
----
-
-## License
-
-AETHER/MAVEB source code is licensed under Apache-2.0. Documentation is licensed under CC BY 4.0 unless a file states otherwise. Datasets and third-party assets keep their original licenses and are never implicitly covered by the source license.
+The repository is now in manuscript-preparation state.
