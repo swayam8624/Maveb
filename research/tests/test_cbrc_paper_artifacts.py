@@ -49,6 +49,21 @@ class CBRCPaperArtifactsTests(unittest.TestCase):
         self.assertEqual(result["certificateViolations"], 0)
         self.assertEqual(result["fallbackRate"], 0.5)
 
+    def test_zero_residual_effectivity_is_undefined(self):
+        zero = row()
+        zero["qois"]["rgb_linf"]["measured_full_reference_error"] = 0.0
+        result = mod.summarize([zero])
+        self.assertEqual(result["zeroMeasuredErrorCount"], 1)
+        self.assertEqual(result["definedEffectivityCount"], 0)
+        self.assertIsNone(result["medianEffectivity"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            mod.f5([zero], output)
+            csv_text = (output / "F5_effectivity.csv").read_text()
+            self.assertIn("undefined_zero_measured_error", csv_text)
+            self.assertNotIn("80000000000000", csv_text)
+
     def test_all_nonspatial_figures_emit(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
