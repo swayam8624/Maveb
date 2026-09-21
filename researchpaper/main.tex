@@ -35,6 +35,7 @@
 \definecolor{mavebline}{HTML}{476582}
 \newcommand{\tbhead}[1]{\textbf{#1}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
 
 
 \title{Repair What Matters: Criticality-Bounded Revision Cones for Persistent Captured Worlds}
@@ -118,8 +119,12 @@ The contributions are:
 
 \begin{figure*}[t]
   \centering
-  \input{figures/local_revision_poster.tex}
-  \Description{Publication-native visual explanation of how a local Gaussian revision propagates through MAVEB/CBRC. The figure shows an initial Gaussian scene, an intended edited Gaussian, conservative certified support formation, a five-stage state-transition pipeline, and the two fail-closed outcomes: certified local repair or automatic full rebuild. Blue denotes intended edit state, yellow denotes selected repair support, green denotes a certified local outcome, and red denotes full fallback.}
+  \IfFileExists{figures/figure2_exact.png}{%
+    \includegraphics[width=\textwidth]{figures/figure2_exact.png}%
+  }{%
+    \PackageError{maveb}{Missing figures/figure2_exact.png}{Figure 2 must be the exact approved PNG; no vector recreation, optimization, or fallback is permitted.}%
+  }
+  \Description{Exact approved Figure 2, How Local Gaussian Revisions Propagate. It shows the initial Gaussian state, intended edit, certified support formation, the state-transition pipeline, certified local repair, and automatic full fallback.}
   \caption{How a physical edit becomes a certified revision. An intended Gaussian edit induces a candidate influence region from which \method{} selects the support that must be repaired. Exact structural dependencies remain closed and the unrepaired exterior is accepted only when its quantity-of-interest bound satisfies the declared tolerance and regional work remains below the frozen \FULL{} baseline. The system therefore either revises only the certified support (A) or fails closed to a \FULL{} rebuild (B). Blue marks the intended edit, yellow the selected repair support. The footer reports frozen public-v2.1 headline evidence; detailed distributions and ablations remain in Section~\ref{sec:results}.}
   \label{fig:poster}
 \end{figure*}
@@ -164,7 +169,9 @@ Each dependency has one of three semantics (Table~\ref{tab:edges}).
 \centering
 \small
 \rowcolors{2}{gray!8}{white}
-\begin{tabular}{p{0.15\columnwidth}p{0.45\columnwidth}p{0.22\columnwidth}}
+\setlength{\tabcolsep}{3.2pt}
+\renewcommand{\arraystretch}{1.03}
+\begin{tabularx}{\columnwidth}{@{}p{0.15\columnwidth}Yp{0.26\columnwidth}@{}}
 \toprule
 Type & Meaning & Certificate role \\
 \midrule
@@ -329,7 +336,9 @@ Table~\ref{tab:baselines} reports the frozen method-level baseline suite on the 
 \centering
 \scriptsize
 \rowcolors{2}{gray!8}{white}
-\begin{tabular}{lrrrrl}
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.02}
+\begin{tabularx}{\textwidth}{@{}lrrrrY@{}}
 \toprule
 Method & Cert. pass & Uncertified & \FULL{} rate & Median native work/\FULL{} & Decision rule \\
 \midrule
@@ -340,7 +349,7 @@ Changed fraction & 40.0\% & 60.0\% & 0.0\% & 0.00000 & threshold policy \\
 Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical ordering, analytic recertification \\
 \method{} & 100.0\% & 0.0\% & 26.7\% & 0.04736 & certificate + work crossover + fallback \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table*}
 
 \begin{figure*}[t]
@@ -357,21 +366,24 @@ Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical orde
 \label{tab:summary}
 \centering
 \scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\renewcommand{\arraystretch}{1.02}
 \rowcolors{2}{gray!8}{white}
-\begin{tabular}{lrr}
+\begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.25\columnwidth}>{\raggedleft\arraybackslash}p{0.22\columnwidth}@{}}
 \toprule
- & Public RGB/SfM & Trained 3DGS \\
+ & \tbhead{Public RGB/SfM} & \tbhead{Trained 3DGS} \\
 \midrule
 Cases & 60 & 5 \\
 Certified local & 44 & 4 \\
 FULL fallback & 16 & 1 \\
 Observed violations & 0 & 0 \\
 Selected work / FULL & 0.36953 & 0.03495$^\dagger$ \\
-Reported reduction & 2.706$\times$ & 28.614$\times$$^\dagger$ \\
+Reported reduction & 2.706$\times$ & 28.614$\times$^\dagger$ \\
 Median inspection / FULL & $\approx1.0$ & 0.999997 \\
 \bottomrule
-\multicolumn{3}{l}{\footnotesize $^\dagger$Trained result uses native temporal/output work, not the public calibrated model.}
-\end{tabular}
+\end{tabularx}
+\vspace{2pt}
+\caption*{\footnotesize $^\dagger$Trained result uses native temporal/output work, not the public calibrated model.}
 \end{table}
 
 \subsection{Trained-3DGS representation check}
@@ -385,7 +397,9 @@ The domain decomposition in Table~\ref{tab:trained} is more informative than the
 \centering
 \scriptsize
 \rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\columnwidth}{@{}l>{\raggedleft\arraybackslash}p{0.24\columnwidth}@{}}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.02}
+\begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.24\columnwidth}@{}}
 \toprule
 \tbhead{Native domain} & \tbhead{Ratio / \FULL{}} \\
 \midrule
@@ -408,6 +422,8 @@ A separate exact sparse-discovery sweep tests whether the near-full inspection r
 \centering
 \scriptsize
 \rowcolors{2}{gray!8}{white}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.02}
 \begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.25\columnwidth}@{}}
 \toprule
 \tbhead{Statistic} & \tbhead{Value} \\
@@ -433,7 +449,9 @@ Table~\ref{tab:ablations} makes the real-matrix ablation behavior explicit. Five
 \centering
 \scriptsize
 \rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\textwidth}{lrrrY}
+\setlength{\tabcolsep}{3.1pt}
+\renewcommand{\arraystretch}{1.02}
+\begin{tabularx}{\textwidth}{@{}p{0.21\textwidth}>{\raggedleft\arraybackslash}p{0.065\textwidth}>{\raggedleft\arraybackslash}p{0.075\textwidth}>{\raggedleft\arraybackslash}p{0.13\textwidth}Y@{}}
 \toprule
 Ablation & Pass & \FULL{} rate & Median native work/\FULL{} & Reading \\
 \midrule

@@ -27,7 +27,7 @@ The project asks one question:
 
 The central method is **Criticality-Bounded Revision Cones**, abbreviated **CBRC**. CBRC combines exact dependency closure, conservative finite-change bounds, quantity-of-interest tolerances, a heterogeneous work model, and an automatic full-rebuild fallback. A regional repair is accepted only when the unrepaired exterior can be certified. If the system cannot prove locality, it rebuilds.
 
-The v1 implementation, frozen public real-scene campaign, trained-3DGS validation, sparse-discovery study, mechanism-isolation suite, publication figures, animated supplementary material, and reproducibility infrastructure are complete. The next stage is manuscript construction.
+The v1 implementation, frozen public real-scene campaign, trained-3DGS validation, sparse-discovery study, mechanism-isolation suite, publication figures, animated supplementary material, reproducibility infrastructure, and manuscript package are complete. The next stage is venue-specific submission preparation and final artifact packaging.
 
 ## Contents
 

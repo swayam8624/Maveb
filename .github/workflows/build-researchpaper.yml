@@ -3,8 +3,8 @@ name: Build research paper
 on:
   push:
     branches:
-      - docs/researchpaper-final-20260921
-      - researchpaper/final-manuscript-20260921
+      - main
+      - closure/maveb-final-layout-20260921
     paths:
       - 'researchpaper/**'
       - '.github/workflows/build-researchpaper.yml'
@@ -26,6 +26,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-publishers texlive-pictures texlive-bibtex-extra pandoc zip
+
+      - name: Bootstrap and verify exact Figure 2 asset
+        run: |
+          if [ ! -f researchpaper/figures/figure2_exact.png ]; then
+            curl -fL --retry 3 --retry-all-errors               'https://chatgpt.com/backend-api/estuary/content?id=file_000000001e0c8207918f560be314e632&ts=497225&p=fs&cid=1&sig=c72779f0a29964d80fb0d637dad0c10711ac51b23bdfe376c21eec292a1966b6&v=0'               -o researchpaper/figures/figure2_exact.png
+          fi
+          echo "e8cfa3b68930c9052c7fbe4190eb7841efb428ab1bfe587e03dbea9fac0d1f24  researchpaper/figures/figure2_exact.png" | sha256sum -c -
 
       - name: Compile PDF
         working-directory: researchpaper
@@ -51,7 +58,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx researchpaper/MAVEB_manuscript_package.zip
+          git add researchpaper/figures/figure2_exact.png researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx researchpaper/MAVEB_manuscript_package.zip
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Build final MAVEB manuscript artifacts"
           git push origin HEAD:${GITHUB_REF_NAME}
