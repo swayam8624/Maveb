@@ -3,8 +3,8 @@ name: Build research paper
 on:
   push:
     branches:
-      - docs/researchpaper-final-20260921
-      - researchpaper/final-manuscript-20260921
+      - main
+      - closure/maveb-final-layout-20260921
     paths:
       - 'researchpaper/**'
       - '.github/workflows/build-researchpaper.yml'
@@ -26,6 +26,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-publishers texlive-pictures texlive-bibtex-extra pandoc zip
+
+      - name: Verify exact Figure 2 asset
+        run: |
+          test -f researchpaper/figures/figure2_exact.png
+          echo "e8cfa3b68930c9052c7fbe4190eb7841efb428ab1bfe587e03dbea9fac0d1f24  researchpaper/figures/figure2_exact.png" | sha256sum -c -
 
       - name: Compile PDF
         working-directory: researchpaper
