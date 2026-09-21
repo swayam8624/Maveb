@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import struct
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/cbrc_prepare_real_campaign.py"
 spec = importlib.util.spec_from_file_location("cbrc_prepare_real_campaign", SCRIPT)
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 spec.loader.exec_module(mod)
 
 
