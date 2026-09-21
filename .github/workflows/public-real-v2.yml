@@ -2,6 +2,9 @@ name: Public Real CBRC Campaign V2
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/public-real-v2-trigger
   push:
     branches:
       - run/public-real-v2
