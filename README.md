@@ -19,8 +19,8 @@ The central research question is simple to state and difficult to make safe:
 A full rebuild is safe but expensive. A local heuristic is cheap but can miss hidden dependencies. MAVEB's proposed contribution is **Criticality-Bounded Revision Cones (CBRC)**: a fail-closed planner that mixes exact structural closure with conservative analytic change bounds and automatically falls back to a full rebuild when locality cannot be certified.
 
 > [!IMPORTANT]
-> **Implementation is complete. Real-scene performance evidence is the remaining research phase.**
-> The repository does not turn fixtures, synthetic matrices, or missing measurements into speedup claims.
+> **CBRC v1 implementation and the frozen real-scene evidence campaign are complete.**
+> The public v2.1 campaign contains 60 frozen revisions across four real RGB/SfM scenes: 44 certified-local repairs, 16 automatic FULL fallbacks, and zero observed certificate violations. A secondary public trained-3DGS campaign also passes the same certificate/oracle contract. Reported work reductions are not relabeled as end-to-end speedup.
 
 ---
 
@@ -524,10 +524,38 @@ Those HARD edges are not unfinished approximation work. V1 intentionally refuses
 | Real-campaign automation | ✅ complete |
 | F1–F8 paper-artifact generation | ✅ complete |
 | CPU / sanitizer / static-analysis / app CI | ✅ complete |
-| Real captured-scene campaign | ⏳ experiment pending |
-| Final measured speedup/effectivity claims | ⏳ evidence pending |
+| Frozen public real-scene campaign v2.1 | ✅ 60 cases / 4 scenes; 44 local, 16 FULL; 0 certificate violations |
+| Public trained-3DGS validation | ✅ 5 cases; 4 local, 1 FULL; 0 certificate violations |
+| Frozen calibrated heterogeneous-work evidence | ✅ complete |
+| End-to-end local-vs-FULL wall-clock speedup claim | intentionally not claimed without a paired timing experiment |
 
 See [the exact v1 boundary](research/design/CBRC_IMPLEMENTATION_STATUS.md).
+
+---
+
+## Frozen measured evidence
+
+The paper-grade v2.1 public campaign freezes **60 revisions across four public RGB/SfM scenes** before outcomes are inspected.
+
+| Evidence | Measured result |
+|---|---:|
+| Frozen revisions | 60 |
+| Public scenes | 4 |
+| Certified-local selections | 44 |
+| Automatic FULL fallbacks | 16 |
+| Certificate violations | 0 |
+| Native ↔ Python planner parity | 60 / 60 |
+| Median calibrated heterogeneous work / FULL | 0.349 |
+| Median calibrated work reduction factor | 2.87× |
+| Source edits visibly exceeding the protected RGB tolerance | 56 / 60 |
+
+The calibrated public-campaign work model uses frozen isolated microbenchmarks in milliseconds. **2.87× is therefore a calibrated work-reduction factor, not a measured end-to-end speedup.** The campaign also exposes an important systems limitation: median Gaussian inspection remains approximately the full set even though Gaussian updates/publication and temporal invalidation are much smaller.
+
+A secondary campaign uses a pinned **public trained 3DGS PLY** while preserving SH coefficients, opacity, anisotropic scale and rotation. It records **4/5 certified-local cases, 1/5 FULL fallback, and zero certificate violations**. Its median selected native temporal/output work is 0.03495 of FULL (about 28.6× lower native work), again **not wall-clock speedup**.
+
+The separate sparse-discovery sweep preserves exact selection while reducing inspection to a median 1% of a full scan (minimum 0.1% through 1M Gaussians). That result shows a path to removing the current near-full-inspection bottleneck; it is reported separately because the frozen end-to-end public campaign has not yet integrated that optimization into its measured work ledger.
+
+The canonical machine-readable evidence snapshot is maintained under `research/results/`.
 
 ---
 
@@ -573,7 +601,7 @@ Instead of saying "this update probably stays local," the system emits the assum
 A failed certificate is preserved as an artifact and becomes a regression. The project is designed so a negative result is useful rather than something to hide.
 
 > [!NOTE]
-> These are **potential impacts**. The repository does not claim a measured real-scene speedup until the frozen campaign is run on real captured-world revisions.
+> These remain **potential impacts** beyond the evaluated workloads. The frozen campaigns establish certificate behavior and measured/calibrated work on the stated representations; they do not establish a universal or end-to-end wall-clock speedup claim.
 
 ---
 
@@ -605,7 +633,7 @@ AETHER provides the experimental substrate:
 - Synthetic matrices do not establish real-world speedup.
 - A full rebuild can be the correct answer for globally coupled edits.
 - GPU-resident meshing and some broader production reconstruction gates remain separate roadmap items.
-- Final publication claims require the frozen real-scene campaign.
+- Publication claims are restricted to the frozen measured campaigns and their stated provenance; the project does not convert calibrated work into an end-to-end speedup claim.
 
 See [CBRC limitations and threat model](research/design/CBRC_LIMITATIONS.md).
 
