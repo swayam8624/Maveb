@@ -143,6 +143,8 @@ class CBRCCertificateTests(unittest.TestCase):
 
     def test_effectivity(self):
         self.assertEqual(effectivity(0.2, 0.1), 2.0)
+        self.assertIsNone(effectivity(0.2, 0.0))
+        self.assertIsNone(effectivity(0.2, 1e-13))
 
 
 if __name__ == "__main__":
