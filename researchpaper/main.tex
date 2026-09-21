@@ -222,6 +222,15 @@ B_q(C)=\left\lVert |R_{q,O}|\hat{\delta}_O\right\rVert_\infty.
 \end{equation}
 A candidate cone is certificate-feasible only if $B_q(C)\le\varepsilon_q$ for all declared outputs. This allows two revisions with identical changed geometry to produce different decisions when their protected outputs differ. It also prevents an internal state norm from silently standing in for the user-visible error being claimed.
 
+\subsection{Revision criticality}
+We define the revision criticality of a candidate cone as the worst normalized certified residual
+\begin{equation}
+\chi(C)=\max_q
+\frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
+\label{eq:criticality}
+\end{equation}
+The threshold $\chi(C)=1$ is the certificate boundary: $\chi(C)\le1$ is certificate-feasible, whereas $\chi(C)>1$ is supercritical for at least one protected output and requires cone expansion or \FULL{}. The term \emph{criticality-bounded} refers to this explicit normalized output-error boundary; it is not intended as a new physical critical-phenomena model.
+
 \subsection{Gaussian display-space bound}
 For a projected Gaussian $i$ at pixel $p$, \system{} uses an effective alpha model consistent with the renderer,
 \begin{equation}
@@ -230,15 +239,22 @@ For a projected Gaussian $i$ at pixel $p$, \system{} uses an effective alpha mod
 \end{equation}
 where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. For edited set $E$, define aggregate opacity mass
 \begin{equation}
-A(E)=1-\prod_{i\in E}\left(1-\alpha_i\right).
+A_p(E)=1-\prod_{i\in E}\left(1-\alpha_i(p)\right).
 \end{equation}
-If the relevant color interval has width $C_{\mathrm{color}}$, adding or removing the edited set changes a pixel by at most $C_{\mathrm{color}}A(E)$. Comparing before and after edited sets $E_0,E_1$ gives
+
+\paragraph{Proposition 1 (Gaussian finite-edit display bound).}
+Let $U$ denote the unchanged Gaussian state and $E_0,E_1$ the complete before/after edited sets at a protected pixel $p$. Under the assumptions below,
 \begin{equation}
-\left\lVert R(U\cup E_0)-R(U\cup E_1)\right\rVert_\infty
-\le C_{\mathrm{color}}\min\left(1,A(E_0)+A(E_1)\right).
+\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty
+\le C_{\mathrm{color}}\min\left(1,A_p(E_0)+A_p(E_1)\right).
 \label{eq:gaussianbound}
 \end{equation}
-The protected-image certificate is the maximum of Eq.~\ref{eq:gaussianbound} over the declared pixel support. The bound is conservative by construction over the modeled edit and rendering assumptions; it is not a learned predictor of expected error.
+
+\paragraph{Assumptions.}
+The bound requires: (i) front-to-back alpha compositing with effective post-clamp/post-cutoff alpha in $[0,1]$; (ii) each protected color channel lies in an interval of width $C_{\mathrm{color}}$, including the bounded spherical-harmonic evaluation used by the renderer; (iii) $E_0,E_1$ contain every Gaussian whose projected opacity, color, insertion/deletion state, or depth relation to unchanged support can change because of the edit; and (iv) renderer behavior not represented by these bounded quantities is treated as unsupported and therefore promoted to an exact dependency or \FULL{} fallback.
+
+\paragraph{Proof sketch.}
+For one edited set, front-to-back compositing changes the final channel value by at most the channel range multiplied by the total opacity mass through which edited support can replace, attenuate, or reveal unchanged radiance. This gives $C_{\mathrm{color}}A_p(E)$. Insertion and deletion are the cases in which one edited set is empty. For a general before/after edit, apply the triangle inequality through the common unchanged state $U$ to obtain $C_{\mathrm{color}}(A_p(E_0)+A_p(E_1))$, then clamp by the maximum possible channel-range change $C_{\mathrm{color}}$. The protected-image certificate is the maximum of Eq.~\ref{eq:gaussianbound} over the declared pixel support. A fuller algebraic derivation is included with the manuscript supplement.
 
 \subsection{Stable temporal history}
 For stable temporal validation, let $E_c$ denote current-frame error, $E_h$ retained-history error, $E_n$ neighborhood or clamping error, and $w\in[0,1]$ the history weight. With $E_r=\max(E_h,E_n)$,
@@ -249,14 +265,10 @@ E_{\mathrm{resolved}}=(1-w)E_c+wE_r.
 If validation, reprojection, or disocclusion may itself change, \system{} promotes the relation to \hard{} invalidation instead of applying Eq.~\ref{eq:temporal}. Thus the temporal path demonstrates the central design rule: use a soft bound only while its preconditions are certifiable.
 
 \subsection{Greedy feasible-cone search and crossover}
-Define normalized violation
-\begin{equation}
-\phi(C)=\max_q \frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
-\end{equation}
-A passing cone has $\phi(C)\le1$. For a candidate expansion $C\rightarrow C'$, the v1 search scores
+The v1 search uses the revision criticality in Eq.~\ref{eq:criticality} directly. For a candidate expansion $C\rightarrow C'$, it scores
 \begin{equation}
 \mathrm{utility}(C\rightarrow C')=
-\frac{\phi(C)-\phi(C')}{W(C')-W(C)}.
+\frac{\chi(C)-\chi(C')}{W(C')-W(C)}.
 \label{eq:utility}
 \end{equation}
 Every candidate is first closed over exact predecessors and then re-certified. Search stops when a cone is both certificate-feasible and cheaper than \FULL{}, or when no useful local candidate remains. The algorithm claims a certified feasible cone, not the global minimum-work cone.
@@ -283,6 +295,9 @@ The evaluation asks seven questions: (RQ1) does the emitted certificate survive 
 The final public v2.1 campaign freezes 60 revisions across Tanks \& Temples Train/Truck and Deep Blending Dr Johnson/Playroom inputs distributed in the pinned GraphDECO bundle. The source archive size and SHA-256 are fixed in the repository manifest. The work calibration is frozen before the final campaign. A prior execution in which a requested translation fell below the production effective-edit threshold is preserved as protocol history rather than retuned or removed; v2.1 enforces the production precondition and records requested and applied edit deltas.
 
 For every selected repair, the campaign records the source edit, selected cone, local/full decision, certificate, independent full-reference residual, native work, calibrated work, and provenance. Fallback cases are retained as results rather than excluded from summary statistics.
+
+\paragraph{Runtime scope.}
+The current campaign does not contain paired end-to-end \LOCAL{}-versus-\FULL{} wall-clock trials under identical execution conditions. Accordingly, no speedup claim is made anywhere in the paper. The public headline is a frozen heterogeneous millisecond-calibrated work ratio, while the baseline suite below reports its own native work-ratio metric. These quantities are intentionally labeled separately.
 
 \subsection{Baselines and ablations}
 The implemented method-level suite contains \FULL{}, exact-only repair, fixed radius policies, a changed-fraction policy, a held-out empirical scheduler, and \method{}. The empirical signal is permitted to order work but is not certificate-eligible. Structural and analytic ablations remove or replace individual components, while a separately labeled deterministic mechanism-isolation suite constructs stress cases for exact closure, analytic Gaussian influence, temporal influence, quantity-of-interest specialization, hard/soft separation, graph-structured propagation, and fallback behavior.
