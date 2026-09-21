@@ -142,6 +142,7 @@ def bundle(
     manifest = output_dir / "replay-manifest.json"
     row = output_dir / "revision-row.json"
     spatial = output_dir / "spatial-evidence.csv"
+    visuals = output_dir / "visuals"
     rows_jsonl = output_dir / "revision-rows.jsonl"
     evaluation = output_dir / "evaluation.json"
 
@@ -165,6 +166,7 @@ def bundle(
             native_planner_certificate, manifest_payload
         )
     manifest_payload["spatial_output"] = str(spatial)
+    manifest_payload["visual_output_dir"] = str(visuals)
     manifest.write_text(
         json.dumps(manifest_payload, indent=2, sort_keys=True) + "\n"
     )
@@ -205,6 +207,17 @@ def bundle(
         "evaluation": evaluation,
         "spatial": spatial,
     }
+    for visual_name in (
+        "before.ppm",
+        "full-after.ppm",
+        "selected-repair.ppm",
+        "certified-support.ppm",
+        "edit-effect.ppm",
+        "post-repair-residual.ppm",
+    ):
+        visual_path = visuals / visual_name
+        if visual_path.is_file():
+            artifacts[f"visual:{visual_name}"] = visual_path
     if work_cost_model is not None:
         artifacts["workCostModel"] = work_cost_model
     if native_planner_certificate is not None:
