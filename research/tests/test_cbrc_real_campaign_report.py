@@ -34,6 +34,9 @@ class CBRCCampaignReportTests(unittest.TestCase):
                 "candidateDiagnostics": {
                     "candidateActualRgbError": 0.0,
                     "candidateRgbBound": 2e-6,
+                    "sourceEditActualRgbError": 0.0,
+                    "sourceEditRgbBound": 1.0,
+                    "effectivity": 1e15,
                 },
                 "work_ledger": {
                     "domains": {
@@ -53,9 +56,10 @@ class CBRCCampaignReportTests(unittest.TestCase):
 
             result = mod.summarize(root)
             self.assertIsNone(result["medianSelectedEffectivity"])
-            self.assertIsNone(result["medianCandidateEffectivity"])
+            self.assertIsNone(result["medianSourceEditEffectivity"])
             self.assertEqual(result["zeroMeasuredSelectedErrorCount"], 1)
-            self.assertEqual(result["zeroMeasuredCandidateErrorCount"], 1)
+            self.assertEqual(result["zeroMeasuredSourceEditErrorCount"], 1)
+            self.assertEqual(result["sourceEffectivityMismatchCount"], 0)
             self.assertEqual(result["maximumMeasuredSelectedError"], 0.0)
 
 
