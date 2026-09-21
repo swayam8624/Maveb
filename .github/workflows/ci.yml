@@ -136,18 +136,7 @@ jobs:
           # Platform-gated sources may appear in the PR diff without a compile command.
           compiled_sources=()
           for file in "${sources[@]}"; do
-            if python3 - "$file" build/ci/compile_commands.json <<'PY'
-import json
-import os
-import sys
-
-source = os.path.realpath(sys.argv[1])
-with open(sys.argv[2], encoding="utf-8") as handle:
-    commands = json.load(handle)
-
-raise SystemExit(0 if any(os.path.realpath(entry["file"]) == source for entry in commands) else 1)
-PY
-            then
+            if python3 -c 'import json, os, sys; source=os.path.realpath(sys.argv[1]); commands=json.load(open(sys.argv[2], encoding="utf-8")); raise SystemExit(0 if any(os.path.realpath(entry["file"]) == source for entry in commands) else 1)' "$file" build/ci/compile_commands.json; then
               compiled_sources+=("$file")
             fi
           done
