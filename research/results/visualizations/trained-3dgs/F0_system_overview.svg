@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900">
+<rect width="1800" height="900" rx="30" fill="#F7F8FA"/>
+<style>
+.t{font:700 38px sans-serif;fill:#10131A}.h{font:700 24px sans-serif;fill:#10131A}
+.b{font:18px sans-serif;fill:#475467}.s{font:700 18px sans-serif;fill:white}
+.box{fill:white;stroke:#D8DEE9;stroke-width:3}.arrow{stroke:#667085;stroke-width:5;fill:none;marker-end:url(#m)}
+</style>
+<defs><marker id="m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#667085"/></marker></defs>
+<text x="70" y="75" class="t">MAVEB / CBRC — certified revision pipeline</text>
+<rect x="70" y="160" width="260" height="150" rx="22" class="box"/><text x="100" y="205" class="h">Persistent world</text><text x="100" y="245" class="b">real RGB / trained 3DGS</text><text x="100" y="275" class="b">stable entity ownership</text>
+<path d="M330 235H430" class="arrow"/>
+<rect x="430" y="160" width="250" height="150" rx="22" class="box"/><text x="460" y="205" class="h">Revision</text><text x="460" y="245" class="b">local authored edit</text><text x="460" y="275" class="b">dirty support</text>
+<path d="M680 235H780" class="arrow"/>
+<rect x="780" y="140" width="330" height="190" rx="22" class="box"/><text x="815" y="190" class="h">CBRC certificate</text><text x="815" y="230" class="b">exact HARD closure</text><text x="815" y="260" class="b">analytic finite-change bounds</text><text x="815" y="290" class="b">QoI-specific proof</text>
+<path d="M1110 235H1210" class="arrow"/>
+<rect x="1210" y="100" width="500" height="270" rx="22" class="box"/><text x="1245" y="150" class="h">Decision</text>
+<rect x="1260" y="200" width="185" height="70" rx="18" fill="#28C76F"/><text x="1352" y="243" text-anchor="middle" class="s">LOCAL REPAIR</text>
+<rect x="1480" y="200" width="185" height="70" rx="18" fill="#F04438"/><text x="1572" y="243" text-anchor="middle" class="s">FULL FALLBACK</text>
+<text x="1260" y="315" class="b">safe → touch only certified support</text><text x="1480" y="345" class="b">unsafe/unstable → refuse locality</text>
+<path d="M945 330V475" class="arrow"/>
+<rect x="600" y="475" width="690" height="270" rx="28" class="box"/><text x="645" y="530" class="h">Independent evidence</text>
+<text x="645" y="575" class="b">FULL-after reference replay · actual residual · certified bound · ε</text>
+<text x="645" y="615" class="b">work ledger · hardware calibration · baseline/ablation suite · parity</text>
+<rect x="645" y="660" width="600" height="46" rx="16" fill="#18C6D9"/><text x="945" y="691" text-anchor="middle" class="s">actual ≤ bound ≤ ε — or the case is rejected</text>
+</svg>
