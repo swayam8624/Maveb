@@ -442,10 +442,9 @@ int main(int argc, char** argv) try {
         maximumBound = std::max(maximumBound, bound);
         maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
         affectedPixels += static_cast<std::size_t>(repairedPixel);
-        certificateViolations += static_cast<std::size_t>(
-            actual > bound + kOracleNumericalSlack);
-        const bool outsideTolerance =
-            actual > options->epsilon + kOracleNumericalSlack;
+        const bool certificateViolation = actual > bound + kOracleNumericalSlack;
+        certificateViolations += static_cast<std::size_t>(certificateViolation);
+        const bool outsideTolerance = actual > options->epsilon + kOracleNumericalSlack;
         toleranceViolations += static_cast<std::size_t>(outsideTolerance);
     }
 
@@ -502,8 +501,7 @@ int main(int argc, char** argv) try {
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
     const double repairResidualBound = certified ? kOracleNumericalSlack : maximumRepairResidual;
-    const bool repairResidualCertified =
-        maximumRepairResidual <= repairResidualBound + 1.0e-12;
+    const bool repairResidualCertified = maximumRepairResidual <= repairResidualBound + 1.0e-12;
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
 
