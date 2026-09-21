@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh
+          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh capture_to_real_campaign.sh
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
           else
