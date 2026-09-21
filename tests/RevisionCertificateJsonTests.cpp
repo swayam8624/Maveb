@@ -1,6 +1,7 @@
 #include <aether/revision/RevisionCertificateJson.hpp>
 
 #include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -92,8 +93,17 @@ void testMetadataIsMandatory() {
 } // namespace
 
 int main() noexcept {
-    testDeterministicNativeCertificateJson();
-    testMetadataIsMandatory();
+    try {
+        testDeterministicNativeCertificateJson();
+        testMetadataIsMandatory();
+    } catch (const std::exception& error) {
+        std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';
+        return EXIT_FAILURE;
+    } catch (...) {
+        std::cerr << "FAIL: unexpected non-standard exception\n";
+        return EXIT_FAILURE;
+    }
+
     if (failures == 0)
         std::cout << "Revision certificate JSON tests passed\n";
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
