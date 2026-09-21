@@ -1,0 +1,61 @@
+name: Public Trained 3DGS CBRC Campaign
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - run/trained-3dgs-campaign
+    paths:
+      - .github/trained-3dgs-trigger
+
+permissions:
+  contents: read
+
+jobs:
+  trained-3dgs:
+    runs-on: macos-15
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare Python environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv .venv-maveb
+          .venv-maveb/bin/python -m pip install --upgrade pip
+          .venv-maveb/bin/python -m pip install numpy pillow scipy "huggingface_hub>=0.34,<2"
+
+      - name: Run public trained-3DGS CBRC validation
+        shell: bash
+        env:
+          MAVEB_PYTHON: ${{ github.workspace }}/.venv-maveb/bin/python
+          MAVEB_TRAINED_3DGS_RESULTS_DIR: ${{ github.workspace }}/build/trained-3dgs-campaign
+        run: |
+          set -euo pipefail
+          chmod +x run_trained_3dgs_campaign.sh
+          ./run_trained_3dgs_campaign.sh
+
+      - name: Upload compact trained-3DGS evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maveb-trained-3dgs-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            build/trained-3dgs-campaign/source/TRAINED_3DGS_SOURCE.json
+            build/trained-3dgs-campaign/world/trained-seed.json
+            build/trained-3dgs-campaign/frozen-inputs/campaign.json
+            build/trained-3dgs-campaign/frozen-inputs/campaign-freeze.json
+            build/trained-3dgs-campaign/campaign/campaign-rows.jsonl
+            build/trained-3dgs-campaign/campaign/campaign-gates.json
+            build/trained-3dgs-campaign/campaign/campaign-evaluation.json
+            build/trained-3dgs-campaign/campaign/baseline-summary.json
+            build/trained-3dgs-campaign/campaign/REAL_CAMPAIGN_ANSWER.*
+            build/trained-3dgs-campaign/campaign/paper-artifacts/**
+            build/trained-3dgs-campaign/siggraph-visuals/**
+            build/trained-3dgs-campaign/TRAINED_3DGS_STATUS.json
