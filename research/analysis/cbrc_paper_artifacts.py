@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
+EFFECTIVITY_ZERO_TOL = 1e-12
+
+
 def load_rows(path: Path) -> list[dict[str, Any]]:
     rows = [
         json.loads(line)
@@ -363,14 +366,22 @@ def f5(rows: list[dict[str, Any]], output: Path) -> None:
         for name, qoi in row["qois"].items():
             actual = float(qoi["measured_full_reference_error"])
             bound = float(qoi["certified_bound"])
-            effectivity = bound / max(actual, 1e-15)
-            values.append(effectivity)
+            effectivity = None if actual <= EFFECTIVITY_ZERO_TOL else bound / actual
+            if effectivity is not None:
+                values.append(effectivity)
             table.append(
                 {
                     "scene": row.get("scene_id", ""),
                     "revision": row.get("revision_id", ""),
                     "qoi": name,
+                    "measured_error": actual,
+                    "certified_bound": bound,
                     "effectivity": effectivity,
+                    "effectivity_status": (
+                        "undefined_zero_measured_error"
+                        if effectivity is None
+                        else "defined"
+                    ),
                 }
             )
     write_csv(output / "F5_effectivity.csv", list(table[0]), table)
@@ -520,6 +531,7 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     work_ratios = []
     fallbacks = 0
     violations = 0
+    zero_measured_errors = 0
     for row in rows:
         fallbacks += int(bool(row.get("fallback_full", False)))
         full = float(row.get("full_work", 0.0))
@@ -529,15 +541,20 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         for qoi in row["qois"].values():
             actual = float(qoi["measured_full_reference_error"])
             bound = float(qoi["certified_bound"])
-            effects.append(bound / max(actual, 1e-15))
+            if actual <= EFFECTIVITY_ZERO_TOL:
+                zero_measured_errors += 1
+            else:
+                effects.append(bound / actual)
             violations += int(actual > bound + 1e-12)
     return {
-        "schemaVersion": 1,
-        "experiment": "cbrc-paper-analysis-v1",
+        "schemaVersion": 2,
+        "experiment": "cbrc-paper-analysis-v2",
         "records": len(rows),
         "certificateViolations": violations,
         "fallbackRate": fallbacks / len(rows),
         "medianWorkRatio": statistics.median(work_ratios) if work_ratios else None,
+        "definedEffectivityCount": len(effects),
+        "zeroMeasuredErrorCount": zero_measured_errors,
         "medianEffectivity": statistics.median(effects) if effects else None,
         "p95Effectivity": percentile(effects, 0.95) if effects else None,
         "paperFigureReadiness": {
