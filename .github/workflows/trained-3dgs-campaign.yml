@@ -2,6 +2,9 @@ name: Public Trained 3DGS CBRC Campaign
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/trained-3dgs-trigger
   push:
     branches:
       - run/trained-3dgs-campaign
