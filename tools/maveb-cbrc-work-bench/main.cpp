@@ -87,13 +87,13 @@ volatile std::uint64_t gSinkInteger{};
 
 void row(std::string_view domain, std::string_view unit, std::size_t units, double elapsed,
          std::string_view calibrationId) {
-    std::cout << std::setprecision(17) << "{"
-              << "\"domain\":\"" << domain << "\","
-              << "\"unit\":\"" << unit << "\","
-              << "\"units\":" << units << ','
-              << "\"elapsed_ms\":" << elapsed << ','
-              << "\"baseline_ms\":0.0,"
-              << "\"calibration_id\":\"" << calibrationId << "\"}\n";
+    std::cout << std::setprecision(17);
+    std::cout << "{\"domain\":\"" << domain << "\",";
+    std::cout << "\"unit\":\"" << unit << "\",";
+    std::cout << "\"units\":" << units << ',';
+    std::cout << "\"elapsed_ms\":" << elapsed << ',';
+    std::cout << "\"baseline_ms\":0.0,";
+    std::cout << "\"calibration_id\":\"" << calibrationId << "\"}\n";
 }
 
 } // namespace
@@ -121,8 +121,9 @@ int main(int argc, char** argv) try {
             sum += gaussian.position[0] + gaussian.position[1] + gaussian.position[2];
         const auto inspectEnd = Clock::now();
         gSinkDouble = sum;
-        row("gaussiansInspected", "gaussians", gaussians.size(),
-            elapsedMs(inspectBegin, inspectEnd), options->calibrationId);
+        const double inspectMs = elapsedMs(inspectBegin, inspectEnd);
+        row("gaussiansInspected", "gaussians", gaussians.size(), inspectMs,
+            options->calibrationId);
 
         const float delta = 1.0e-6F * static_cast<float>(repeat + 1);
         const auto updateBegin = Clock::now();
@@ -130,26 +131,29 @@ int main(int argc, char** argv) try {
             gaussian.position[0] += delta;
         const auto updateEnd = Clock::now();
         gSinkDouble = gaussians.back().position[0];
-        row("gaussiansUpdated", "gaussians", gaussians.size(),
-            elapsedMs(updateBegin, updateEnd), options->calibrationId);
+        const double updateMs = elapsedMs(updateBegin, updateEnd);
+        row("gaussiansUpdated", "gaussians", gaussians.size(), updateMs,
+            options->calibrationId);
 
         const auto publishBegin = Clock::now();
         std::memcpy(publicationDestination.data(), publicationSource.data(),
                     publicationSource.size());
         const auto publishEnd = Clock::now();
-        gSinkInteger =
-            static_cast<std::uint64_t>(publicationDestination.front()) +
-            static_cast<std::uint64_t>(publicationDestination.back());
-        row("gpuPublicationBytes", "bytes", publicationSource.size(),
-            elapsedMs(publishBegin, publishEnd), options->calibrationId);
+        const auto firstByte = static_cast<std::uint64_t>(publicationDestination.front());
+        const auto lastByte = static_cast<std::uint64_t>(publicationDestination.back());
+        gSinkInteger = firstByte + lastByte;
+        const double publicationMs = elapsedMs(publishBegin, publishEnd);
+        row("gpuPublicationBytes", "bytes", publicationSource.size(), publicationMs,
+            options->calibrationId);
 
         const auto temporalBegin = Clock::now();
         std::fill(temporalMask.begin(), temporalMask.end(),
                   static_cast<std::uint8_t>((repeat & 1U) != 0U));
         const auto temporalEnd = Clock::now();
         gSinkInteger = temporalMask.front() + temporalMask.back();
-        row("temporalPixelsInvalidated", "pixels", temporalMask.size(),
-            elapsedMs(temporalBegin, temporalEnd), options->calibrationId);
+        const double temporalMs = elapsedMs(temporalBegin, temporalEnd);
+        row("temporalPixelsInvalidated", "pixels", temporalMask.size(), temporalMs,
+            options->calibrationId);
     }
 
     return EXIT_SUCCESS;
