@@ -229,12 +229,15 @@ A candidate cone is certificate-feasible only if $B_q(C)\le\varepsilon_q$ for al
 \subsection{Revision criticality}
 We define the revision criticality of a candidate cone as the worst normalized certified residual
 \begin{equation}
-\chi(C)=\max_q r_q(C),\qquad
-r_q(C)=\begin{cases}
+\begin{aligned}
+\chi(C)&=\max_q r_q(C),\\
+r_q(C)&=
+\begin{cases}
  B_q(C)/\varepsilon_q, & \varepsilon_q>0,\\
- 0, & \varepsilon_q=0,\ B_q(C)=0,\\
- +\infty, & \varepsilon_q=0,\ B_q(C)>0.
+ 0, & \varepsilon_q=B_q(C)=0,\\
+ +\infty, & \varepsilon_q=0<B_q(C).
 \end{cases}
+\end{aligned}
 \label{eq:criticality}
 \end{equation}
 The threshold $\chi(C)=1$ is the certificate boundary: $\chi(C)\le1$ is certificate-feasible, whereas $\chi(C)>1$ is supercritical for at least one protected output and requires cone expansion or \FULL{}. The term \emph{criticality-bounded} refers to this explicit normalized output-error boundary; it is not intended as a new physical critical-phenomena model.
@@ -253,8 +256,12 @@ A_p(E)=1-\prod_{i\in E}\left(1-\alpha_i(p)\right).
 \paragraph{Proposition 1 (Gaussian finite-edit display bound).}
 Let $U$ denote the unchanged Gaussian state and $E_0,E_1$ the complete before/after edited sets at a protected pixel $p$. Under the assumptions below,
 \begin{equation}
-\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty
-\le C_{\mathrm{color}}\min\left(1,A_p(E_0)+A_p(E_1)\right).
+\begin{aligned}
+\Delta_p
+&=\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty,\\
+\Delta_p
+&\le C_{\mathrm{color}}\min\!\left(1,A_p(E_0)+A_p(E_1)\right).
+\end{aligned}
 \label{eq:gaussianbound}
 \end{equation}
 
@@ -498,7 +505,7 @@ The framework also makes failure scientifically useful. A certificate violation 
 \section{Reproducibility and Artifact Scope}
 The canonical evidence freeze records workflow run IDs, artifact IDs, Git SHAs, archive hashes, campaign-row hashes, calibration hashes, and the pinned trained-PLY hash. The public source archive is pinned by byte size and SHA-256; the trained PLY is fetched by explicit repository, revision, path, byte size, and SHA-256 and is not redistributed by \system{}. The project repository includes the dense reference implementation, native planner and oracle, public and trained campaign drivers, baseline and ablation suites, sparse-discovery sweep, deterministic paper-artifact generators, and regression tests.
 
-Scene-bearing figures retain the applicable upstream dataset or model terms. Original software is licensed under Apache-2.0, original research communication is scoped under CC BY 4.0, and third-party rights are recorded separately. For double-blind review, the identifiable public repository and author metadata should be replaced by an anonymized frozen supplement consistent with the target venue's policy.
+Scene figures retain applicable upstream terms. Original software is licensed under Apache-2.0; original research communication is scoped under CC BY 4.0; third-party rights are recorded separately. For double-blind review, the public repository and author metadata should be replaced by an anonymized frozen supplement consistent with venue policy.
 
 \section{Conclusion}
 We presented Criticality-Bounded Revision Cones, where criticality is the worst normalized certificate-to-tolerance ratio for the protected outputs, as a fail-closed method for selective recomputation in persistent captured worlds. \method{} separates exact dependencies from conservative finite-change influence, binds the unrepaired exterior to explicit output tolerances, compares regional work against a full baseline, and independently replays every selected result against a full-after oracle. The frozen public and trained-representation campaigns show that local repair and full fallback can coexist under one auditable contract, while also exposing a near-global discovery bottleneck and the absence of a current wall-clock speedup claim. The central principle is simple: a persistent world should repair locally only when it can justify what it leaves untouched; otherwise it should rebuild.

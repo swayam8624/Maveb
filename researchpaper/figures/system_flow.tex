@@ -11,13 +11,13 @@
 \node[box, fill=mavebblue] (revision) at (0,0)
   {\tbhead{Physical revision}\\Requested world edit and protected quantity of interest};
 \node[box, fill=mavebgreen] (graph) at (5.7,0)
-  {\tbhead{Typed revision graph}\\State blocks plus \hard{}, \analytic{}, and \empirical{} relations};
+  {\tbhead{Typed revision graph}\\State blocks plus HARD, ANALYTIC, and EMPIRICAL relations};
 \node[box, fill=mavebamber] (cert) at (11.4,0)
   {\tbhead{Cone proposal and certification}\\Exact predecessor closure, exterior bound, and work estimate};
 \node[outcome, fill=mavebgreen] (local) at (5.7,-3.7)
   {\tbhead{Certified local repair}\\Execute regional recomputation};
 \node[outcome, fill=mavebrose] (full) at (11.4,-3.7)
-  {\tbhead{Automatic \FULL{} fallback}\\Rebuild when certificate or work test fails};
+  {\tbhead{Automatic FULL fallback}\\Rebuild when certificate or work test fails};
 \node[box, fill=mavebblue] (oracle) at (8.55,-6.2)
   {\tbhead{Independent full-after oracle}\\Replay selected result against full reference and emit evidence};
 \draw[arr] (revision.east) -- (graph.west);
@@ -25,7 +25,7 @@
 \draw[arr] (cert.south) -- (11.4,-1.5) -- (5.7,-1.5) -- (local.north);
 \draw[arr] (11.4,-1.5) -- (full.north);
 \node[branchlabel] at (5.7,-2.3)
-  {Certificate-feasible\\and cheaper than \FULL{}};
+  {Certificate-feasible\\and cheaper than FULL};
 \node[branchlabel] at (11.4,-2.3)
   {Unsupported coupling, failed bound,\\or unfavorable work crossover};
 \coordinate (merge) at (8.55,-4.85);
