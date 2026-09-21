@@ -20,8 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-GAUSSIAN_MAGIC = b"AETHGS\\x00\\x00"
-OWNERSHIP_MAGIC = b"MVGOWNR\\x00"
+GAUSSIAN_MAGIC = b"AETHGS\x00\x00"
+OWNERSHIP_MAGIC = b"MVGOWNR\x00"
 GAUSSIAN_HEADER_BYTES = 32
 GAUSSIAN_RECORD_BYTES = 256
 OWNERSHIP_HEADER_BYTES = 32
