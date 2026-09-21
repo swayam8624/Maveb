@@ -122,8 +122,7 @@ int main(int argc, char** argv) try {
         const auto inspectEnd = Clock::now();
         gSinkDouble = sum;
         const double inspectMs = elapsedMs(inspectBegin, inspectEnd);
-        row("gaussiansInspected", "gaussians", gaussians.size(), inspectMs,
-            options->calibrationId);
+        row("gaussiansInspected", "gaussians", gaussians.size(), inspectMs, options->calibrationId);
 
         const float delta = 1.0e-6F * static_cast<float>(repeat + 1);
         const auto updateBegin = Clock::now();
@@ -132,8 +131,7 @@ int main(int argc, char** argv) try {
         const auto updateEnd = Clock::now();
         gSinkDouble = gaussians.back().position[0];
         const double updateMs = elapsedMs(updateBegin, updateEnd);
-        row("gaussiansUpdated", "gaussians", gaussians.size(), updateMs,
-            options->calibrationId);
+        row("gaussiansUpdated", "gaussians", gaussians.size(), updateMs, options->calibrationId);
 
         const auto publishBegin = Clock::now();
         std::memcpy(publicationDestination.data(), publicationSource.data(),
