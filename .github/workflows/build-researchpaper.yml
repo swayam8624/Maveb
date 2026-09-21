@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
-      - closure/maveb-final-layout-20260921
+      - 'manuscript/**'
+    paths:
+      - 'researchpaper/**'
+      - '.github/workflows/build-researchpaper.yml'
+  pull_request:
+    branches:
+      - main
     paths:
       - 'researchpaper/**'
       - '.github/workflows/build-researchpaper.yml'
@@ -25,40 +31,65 @@ jobs:
       - name: Install manuscript toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-publishers texlive-pictures texlive-bibtex-extra pandoc zip
+          sudo apt-get install -y \
+            texlive-latex-base \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-publishers \
+            texlive-pictures \
+            texlive-bibtex-extra \
+            pandoc \
+            poppler-utils \
+            python3-docx \
+            zip
 
-      - name: Bootstrap and verify exact Figure 2 asset
+      - name: Verify exact Figure 2 asset
         run: |
-          if [ ! -f researchpaper/figures/figure2_exact.png ]; then
-            curl -fL --retry 3 --retry-all-errors               'https://chatgpt.com/backend-api/estuary/content?id=file_000000001e0c8207918f560be314e632&ts=497225&p=fs&cid=1&sig=c72779f0a29964d80fb0d637dad0c10711ac51b23bdfe376c21eec292a1966b6&v=0'               -o researchpaper/figures/figure2_exact.png
-          fi
+          test -f researchpaper/figures/figure2_exact.png
           echo "e8cfa3b68930c9052c7fbe4190eb7841efb428ab1bfe587e03dbea9fac0d1f24  researchpaper/figures/figure2_exact.png" | sha256sum -c -
 
-      - name: Compile PDF
-        working-directory: researchpaper
+      - name: Build manuscript, supplement, and Word export
         run: |
-          pdflatex -interaction=nonstopmode -halt-on-error main.tex
-          bibtex main
-          pdflatex -interaction=nonstopmode -halt-on-error main.tex
-          pdflatex -interaction=nonstopmode -halt-on-error main.tex
-          cp main.pdf MAVEB_manuscript.pdf
-
-      - name: Export Word manuscript
-        working-directory: researchpaper
-        run: |
-          pandoc main.tex --bibliography=references.bib --citeproc -s -o MAVEB_manuscript.docx || true
-          test -f MAVEB_manuscript.docx
+          python3 researchpaper/build_manuscript.py --build-dir "$RUNNER_TEMP/maveb-manuscript-build"
 
       - name: Package manuscript
         run: |
           rm -f researchpaper/MAVEB_manuscript_package.zip
-          zip -r researchpaper/MAVEB_manuscript_package.zip researchpaper/main.tex researchpaper/references.bib researchpaper/README.md researchpaper/REVIEW_RESPONSE_2026-09-21.md researchpaper/supplement_gaussian_bound.tex researchpaper/figures researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx
+          zip -r researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/main.tex \
+            researchpaper/references.bib \
+            researchpaper/README.md \
+            researchpaper/MANUSCRIPT_QA.md \
+            researchpaper/REVIEW_RESPONSE_2026-09-21.md \
+            researchpaper/build_manuscript.py \
+            researchpaper/supplement.tex \
+            researchpaper/supplement_gaussian_bound.tex \
+            researchpaper/figures \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf
 
-      - name: Commit generated outputs
+      - name: Upload manuscript artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maveb-manuscript
+          path: |
+            researchpaper/MAVEB_manuscript.pdf
+            researchpaper/MAVEB_manuscript.docx
+            researchpaper/MAVEB_supplement.pdf
+            researchpaper/MAVEB_manuscript_package.zip
+          if-no-files-found: error
+
+      - name: Commit generated outputs to manuscript branch
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/manuscript/')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add researchpaper/figures/figure2_exact.png researchpaper/MAVEB_manuscript.pdf researchpaper/MAVEB_manuscript.docx researchpaper/MAVEB_manuscript_package.zip
+          git add \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            researchpaper/MAVEB_manuscript_package.zip
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Build final MAVEB manuscript artifacts"
           git push origin HEAD:${GITHUB_REF_NAME}

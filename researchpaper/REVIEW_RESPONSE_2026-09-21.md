@@ -32,10 +32,23 @@ the canonical public-v2.1 artifact. The baseline-suite native work ratio
 millisecond-calibrated headline ratio (0.369530...).
 
 
-11. Rebuilt Figure 2 as a publication-native vector version of the approved
-    "How Local Gaussian Revisions Propagate" visual. The new layout preserves
-    the complete state progression and LOCAL/FULL decision branches while
-    enlarging print-critical labels and replacing illustrative micro-metrics
-    with verified frozen public-v2.1 headline evidence.
-12. Enabled the manuscript build workflow on `main` so final source changes
-    regenerate PDF, DOCX, and package artifacts without a branch-only handoff.
+## Final manuscript-only correction
+
+The earlier vector recreation is superseded by the exact author-supplied PNG.
+It is embedded unchanged, with a recorded SHA-256 in `README.md`. The Figure 2
+caption distinguishes illustrative embedded numbers from frozen campaign results
+and limits the image's correctness wording to the stated assumptions.
+
+All tables now use bounded widths with reduced padding. Table 3's long note is
+outside the tabular grid, so it cannot widen the table into the adjacent column.
+Wide baseline and ablation headers wrap; numerical entries remain aligned.
+
+The normalized criticality definition now handles zero tolerance explicitly;
+a numerical denominator floor must not relax the acceptance condition.
+The temporal expression is stated as an upper bound, and the Gaussian assumptions
+explicitly include the background in the shared bounded color interval.
+These are manuscript corrections, not changes to the planner or frozen evidence.
+
+The earlier statement that the manuscript workflow builds on `main` was incorrect
+for the checked-out repository. This pass rebuilds locally and leaves all files
+outside `researchpaper/` unchanged. See `MANUSCRIPT_QA.md` for verification.
