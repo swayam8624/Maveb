@@ -27,9 +27,21 @@ def sha256(path: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--repo-id", default="3DGSQA/recon_variants_v3")
+    parser.add_argument("--repo-id", default="camenduru/gaussian-splatting")
     parser.add_argument("--repo-type", choices=("model", "dataset"), default="model")
-    parser.add_argument("--file")
+    parser.add_argument(
+        "--revision",
+        default="5c74895a5bd96d6593d916407f102cff86d2ef45",
+    )
+    parser.add_argument(
+        "--file",
+        default="train/point_cloud/iteration_30000/point_cloud.ply",
+    )
+    parser.add_argument(
+        "--expected-sha256",
+        default="f03e4979ac27345da1422d960d604b98db9541bdb3586d135d64bb4d9bde8eb3",
+    )
+    parser.add_argument("--expected-bytes", type=int, default=265724108)
     parser.add_argument(
         "--target-bytes",
         type=int,
@@ -41,34 +53,15 @@ def main() -> int:
 
     api = HfApi()
     if args.repo_type == "model":
-        info = api.model_info(args.repo_id, files_metadata=True)
+        info = api.model_info(args.repo_id, revision=args.revision, files_metadata=True)
     else:
-        info = api.dataset_info(args.repo_id, files_metadata=True)
+        info = api.dataset_info(args.repo_id, revision=args.revision, files_metadata=True)
 
-    siblings = list(info.siblings or [])
-    candidates = [
-        sibling
-        for sibling in siblings
-        if str(sibling.rfilename).endswith("point_cloud.ply")
-        and (getattr(sibling, "size", None) or 0) > 0
-    ]
-    if args.file:
-        candidates = [s for s in candidates if s.rfilename == args.file]
-        if not candidates:
-            raise FileNotFoundError(f"{args.file} is not a non-empty point_cloud.ply in {args.repo_id}")
-    elif not candidates:
-        raise RuntimeError(f"{args.repo_id} exposes no non-empty point_cloud.ply files")
-    else:
-        if args.target_bytes <= 0:
-            parser.error("--target-bytes must be positive")
-        candidates.sort(
-            key=lambda s: (
-                abs(int(s.size) - args.target_bytes),
-                str(s.rfilename),
-            )
-        )
+    siblings = {str(s.rfilename): s for s in (info.siblings or [])}
+    if args.file not in siblings:
+        raise FileNotFoundError(f"{args.file} not found in {args.repo_id}@{args.revision}")
+    selected = siblings[args.file]
 
-    selected = candidates[0]
     root = args.output_dir.resolve()
     root.mkdir(parents=True, exist_ok=True)
     downloaded = Path(
@@ -76,12 +69,22 @@ def main() -> int:
             repo_id=args.repo_id,
             filename=selected.rfilename,
             repo_type=args.repo_type,
-            revision=info.sha,
+            revision=args.revision,
             local_dir=root / "download",
         )
     ).resolve()
     target = root / "trained-point-cloud.ply"
     target.write_bytes(downloaded.read_bytes())
+    digest = sha256(target)
+    size = target.stat().st_size
+    if args.expected_bytes > 0 and size != args.expected_bytes:
+        raise ValueError(
+            f"trained 3DGS byte-size mismatch: got {size}, expected {args.expected_bytes}"
+        )
+    if args.expected_sha256 and digest.lower() != args.expected_sha256.lower():
+        raise ValueError(
+            f"trained 3DGS SHA-256 mismatch: got {digest}, expected {args.expected_sha256}"
+        )
 
     card_data = getattr(info, "card_data", None)
     license_value = None
@@ -96,17 +99,15 @@ def main() -> int:
         "artifact": "maveb-public-trained-3dgs-source",
         "repoId": args.repo_id,
         "repoType": args.repo_type,
-        "repoRevision": info.sha,
-        "file": selected.rfilename,
-        "fileBytes": target.stat().st_size,
-        "fileSha256": sha256(target),
+        "repoRevision": args.revision,
+        "resolvedRepoRevision": info.sha,
+        "file": args.file,
+        "fileBytes": size,
+        "fileSha256": digest,
+        "expectedFileBytes": args.expected_bytes,
+        "expectedFileSha256": args.expected_sha256,
         "license": license_value,
-        "selectionRule": (
-            "explicit --file"
-            if args.file
-            else f"point_cloud.ply closest to {args.target_bytes} bytes by Hub metadata"
-        ),
-        "targetBytes": None if args.file else args.target_bytes,
+        "selectionRule": "explicit pinned repo/revision/file with byte-size and SHA-256 verification",
         "redistribution": False,
         "scientificBoundary": (
             "Used as a secondary trained-3DGS interoperability/CBRC validation source. "
