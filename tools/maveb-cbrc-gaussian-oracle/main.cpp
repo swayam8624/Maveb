@@ -410,14 +410,19 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
+    constexpr double kOracleNumericalSlack = 2.0e-6;
     double maximumActual{};
     double maximumBound{};
+    double maximumRepairResidual{};
     std::size_t affectedPixels{};
     std::size_t certificateViolations{};
     std::size_t toleranceViolations{};
     std::vector<double> actualResiduals;
-    if (!options->spatialOutputPath.empty())
+    std::vector<double> repairResiduals;
+    if (!options->spatialOutputPath.empty()) {
         actualResiduals.resize(oldImage->color.size());
+        repairResiduals.resize(oldImage->color.size());
+    }
 
     for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
         double actual{};
@@ -427,13 +432,20 @@ int main(int argc, char** argv) try {
                                           static_cast<double>(newImage->color[pixel][channel])));
         }
         const double bound = certificate->rgbLInfBounds[pixel];
-        if (!actualResiduals.empty())
+        const bool repairedPixel = bound > 0.0;
+        const double repairResidual = repairedPixel ? 0.0 : actual;
+        if (!actualResiduals.empty()) {
             actualResiduals[pixel] = actual;
+            repairResiduals[pixel] = repairResidual;
+        }
         maximumActual = std::max(maximumActual, actual);
         maximumBound = std::max(maximumBound, bound);
-        affectedPixels += static_cast<std::size_t>(bound > 0.0);
-        certificateViolations += static_cast<std::size_t>(actual > bound + 2.0e-6);
-        toleranceViolations += static_cast<std::size_t>(actual > options->epsilon + 2.0e-6);
+        maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
+        affectedPixels += static_cast<std::size_t>(repairedPixel);
+        certificateViolations +=
+            static_cast<std::size_t>(actual > bound + kOracleNumericalSlack);
+        toleranceViolations +=
+            static_cast<std::size_t>(actual > options->epsilon + kOracleNumericalSlack);
     }
 
     if (!options->spatialOutputPath.empty()) {
@@ -453,15 +465,18 @@ int main(int argc, char** argv) try {
             std::cerr << "Unable to open spatial evidence output\n";
             return EXIT_FAILURE;
         }
-        spatial << "x,y,actual_rgb_linf,certified_bound,certificate_violation\n";
+        spatial << "x,y,actual_rgb_linf,certified_bound,post_repair_residual_rgb_linf,"
+                   "certificate_violation\n";
         spatial << std::setprecision(17);
         for (std::size_t pixel = 0; pixel < actualResiduals.size(); ++pixel) {
             const std::size_t x = pixel % camera.width;
             const std::size_t y = pixel / camera.width;
             const double actual = actualResiduals[pixel];
             const double bound = certificate->rgbLInfBounds[pixel];
+            const double repairResidual = repairResiduals[pixel];
             spatial << x << ',' << y << ',' << actual << ',' << bound << ','
-                    << (actual > bound + 2.0e-6 ? 1 : 0) << '\n';
+                    << repairResidual << ','
+                    << (actual > bound + kOracleNumericalSlack ? 1 : 0) << '\n';
         }
         spatial.close();
         if (!spatial) {
@@ -485,6 +500,11 @@ int main(int argc, char** argv) try {
         static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
+    const double repairResidualBound =
+        certified ? kOracleNumericalSlack : maximumRepairResidual;
+    const bool repairWithinTolerance =
+        maximumRepairResidual <= repairResidualBound + 1.0e-12 &&
+        repairResidualBound <= options->epsilon;
 
     std::cout << std::setprecision(17) << "{"
               << "\"schemaVersion\":1,"
@@ -501,11 +521,16 @@ int main(int argc, char** argv) try {
               << "\"colorUpperBound\":" << colorCap << ',' << "\"qois\":{\"rgb_linf\":{"
               << "\"epsilon\":" << options->epsilon << ',' << "\"certified_bound\":" << maximumBound
               << ',' << "\"measured_full_reference_error\":" << maximumActual << "}},"
+              << "\"repair_qois\":{\"rgb_linf\":{\"epsilon\":" << options->epsilon << ','
+              << "\"certified_bound\":" << repairResidualBound << ','
+              << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
               << "\"effectivity\":" << effectivity << ','
               << "\"certificateViolationPixels\":" << certificateViolations << ','
               << "\"toleranceViolationPixels\":" << toleranceViolations << ','
               << "\"certified\":" << (certified ? "true" : "false") << ','
-              << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << "}\n";
+              << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << ','
+              << "\"repairWithinTolerance\":"
+              << (repairWithinTolerance ? "true" : "false") << "}\n";
 
     if (!certified)
         return 4;
