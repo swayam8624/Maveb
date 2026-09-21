@@ -21,7 +21,7 @@ using Clock = std::chrono::steady_clock;
 struct Options final {
     std::size_t gaussians{1'000'000};
     std::size_t publicationBytes{256'000'000};
-    std::size_t pixels{1280 * 720};
+    std::size_t pixels{std::size_t{1280} * std::size_t{720}};
     std::size_t repeats{9};
     std::string calibrationId{"native-host"};
 };
