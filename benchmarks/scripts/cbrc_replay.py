@@ -51,8 +51,19 @@ def resolve_scalar_work(manifest: dict[str, Any]) -> tuple[float, float, str, st
             raise ValueError("frozen work-cost model produced non-positive full work")
         return candidate, full, model.version, model.cost_unit
 
-    # Compatibility path for early fixtures only. Final evaluation manifests
-    # should use work_cost_model + native work_ledger.
+    native = manifest.get("native_scalar_work")
+    if isinstance(native, dict):
+        candidate = float(native["candidate"])
+        full = float(native["full"])
+        version = str(native.get("model_version", "")).strip()
+        unit = str(native.get("unit", "")).strip()
+        if candidate < 0.0 or full <= 0.0 or candidate > full:
+            raise ValueError("native scalar work must satisfy 0 <= candidate <= full")
+        if not version or not unit:
+            raise ValueError("native scalar work requires model_version and unit")
+        return candidate, full, version, unit
+
+    # Compatibility path for early fixtures only.
     candidate = require_number(manifest, "candidate_work")
     full = require_number(manifest, "full_work", positive=True)
     return candidate, full, "explicit-manifest-fixture", "arbitrary"
