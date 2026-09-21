@@ -149,7 +149,7 @@ resolve_full_xcode() {
     fi
   done
 
-  discovered="$(find /Applications -maxdepth 2 -type d -path '*/Xcode*.app/Contents/Developer' -print -quit 2>/dev/null || true)"
+  discovered="$(find /Applications -maxdepth 3 -type d -path '*/Xcode*.app/Contents/Developer' -print -quit 2>/dev/null || true)"
   if [[ -n "$discovered" && -x "$discovered/usr/bin/xcodebuild" ]]; then
     printf '%s\n' "$discovered"
     return 0
