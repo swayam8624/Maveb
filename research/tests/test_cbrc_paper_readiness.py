@@ -76,6 +76,7 @@ class PaperReadinessTests(unittest.TestCase):
                     {
                         "heldoutCases": 40,
                         "heldoutUnsafeFalseLocalRate": 0.1,
+                        "safetyGroundTruth": mod.EMPIRICAL_SAFETY_GROUND_TRUTH,
                     }
                 )
             )
