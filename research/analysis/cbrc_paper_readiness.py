@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Any
 
 
+EMPIRICAL_SAFETY_GROUND_TRUTH = (
+    "independent candidate full-reference residual <= epsilon"
+)
+
+
 def load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
 
@@ -91,6 +96,10 @@ def audit(
         ) < 1.0,
         "heldoutEmpiricalProtocolPresent": int(empirical_data.get("heldoutCases", 0)) > 0,
         "heldoutEmpiricalReportsSafety": "heldoutUnsafeFalseLocalRate" in empirical_data,
+        "heldoutEmpiricalUsesIndependentResidual": (
+            empirical_data.get("safetyGroundTruth")
+            == EMPIRICAL_SAFETY_GROUND_TRUTH
+        ),
         "measuredPhaseTimingsPresent": len(timing_rows) == len(campaign_rows),
         "siggraphVisualPackagePresent": bool(visual_assets)
         and all(path.is_file() for path in visual_files),
