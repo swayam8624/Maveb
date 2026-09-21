@@ -1,5 +1,7 @@
 # MAVEB S1 Problem Lock — MAVEB-CLOSURE
 
+> Historical status note, 2026-09-21: this file is the pre-evidence problem/method lock and intentionally preserves its original PAPER_READY=false state. The current v1 implementation and frozen evidence package are complete. For current manuscript status use research/design/CBRC_IMPLEMENTATION_STATUS.md, research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json, research/results/CBRC_CLAIM_LEDGER_2026-09-21.md, and research/manuscript/MAVEB_SIGGRAPH_KT.md.
+
 **Locked:** 2026-09-20
 **Status:** problem/method identity locked; experimental claim not yet proven
 **Paper-ready:** false
