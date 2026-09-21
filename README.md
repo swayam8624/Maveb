@@ -688,12 +688,16 @@ python3 -m venv .venv-maveb
 
 ### Requirements
 
+- Git;
 - Apple-silicon Mac;
 - macOS 15 or newer;
 - Xcode 26 or newer;
 - CMake 3.28 or newer;
 - Ninja;
-- separately downloadable Xcode Metal Toolchain for Metal compilation.
+- Python 3 with `venv` support;
+- separately downloadable Xcode Metal Toolchain for full Metal compilation.
+
+`bootstrap_and_run.sh --install-deps` can install missing Homebrew `cmake`, `ninja`, and `python` packages and request the Metal Toolchain. It deliberately does not install Homebrew or Xcode itself.
 
 Install the Metal compiler if needed:
 
@@ -703,13 +707,21 @@ xcodebuild -downloadComponent metalToolchain
 
 ### One-command verification
 
-Run the repository-wide implementation gates with:
+For a first run after cloning, use:
+
+```bash
+./bootstrap_and_run.sh
+```
+
+The bootstrap validates the supported Mac/Xcode/CMake environment, initializes submodules, creates an isolated Python virtual environment, installs the Python benchmark dependencies, and then invokes the complete verifier.
+
+For later runs inside an already prepared clone:
 
 ```bash
 ./run_all.sh
 ```
 
-This performs the CI build/tests, sanitizer build/tests, Python benchmark/research tests, the randomized CBRC theorem falsification chain, and a synthetic phase-behavior pilot. If a frozen real campaign manifest and work-cost calibration are available, pass them through the environment variables documented by `./run_all.sh --help` to include the real campaign in the same command.
+`run_all.sh` performs the warnings-as-errors CI build/tests, sanitizer build/tests, AetherStudio compile, Python benchmark/research tests, 100,000 randomized certificate falsification trials, the synthetic CBRC pilot, native-tool smoke validation, and—when supplied—the frozen real campaign. Use `./run_all.sh --help` for environment variables and launch options.
 
 ### Development build
 
