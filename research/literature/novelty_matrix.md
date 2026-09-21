@@ -1,6 +1,6 @@
 # MAVEB Novelty Matrix — Living Document
 
-**Refresh date:** 2026-09-20  
+**Refresh date:** 2026-09-20
 **Status:** preliminary collision map, not a novelty claim.
 
 The rule is strict: an idea remains **unverified** until literature and experiments support a concrete distinction.
