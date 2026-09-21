@@ -40,6 +40,13 @@ def run_checked(command: list[str], *, allowed: Iterable[int] = (0,)) -> subproc
     return process
 
 
+def write_single_jsonl_row(source_json: Path, destination_jsonl: Path) -> None:
+    payload = json.loads(source_json.read_text())
+    destination_jsonl.write_text(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n"
+    )
+
+
 def script_path(name: str) -> Path:
     return Path(__file__).resolve().with_name(name)
 
@@ -174,10 +181,7 @@ def bundle(
         ]
     )
 
-    row_payload = json.loads(row.read_text())
-    rows_jsonl.write_text(
-        json.dumps(row_payload, sort_keys=True, separators=(",", ":")) + "\n"
-    )
+    write_single_jsonl_row(row, rows_jsonl)
 
     run_checked(
         [
