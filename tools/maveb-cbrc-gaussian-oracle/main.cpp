@@ -316,8 +316,8 @@ template <std::size_t N>
     return static_cast<unsigned char>(std::lround(clamped * 255.0));
 }
 
-[[nodiscard]] aether::Result<void>
-writePpm(const std::filesystem::path& path, ImageExtent extent, const std::vector<Pixel>& colors) {
+[[nodiscard]] aether::Result<void> writePpm(const std::filesystem::path& path, ImageExtent extent,
+                                             const std::vector<Pixel>& colors) {
     if (colors.size() != extent.width * extent.height)
         return aether::fail(aether::ErrorCode::invalidArgument,
                             "PPM color cardinality does not match image dimensions");
