@@ -324,6 +324,7 @@ def main() -> int:
         parity_results.append(parity)
 
         row = json.loads((case_dir / "revision-row.json").read_text())
+        row["case_id"] = case_id
         row["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
         row["edit_class"] = str(case.get("edit_class", row.get("edit_class", "gaussian")))
         (case_dir / "revision-row.json").write_text(
