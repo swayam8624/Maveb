@@ -7,6 +7,7 @@
 #include <array>
 #include <charconv>
 #include <cmath>
+#include <compare>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -348,8 +349,8 @@ int main(int argc, char** argv) try {
         entity.name = "capture-cell-" + std::to_string(entityId);
         entity.semanticLabel = "spatial-capture-cell";
         entity.transform.translation = centroid;
-        entity.worldBounds.minimum = cluster.minimum - simd_make_float3(support);
-        entity.worldBounds.maximum = cluster.maximum + simd_make_float3(support);
+        entity.worldBounds.minimum = cluster.minimum - simd_float3{support, support, support};
+        entity.worldBounds.maximum = cluster.maximum + simd_float3{support, support, support};
         entity.representation = aether::world::RepresentationKind::gaussian;
         entity.geometrySignature = signature(key, cluster.gaussianIndices.size(), 0x47534dULL);
         entity.appearanceSignature = signature(key, cluster.gaussianIndices.size(), 0x434f4cULL);
