@@ -174,8 +174,10 @@ def bundle(
         ]
     )
 
-    row_text = row.read_text().strip()
-    rows_jsonl.write_text(row_text + "\n")
+    row_payload = json.loads(row.read_text())
+    rows_jsonl.write_text(
+        json.dumps(row_payload, sort_keys=True, separators=(",", ":")) + "\n"
+    )
 
     run_checked(
         [
