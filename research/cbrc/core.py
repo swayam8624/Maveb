@@ -380,7 +380,23 @@ def greedy_minimum_work_cone(
     )
 
 
-def effectivity(certified_bound: float, measured_error: float, floor: float = 1e-15) -> float:
+def effectivity(
+    certified_bound: float,
+    measured_error: float,
+    *,
+    zero_tol: float = 1e-12,
+) -> float | None:
+    """Return bound/error when the measured error is meaningfully non-zero.
+
+    Effectivity is undefined when the independent measured error is numerically
+    zero. Returning None avoids arbitrary floor-driven ratios that are safe but
+    scientifically meaningless.
+    """
+
     if certified_bound < 0 or measured_error < 0:
         raise ValueError("bound and error must be non-negative")
-    return float(certified_bound / max(measured_error, floor))
+    if zero_tol < 0:
+        raise ValueError("zero_tol must be non-negative")
+    if measured_error <= zero_tol:
+        return None
+    return float(certified_bound / measured_error)
