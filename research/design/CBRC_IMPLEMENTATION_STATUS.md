@@ -1,7 +1,7 @@
 # CBRC v1 implementation status
 
 Status: **implementation complete; empirical campaign pending**
-Branch: `research/maveb-cbrc-implementation`
+Canonical target: `main` (integration developed on `research/maveb-cbrc-implementation`)
 Method: Criticality-Bounded Revision Cones (CBRC)
 Problem: MAVEB-CLOSURE
 
