@@ -19,8 +19,8 @@ The central research question is simple to state and difficult to make safe:
 A full rebuild is safe but expensive. A local heuristic is cheap but can miss hidden dependencies. MAVEB's proposed contribution is **Criticality-Bounded Revision Cones (CBRC)**: a fail-closed planner that mixes exact structural closure with conservative analytic change bounds and automatically falls back to a full rebuild when locality cannot be certified.
 
 > [!IMPORTANT]
-> **Implementation is complete. Real-scene performance evidence is the remaining research phase.**
-> The repository does not turn fixtures, synthetic matrices, or missing measurements into speedup claims.
+> **CBRC v1 implementation and the frozen real-scene evidence campaign are complete.**
+> The public v2.1 campaign contains 60 frozen revisions across four real RGB/SfM scenes: 44 certified-local repairs, 16 automatic FULL fallbacks, and zero observed certificate violations. A secondary public trained-3DGS campaign also passes the same certificate/oracle contract. Reported work reductions are not relabeled as end-to-end speedup.
 
 ---
 
@@ -103,37 +103,37 @@ CBRC is not based on a fixed spatial radius. It treats a captured world as a **t
 
 > if we repair only a subset of the changed dependency graph, can we upper-bound the error left outside that repair set below the requested tolerance?
 
-The notation below matches the reference implementation in \`research/cbrc/core.py\`.
+The notation below matches the reference implementation in `research/cbrc/core.py`.
 
 ### 1. State graph and repair cone
 
 Let the captured-world dependency graph contain state blocks
 
-$
+$$
 V = \{1,\ldots,n\}.
-$
+$$
 
 A state block can represent an observation region, TSDF block, mesh patch, texture page, material state, Gaussian subset, GPU publication region, temporal-history region, or another derived unit.
 
 For one physical-world revision, CBRC chooses a **repair cone**
 
-$
+$$
 C \subseteq V
-$
+$$
 
 and calls the unrepaired state the **exterior**
 
-$
+$$
 O = V \setminus C.
-$
+$$
 
-HARD dependencies are exact. If node \(v\) is repaired and \(u\) is an exact predecessor required to reproduce \(v\), then \(u\) must also be repaired. Therefore an admissible cone must satisfy exact predecessor closure:
+HARD dependencies are exact. If node $v$ is repaired and $u$ is an exact predecessor required to reproduce $v$, then $u$ must also be repaired. Therefore an admissible cone must satisfy exact predecessor closure:
 
-$
+$$
 v\in C,\; u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
 \quad\Longrightarrow\quad
 u\in C.
-$
+$$
 
 This is why CBRC cannot simply select whichever nodes look cheap: the candidate cone must first be structurally valid.
 
@@ -141,41 +141,41 @@ This is why CBRC cannot simply select whichever nodes look cheap: the candidate 
 
 For ANALYTIC dependencies, define a componentwise non-negative matrix
 
-$
+$$
 K \in \mathbb{R}_{\ge 0}^{n\times n},
-$
+$$
 
 where
 
-$
+$$
 K_{vu}
-$
+$$
 
-is a conservative upper bound on how much normalized change in state block \(u\) can influence state block \(v\).
+is a conservative upper bound on how much normalized change in state block $u$ can influence state block $v$.
 
 Only conservative, implementation-backed bounds are permitted in the certificate matrix. Learned or empirical influence estimates can help schedule experiments, but they do **not** enter the safety proof.
 
 Let
 
-$
+$$
 b\in\mathbb{R}_{\ge0}^{n}
-$
+$$
 
 be the direct source-change envelope produced by the physical revision, and let
 
-$
+$$
 z\in\mathbb{R}_{\ge0}^{n}
-$
+$$
 
 contain known change bounds for repaired state.
 
 For the unrepaired exterior, conservative propagation satisfies
 
-$
+$$
 \delta_O
 \;\le\;
 b_O + K_{OC}z_C + K_{OO}\delta_O.
-$
+$$
 
 The first term is direct change reaching the exterior, the second is influence crossing from repaired state into unrepaired state, and the third is repeated propagation entirely inside the unrepaired exterior.
 
@@ -183,65 +183,65 @@ The first term is direct change reaching the exterior, the second is influence c
 
 If the exterior feedback is stable,
 
-$
+$$
 \rho(K_{OO}) < 1,
-$
+$$
 
-where \(\rho\) is the spectral radius, then
+where $\rho$ is the spectral radius, then
 
-$
+$$
 (I-K_{OO})^{-1}
 =
 I + K_{OO} + K_{OO}^2 + \cdots
-$
+$$
 
 exists and is componentwise non-negative for the certified system.
 
 Define
 
-$
+$$
 G_O = (I-K_{OO})^{-1}.
-$
+$$
 
 Then CBRC obtains a finite conservative exterior envelope
 
-$
+$$
 \boxed{
 \hat\delta_O
 =
 G_O\left(b_O + K_{OC}z_C\right)
 }
-$
+$$
 
 such that the true unrepaired change is bounded componentwise by
 
-$
+$$
 \delta_O \le \hat\delta_O.
-$
+$$
 
 This equation is the mathematical core of the certificate: it accounts not only for one-hop influence, but also for arbitrarily many stable dependency-propagation steps in the unrepaired exterior.
 
-If the exterior cannot be certified—for example \(\rho(K_{OO})\ge1\), the analytic assumptions are unsupported, or the graph contains an unsupported analytic cycle—CBRC **fails closed**. It expands \(C\), converts the unsafe dependency to exact work, or falls back to a full rebuild.
+If the exterior cannot be certified—for example $\rho(K_{OO})\ge1$, the analytic assumptions are unsupported, or the graph contains an unsupported analytic cycle—CBRC **fails closed**. It expands $C$, converts the unsafe dependency to exact work, or falls back to a full rebuild.
 
 ### 4. Quantity-of-interest error bound
 
 A user does not usually care about abstract state error; they care about an output such as protected RGB pixels, geometry, or another declared quantity of interest (QoI).
 
-For QoI \(q\), let
+For QoI $q$, let
 
-$
+$$
 R_q
-$
+$$
 
 map state perturbations to that output and let the allowed tolerance be
 
-$
+$$
 \varepsilon_q \ge 0.
-$
+$$
 
 Because the state envelope is componentwise non-negative, CBRC conservatively evaluates
 
-$
+$$
 \boxed{
 B_q(C)
 =
@@ -249,18 +249,18 @@ B_q(C)
 |R_{q,O}|\hat\delta_O
 \right\|_\infty
 }
-$
+$$
 
 and accepts the cone only when
 
-$
+$$
 B_q(C)\le\varepsilon_q
 \qquad\text{for every declared QoI }q.
-$
+$$
 
 The complete safety contract used by the experiment harness is stronger:
 
-$
+$$
 \boxed{
 E_q^{\mathrm{full-ref}}
 \le
@@ -268,58 +268,58 @@ B_q(C)
 \le
 \varepsilon_q
 }
-$
+$$
 
-where \(E_q^{\mathrm{full-ref}}\) is the error measured against an independently replayed full-reference result. If measured error ever exceeds the certificate, that case is a correctness failure.
+where $E_q^{\mathrm{full-ref}}$ is the error measured against an independently replayed full-reference result. If measured error ever exceeds the certificate, that case is a correctness failure.
 
 ### 5. Gaussian rendering bound
 
-For a projected Gaussian at pixel \(p\), MAVEB uses the renderer-compatible effective alpha model
+For a projected Gaussian at pixel $p$, MAVEB uses the renderer-compatible effective alpha model
 
-$
+$$
 \alpha_i(p)
 =
 o_i\exp\left(-\frac12 q_i(p)\right),
-$
+$$
 
-where \(o_i\) is peak opacity and \(q_i(p)\) is squared Mahalanobis distance in projected Gaussian space. The implementation also mirrors the production compositor's cutoff/clamping rules.
+where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. The implementation also mirrors the production compositor's cutoff/clamping rules.
 
-For an edited set \(E\), define its aggregate opacity mass
+For an edited set $E$, define its aggregate opacity mass
 
-$
+$$
 A(E)
 =
 1-\prod_{i\in E}(1-\alpha_i).
-$
+$$
 
-If every relevant color channel lies in an interval of width \(C_{\mathrm{color}}\), inserting/removing that edited subset changes one rendered channel by at most
+If every relevant color channel lies in an interval of width $C_{\mathrm{color}}$, inserting/removing that edited subset changes one rendered channel by at most
 
-$
+$$
 \left\|R(U\cup E)-R(U)\right\|_\infty
 \le
 C_{\mathrm{color}}A(E).
-$
+$$
 
-For before/after edited states \(E_0,E_1\),
+For before/after edited states $E_0,E_1$,
 
-$
+$$
 \boxed{
 \left\|R(U\cup E_0)-R(U\cup E_1)\right\|_\infty
 \le
 C_{\mathrm{color}}
 \min\left(1,A(E_0)+A(E_1)\right)
 }
-$
+$$
 
-and over a protected camera/pixel set \(P\),
+and over a protected camera/pixel set $P$,
 
-$
+$$
 B_P
 =
 \max_{p\in P}
 C_{\mathrm{color}}
 \min\left(1,A_{0,p}+A_{1,p}\right).
-$
+$$
 
 This is what lets a Gaussian edit become an **explicit display-space error certificate** rather than merely a heuristic "local update."
 
@@ -327,67 +327,67 @@ This is what lets a Gaussian edit become an **explicit display-space error certi
 
 When temporal validation remains stable, let
 
-- \(E_c\) be current-frame error,
-- \(E_h\) be retained-history error,
-- \(E_n\) be neighborhood-extrema/clamping error,
-- \(w\in[0,1]\) be history weight.
+- $E_c$ be current-frame error,
+- $E_h$ be retained-history error,
+- $E_n$ be neighborhood-extrema/clamping error,
+- $w\in[0,1]$ be history weight.
 
 The retained history envelope is
 
-$
+$$
 E_r = \max(E_h,E_n),
-$
+$$
 
 and the resolved temporal output is bounded by
 
-$
+$$
 \boxed{
 E_{\mathrm{resolved}}
 =
 (1-w)E_c + wE_r.
 }
-$
+$$
 
 If the validation/disocclusion decision itself may change, MAVEB does not pretend this soft equation is sufficient: that dependency becomes HARD and the affected history is invalidated.
 
 For stable repeated history reuse, an initial history error also decays geometrically:
 
-$
+$$
 E_t \le E_0 w^t.
-$
+$$
 
 ### 7. Heterogeneous work model
 
 The system deliberately does **not** add incompatible counters such as TSDF blocks + pixels + bytes + Gaussians.
 
-For each work domain \(d\), let
+For each work domain $d$, let
 
-- \(n_d(C)\) be native work performed by cone \(C\),
-- \(\kappa_d\) be a frozen pre-calibrated cost per native unit.
+- $n_d(C)$ be native work performed by cone $C$,
+- $\kappa_d$ be a frozen pre-calibrated cost per native unit.
 
 The planner's scalar comparison is
 
-$
+$$
 \boxed{
 W(C)
 =
 \sum_d \kappa_d\,n_d(C).
 }
-$
+$$
 
 The full-reference baseline is independently measured as
 
-$
+$$
 W_{\mathrm{full}}.
-$
+$$
 
 A certified local cone is useful only when
 
-$
+$$
 W(C)<W_{\mathrm{full}}.
-$
+$$
 
-The coefficients \(\kappa_d\) are frozen **before** the final campaign so the cost model cannot be tuned after seeing the desired result.
+The coefficients $\kappa_d$ are frozen **before** the final campaign so the cost model cannot be tuned after seeing the desired result.
 
 ### 8. Greedy cone expansion
 
@@ -395,27 +395,27 @@ CBRC v1 solves for a certified **feasible** cone, not the globally optimal combi
 
 Define normalized certificate violation
 
-$
+$$
 \phi(C)
 =
 \max_q
 \frac{B_q(C)}{\max(\varepsilon_q,\epsilon_{\mathrm{num}})}.
-$
+$$
 
 A passing cone has
 
-$
+$$
 \phi(C)\le1.
-$
+$$
 
-For a candidate expansion \(C\rightarrow C'\), the greedy planner prefers high reduction in violation per added calibrated work:
+For a candidate expansion $C\rightarrow C'$, the greedy planner prefers high reduction in violation per added calibrated work:
 
-$
+$$
 \text{utility}(C\rightarrow C')
 =
 \frac{\phi(C)-\phi(C')}
 {W(C')-W(C)}.
-$
+$$
 
 Every candidate is first closed over HARD predecessors, re-certified, and compared against the independent full-work baseline. If no smaller safe cone remains worthwhile, CBRC returns FULL.
 
@@ -425,34 +425,34 @@ Two useful diagnostics are retained without confusing them with the proof itself
 
 Exterior susceptibility is
 
-$
+$$
 S_O
 =
 \left\|
 (I-K_{OO})^{-1}
 \right\|_1,
-$
+$$
 
 which indicates how strongly exterior dependencies can amplify perturbations.
 
 Certificate effectivity is
 
-$
+$$
 \eta
 =
 \frac{B_q(C)}
 {\max(E_q^{\mathrm{full-ref}},\epsilon_{\mathrm{num}})}.
-$
+$$
 
-A valid certificate requires \(\eta\ge1\); values close to \(1\) are tight, while very large values are safe but potentially too conservative to be useful.
+A valid certificate requires $\eta\ge1$; values close to $1$ are tight, while very large values are safe but potentially too conservative to be useful.
 
 The implementation corresponding to these equations lives in:
 
-- \`research/cbrc/core.py\` — cone certification, resolvent, QoI bounds and greedy search;
-- \`research/cbrc/layer_bounds.py\` — Gaussian and temporal analytic bounds;
-- \`research/cbrc/work.py\` — frozen heterogeneous work-cost model;
-- \`engine/revision/\` — sparse native C++ planner;
-- \`research/theory/alpha_locality_bound.md\` — Gaussian compositing derivation.
+- `research/cbrc/core.py` — cone certification, resolvent, QoI bounds and greedy search;
+- `research/cbrc/layer_bounds.py` — Gaussian and temporal analytic bounds;
+- `research/cbrc/work.py` — frozen heterogeneous work-cost model;
+- `engine/revision/` — sparse native C++ planner;
+- `research/theory/alpha_locality_bound.md` — Gaussian compositing derivation.
 
 ---
 
@@ -524,10 +524,38 @@ Those HARD edges are not unfinished approximation work. V1 intentionally refuses
 | Real-campaign automation | ✅ complete |
 | F1–F8 paper-artifact generation | ✅ complete |
 | CPU / sanitizer / static-analysis / app CI | ✅ complete |
-| Real captured-scene campaign | ⏳ experiment pending |
-| Final measured speedup/effectivity claims | ⏳ evidence pending |
+| Frozen public real-scene campaign v2.1 | ✅ 60 cases / 4 scenes; 44 local, 16 FULL; 0 certificate violations |
+| Public trained-3DGS validation | ✅ 5 cases; 4 local, 1 FULL; 0 certificate violations |
+| Frozen calibrated heterogeneous-work evidence | ✅ complete |
+| End-to-end local-vs-FULL wall-clock speedup claim | intentionally not claimed without a paired timing experiment |
 
 See [the exact v1 boundary](research/design/CBRC_IMPLEMENTATION_STATUS.md).
+
+---
+
+## Frozen measured evidence
+
+The paper-grade v2.1 public campaign freezes **60 revisions across four public RGB/SfM scenes** before outcomes are inspected.
+
+| Evidence | Measured result |
+|---|---:|
+| Frozen revisions | 60 |
+| Public scenes | 4 |
+| Certified-local selections | 44 |
+| Automatic FULL fallbacks | 16 |
+| Certificate violations | 0 |
+| Native ↔ Python planner parity | 60 / 60 |
+| Median calibrated heterogeneous work / FULL | 0.349 |
+| Median calibrated work reduction factor | 2.87× |
+| Source edits visibly exceeding the protected RGB tolerance | 56 / 60 |
+
+The calibrated public-campaign work model uses frozen isolated microbenchmarks in milliseconds. **2.87× is therefore a calibrated work-reduction factor, not a measured end-to-end speedup.** The campaign also exposes an important systems limitation: median Gaussian inspection remains approximately the full set even though Gaussian updates/publication and temporal invalidation are much smaller.
+
+A secondary campaign uses a pinned **public trained 3DGS PLY** while preserving SH coefficients, opacity, anisotropic scale and rotation. It records **4/5 certified-local cases, 1/5 FULL fallback, and zero certificate violations**. Its median selected native temporal/output work is 0.03495 of FULL (about 28.6× lower native work), again **not wall-clock speedup**.
+
+The separate sparse-discovery sweep preserves exact selection while reducing inspection to a median 1% of a full scan (minimum 0.1% through 1M Gaussians). That result shows a path to removing the current near-full-inspection bottleneck; it is reported separately because the frozen end-to-end public campaign has not yet integrated that optimization into its measured work ledger.
+
+The canonical machine-readable evidence snapshot is maintained under `research/results/`.
 
 ---
 
@@ -573,7 +601,7 @@ Instead of saying "this update probably stays local," the system emits the assum
 A failed certificate is preserved as an artifact and becomes a regression. The project is designed so a negative result is useful rather than something to hide.
 
 > [!NOTE]
-> These are **potential impacts**. The repository does not claim a measured real-scene speedup until the frozen campaign is run on real captured-world revisions.
+> These remain **potential impacts** beyond the evaluated workloads. The frozen campaigns establish certificate behavior and measured/calibrated work on the stated representations; they do not establish a universal or end-to-end wall-clock speedup claim.
 
 ---
 
@@ -605,7 +633,7 @@ AETHER provides the experimental substrate:
 - Synthetic matrices do not establish real-world speedup.
 - A full rebuild can be the correct answer for globally coupled edits.
 - GPU-resident meshing and some broader production reconstruction gates remain separate roadmap items.
-- Final publication claims require the frozen real-scene campaign.
+- Publication claims are restricted to the frozen measured campaigns and their stated provenance; the project does not convert calibrated work into an end-to-end speedup claim.
 
 See [CBRC limitations and threat model](research/design/CBRC_LIMITATIONS.md).
 
@@ -620,34 +648,34 @@ See [CBRC limitations and threat model](research/design/CBRC_LIMITATIONS.md).
 
 On an Apple-silicon Mac with Xcode installed:
 
-\`\`\`bash
+```bash
 git clone https://github.com/swayam8624/Maveb.git
 cd Maveb
 chmod +x bootstrap_and_run.sh run_all.sh
 ./bootstrap_and_run.sh
-\`\`\`
+```
 
 That command validates the machine, prepares Python dependencies, configures and builds the CI and sanitizer targets, compiles AetherStudio, executes CTest and Python tests, runs the randomized CBRC falsification test, and produces the synthetic CBRC pilot artifacts.
 
 To compile, validate, and then launch AetherStudio:
 
-\`\`\`bash
+```bash
 ./bootstrap_and_run.sh --launch-studio
-\`\`\`
+```
 
 To let the bootstrap script install missing Homebrew packages such as CMake and Ninja:
 
-\`\`\`bash
+```bash
 ./bootstrap_and_run.sh --install-deps
-\`\`\`
+```
 
 To execute a frozen **real** CBRC campaign in the same run:
 
-\`\`\`bash
+```bash
 MAVEB_CAMPAIGN=/absolute/path/campaign.json \
 MAVEB_WORK_COST=/absolute/path/frozen-work-cost.json \
 ./bootstrap_and_run.sh
-\`\`\`
+```
 
 The real campaign is never faked when those external scene archives/sidecars are absent; the script reports it as pending and still completes all repository-contained validation.
 
@@ -893,7 +921,7 @@ A frozen heterogeneous millisecond cost model can still be supplied with `MAVEB_
 
 ### Manual equivalent
 
-\`\`\`bash
+```bash
 git clone https://github.com/swayam8624/Maveb.git
 cd Maveb
 
@@ -920,7 +948,7 @@ python3 -m venv .venv-maveb
 .venv-maveb/bin/python research/experiments/cbrc_synthetic_benchmark.py \
   --out build/research-final/cbrc-synthetic-pilot.jsonl \
   --seed 20260920 --repeats 1 --pilot
-\`\`\`
+```
 
 ---
 
@@ -1098,6 +1126,8 @@ Full procedure: [CBRC experiment runbook](research/results/CBRC_EXPERIMENT_RUNBO
 - [CBRC architecture and operator guide](docs/research/CBRC.md)
 - [Implementation status](research/design/CBRC_IMPLEMENTATION_STATUS.md)
 - [Limitations and threat model](research/design/CBRC_LIMITATIONS.md)
+- [Frozen paper claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+- [Cross-representation validation figure](research/results/F12_representation_comparison_2026-09-21.svg)
 - [Result schema](research/results/CBRC_RESULT_SCHEMA.md)
 - [Experiment runbook](research/results/CBRC_EXPERIMENT_RUNBOOK.md)
 - [Machine-readable schemas](research/schema/README.md)
