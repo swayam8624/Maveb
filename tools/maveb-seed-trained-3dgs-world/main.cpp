@@ -32,6 +32,7 @@ struct Options final {
     float cellSize{};
     std::uint64_t timestamp{1'000'000'000ULL};
     bool preserveRawScale{};
+    bool clampLogScale{};
     bool json{};
 };
 
@@ -85,6 +86,7 @@ void usage() {
                  "  --cell-size N         ownership grid cell size (default: diagonal/7)\n"
                  "  --timestamp NS        initial world timestamp\n"
                  "  --preserve-raw-scale  do not canonicalize PLY coordinates/scales\n"
+                 "  --clamp-log-scale     clamp canonicalized log-scales to codec-safe [-30,30]\n"
                  "  --json                machine-readable summary\n";
 }
 
@@ -122,6 +124,8 @@ void usage() {
             options.timestamp = *parsed;
         } else if (arg == "--preserve-raw-scale") {
             options.preserveRawScale = true;
+        } else if (arg == "--clamp-log-scale") {
+            options.clampLogScale = true;
         } else if (arg == "--json") {
             options.json = true;
         } else if (arg == "--help" || arg == "-h") {
@@ -256,6 +260,7 @@ int main(int argc, char** argv) try {
     }
 
     const float logNormalization = std::log(normalization);
+    std::size_t clampedLogScaleComponents{};
     for (auto& primitive : asset->gaussians) {
         simd_float3 position{
             primitive.position[0],
@@ -268,6 +273,14 @@ int main(int argc, char** argv) try {
         if (!options->preserveRawScale) {
             for (float& logScale : primitive.logScale)
                 logScale += logNormalization;
+        }
+        if (options->clampLogScale) {
+            for (float& logScale : primitive.logScale) {
+                const float clamped = std::clamp(logScale, -30.0F, 30.0F);
+                if (clamped != logScale)
+                    ++clampedLogScaleComponents;
+                logScale = clamped;
+            }
         }
     }
 
@@ -391,8 +404,11 @@ int main(int argc, char** argv) try {
     summary << "\"canonicalDiagonal\":" << diagonal << ',';
     summary << "\"uniformScale\":" << normalization << ',';
     summary << "\"scaleSource\":\"" << scaleSource << "\",";
+    summary << "\"logScaleClampEnabled\":" << (options->clampLogScale ? "true" : "false") << ',';
+    summary << "\"logScaleClampedComponents\":" << clampedLogScaleComponents << ',';
+    summary << "\"logScaleClampRange\":[-30,30],";
     summary << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\",";
-    summary << "\"representation\":\"trained-3dgs-preserved-sh-opacity-scale-rotation\"";
+    summary << "\"representation\":\"trained-3dgs-preserved-sh-opacity-rotation-with-canonical-scale\"";
     summary << "}\n";
     std::cout << summary.str();
     return EXIT_SUCCESS;
