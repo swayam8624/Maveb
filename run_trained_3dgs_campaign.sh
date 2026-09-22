@@ -15,12 +15,13 @@ WORLD_ROOT="$OUT/world"
 FROZEN="$OUT/frozen-inputs"
 RESULTS="$OUT/campaign"
 VIS="$OUT/siggraph-visuals"
+VISUAL_QUALITY="$OUT/visual-quality"
 
 SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 
-mkdir -p "$SOURCE" "$WORLD_ROOT" "$FROZEN" "$RESULTS" "$VIS"
+mkdir -p "$SOURCE" "$WORLD_ROOT" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
 echo "============================================================"
 echo "MAVEB public trained-3DGS CBRC validation"
