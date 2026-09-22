@@ -51,23 +51,50 @@ def capture_case(
         )
 
     archive = Path(revision["archive"])
-    target = revision.get("target")
     camera = revision.get("camera", {})
-    if not isinstance(target, list) or len(target) != 3:
-        raise ValueError(f"case {case['id']} revision.target must contain 3 values")
     if not isinstance(camera, dict):
         raise ValueError(f"case {case['id']} revision.camera must be an object")
+
+    edit = revision.get("edit")
+    if edit is None:
+        edit_kind = "translation"
+        edit = {"kind": "translation", "target": revision.get("target")}
+    if not isinstance(edit, dict):
+        raise ValueError(f"case {case['id']} revision.edit must be an object")
+    edit_kind = str(edit.get("kind", "translation"))
 
     capture_dir = case_dir / "capture"
     command = [
         str(revision_tool),
         "--archive", str(archive),
         "--entity", str(int(revision["entity"])),
-        "--target", ",".join(str(float(v)) for v in target),
+        "--edit-kind", edit_kind,
         "--timestamp", str(int(revision["timestamp"])),
         "--output-dir", str(capture_dir),
         "--epsilon", str(float(case["epsilon"])),
     ]
+    if edit_kind == "translation":
+        target = edit.get("target", revision.get("target"))
+        if not isinstance(target, list) or len(target) != 3:
+            raise ValueError(f"case {case['id']} translation target must contain 3 values")
+        command.extend(["--target", ",".join(str(float(v)) for v in target)])
+    elif edit_kind == "rotation":
+        axis = edit.get("axis")
+        if not isinstance(axis, list) or len(axis) != 3:
+            raise ValueError(f"case {case['id']} rotation axis must contain 3 values")
+        radians = float(edit["radians"])
+        command.extend(
+            [
+                "--rotation-axis", ",".join(str(float(v)) for v in axis),
+                "--rotation-radians", str(radians),
+            ]
+        )
+    elif edit_kind == "uniform-scale":
+        command.extend(["--uniform-scale", str(float(edit["factor"]))])
+    elif edit_kind == "opacity":
+        command.extend(["--opacity-logit-delta", str(float(edit["logit_delta"]))])
+    else:
+        raise ValueError(f"case {case['id']} has unsupported edit kind {edit_kind!r}")
     scalar_camera = {
         "width": "--width",
         "height": "--height",
