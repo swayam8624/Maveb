@@ -81,6 +81,21 @@ def stable_sample(paths: list[Path], maximum: int) -> list[Path]:
     return list(dict.fromkeys(chosen))
 
 
+def overlap_preserving_sample(
+    paths: list[Path], maximum: int, maximum_stride: int = 8
+) -> list[Path]:
+    """Choose a deterministic temporal crop while retaining inter-frame overlap."""
+    ordered = sorted(paths)
+    if maximum <= 0 or len(ordered) <= maximum:
+        return ordered
+    if maximum == 1:
+        return [ordered[len(ordered) // 2]]
+    stride = max(1, min(maximum_stride, (len(ordered) - 1) // (maximum - 1)))
+    span = stride * (maximum - 1)
+    start = max(0, (len(ordered) - 1 - span) // 2)
+    return [ordered[start + index * stride] for index in range(maximum)]
+
+
 def stage_images(paths: list[Path], output: Path, maximum: int) -> int:
     selected = stable_sample([p for p in paths if p.is_file()], maximum)
     if len(selected) < 8:
@@ -114,7 +129,7 @@ def three_r_scan_images(scene: dict[str, Any], cache: Path, maximum: int) -> lis
             for name in zf.namelist()
             if name.endswith(".color.jpg") and "frame-" in Path(name).name
         )
-        selected = stable_sample([Path(name) for name in members], maximum)
+        selected = overlap_preserving_sample([Path(name) for name in members], maximum)
         result = []
         for member_path in selected:
             destination = target / member_path.name
@@ -129,7 +144,7 @@ def arkit_images(scene: dict[str, Any], maximum: int) -> list[Path]:
     root = Path(scene["root"])
     images = list((root / "lowres_wide").glob("*.png"))
     images += list((root / "lowres_wide").glob("*.jpg"))
-    return stable_sample(images, maximum)
+    return overlap_preserving_sample(images, maximum)
 
 
 def bonn_images(scene: dict[str, Any], maximum: int) -> list[Path]:
@@ -144,7 +159,7 @@ def bonn_images(scene: dict[str, Any], maximum: int) -> list[Path]:
             path = root / fields[1]
             if path.is_file():
                 rows.append(path)
-    return stable_sample(rows, maximum)
+    return overlap_preserving_sample(rows, maximum)
 
 
 def find_model(root: Path) -> Path | None:
@@ -577,10 +592,10 @@ def main(argv: list[str] | None = None) -> int:
         "scientificBoundary": (
             "GraphDECO entries preserve trained 3DGS representations. ScanNet++ uses its provided "
             "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn use deterministic RGB-derived COLMAP "
-            "sparse geometry for the CBRC Gaussian output-side test, with a frozen sequential-to-"
-            "exhaustive matching fallback and minimum two-view point tracks for world seeding; their "
-            "metric depth/pose data remain independent dataset context and are not mislabeled as part "
-            "of that seed."
+            "sparse geometry for the CBRC Gaussian output-side test, with a frozen overlap-preserving "
+            "temporal sampler, sequential-to-exhaustive matching fallback, and minimum two-view point "
+            "tracks for world seeding; their metric depth/pose data remain independent dataset context "
+            "and are not mislabeled as part of that seed."
         ),
     }
     write(output / "BROAD_WORLDS.json", manifest)
