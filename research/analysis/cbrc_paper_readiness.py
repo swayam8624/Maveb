@@ -205,6 +205,7 @@ def main() -> int:
     parser.add_argument("--sparse-summary", type=Path, required=True)
     parser.add_argument("--empirical", type=Path, required=True)
     parser.add_argument("--visual-package", type=Path, required=True)
+    parser.add_argument("--visual-quality", type=Path)
     parser.add_argument("--trained-status", type=Path)
     parser.add_argument("--ablation-stress", type=Path)
     parser.add_argument("--output", type=Path, required=True)
