@@ -98,6 +98,20 @@ class PaperReadinessTests(unittest.TestCase):
                     }
                 )
             )
+            visual_quality = root / "visual-quality.json"
+            visual_quality.write_text(
+                json.dumps(
+                    {
+                        "rows": 60,
+                        "localSelectedExactCases": 54,
+                        "maximumSelectedVsFullMaxAbsByte": 0,
+                        "records": [
+                            {"beforeVsFull": {"changedPixelFraction": 0.02}}
+                            for _ in range(60)
+                        ],
+                    }
+                )
+            )
             stress = root / "ablation-stress.json"
             stress.write_text(
                 json.dumps(
@@ -115,6 +129,7 @@ class PaperReadinessTests(unittest.TestCase):
                 sparse,
                 empirical,
                 visual,
+                visual_quality,
                 ablation_stress=stress,
             )
             self.assertTrue(result["corePaperEvidenceReady"])
@@ -122,6 +137,10 @@ class PaperReadinessTests(unittest.TestCase):
             self.assertEqual(result["sourceEffectEvidenceCases"], 60)
             self.assertEqual(result["nontrivialSourceEffectCases"], 60)
             self.assertEqual(result["nontrivialSourceEffectRate"], 1.0)
+            self.assertTrue(result["checks"]["visualQualityAuditPresent"])
+            self.assertTrue(result["checks"]["visualQualityCoversCampaign"])
+            self.assertTrue(result["checks"]["localSelectedVisualsMatchFull"])
+            self.assertTrue(result["checks"]["visualAuditShowsNontrivialEdits"])
 
 
 if __name__ == "__main__":
