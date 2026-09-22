@@ -7,6 +7,7 @@
 #include <cmath>
 #include <limits>
 #include <new>
+#include <ranges>
 #include <vector>
 
 namespace aether::world_gaussian {
