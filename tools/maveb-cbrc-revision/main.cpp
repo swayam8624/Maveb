@@ -62,19 +62,19 @@ enum class EditKind : std::uint8_t {
 }
 
 struct Options final {
-    std::filesystem::path archive;
-    std::filesystem::path outputDir;
+    simd_float3 target{};
+    simd_float3 rotationAxis{0.0F, 1.0F, 0.0F};
     std::uint64_t entity{};
     std::uint64_t timestamp{};
-    EditKind editKind{EditKind::translation};
-    simd_float3 target{};
-    bool haveTarget{};
-    simd_float3 rotationAxis{0.0F, 1.0F, 0.0F};
+    std::size_t width{1280};
+    std::size_t height{720};
+    double epsilon{1.0 / 255.0};
+    double historyWeight{0.9};
+    std::filesystem::path archive;
+    std::filesystem::path outputDir;
     float rotationRadians{};
     float uniformScale{1.0F};
     float opacityLogitDelta{};
-    std::size_t width{1280};
-    std::size_t height{720};
     float focalX{900.0F};
     float focalY{900.0F};
     float centerX{640.0F};
@@ -86,8 +86,8 @@ struct Options final {
         1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F,
         0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F,
     };
-    double epsilon{1.0 / 255.0};
-    double historyWeight{0.9};
+    EditKind editKind{EditKind::translation};
+    bool haveTarget{};
     bool historyStable{true};
 };
 
