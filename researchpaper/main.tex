@@ -95,7 +95,7 @@ This paper asks a narrower systems question: \emph{when may a persistent capture
 
 We introduce \emph{Criticality-Bounded Revision Cones} (\method). \method{} represents a revision over a typed dependency graph with three edge semantics: \hard{} edges encode exact structural requirements, \analytic{} edges carry conservative finite-change upper bounds, and \empirical{} edges may guide scheduling but are never used as a safety certificate. For a proposed repair cone $C$, the remaining exterior $O$ is certified against one or more quantities of interest. We call the worst normalized certificate-to-tolerance ratio the \emph{revision criticality}; the boundary value is one. A local result is accepted only if (1) exact predecessors are closed, (2) revision criticality is at or below one for every protected output, and (3) calibrated regional work is lower than the independently measured full baseline. Unsupported coupling, supercritical residual influence, unstable analytic structure, or an unfavorable work crossover returns \FULL{}.
 
-\system{} implements the method as a C++23 persistent-world stack. It is paired with a dense Python reference certifier and an independent full-after Gaussian oracle. Figure~\\ref{fig:overview} shows the decision path, and Figure~\\ref{fig:poster} illustrates Gaussian support selection and the two possible outcomes. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. A certificate is not accepted because the planner predicts that the repair is safe; the selected result is independently replayed against \FULL{} and evaluated under the contract
+\system{} implements the method as a C++23 persistent-world stack. It is paired with a dense Python reference certifier and an independent full-after Gaussian oracle. Figure~\ref{fig:overview} shows the decision path, and Figure~\ref{fig:poster} illustrates Gaussian support selection and the two possible outcomes. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. A certificate is not accepted because the planner predicts that the repair is safe; the selected result is independently replayed against \FULL{} and evaluated under the contract
 \begin{equation}
 E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q,
 \label{eq:contract}
@@ -367,7 +367,7 @@ Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical orde
 \end{figure*}
 
 
-\begin{table}[t]
+\begin{table}[H]
 \caption{Canonical evidence summary. Work factors are not wall-clock speedups.}
 \label{tab:summary}
 \centering
@@ -397,7 +397,7 @@ The secondary validation uses a pinned public trained 3DGS PLY with spherical-ha
 
 The domain decomposition in Table~\ref{tab:trained} is more informative than the scalar. Median Gaussian update and GPU publication ratios are approximately 0.0182, and temporal invalidation is approximately 0.03495, but Gaussian inspection remains 0.999997 of \FULL{}. Thus the selected update can be highly local while discovery remains essentially global. We treat this as the principal systems limitation of the frozen end-to-end implementation.
 
-\begin{table}[t]
+\begin{table}[H]
 \caption{Median native-domain ratios in the trained-3DGS validation.}
 \label{tab:trained}
 \centering
@@ -420,7 +420,7 @@ Temporal pixels invalidated & 0.034948 \\
 \subsection{Sparse candidate discovery}
 A separate exact sparse-discovery sweep tests whether the near-full inspection requirement is intrinsic to candidate selection. Across the sweep, sparse discovery preserves exact candidate-selection agreement while reducing the median inspected fraction to 0.01 and the minimum to 0.001 through the tested scale of up to one million Gaussians (Table~\ref{tab:sparse}). This result demonstrates that the discovery bottleneck is removable in isolation, but it is not silently credited to the frozen end-to-end work ledger because that index was evaluated separately.
 
-\begin{table}[t]
+\begin{table}[H]
 \caption{Separate sparse-discovery study summary.}
 \label{tab:sparse}
 \centering
@@ -445,7 +445,7 @@ The held-out changed-fraction scheduler produced no observed unsafe false-local 
 
 Table~\ref{tab:ablations} makes the real-matrix ablation behavior explicit. Five structural/analytic ablations are neutral on these 60 cases. The global-norm-tail replacement remains certificate-safe but collapses to \FULL{} on every case. Removing fallback has the opposite failure mode: it never selects \FULL{} and only 26.7\% of cases pass the certificate. The separately labeled mechanism-isolation suite contains seven deterministic synthetic stress cases, one for each v1 mechanism, and all seven separate in the expected safety/work direction. Those stress cases establish falsifiability of the mechanisms, not real-world effect size.
 
-\begin{table*}[t]
+\begin{table*}[!t]
 \caption{Frozen real-matrix ablations and their deterministic mechanism-isolation interpretation. Native work ratios use the baseline-suite metric. Neutral means the real matrix matches \method{} on the reported aggregate fields; it is not claimed as evidence that the removed mechanism is unnecessary.}
 \label{tab:ablations}
 \centering
@@ -468,7 +468,6 @@ Remove certified fallback & 26.7\% & 0.0\% & 0.00000 & 44/60 real cases fail cer
 
 The selected public residual is numerically zero in every frozen case at the reported precision, despite 56/60 source edits exceeding tolerance before repair. The real matrix therefore demonstrates selection/fallback correctness but does not estimate certificate tightness under non-zero accepted residual. We use the threshold-crossing mechanism-isolation cases only to show that the analytic machinery can change decisions when stressed; we do not present them as a substitute for real non-zero-residual evidence.
 
-\clearpage
 \section{Discussion}
 \subsection{What the evidence establishes}
 Within the frozen revision domain and stated bound assumptions, the experiment supports three concrete statements. First, the emitted certificate survived independent full-reference replay in every evaluated case. Second, the planner did not force locality: more than one quarter of public revisions crossed to \FULL{}. Third, when a local result was selected, the frozen calibrated model often assigned substantially less work than a full rebuild. These statements are stronger than showing that a changed-region heuristic happens to work on average, but weaker than a formal proof of universal production safety.
