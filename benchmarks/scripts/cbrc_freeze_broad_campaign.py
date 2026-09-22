@@ -30,6 +30,62 @@ def write(path: Path, payload: Any) -> None:
     tmp.replace(path)
 
 
+EDIT_FAMILIES = ("translation", "rotation", "uniform-scale", "opacity")
+
+
+def apply_edit_family(case: dict[str, Any], template_index: int) -> str:
+    kind = EDIT_FAMILIES[template_index % len(EDIT_FAMILIES)]
+    matrix = case.setdefault("matrix_tags", {})
+    delta = float(matrix.get("delta_fraction", 0.01))
+    sign = 1 if int(matrix.get("sign", 1)) >= 0 else -1
+    axis_index = int(matrix.get("axis", 0)) % 3
+    axis = [0.0, 0.0, 0.0]
+    axis[axis_index] = 1.0
+
+    revision = case["revision"]
+    if kind == "translation":
+        revision["edit"] = {
+            "kind": "translation",
+            "target": list(revision["target"]),
+        }
+        magnitude = float(matrix["applied_delta_world"])
+    elif kind == "rotation":
+        radians = sign * max(0.03, min(0.75, delta * 1.20))
+        revision.pop("target", None)
+        revision["edit"] = {
+            "kind": "rotation",
+            "axis": axis,
+            "radians": radians,
+        }
+        magnitude = abs(radians)
+    elif kind == "uniform-scale":
+        fractional_scale = max(0.02, min(0.30, delta * 0.40))
+        factor = 1.0 + sign * fractional_scale
+        if factor <= 0.0:
+            raise ValueError("frozen uniform-scale template became non-positive")
+        revision.pop("target", None)
+        revision["edit"] = {
+            "kind": "uniform-scale",
+            "factor": factor,
+        }
+        magnitude = abs(factor - 1.0)
+    else:
+        logit_delta = sign * max(0.10, min(1.50, delta * 2.0))
+        revision.pop("target", None)
+        revision["edit"] = {
+            "kind": "opacity",
+            "logit_delta": logit_delta,
+        }
+        magnitude = abs(logit_delta)
+
+    case["edit_family"] = kind
+    case["edit_class"] = f"gaussian-{kind}"
+    matrix["edit_family"] = kind
+    matrix["edit_magnitude"] = magnitude
+    matrix["edit_parameters"] = revision["edit"]
+    return kind
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Freeze broad multi-dataset CBRC campaign")
     p.add_argument("--worlds", type=Path, required=True, help="BROAD_WORLDS.json")
@@ -82,6 +138,14 @@ def main(argv: list[str] | None = None) -> int:
     frozen_by_case = {
         item["case_id"]: item for item in provenance.get("frozen_inputs", [])
     }
+    edit_family_counts: Counter[str] = Counter()
+    for case_index, case in enumerate(campaign["cases"]):
+        family = apply_edit_family(case, case_index % args.cases_per_scene)
+        edit_family_counts[family] += 1
+        frozen = frozen_by_case[case["id"]]
+        frozen["edit_family"] = family
+        frozen["edit_parameters"] = case["revision"]["edit"]
+        frozen["matrix"] = case["matrix_tags"]
     renamed: dict[str, str] = {}
     dataset_counts: Counter[str] = Counter()
     representation_counts: Counter[str] = Counter()
@@ -93,14 +157,14 @@ def main(argv: list[str] | None = None) -> int:
         dataset_id = str(record["datasetId"])
         representation = str(record.get("representation", "unknown"))
         source_scene = str(record.get("sceneId", case["scene_id"]))
-        new_id = f"{dataset_id}--{old_id}"
+        edit_family = str(case["edit_family"])
+        new_id = f"{dataset_id}--{edit_family}--{old_id}"
         renamed[old_id] = new_id
         case["id"] = new_id
         case["scene_id"] = f"{dataset_id}::{source_scene}"
         case["dataset_id"] = dataset_id
         case["source_scene_id"] = source_scene
         case["representation"] = representation
-        case["edit_family"] = "translation"
         case.setdefault("matrix_tags", {})
         case["matrix_tags"].update(
             {
@@ -129,9 +193,10 @@ def main(argv: list[str] | None = None) -> int:
     campaign["minimum_revisions"] = len(campaign["cases"])
     campaign["dataset_case_counts"] = dict(sorted(dataset_counts.items()))
     campaign["representation_case_counts"] = dict(sorted(representation_counts.items()))
+    campaign["edit_family_case_counts"] = dict(sorted(edit_family_counts.items()))
     campaign["freeze_note"] = (
         "Cross-dataset campaign frozen before reading outcomes. One implementation commit, "
-        "one work calibration, and the existing v2.1 translation template matrix are applied "
+        "one work calibration, and one deterministic multi-edit transformation of the v2.1 template matrix are applied "
         "without per-dataset epsilon/threshold retuning. Failed and FULL cases remain evidence."
     )
 
@@ -145,11 +210,9 @@ def main(argv: list[str] | None = None) -> int:
             "datasetCaseCounts": dict(sorted(dataset_counts.items())),
             "representationCaseCounts": dict(sorted(representation_counts.items())),
             "casesPerScene": args.cases_per_scene,
-            "algorithmicEditFamily": "translation",
+            "algorithmicEditFamilies": list(EDIT_FAMILIES),
+            "editFamilyCaseCounts": dict(sorted(edit_family_counts.items())),
             "blockedEditFamiliesRemainExcluded": [
-                "rotation",
-                "uniform-scale",
-                "appearance",
                 "removal",
                 "insertion",
             ],
