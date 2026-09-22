@@ -17,6 +17,7 @@ SPARSE="$OUT/sparse-discovery"
 FROZEN="$OUT/frozen-inputs"
 RESULTS="$OUT/campaign"
 VIS="$OUT/siggraph-visuals"
+VISUAL_QUALITY="$OUT/visual-quality"
 MANIFEST="$ROOT/research/config/cbrc_public_real_sources.json"
 
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
@@ -24,7 +25,7 @@ ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-orac
 WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
 LOCALITY_BENCH="$ROOT/build/ci/tools/maveb-gaussian-locality-bench/maveb-gaussian-locality-bench"
 
-mkdir -p "$SOURCE" "$WORLDS" "$CAL" "$SPARSE" "$FROZEN" "$RESULTS" "$VIS"
+mkdir -p "$SOURCE" "$WORLDS" "$CAL" "$SPARSE" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
 echo "============================================================"
 echo "MAVEB CBRC paper-grade public campaign v2"
@@ -89,15 +90,20 @@ set -e
 echo "==> [8/10] Evaluating held-out empirical locality baseline"
 "$PYTHON" research/experiments/cbrc_empirical_heldout.py   --rows "$RESULTS/campaign-rows.jsonl"   --output "$RESULTS/empirical-heldout.json"
 
-echo "==> [9/10] Generating answer report and SIGGRAPH visual package"
+echo "==> [9/11] Generating answer report and SIGGRAPH visual package"
 set +e
 "$PYTHON" research/analysis/cbrc_real_campaign_report.py   --results-dir "$RESULTS"
 REPORT_STATUS=$?
 set -e
 "$PYTHON" research/visualization/cbrc_siggraph_visuals.py   --campaign-dir "$RESULTS"   --output-dir "$VIS"   --max-mosaic-cases 20
 
-echo "==> [10/10] Paper-readiness audit"
-"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$RESULTS"   --calibration "$CAL/work-cost-model.json"   --sparse-summary "$SPARSE/sparse-discovery-summary.json"   --empirical "$RESULTS/empirical-heldout.json"   --visual-package "$VIS/VISUAL_PACKAGE.json"   --output "$OUT/PAPER_GRADE_STATUS.json"
+echo "==> [10/11] Measuring selected-repair visual fidelity against FULL-after"
+"$PYTHON" research/analysis/cbrc_visual_quality.py \
+  --campaign-dir "$RESULTS" \
+  --output-dir "$VISUAL_QUALITY"
+
+echo "==> [11/11] Paper-readiness audit"
+"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$RESULTS"   --calibration "$CAL/work-cost-model.json"   --sparse-summary "$SPARSE/sparse-discovery-summary.json"   --empirical "$RESULTS/empirical-heldout.json"   --visual-package "$VIS/VISUAL_PACKAGE.json"   --visual-quality "$VISUAL_QUALITY/CBRC_VISUAL_QUALITY.json"   --output "$OUT/PAPER_GRADE_STATUS.json"
 
 cat <<EOF
 
@@ -111,6 +117,7 @@ Evidence gates         : $RESULTS/campaign-gates.json
 Held-out empirical     : $RESULTS/empirical-heldout.json
 Answer                 : $RESULTS/REAL_CAMPAIGN_ANSWER.md
 SIGGRAPH visuals       : $VIS
+Visual-quality audit    : $VISUAL_QUALITY/CBRC_VISUAL_QUALITY.json
 Paper-grade audit      : $OUT/PAPER_GRADE_STATUS.json
 
 Scientific boundary:
