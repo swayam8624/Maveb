@@ -90,23 +90,10 @@ jobs:
             researchpaper/MAVEB_manuscript.docx \
             researchpaper/MAVEB_supplement.pdf
 
-      - name: Commit finalized manuscript artifacts to main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+      - name: Protected-branch publication note
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            researchpaper/MAVEB_manuscript.pdf \
-            researchpaper/MAVEB_manuscript.docx \
-            researchpaper/MAVEB_supplement.pdf \
-            researchpaper/MAVEB_manuscript_package.zip \
-            researchpaper/FINAL_MANUSCRIPT_SHA256.txt
-          if git diff --cached --quiet; then
-            echo "Final manuscript artifacts are unchanged."
-          else
-            git commit -m "paper: compile final MAVEB artifacts [skip ci]"
-            git push origin HEAD:main
-          fi
+          echo "Generated submission artifacts are uploaded by CI."
+          echo "Repository copies are updated through a reviewed artifact-publication PR."
 
       - name: Upload manuscript artifacts
         uses: actions/upload-artifact@v4
