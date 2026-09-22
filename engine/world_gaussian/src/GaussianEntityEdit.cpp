@@ -183,8 +183,8 @@ Result<PersistentGaussianAttributeEditResult> editPersistentGaussianEntityIndexe
         scene::Transform transform = state->transform;
         transform.rotation = simd_normalize(simd_mul(deltaRotation, transform.rotation));
         patch.transform = transform;
-        patch.worldBounds = rotatedBounds(state->worldBounds, state->transform.translation,
-                                          deltaRotation);
+        patch.worldBounds =
+            rotatedBounds(state->worldBounds, state->transform.translation, deltaRotation);
     } else if (edit.kind == GaussianEntityEditKind::uniformScale) {
         scene::Transform transform = state->transform;
         transform.scale *= edit.uniformScale;
@@ -225,7 +225,9 @@ Result<PersistentGaussianAttributeEditResult> editPersistentGaussianEntityIndexe
         const gaussian::Gaussian& current = asset.gaussians[index];
         gaussian::Gaussian replacement = current;
         const simd_float3 oldPosition{
-            current.position[0], current.position[1], current.position[2],
+            current.position[0],
+            current.position[1],
+            current.position[2],
         };
 
         if (edit.kind == GaussianEntityEditKind::rotation) {
@@ -242,12 +244,15 @@ Result<PersistentGaussianAttributeEditResult> editPersistentGaussianEntityIndexe
         }
 
         const simd_float3 newPosition{
-            replacement.position[0], replacement.position[1], replacement.position[2],
+            replacement.position[0],
+            replacement.position[1],
+            replacement.position[2],
         };
         if (!finite3(newPosition) || !std::isfinite(replacement.opacityLogit) ||
             std::ranges::any_of(replacement.logScale,
-                                [](float value) { return !std::isfinite(value) || value < -30.0F ||
-                                                         value > 30.0F; }) ||
+                                [](float value) {
+                                    return !std::isfinite(value) || value < -30.0F || value > 30.0F;
+                                }) ||
             std::ranges::any_of(replacement.rotation,
                                 [](float value) { return !std::isfinite(value); }))
             return fail(ErrorCode::resourceExhausted,

@@ -43,8 +43,7 @@ struct PersistentGaussianAttributeEditResult final {
 /// Gaussian mutation, and overlay-index relocation are preflighted before the authoritative world
 /// revision is committed. Birth/death remains outside this API because it requires explicit
 /// ownership/cardinality semantics.
-[[nodiscard]] Result<PersistentGaussianAttributeEditResult>
-editPersistentGaussianEntityIndexed(
+[[nodiscard]] Result<PersistentGaussianAttributeEditResult> editPersistentGaussianEntityIndexed(
     world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
     const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
     world::EntityId entity, const GaussianEntityEdit& edit, world::TimestampNs timestamp,

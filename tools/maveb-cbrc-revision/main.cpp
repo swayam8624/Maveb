@@ -280,20 +280,21 @@ template <std::size_t N>
 
     const bool editValid =
         (options.editKind == EditKind::translation && options.haveTarget) ||
-        (options.editKind == EditKind::rotation && (std::isfinite(options.rotationAxis.x) && std::isfinite(options.rotationAxis.y) && std::isfinite(options.rotationAxis.z)) &&
-         simd_length(options.rotationAxis) > 1.0e-6F &&
-         std::isfinite(options.rotationRadians) && std::abs(options.rotationRadians) > 1.0e-6F) ||
+        (options.editKind == EditKind::rotation &&
+         (std::isfinite(options.rotationAxis.x) && std::isfinite(options.rotationAxis.y) &&
+          std::isfinite(options.rotationAxis.z)) &&
+         simd_length(options.rotationAxis) > 1.0e-6F && std::isfinite(options.rotationRadians) &&
+         std::abs(options.rotationRadians) > 1.0e-6F) ||
         (options.editKind == EditKind::uniformScale && std::isfinite(options.uniformScale) &&
          options.uniformScale > 0.0F && std::abs(options.uniformScale - 1.0F) > 1.0e-6F) ||
         (options.editKind == EditKind::opacity && std::isfinite(options.opacityLogitDelta) &&
          std::abs(options.opacityLogitDelta) > 1.0e-6F);
     if (options.archive.empty() || options.outputDir.empty() || options.entity == 0 ||
-        options.timestamp == 0 || !editValid || options.width == 0 ||
-        options.height == 0 || options.focalX <= 0.0F || options.focalY <= 0.0F ||
-        options.nearPlane <= 0.0F || options.farPlane <= options.nearPlane ||
-        !std::isfinite(options.epsilon) || options.epsilon < 0.0 ||
-        !std::isfinite(options.historyWeight) || options.historyWeight < 0.0 ||
-        options.historyWeight > 1.0) {
+        options.timestamp == 0 || !editValid || options.width == 0 || options.height == 0 ||
+        options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
+        options.farPlane <= options.nearPlane || !std::isfinite(options.epsilon) ||
+        options.epsilon < 0.0 || !std::isfinite(options.historyWeight) ||
+        options.historyWeight < 0.0 || options.historyWeight > 1.0) {
         return std::nullopt;
     }
     return options;
@@ -702,37 +703,35 @@ int main(int argc, char** argv) try {
                                                aether::gaussian::GaussianCodec::recordBytes;
 
     std::ostringstream translation;
-    translation
-        << std::setprecision(17) << "{"
-        << "\"schemaVersion\":1,"
-        << "\"previousRevision\":" << previousRevision << ',' << "\"revision\":" << revision << ','
-        << "\"gaussianCount\":" << asset->gaussians.size() << ',' << "\"beforeGaussianSidecar\":\""
-        << jsonEscape(gaussianSidecar(options->archive, previousRevision).string()) << "\","
-        << "\"afterGaussianSidecar\":\"" << jsonEscape(afterGaussianPath.string()) << "\","
-        << "\"gaussianInputFormat\":\"aether-bin\","
-        << "\"editKind\":\"" << editKindName(options->editKind) << "\","
-        << "\"editedGaussians\":" << editedGaussians << ','
-        << "\"translatedGaussians\":"
-        << (options->editKind == EditKind::translation ? editedGaussians : 0) << ','
-        << "\"gaussiansInspected\":" << reoptimizationSelection.inspectedGaussians << ','
-        << "\"usedOverlayIndex\":" << (usedOverlayIndex ? "true" : "false") << ','
-        << "\"overlayIndexValid\":" << (overlayIndexValid ? "true" : "false") << ','
-        << "\"overlayIndexCompacted\":" << (overlayIndexCompacted ? "true" : "false") << ','
-        << "\"overlayDirtyRegionsQueried\":" << overlayDiagnostics.dirtyRegionsQueried
-        << ',' << "\"overlayBaseEntriesVisited\":" << overlayDiagnostics.baseEntriesVisited
-        << ',' << "\"overlayStaleBaseEntriesSkipped\":"
-        << overlayDiagnostics.staleBaseEntriesSkipped << ','
-        << "\"overlayDeltaEntriesVisited\":" << overlayDiagnostics.deltaEntriesVisited
-        << ','
-        << "\"reoptimizationGaussians\":" << reoptimizationSelection.gaussianIndices.size()
-        << ',' << "\"protectedStableGaussians\":"
-        << reoptimizationSelection.rejectedStableOwnedGaussians << ','
-        << "\"conservativeBoundaryGaussians\":"
-        << reoptimizationSelection.conservativeUnownedMatches << ','
-        << "\"dirtyRegionCount\":" << dirtyRegionCount << ','
-        << "\"persisted\":true,"
-        << "\"persistenceError\":\"\""
-        << "}\n";
+    translation << std::setprecision(17) << "{"
+                << "\"schemaVersion\":1,"
+                << "\"previousRevision\":" << previousRevision << ',' << "\"revision\":" << revision
+                << ',' << "\"gaussianCount\":" << asset->gaussians.size() << ','
+                << "\"beforeGaussianSidecar\":\""
+                << jsonEscape(gaussianSidecar(options->archive, previousRevision).string()) << "\","
+                << "\"afterGaussianSidecar\":\"" << jsonEscape(afterGaussianPath.string()) << "\","
+                << "\"gaussianInputFormat\":\"aether-bin\","
+                << "\"editKind\":\"" << editKindName(options->editKind) << "\","
+                << "\"editedGaussians\":" << editedGaussians << ',' << "\"translatedGaussians\":"
+                << (options->editKind == EditKind::translation ? editedGaussians : 0) << ','
+                << "\"gaussiansInspected\":" << reoptimizationSelection.inspectedGaussians << ','
+                << "\"usedOverlayIndex\":" << (usedOverlayIndex ? "true" : "false") << ','
+                << "\"overlayIndexValid\":" << (overlayIndexValid ? "true" : "false") << ','
+                << "\"overlayIndexCompacted\":" << (overlayIndexCompacted ? "true" : "false") << ','
+                << "\"overlayDirtyRegionsQueried\":" << overlayDiagnostics.dirtyRegionsQueried
+                << ',' << "\"overlayBaseEntriesVisited\":" << overlayDiagnostics.baseEntriesVisited
+                << ',' << "\"overlayStaleBaseEntriesSkipped\":"
+                << overlayDiagnostics.staleBaseEntriesSkipped << ','
+                << "\"overlayDeltaEntriesVisited\":" << overlayDiagnostics.deltaEntriesVisited
+                << ','
+                << "\"reoptimizationGaussians\":" << reoptimizationSelection.gaussianIndices.size()
+                << ',' << "\"protectedStableGaussians\":"
+                << reoptimizationSelection.rejectedStableOwnedGaussians << ','
+                << "\"conservativeBoundaryGaussians\":"
+                << reoptimizationSelection.conservativeUnownedMatches << ','
+                << "\"dirtyRegionCount\":" << dirtyRegionCount << ',' << "\"persisted\":true,"
+                << "\"persistenceError\":\"\""
+                << "}\n";
 
     const std::uint64_t affectedCount = static_cast<std::uint64_t>(
         std::count_if(certificate->rgbLInfBounds.begin(), certificate->rgbLInfBounds.end(),
@@ -747,10 +746,10 @@ int main(int argc, char** argv) try {
     cert << std::setprecision(17) << "{"
          << "\"schemaVersion\":1,"
          << "\"available\":true,"
-         << "\"revisionVersion\":" << revision << ','
-         << "\"changedGaussians\":" << editedGaussians << ','
-         << "\"affectedPixels\":" << affectedCount << ',' << "\"fullFramePixels\":" << fullPixels
-         << ',' << "\"affectedPixelRatio\":" << affectedRatio << ','
+         << "\"revisionVersion\":" << revision << ',' << "\"changedGaussians\":" << editedGaussians
+         << ',' << "\"affectedPixels\":" << affectedCount << ','
+         << "\"fullFramePixels\":" << fullPixels << ','
+         << "\"affectedPixelRatio\":" << affectedRatio << ','
          << "\"maximumCurrentRgbBound\":" << certificate->maximumRgbLInfBound << ','
          << "\"sceneColorUpperBound\":" << colorCap << ',' << "\"camera\":{"
          << "\"width\":" << camera.width << ',' << "\"height\":" << camera.height << ','

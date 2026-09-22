@@ -92,8 +92,7 @@ bool createFixture(const std::filesystem::path& archive) {
 }
 
 void runEdit(const std::filesystem::path& tool, const std::filesystem::path& root,
-             std::string_view name, std::string_view editArguments,
-             std::string_view expectedKind) {
+             std::string_view name, std::string_view editArguments, std::string_view expectedKind) {
     const auto caseRoot = root / std::string(name);
     std::filesystem::create_directories(caseRoot);
     const auto archive = caseRoot / "fixture.world";
@@ -103,11 +102,9 @@ void runEdit(const std::filesystem::path& tool, const std::filesystem::path& roo
         return;
 
     std::ostringstream command;
-    command << '"' << tool.string() << '"'
-            << " --archive " << '"' << archive.string() << '"'
+    command << '"' << tool.string() << '"' << " --archive " << '"' << archive.string() << '"'
             << " --entity 1"
-            << " --edit-kind " << editArguments
-            << " --timestamp 200"
+            << " --edit-kind " << editArguments << " --timestamp 200"
             << " --output-dir " << '"' << output.string() << '"'
             << " --width 64 --height 64 --focal-x 70 --focal-y 70"
             << " --center-x 32 --center-y 32 --epsilon 1.0";
@@ -147,14 +144,11 @@ int main(int argc, char** argv) noexcept {
                           ("maveb-cbrc-multiedit-test-" + std::to_string(stamp));
         std::filesystem::create_directories(root);
 
-        runEdit(tool, root, "translation",
-                "translation --target 0.2,0,3", "translation");
-        runEdit(tool, root, "rotation",
-                "rotation --rotation-axis 0,0,1 --rotation-radians 0.2", "rotation");
-        runEdit(tool, root, "scale",
-                "uniform-scale --uniform-scale 1.1", "uniform-scale");
-        runEdit(tool, root, "opacity",
-                "opacity --opacity-logit-delta 0.4", "opacity");
+        runEdit(tool, root, "translation", "translation --target 0.2,0,3", "translation");
+        runEdit(tool, root, "rotation", "rotation --rotation-axis 0,0,1 --rotation-radians 0.2",
+                "rotation");
+        runEdit(tool, root, "scale", "uniform-scale --uniform-scale 1.1", "uniform-scale");
+        runEdit(tool, root, "opacity", "opacity --opacity-logit-delta 0.4", "opacity");
 
         std::error_code ignored;
         std::filesystem::remove_all(root, ignored);

@@ -15,9 +15,9 @@ using aether::world::Bounds;
 using aether::world::ChangeFlag;
 using aether::world::EntityId;
 using aether::world::EntityState;
+using aether::world::hasFlag;
 using aether::world::PersistentWorldModel;
 using aether::world::RepresentationKind;
-using aether::world::hasFlag;
 using aether::world_gaussian::GaussianEntityEdit;
 using aether::world_gaussian::GaussianEntityEditKind;
 using aether::world_gaussian::GaussianEntityOwnership;
@@ -134,8 +134,7 @@ void testUniformScaleChangesCentersAndCovarianceScale() {
            "uniform scale must scale owned center about persistent entity origin");
     expect(close(fixture.asset.gaussians[1].position[1], 0.40F),
            "uniform scale must scale every owned center");
-    expect(close(fixture.asset.gaussians[0].logScale[0],
-                 beforeLogScale + std::log(2.0F)),
+    expect(close(fixture.asset.gaussians[0].logScale[0], beforeLogScale + std::log(2.0F)),
            "uniform scale must update Gaussian covariance scale");
     expect(!result->worldEdit.diff.entities.empty() &&
                hasFlag(result->worldEdit.diff.entities.front().flags, ChangeFlag::scaled),
