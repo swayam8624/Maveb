@@ -278,6 +278,14 @@ def arkit(dataset: dict[str, Any], root: Path | None) -> dict[str, Any]:
         return result
 
     video_roots = sorted({path.parent for path in root.rglob("lowres_wide.traj")})
+    requested_fold = str(dataset["selection"].get("fold", "Validation")).lower()
+    folded = [
+        path
+        for path in video_roots
+        if requested_fold in {part.lower() for part in path.parts}
+    ]
+    if folded:
+        video_roots = folded
     target = int(dataset["selection"].get("targetVideos", 20))
     selected = video_roots[:target]
     required = list(dataset["requiredAny"])
