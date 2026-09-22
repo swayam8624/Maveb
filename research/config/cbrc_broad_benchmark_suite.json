@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "campaignId": "maveb-cbrc-broad-benchmark-v1",
+  "freezePolicy": {
+    "algorithm": "Use one CBRC implementation commit across all datasets.",
+    "thresholds": "Freeze epsilon/edit templates before opening aggregate results.",
+    "failures": "Keep failed, blocked, LOCAL, and FULL cases in evidence; never filter by outcome.",
+    "retuning": "No dataset-specific threshold retuning. Dataset-specific coordinate/unit conversion is allowed only when declared in provenance."
+  },
+  "editFamilies": [
+    {
+      "id": "translation",
+      "status": "implemented",
+      "engineCapability": "persistent-gaussian-entity-translation",
+      "magnitudes": [
+        "small",
+        "medium",
+        "large"
+      ],
+      "note": "Current production-supported authored Gaussian edit. Runs in the first broad campaign."
+    },
+    {
+      "id": "rotation",
+      "status": "implemented",
+      "engineCapability": "persistent-gaussian-entity-rotation",
+      "note": "Implemented as a same-cardinality persistent entity/Gaussian rotation with conservative rotated AABB and independent image certification."
+    },
+    {
+      "id": "uniform-scale",
+      "status": "implemented",
+      "engineCapability": "persistent-gaussian-entity-uniform-scale",
+      "note": "Implemented as a same-cardinality persistent entity/Gaussian uniform scale with covariance-scale update and independent image certification."
+    },
+    {
+      "id": "opacity",
+      "status": "implemented",
+      "engineCapability": "persistent-gaussian-entity-opacity",
+      "note": "Concrete appearance edit: shifts owned Gaussian opacity logits and versions the persistent entity appearance signature; independently image-certified."
+    },
+    {
+      "id": "removal",
+      "status": "capability-required",
+      "engineCapability": "persistent-gaussian-entity-removal",
+      "note": "Requires cardinality/ownership/index update semantics; intentionally blocked rather than approximated."
+    },
+    {
+      "id": "insertion",
+      "status": "capability-required",
+      "engineCapability": "persistent-gaussian-entity-insertion",
+      "note": "Requires new persistent identity plus ownership/cardinality semantics; intentionally blocked rather than approximated."
+    }
+  ],
+  "datasets": [
+    {
+      "id": "graphdeco-pretrained-3dgs",
+      "kind": "trained-3dgs",
+      "role": "primary-photorealistic",
+      "rootEnv": "MAVEB_GRAPHDECO_PRETRAINED",
+      "officialUrl": "https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/datasets/pretrained/models.zip",
+      "downloadBytesApprox": 15000000000,
+      "selection": {
+        "mode": "explicit-scenes",
+        "scenes": [
+          "bicycle",
+          "bonsai",
+          "counter",
+          "flowers",
+          "garden",
+          "kitchen",
+          "room",
+          "stump",
+          "treehill",
+          "train",
+          "truck",
+          "drjohnson",
+          "playroom"
+        ]
+      },
+      "requiredAny": [
+        "point_cloud/iteration_30000/point_cloud.ply",
+        "point_cloud/iteration_7000/point_cloud.ply"
+      ],
+      "optional": [
+        "cameras.json",
+        "cfg_args"
+      ],
+      "redistribute": false,
+      "scientificRole": "Canonical trained photorealistic 3DGS evaluation across all 13 standard GraphDECO scenes."
+    },
+    {
+      "id": "3rscan",
+      "kind": "longitudinal-rgbd",
+      "role": "natural-real-world-change",
+      "rootEnv": "MAVEB_3RSCAN",
+      "officialUrl": "https://github.com/WaldJohannaU/3RScan",
+      "metadata": "3RScan.json",
+      "selection": {
+        "mode": "changed-reference-rescan-pairs",
+        "preferredSplit": "val",
+        "targetPairs": 40,
+        "minimumRigidOrRemovedChanges": 1
+      },
+      "scanRequired": [
+        "mesh.refined.v2.obj",
+        "semseg.v2.json",
+        "labels.instances.annotated.v2.ply"
+      ],
+      "sequenceAny": [
+        "sequence",
+        "sequence.zip"
+      ],
+      "redistribute": false,
+      "scientificRole": "Natural longitudinal scene changes. The adapter freezes reference/rescan transforms and changed-object metadata before outcomes."
+    },
+    {
+      "id": "scannetpp",
+      "kind": "scannetpp",
+      "role": "high-fidelity-multisensor",
+      "rootEnv": "MAVEB_SCANNETPP",
+      "officialUrl": "https://scannetpp.mlsg.cit.tum.de/scannetpp/",
+      "selection": {
+        "mode": "split-first-n",
+        "split": "nvs_sem_val",
+        "targetScenes": 20
+      },
+      "required": [
+        "scans/mesh_aligned_0.05.ply",
+        "dslr/colmap",
+        "dslr/train_test_lists.json"
+      ],
+      "optional": [
+        "iphone/colmap",
+        "iphone/pose_intrinsic_imu.json",
+        "scans/pc_aligned.ply"
+      ],
+      "requiresAccessToken": true,
+      "redistribute": false,
+      "scientificRole": "High-fidelity laser-aligned DSLR/iPhone capture. Tests scene/sensor generalization without dataset-specific CBRC retuning."
+    },
+    {
+      "id": "arkitscenes",
+      "kind": "arkit-scenes",
+      "role": "mobile-rgbd",
+      "rootEnv": "MAVEB_ARKITSCENES",
+      "officialUrl": "https://github.com/apple-aiml-research/ARKitScenes",
+      "selection": {
+        "mode": "validation-csv-first-n",
+        "dataset": "raw",
+        "fold": "Validation",
+        "targetVideos": 20
+      },
+      "requiredAny": [
+        "lowres_wide.traj",
+        "lowres_depth",
+        "lowres_wide",
+        "lowres_wide_intrinsics"
+      ],
+      "redistribute": false,
+      "scientificRole": "Commodity mobile RGB-D/LiDAR generalization using the existing deterministic ARKitScenes adapter."
+    },
+    {
+      "id": "bonn-rgbd-dynamic",
+      "kind": "tum-rgbd",
+      "role": "dynamic-adversarial",
+      "rootEnv": "MAVEB_BONN_RGBD",
+      "officialUrl": "https://www.ipb.uni-bonn.de/data/rgbd-dynamic-dataset/",
+      "selection": {
+        "mode": "discover-sequences",
+        "targetSequences": 12
+      },
+      "required": [
+        "rgb.txt",
+        "depth.txt",
+        "groundtruth.txt"
+      ],
+      "camera": {
+        "fx": 542.822841,
+        "fy": 542.57687,
+        "cx": 315.59352,
+        "cy": 237.756098
+      },
+      "redistribute": false,
+      "scientificRole": "Dynamic/failure-envelope benchmark. A high FULL fallback rate is a valid outcome."
+    },
+    {
+      "id": "existing-public-v2",
+      "kind": "existing-campaign",
+      "role": "frozen-reference",
+      "rootEnv": "MAVEB_PUBLIC_V2_RESULTS_DIR",
+      "scientificRole": "Retains the frozen 60-case Tanks & Temples + Deep Blending evidence as the historical reference campaign."
+    }
+  ]
+}

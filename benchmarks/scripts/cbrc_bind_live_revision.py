@@ -2,7 +2,7 @@
 """Bind one live persistent Gaussian edit to a reproducible CBRC oracle manifest.
 
 Inputs come from:
-  1. AetherPersistentTranslateEntity JSON (transaction/revision provenance)
+  1. Persistent Gaussian edit transaction JSON (transaction/revision provenance)
   2. AetherPersistentRevisionCertificateJSON (post-frame camera/certificate/work)
 
 This is the v1 hybrid production path: the physical Gaussian source set is
@@ -40,7 +40,7 @@ def bind(
     work_cost_model: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not bool(translation.get("persisted", False)):
-        raise ValueError("translation revision was not durably persisted")
+        raise ValueError("persistent edit revision was not durably persisted")
     if not bool(certificate.get("available", False)):
         raise ValueError("post-frame Gaussian certificate is unavailable")
 
@@ -48,21 +48,29 @@ def bind(
     after_state = str(translation.get("afterGaussianSidecar", "")).strip()
     input_format = str(translation.get("gaussianInputFormat", "")).strip()
     if not before_state or not after_state:
-        raise ValueError("translation response is missing immutable Gaussian sidecars")
+        raise ValueError("edit response is missing immutable Gaussian sidecars")
     if input_format != "aether-bin":
         raise ValueError("live binder currently requires canonical aether-bin sidecars")
 
     total_gaussians = int(translation.get("gaussianCount", 0))
-    translated = int(translation.get("translatedGaussians", 0))
+    edit_kind = str(translation.get("editKind", "translation"))
+    edited = int(
+        translation.get(
+            "editedGaussians",
+            translation.get("translatedGaussians", 0),
+        )
+    )
     inspected = int(translation.get("gaussiansInspected", 0))
     used_overlay = bool(translation.get("usedOverlayIndex", False))
     overlay_valid = bool(translation.get("overlayIndexValid", True))
     certified_changed = int(certificate.get("changedGaussians", 0))
     if total_gaussians <= 0:
         raise ValueError("gaussianCount must be positive")
-    if not 0 < translated <= total_gaussians:
-        raise ValueError("translatedGaussians is outside the scene cardinality")
-    if certified_changed != translated:
+    if edit_kind not in {"translation", "rotation", "uniform-scale", "opacity"}:
+        raise ValueError(f"unsupported headless edit kind: {edit_kind}")
+    if not 0 < edited <= total_gaussians:
+        raise ValueError("editedGaussians is outside the scene cardinality")
+    if certified_changed != edited:
         raise ValueError(
             "post-frame certificate changed-Gaussian count disagrees with transaction"
         )
@@ -120,10 +128,11 @@ def bind(
     if revision <= previous_revision:
         raise ValueError("world revision must advance monotonically")
 
-    changed_fraction = translated / total_gaussians
+    changed_fraction = edited / total_gaussians
     output_planner_graph = {
         "schemaVersion": 1,
         "graph_scope": GAUSSIAN_OUTPUT_GRAPH_VERSION,
+        "edit_kind": edit_kind,
         "nodes": [
             {
                 "id": "current_frame",
@@ -163,7 +172,7 @@ def bind(
                 "unit": "gaussians",
             },
             "gaussiansUpdated": {
-                "incremental": translated,
+                "incremental": edited,
                 "full": total_gaussians,
                 "unit": "gaussians",
             },
@@ -193,7 +202,8 @@ def bind(
         "graph_scope": GAUSSIAN_OUTPUT_GRAPH_VERSION,
         "graph_version": "gaussian-source-image-history-v1",
         "bound_version": GAUSSIAN_TEMPORAL_BOUND_VERSION,
-        "edit_class": "gaussian",
+        "edit_class": f"gaussian-{edit_kind}",
+        "edit_kind": edit_kind,
         "coupling_regime": "unclassified-real-scene",
         "before_state": before_state,
         "after_state": after_state,
@@ -215,8 +225,8 @@ def bind(
         "epsilon_rgb_linf": float(epsilon),
         # This first vertical slice's graph cardinality is intentionally only
         # source Gaussian records. It is not the final heterogeneous CBRC graph.
-        "hard_closure_nodes": translated,
-        "candidate_cone_nodes": translated,
+        "hard_closure_nodes": edited,
+        "candidate_cone_nodes": edited,
         "total_nodes": total_gaussians,
         "work_ledger": work_ledger,
         "output_planner_graph": output_planner_graph,

@@ -1,5 +1,6 @@
 add_library(AetherWorldGaussian STATIC
     src/GaussianLocalUpdate.cpp
+    src/GaussianEntityEdit.cpp
     src/GaussianRegionIndex.cpp
     src/GaussianOverlaySpatialIndex.cpp
     src/GaussianLocalityCertificate.cpp

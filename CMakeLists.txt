@@ -138,6 +138,11 @@ if(AETHER_BUILD_TESTS)
     aether_configure_target(MavebGaussianLocalUpdateTests)
     add_test(NAME MavebGaussianLocalUpdateTests COMMAND MavebGaussianLocalUpdateTests)
 
+    add_executable(MavebGaussianEntityEditTests tests/GaussianEntityEditTests.cpp)
+    target_link_libraries(MavebGaussianEntityEditTests PRIVATE Aether::WorldGaussian)
+    aether_configure_target(MavebGaussianEntityEditTests)
+    add_test(NAME MavebGaussianEntityEditTests COMMAND MavebGaussianEntityEditTests)
+
 
     add_executable(MavebGaussianRegionIndexTests tests/GaussianRegionIndexTests.cpp)
     target_link_libraries(MavebGaussianRegionIndexTests PRIVATE Aether::WorldGaussian)
@@ -276,6 +281,16 @@ if(AETHER_BUILD_TESTS)
         add_test(
             NAME MavebHeadlessCBRCRevisionToolTests
             COMMAND MavebHeadlessCBRCRevisionToolTests
+                $<TARGET_FILE:maveb-cbrc-revision>
+        )
+        add_executable(MavebHeadlessCBRCMultiEditToolTests
+            tests/HeadlessCBRCMultiEditToolTests.cpp)
+        target_link_libraries(MavebHeadlessCBRCMultiEditToolTests
+            PRIVATE Aether::Gaussian Aether::World Aether::WorldGaussian)
+        aether_configure_target(MavebHeadlessCBRCMultiEditToolTests)
+        add_test(
+            NAME MavebHeadlessCBRCMultiEditToolTests
+            COMMAND MavebHeadlessCBRCMultiEditToolTests
                 $<TARGET_FILE:maveb-cbrc-revision>
         )
     endif()
