@@ -112,14 +112,15 @@ def evaluate(
         selected_full = metrics(selected, full)
         candidate_full = metrics(candidate, full)
         before_full = metrics(before, full)
+        scene_id = str(row.get("scene_id", "unknown"))
+        scene_label = labels.get(scene_id, scene_id)
+        dataset = scene_label.split(" / ", 1)[0] if " / " in scene_label else "unclassified"
         records.append(
             {
                 "caseId": case_id,
-                "sceneId": str(row.get("scene_id", "unknown")),
-                "sceneLabel": labels.get(
-                    str(row.get("scene_id", "unknown")),
-                    str(row.get("scene_id", "unknown")),
-                ),
+                "sceneId": scene_id,
+                "sceneLabel": scene_label,
+                "dataset": dataset,
                 "fallbackFull": fallback,
                 "couplingRegime": str(row.get("coupling_regime", "unknown")),
                 "workRatioFull": (
@@ -155,6 +156,29 @@ def evaluate(
             ),
             "maximumSelectedVsFullMaxAbsByte": max(
                 record["selectedVsFull"]["maxAbsByte"] for record in subset
+            ),
+        }
+
+    by_dataset: dict[str, dict[str, Any]] = {}
+    for dataset in sorted({record["dataset"] for record in records}):
+        subset = [record for record in records if record["dataset"] == dataset]
+        local_subset = [record for record in subset if not record["fallbackFull"]]
+        by_dataset[dataset] = {
+            "cases": len(subset),
+            "scenes": len({record["sceneId"] for record in subset}),
+            "localCases": len(local_subset),
+            "fullFallbackCases": sum(record["fallbackFull"] for record in subset),
+            "selectedExactCases": sum(
+                record["selectedVsFull"]["maxAbsByte"] == 0 for record in subset
+            ),
+            "localSelectedExactCases": sum(
+                record["selectedVsFull"]["maxAbsByte"] == 0 for record in local_subset
+            ),
+            "maximumSelectedVsFullMaxAbsByte": max(
+                record["selectedVsFull"]["maxAbsByte"] for record in subset
+            ),
+            "medianBeforeVsFullChangedPixelFraction": statistics.median(
+                record["beforeVsFull"]["changedPixelFraction"] for record in subset
             ),
         }
 
@@ -207,6 +231,7 @@ def evaluate(
         "minimumBeforeVsFullChangedPixelFraction": min(edit_changed),
         "maximumBeforeVsFullChangedPixelFraction": max(edit_changed),
         "byScene": by_scene,
+        "byDataset": by_dataset,
         "scientificBoundary": (
             "Selected-vs-FULL metrics measure fidelity to the independent FULL-after "
             "oracle render for the evaluated representation. They are not photorealistic "
