@@ -98,6 +98,19 @@ class PaperReadinessTests(unittest.TestCase):
                     }
                 )
             )
+            visual_quality = root / "visual-quality.json"
+            visual_quality.write_text(
+                json.dumps(
+                    {
+                        "artifact": "maveb-cbrc-visual-quality-audit",
+                        "aggregate": {
+                            "case_count": 60,
+                            "scene_count": 4,
+                            "cases_with_visible_pixel_change": 60,
+                        },
+                    }
+                )
+            )
             stress = root / "ablation-stress.json"
             stress.write_text(
                 json.dumps(
@@ -115,6 +128,7 @@ class PaperReadinessTests(unittest.TestCase):
                 sparse,
                 empirical,
                 visual,
+                visual_quality=visual_quality,
                 ablation_stress=stress,
             )
             self.assertTrue(result["corePaperEvidenceReady"])
