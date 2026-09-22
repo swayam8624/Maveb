@@ -13,9 +13,7 @@ representations and data sources.
 4. Keep LOCAL, FULL, blocked, failed, and protocol-correction evidence.
 5. Dataset coordinate/format conversion is allowed only when its provenance is explicit.
 6. Do not call cross-dataset empirical success a universal proof.
-7. The first broad campaign uses the production-supported **translation** authored edit. Rotation,
-   scale, appearance, removal, and insertion remain capability-gated until their headless
-   transaction and independent-oracle paths are implemented and tested.
+7. The broad campaign freezes four same-cardinality authored edit families: **translation, rotation, uniform scale, and opacity/appearance**. Each uses the same independent image-certificate/oracle path. Removal and insertion remain capability-gated because they change Gaussian cardinality/ownership.
 
 ## Benchmark families
 
@@ -106,7 +104,7 @@ The runner:
    and paired baseline sign tests;
 9. hashes the final evidence set.
 
-Defaults are 15 frozen translation cases per prepared world and 5,000 statistical bootstrap
+Defaults are 15 frozen multi-edit cases per prepared world (cycled deterministically across translation, rotation, uniform scale, and opacity) and 5,000 statistical bootstrap
 resamples. For a smoke pass:
 
 ```bash
@@ -176,6 +174,4 @@ Open a PR. Do not alter thresholds or delete failed cases before committing the 
 - `statistics/dataset-summary.csv` — compact table source.
 - `BROAD_CAMPAIGN_COMPLETE.json` — SHA-256 completion manifest.
 
-The next scientific extension after this infrastructure passes is edit-family breadth. It must be
-implemented at the persistent-world + Gaussian transaction + oracle layer before it is admitted into
-this campaign.
+Removal/insertion are intentionally not part of this campaign yet. They must gain explicit persistent identity, Gaussian cardinality/ownership mutation, rollback, and independent-oracle semantics before they can be admitted.
