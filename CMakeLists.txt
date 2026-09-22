@@ -283,6 +283,16 @@ if(AETHER_BUILD_TESTS)
             COMMAND MavebHeadlessCBRCRevisionToolTests
                 $<TARGET_FILE:maveb-cbrc-revision>
         )
+        add_executable(MavebHeadlessCBRCMultiEditToolTests
+            tests/HeadlessCBRCMultiEditToolTests.cpp)
+        target_link_libraries(MavebHeadlessCBRCMultiEditToolTests
+            PRIVATE Aether::Gaussian Aether::World Aether::WorldGaussian)
+        aether_configure_target(MavebHeadlessCBRCMultiEditToolTests)
+        add_test(
+            NAME MavebHeadlessCBRCMultiEditToolTests
+            COMMAND MavebHeadlessCBRCMultiEditToolTests
+                $<TARGET_FILE:maveb-cbrc-revision>
+        )
     endif()
 
     add_executable(MavebGaussianOwnershipCodecTests tests/GaussianOwnershipCodecTests.cpp)
