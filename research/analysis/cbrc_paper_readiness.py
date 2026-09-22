@@ -205,7 +205,7 @@ def audit(
         "visualQualityStatus": visual_quality_data,
         "ablationStressStatus": stress,
         "interpretationBoundary": (
-            "A calibrated heterogeneous cost model is an isolated hardware-derived work estimate. "
+            "The frozen public calibrated four-domain cost model is an isolated hardware-derived work estimate. "
             "Measured campaign phase wall times are reported separately. Neither quantity should "
             "be relabeled as end-to-end speedup without a paired end-to-end timing experiment."
         ),
