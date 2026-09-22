@@ -2,7 +2,7 @@
 """Bind one live persistent Gaussian edit to a reproducible CBRC oracle manifest.
 
 Inputs come from:
-  1. AetherPersistentTranslateEntity JSON (transaction/revision provenance)
+  1. Persistent Gaussian edit transaction JSON (transaction/revision provenance)
   2. AetherPersistentRevisionCertificateJSON (post-frame camera/certificate/work)
 
 This is the v1 hybrid production path: the physical Gaussian source set is
@@ -202,7 +202,8 @@ def bind(
         "graph_scope": GAUSSIAN_OUTPUT_GRAPH_VERSION,
         "graph_version": "gaussian-source-image-history-v1",
         "bound_version": GAUSSIAN_TEMPORAL_BOUND_VERSION,
-        "edit_class": "gaussian",
+        "edit_class": f"gaussian-{edit_kind}",
+        "edit_kind": edit_kind,
         "coupling_regime": "unclassified-real-scene",
         "before_state": before_state,
         "after_state": after_state,
