@@ -79,4 +79,5 @@ jobs:
             build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.*
             build/public-real-v2/campaign/paper-artifacts/**
             build/public-real-v2/siggraph-visuals/**
+            build/public-real-v2/visual-quality/**
             build/public-real-v2/PAPER_GRADE_STATUS.json
