@@ -116,6 +116,35 @@ class CBRCLiveRevisionBinderTests(unittest.TestCase):
         self.assertEqual(result["native_scalar_work"]["full"], 2048)
         self.assertEqual(result["native_scalar_work"]["unit"], "temporal-pixels")
 
+
+    def test_new_edit_schema_binds_rotation(self):
+        t = translation()
+        t["editKind"] = "rotation"
+        t["editedGaussians"] = 4
+        t["translatedGaussians"] = 0
+        result = mod.bind(
+            t,
+            certificate(),
+            scene_id="scene",
+            git_sha="abc",
+            epsilon=0.03,
+        )
+        self.assertEqual(result["edit_kind"], "rotation")
+        self.assertEqual(result["edit_class"], "gaussian-rotation")
+        self.assertEqual(result["hard_closure_nodes"], 4)
+        self.assertEqual(result["output_planner_graph"]["edit_kind"], "rotation")
+
+    def test_legacy_translation_schema_remains_supported(self):
+        result = mod.bind(
+            translation(),
+            certificate(),
+            scene_id="scene",
+            git_sha="abc",
+            epsilon=0.03,
+        )
+        self.assertEqual(result["edit_kind"], "translation")
+        self.assertEqual(result["edit_class"], "gaussian-translation")
+
     def test_output_planner_epsilon_mismatch_fails_closed(self):
         c = certificate()
         c["outputConePlanner"]["epsilon"] = 0.01
