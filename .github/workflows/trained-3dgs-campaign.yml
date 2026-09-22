@@ -61,4 +61,5 @@ jobs:
             build/trained-3dgs-campaign/campaign/REAL_CAMPAIGN_ANSWER.*
             build/trained-3dgs-campaign/campaign/paper-artifacts/**
             build/trained-3dgs-campaign/siggraph-visuals/**
+            build/trained-3dgs-campaign/visual-quality/**
             build/trained-3dgs-campaign/TRAINED_3DGS_STATUS.json
