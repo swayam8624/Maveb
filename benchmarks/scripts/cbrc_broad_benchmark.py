@@ -384,9 +384,11 @@ RESOLVERS = {
 }
 
 
-def normalize(config: dict[str, Any]) -> dict[str, Any]:
+def normalize(config: dict[str, Any], selected: set[str] | None = None) -> dict[str, Any]:
     datasets = []
     for dataset in config["datasets"]:
+        if selected and dataset["id"] not in selected:
+            continue
         resolver = RESOLVERS[dataset["kind"]]
         datasets.append(resolver(dataset, configured_root(dataset)))
     return {
@@ -455,6 +457,7 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("doctor")
     imp = sub.add_parser("import")
     imp.add_argument("--output", type=Path, required=True)
+    imp.add_argument("--dataset", action="append", default=[])
     plan = sub.add_parser("download-plan")
     plan.add_argument("--output", type=Path)
     return p
@@ -472,7 +475,12 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
 
-    payload = normalize(config)
+    selected = set(getattr(args, "dataset", []) or [])
+    known = {item["id"] for item in config["datasets"]}
+    unknown = selected - known
+    if unknown:
+        raise SystemExit("unknown dataset(s): " + ", ".join(sorted(unknown)))
+    payload = normalize(config, selected or None)
     if args.command == "import":
         write_json(args.output.resolve(), payload)
         print(args.output.resolve())
