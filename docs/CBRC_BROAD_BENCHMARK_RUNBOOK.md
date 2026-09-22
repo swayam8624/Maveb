@@ -137,7 +137,7 @@ and independent benchmark context. The harness does not claim that those metric 
 to train the seeded Gaussian field.
 
 For 3RScan, changed reference/rescan pairs are frozen from the official metadata before outcomes.
-That pair annotation is retained even when the current translation campaign uses the reference scan
+That pair annotation is retained while the broad multi-edit campaign uses the reference scan
 as the output-side world.
 
 ## 5. Package compact evidence for Git
