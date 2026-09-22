@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts/cbrc_prepare_broad_worlds.py"
 SPEC = importlib.util.spec_from_file_location("cbrc_prepare_broad_worlds", MODULE_PATH)
@@ -43,6 +45,51 @@ class BroadWorldPreparationTests(unittest.TestCase):
             )
             values = mod.bonn_images({"root": str(root)}, 20)
             self.assertEqual([p.name for p in values], ["0.png", "1.png", "2.png"])
+
+    def test_model_point_count_reads_colmap_binary_header(self):
+        with tempfile.TemporaryDirectory() as directory:
+            model = Path(directory)
+            (model / "points3D.bin").write_bytes(struct.pack("<Q", 73))
+            self.assertEqual(mod.model_point_count(model), 73)
+            self.assertEqual(mod.usable_model(model), model)
+
+    def test_reconstruct_colmap_retries_with_exhaustive_matching(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            images = []
+            for index in range(8):
+                image = root / f"{index:02d}.jpg"
+                image.write_bytes(b"x")
+                images.append(image)
+
+            calls = []
+            mapper_calls = 0
+
+            def fake_run(argv, log, cwd=None):
+                nonlocal mapper_calls
+                calls.append(argv[1] if len(argv) > 1 else argv[0])
+                if len(argv) > 1 and argv[1] == "mapper":
+                    mapper_calls += 1
+                    if mapper_calls == 1:
+                        raise RuntimeError("first mapper failed")
+                    model = root / "workspace/sparse/0"
+                    model.mkdir(parents=True, exist_ok=True)
+                    (model / "points3D.bin").write_bytes(struct.pack("<Q", 64))
+
+            with mock.patch.object(mod, "run", side_effect=fake_run):
+                model, count = mod.reconstruct_colmap(
+                    images,
+                    root / "workspace",
+                    colmap="/fake/colmap",
+                    maximum_images=8,
+                    sequential=True,
+                )
+
+            self.assertEqual(count, 8)
+            self.assertEqual(model, root / "workspace/sparse/0")
+            self.assertEqual(mapper_calls, 2)
+            self.assertIn("sequential_matcher", calls)
+            self.assertIn("exhaustive_matcher", calls)
 
     def test_stage_images_rejects_too_few_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
