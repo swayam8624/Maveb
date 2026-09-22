@@ -148,7 +148,7 @@ Completion manifest: $OUT/BROAD_CAMPAIGN_COMPLETE.json
 
 Scientific boundary:
   * one frozen CBRC implementation and one work calibration are used across selected datasets;
-  * current broad algorithmic edit family is translation only;
+  * broad same-cardinality edit families are translation, rotation, uniform scale, and opacity;
   * dataset-specific import/coordinate conversion is provenance, not threshold retuning;
   * failed/FULL cases remain evidence;
   * this is cross-dataset empirical validation, not universal proof.
