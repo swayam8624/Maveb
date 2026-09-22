@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "artifact": "maveb-cbrc-graphics-benchmark-evidence",
+  "evidenceDate": "2026-09-22",
+  "purpose": "Submission-facing benchmark-dataset and rendered-repair-fidelity evidence. This record supplements, but does not replace, the 2026-09-21 canonical work-calibration evidence.",
+  "publicV21VisualQuality": {
+    "workflowRunId": 35726428584,
+    "workflowHeadSha": "1cfd46e78f21f91841b186a5b268252459af2df2",
+    "artifactId": 10695565286,
+    "artifactDigest": "sha256:8b0c5448f1e5ebc0c51025abcbede222918640d49a5eaf5351f6ebd32c1afaf8",
+    "datasets": {
+      "Tanks and Temples": [
+        "Train",
+        "Truck"
+      ],
+      "Deep Blending": [
+        "Dr Johnson",
+        "Playroom"
+      ]
+    },
+    "cases": 60,
+    "scenes": 4,
+    "localCases": 44,
+    "fullFallbackCases": 16,
+    "localSelectedExactCases": 44,
+    "localSelectedExactCaseRate": 1,
+    "maximumSelectedVsFullMaxAbsByte": 0,
+    "maximumSelectedVsFullMaeByte": 0,
+    "allSelectedVsFullPsnrInfinite": true,
+    "beforeVsFullChangedPixelFraction": {
+      "median": 0.01736979166666669,
+      "minimum": 0,
+      "maximum": 0.07875434027777772,
+      "casesWithAtLeastOneChangedPixel": 57
+    },
+    "datasetMedianBeforeVsFullChangedPixelFraction": {
+      "Deep Blending": 0.018880750868055518,
+      "Tanks and Temples": 0.017055121527777772
+    },
+    "interpretation": "The 44 LOCAL results reproduce the independent FULL-after raster exactly at 8-bit RGB precision on the evaluated frozen views. The 16 fallback cases select FULL by construction and are not counted as evidence of local fidelity. These are repair-fidelity metrics for the evaluated representation, not reconstruction fidelity to source photographs."
+  },
+  "trained3dgsVisualQuality": {
+    "workflowRunId": 35726442591,
+    "workflowHeadSha": "f0041e588d18503b6899dc2d232fed2bed449176",
+    "artifactId": 10694206685,
+    "artifactDigest": "sha256:d2d7b70206804098c2429aba21ebf2d7354bc9b926e4ef24591b3fc6962cef14",
+    "cases": 5,
+    "scenes": 1,
+    "localCases": 4,
+    "fullFallbackCases": 1,
+    "localSelectedExactCases": 4,
+    "localSelectedExactCaseRate": 1,
+    "maximumSelectedVsFullMaxAbsByte": 0,
+    "beforeVsFullChangedPixelFraction": {
+      "median": 0.02225368923611115,
+      "minimum": 0.016015624999999978,
+      "maximum": 0.026639539930555567
+    },
+    "interpretation": "All four trained-3DGS LOCAL selections are byte-identical to FULL-after on the frozen views; the fifth case selects FULL. This remains a five-case secondary representation check."
+  },
+  "canonicalWorkHeadline": {
+    "source": "research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json",
+    "medianSelectedWorkRatioFull": 0.3695301075670818,
+    "medianCalibratedWorkReductionFactor": 2.7061394444523503,
+    "note": "The 2026-09-22 graphics rerun recalibrated hardware work on its runner. Its fresh work scalar is not substituted for the frozen canonical work headline; the rerun is used to establish benchmark-view visual fidelity."
+  }
+}
