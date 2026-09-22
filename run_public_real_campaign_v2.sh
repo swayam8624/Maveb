@@ -95,9 +95,10 @@ set +e
 REPORT_STATUS=$?
 set -e
 "$PYTHON" research/visualization/cbrc_siggraph_visuals.py   --campaign-dir "$RESULTS"   --output-dir "$VIS"   --max-mosaic-cases 20
+"$PYTHON" research/analysis/cbrc_visual_quality.py   --campaign-dir "$RESULTS"   --output-dir "$VISUAL_QUALITY"
 
 echo "==> [10/10] Paper-readiness audit"
-"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$RESULTS"   --calibration "$CAL/work-cost-model.json"   --sparse-summary "$SPARSE/sparse-discovery-summary.json"   --empirical "$RESULTS/empirical-heldout.json"   --visual-package "$VIS/VISUAL_PACKAGE.json"   --output "$OUT/PAPER_GRADE_STATUS.json"
+"$PYTHON" research/analysis/cbrc_paper_readiness.py   --campaign-dir "$RESULTS"   --calibration "$CAL/work-cost-model.json"   --sparse-summary "$SPARSE/sparse-discovery-summary.json"   --empirical "$RESULTS/empirical-heldout.json"   --visual-package "$VIS/VISUAL_PACKAGE.json"   --visual-quality "$VISUAL_QUALITY/visual-quality.json"   --output "$OUT/PAPER_GRADE_STATUS.json"
 
 cat <<EOF
 
@@ -111,6 +112,7 @@ Evidence gates         : $RESULTS/campaign-gates.json
 Held-out empirical     : $RESULTS/empirical-heldout.json
 Answer                 : $RESULTS/REAL_CAMPAIGN_ANSWER.md
 SIGGRAPH visuals       : $VIS
+Visual-quality audit    : $VISUAL_QUALITY
 Paper-grade audit      : $OUT/PAPER_GRADE_STATUS.json
 
 Scientific boundary:
