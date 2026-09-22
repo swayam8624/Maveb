@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <numbers>
 #include <string>
 
 namespace {
@@ -95,7 +96,7 @@ void testRotationChangesOwnedPositionsAndWorldDiff() {
     GaussianEntityEdit edit;
     edit.kind = GaussianEntityEditKind::rotation;
     edit.rotationAxis = {0.0F, 0.0F, 1.0F};
-    edit.rotationRadians = static_cast<float>(M_PI_2);
+    edit.rotationRadians = std::numbers::pi_v<float> * 0.5F;
 
     auto result = aether::world_gaussian::editPersistentGaussianEntityIndexed(
         fixture.world, fixture.asset, fixture.ownership, fixture.overlay, EntityId{1}, edit, 200);
