@@ -4,6 +4,7 @@
 #include <aether/revision/RevisionCertificateJson.hpp>
 #include <aether/revision/RevisionPlanner.hpp>
 #include <aether/world/WorldModel.hpp>
+#include <aether/world_gaussian/GaussianEntityEdit.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 #include <aether/world_gaussian/GaussianLocalUpdate.hpp>
 #include <aether/world_gaussian/GaussianOverlaySpatialIndex.hpp>
@@ -34,16 +35,44 @@ using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
 using aether::world::EntityId;
 using aether::world::PersistentWorldModel;
+using aether::world_gaussian::GaussianEntityEdit;
+using aether::world_gaussian::GaussianEntityEditKind;
 using aether::world_gaussian::GaussianEntityOwnership;
 using aether::world_gaussian::GaussianOverlaySpatialIndex;
+
+enum class EditKind : std::uint8_t {
+    translation,
+    rotation,
+    uniformScale,
+    opacity,
+};
+
+[[nodiscard]] std::string_view editKindName(EditKind kind) noexcept {
+    switch (kind) {
+    case EditKind::translation:
+        return "translation";
+    case EditKind::rotation:
+        return "rotation";
+    case EditKind::uniformScale:
+        return "uniform-scale";
+    case EditKind::opacity:
+        return "opacity";
+    }
+    return "unknown";
+}
 
 struct Options final {
     std::filesystem::path archive;
     std::filesystem::path outputDir;
     std::uint64_t entity{};
     std::uint64_t timestamp{};
+    EditKind editKind{EditKind::translation};
     simd_float3 target{};
     bool haveTarget{};
+    simd_float3 rotationAxis{0.0F, 1.0F, 0.0F};
+    float rotationRadians{};
+    float uniformScale{1.0F};
+    float opacityLogitDelta{};
     std::size_t width{1280};
     std::size_t height{720};
     float focalX{900.0F};
@@ -148,6 +177,28 @@ template <std::size_t N>
                 options.width = static_cast<std::size_t>(*parsed);
             else
                 options.height = static_cast<std::size_t>(*parsed);
+        } else if (arg == "--edit-kind") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            if (*value == "translation")
+                options.editKind = EditKind::translation;
+            else if (*value == "rotation")
+                options.editKind = EditKind::rotation;
+            else if (*value == "uniform-scale")
+                options.editKind = EditKind::uniformScale;
+            else if (*value == "opacity")
+                options.editKind = EditKind::opacity;
+            else
+                return std::nullopt;
+        } else if (arg == "--rotation-axis") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            auto parsed = parseFloatCsv<3>(*value);
+            if (!parsed)
+                return std::nullopt;
+            options.rotationAxis = {(*parsed)[0], (*parsed)[1], (*parsed)[2]};
         } else if (arg == "--target") {
             auto value = requireValue(arg);
             if (!value)
@@ -175,7 +226,8 @@ template <std::size_t N>
             options.cameraWorldPosition = *parsed;
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--history-weight") {
+                   arg == "--history-weight" || arg == "--rotation-radians" ||
+                   arg == "--uniform-scale" || arg == "--opacity-logit-delta") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -196,13 +248,25 @@ template <std::size_t N>
                 options.farPlane = static_cast<float>(*parsed);
             else if (arg == "--epsilon")
                 options.epsilon = *parsed;
+            else if (arg == "--rotation-radians")
+                options.rotationRadians = static_cast<float>(*parsed);
+            else if (arg == "--uniform-scale")
+                options.uniformScale = static_cast<float>(*parsed);
+            else if (arg == "--opacity-logit-delta")
+                options.opacityLogitDelta = static_cast<float>(*parsed);
             else
                 options.historyWeight = *parsed;
         } else if (arg == "--history-unstable") {
             options.historyStable = false;
         } else if (arg == "--help") {
             std::cout << "Usage: maveb-cbrc-revision --archive WORLD --entity ID "
-                         "--target x,y,z --timestamp NS --output-dir DIR [camera options]\n"
+                         "--timestamp NS --output-dir DIR [edit options] [camera options]\n"
+                      << "Edit options (default: translation):\n"
+                      << "  --edit-kind translation --target x,y,z\n"
+                      << "  --edit-kind rotation --rotation-axis x,y,z --rotation-radians R\n"
+                      << "  --edit-kind uniform-scale --uniform-scale S\n"
+                      << "  --edit-kind opacity --opacity-logit-delta D\n"
+                      << "Camera options:\n"
                       << "  --width N --height N --focal-x F --focal-y F\n"
                       << "  --center-x F --center-y F --near F --far F\n"
                       << "  --world-to-camera m00,...,m33 --camera-world-position x,y,z\n"
@@ -214,8 +278,17 @@ template <std::size_t N>
         }
     }
 
+    const bool editValid =
+        (options.editKind == EditKind::translation && options.haveTarget) ||
+        (options.editKind == EditKind::rotation && (std::isfinite(options.rotationAxis.x) && std::isfinite(options.rotationAxis.y) && std::isfinite(options.rotationAxis.z)) &&
+         simd_length(options.rotationAxis) > 1.0e-6F &&
+         std::isfinite(options.rotationRadians) && std::abs(options.rotationRadians) > 1.0e-6F) ||
+        (options.editKind == EditKind::uniformScale && std::isfinite(options.uniformScale) &&
+         options.uniformScale > 0.0F && std::abs(options.uniformScale - 1.0F) > 1.0e-6F) ||
+        (options.editKind == EditKind::opacity && std::isfinite(options.opacityLogitDelta) &&
+         std::abs(options.opacityLogitDelta) > 1.0e-6F);
     if (options.archive.empty() || options.outputDir.empty() || options.entity == 0 ||
-        options.timestamp == 0 || !options.haveTarget || options.width == 0 ||
+        options.timestamp == 0 || !editValid || options.width == 0 ||
         options.height == 0 || options.focalX <= 0.0F || options.focalY <= 0.0F ||
         options.nearPlane <= 0.0F || options.farPlane <= options.nearPlane ||
         !std::isfinite(options.epsilon) || options.epsilon < 0.0 ||
