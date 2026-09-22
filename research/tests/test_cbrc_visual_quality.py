@@ -115,6 +115,37 @@ class VisualQualityTests(unittest.TestCase):
             self.assertGreater(records[0]["candidateRepairVsFull"]["maxAbsByte"], 0)
             self.assertEqual(records[0]["selectedImageSource"], "full-after-fallback")
 
+
+    def test_broad_rows_use_explicit_dataset_and_edit_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            campaign = Path(directory) / "campaign"
+            write_case(
+                campaign,
+                "case-rotation",
+                (0, 0, 0),
+                (30, 20, 10),
+                (30, 20, 10),
+            )
+            rows = [
+                {
+                    "case_id": "case-rotation",
+                    "scene_id": "scannetpp::scene-a",
+                    "dataset_id": "scannetpp",
+                    "representation": "scannetpp-dslr-colmap-seeded-gaussians",
+                    "edit_family": "rotation",
+                    "fallback_full": False,
+                    "coupling_regime": "medium",
+                    "planner_work": 20.0,
+                    "full_work": 100.0,
+                }
+            ]
+            report, records = mod.evaluate(campaign, rows, {})
+            self.assertEqual(records[0]["dataset"], "scannetpp")
+            self.assertEqual(records[0]["editFamily"], "rotation")
+            self.assertIn("scannetpp", report["byDataset"])
+            self.assertIn("rotation", report["byEditFamily"])
+            self.assertEqual(report["byEditFamily"]["rotation"]["cases"], 1)
+
     def test_grid_generation(self):
         with tempfile.TemporaryDirectory() as directory:
             campaign = Path(directory) / "campaign"
