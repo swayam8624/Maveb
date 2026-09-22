@@ -315,6 +315,9 @@ def main() -> int:
         baseline_result["coupling_regime"] = str(
             case.get("coupling_regime", "unknown")
         )
+        for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
+            if key in case:
+                baseline_result[key] = case[key]
         all_baselines.append(baseline_result)
 
         parity = verify_native_python_planner_parity(
@@ -327,6 +330,9 @@ def main() -> int:
         row["case_id"] = case_id
         row["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
         row["edit_class"] = str(case.get("edit_class", row.get("edit_class", "gaussian")))
+        for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
+            if key in case:
+                row[key] = case[key]
         (case_dir / "revision-row.json").write_text(
             json.dumps(row, indent=2, sort_keys=True) + "\n"
         )
@@ -335,6 +341,10 @@ def main() -> int:
             {
                 "case_id": case_id,
                 "scene_id": str(case["scene_id"]),
+                "dataset_id": case.get("dataset_id"),
+                "source_scene_id": case.get("source_scene_id"),
+                "representation": case.get("representation"),
+                "edit_family": case.get("edit_family"),
                 "fallback_full": bool(row.get("fallback_full", False)),
                 "capture_wall_ms": capture_wall_ms,
                 "evidence_wall_ms": evidence_wall_ms,
