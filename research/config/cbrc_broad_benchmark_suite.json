@@ -146,6 +146,7 @@
       "selection": {
         "mode": "validation-csv-first-n",
         "dataset": "raw",
+        "fold": "Validation",
         "targetVideos": 20
       },
       "requiredAny": [
