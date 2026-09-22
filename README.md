@@ -707,8 +707,6 @@ Canonical evidence:
 | Calibrated work reduction factor | 2.706x |
 | Maximum measured selected support-replay residual | 0.0 |
 | Maximum selected certified bound | $2\times10^{-6}$ |
-| LOCAL trained-3DGS renders matching FULL-after | 4 / 4 |
-| Median before-to-FULL changed-pixel fraction | 2.23% |
 | Sparse-discovery median inspected fraction | 0.01 |
 | Sparse-discovery minimum inspected fraction | 0.001 |
 | LOCAL selected renders matching FULL-after at 8-bit RGB | 44 / 44 |
@@ -731,8 +729,10 @@ The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian f
 | Median native temporal/output work / FULL | 0.03495 |
 | Native work reduction factor | 28.614x |
 | Median Gaussian inspection ratio | 0.9999972 |
-| Maximum measured selected RGB residual | 0.0 |
+| Maximum measured selected support-replay residual | 0.0 |
 | Maximum selected certified bound | $2\times10^{-6}$ |
+| LOCAL trained-3DGS renders matching FULL-after | 4 / 4 |
+| Median before-to-FULL changed-pixel fraction | 2.23% |
 
 The 28.614x value is lower native temporal/output work under that campaign definition. It is not wall-clock speedup.
 
@@ -787,15 +787,15 @@ The method was then integrated into the C++23 persistent-world stack.
 
 The native path includes sparse revision planning, persistent ownership, Gaussian publication planning, temporal invalidation, immutable revision records, deterministic certificate JSON, and headless execution tools.
 
-Native and Python planner decisions are checked for parity.
+Native and Python output-cone planner decisions are checked for parity.
 
 ## Independent oracle
 
 A certifier cannot be trusted merely because its own internal checks pass.
 
-The final campaign compares every selected repair with an independent full-reference replay.
+The final campaign uses an independent full-after oracle to falsify the unrepaired exterior implied by each selected support.
 
-<pre>independent measured error <= certificate <= tolerance</pre>
+<pre>measured support-replay residual <= certificate <= tolerance</pre>
 
 ## Public campaign
 
