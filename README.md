@@ -227,7 +227,7 @@ If $v$ is repaired and $u$ is an exact predecessor required to reproduce $v$, th
 
 ```math
 v\in C,\qquad
-u\in\operatorname{Pred}_{\mathrm{HARD}}(v)
+u\in\mathrm{Pred}_{\mathrm{HARD}}(v)
 \Longrightarrow
 u\in C.
 ```
@@ -462,7 +462,7 @@ A passing cone satisfies
 For candidate expansion $C\rightarrow C'$, the greedy utility is
 
 ```math
-\operatorname{utility}(C\rightarrow C')
+\mathrm{utility}(C\rightarrow C')
 =
 \frac{\phi(C)-\phi(C')}
 {W(C')-W(C)}.
@@ -585,39 +585,42 @@ A dependency is weakened only when a useful conservative finite-change theorem e
 
 <table>
 <tr>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F1_actual_vs_bound.svg">
 <img src="research/results/visualizations/paper/F1_actual_vs_bound.svg" width="100%" alt="F1 actual error versus certified bound">
 </a><br><sub>F1. Independent measured error against emitted certificate.</sub>
 </td>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F2_work_vs_changed_fraction.svg">
 <img src="research/results/visualizations/paper/F2_work_vs_changed_fraction.svg" width="100%" alt="F2 work versus changed fraction">
 </a><br><sub>F2. Selected work as revision size changes.</sub>
 </td>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F3_coupling_cone.svg">
 <img src="research/results/visualizations/paper/F3_coupling_cone.svg" width="100%" alt="F3 coupling and repair cone">
 </a><br><sub>F3. Coupling structure and repair-cone response.</sub>
 </td>
 </tr>
 <tr>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F4_fallback_crossover.svg">
 <img src="research/results/visualizations/paper/F4_fallback_crossover.svg" width="100%" alt="F4 fallback crossover">
 </a><br><sub>F4. Local-to-FULL crossover under increasing coupling.</sub>
 </td>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F5_effectivity.svg">
 <img src="research/results/visualizations/paper/F5_effectivity.svg" width="100%" alt="F5 certificate effectivity">
 </a><br><sub>F5. Certificate effectivity where independent residual is non-zero.</sub>
 </td>
-<td width="33%" align="center">
+<td width="33.333%" align="center">
 <a href="research/results/visualizations/paper/F6_layer_work.svg">
 <img src="research/results/visualizations/paper/F6_layer_work.svg" width="100%" alt="F6 layer work">
 </a><br><sub>F6. Work distribution across captured-world layers.</sub>
 </td>
 </tr>
+</table>
+
+<table>
 <tr>
 <td width="50%" align="center">
 <a href="research/results/visualizations/paper/F7_cone_support_residual.svg">
