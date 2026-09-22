@@ -42,12 +42,21 @@ jobs:
           chmod +x run_public_real_campaign_v2.sh
           ./run_public_real_campaign_v2.sh
 
+      - name: Run rendered visual-quality benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          .venv-maveb/bin/python research/analysis/cbrc_visual_quality.py \
+            --campaign-dir build/public-real-v2/campaign \
+            --output-dir build/public-real-v2/visual-quality \
+            --source-manifest research/config/cbrc_public_real_sources.json
+
       - name: Publish evidence summary
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          for file in build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.md build/public-real-v2/PAPER_GRADE_STATUS.json; do
+          for file in build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.md build/public-real-v2/PAPER_GRADE_STATUS.json build/public-real-v2/visual-quality/CBRC_VISUAL_QUALITY.json; do
             if [[ -f "$file" ]]; then
               cat "$file" >> "$GITHUB_STEP_SUMMARY"
               echo >> "$GITHUB_STEP_SUMMARY"
@@ -79,4 +88,5 @@ jobs:
             build/public-real-v2/campaign/REAL_CAMPAIGN_ANSWER.*
             build/public-real-v2/campaign/paper-artifacts/**
             build/public-real-v2/siggraph-visuals/**
+            build/public-real-v2/visual-quality/**
             build/public-real-v2/PAPER_GRADE_STATUS.json

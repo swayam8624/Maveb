@@ -1,3 +1,4 @@
+# Final submission cleanup: merging the final integration intentionally prunes all non-main branches.
 name: Branch hygiene
 
 on:

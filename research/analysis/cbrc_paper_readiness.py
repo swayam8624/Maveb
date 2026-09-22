@@ -32,6 +32,7 @@ def audit(
     sparse_summary: Path,
     empirical: Path,
     visual_package: Path,
+    visual_quality: Path | None = None,
     trained_status: Path | None = None,
     ablation_stress: Path | None = None,
 ) -> dict[str, Any]:
@@ -94,6 +95,15 @@ def audit(
         for relative in visual_assets.values()
     ]
 
+    visual_quality_data = None
+    if visual_quality is not None and visual_quality.is_file():
+        visual_quality_data = load(visual_quality)
+    visual_quality_records = (
+        list(visual_quality_data.get("records", []))
+        if visual_quality_data is not None
+        else []
+    )
+
     checks = {
         "campaignAtLeast50FrozenCases": len(campaign_rows) >= 50,
         "campaignAtLeast4Scenes": len(scenes) >= 4,
@@ -125,6 +135,29 @@ def audit(
         "siggraphVisualPackagePresent": bool(visual_assets)
         and all(path.is_file() for path in visual_files),
     }
+
+    if visual_quality is not None:
+        changed_visual_cases = sum(
+            float(record.get("beforeVsFull", {}).get("changedPixelFraction", 0.0)) > 0.0
+            for record in visual_quality_records
+        )
+        checks.update(
+            {
+                "visualQualityAuditPresent": visual_quality_data is not None,
+                "visualQualityCoversCampaign": (
+                    visual_quality_data is not None
+                    and int(visual_quality_data.get("rows", -1)) == len(campaign_rows)
+                ),
+                "localSelectedVisualsMatchFull": (
+                    visual_quality_data is not None
+                    and int(visual_quality_data.get("localSelectedExactCases", -1)) == local
+                    and int(visual_quality_data.get("maximumSelectedVsFullMaxAbsByte", -1)) == 0
+                ),
+                "visualAuditShowsNontrivialEdits": (
+                    changed_visual_cases >= max(1, len(campaign_rows) // 2)
+                ),
+            }
+        )
 
     trained = None
     if trained_status is not None and trained_status.is_file():
@@ -169,9 +202,10 @@ def audit(
         "checks": checks,
         "corePaperEvidenceReady": core_ready,
         "trained3dgsStatus": trained,
+        "visualQualityStatus": visual_quality_data,
         "ablationStressStatus": stress,
         "interpretationBoundary": (
-            "A calibrated heterogeneous cost model is an isolated hardware-derived work estimate. "
+            "The frozen public calibrated four-domain cost model is an isolated hardware-derived work estimate. "
             "Measured campaign phase wall times are reported separately. Neither quantity should "
             "be relabeled as end-to-end speedup without a paired end-to-end timing experiment."
         ),
@@ -185,6 +219,7 @@ def main() -> int:
     parser.add_argument("--sparse-summary", type=Path, required=True)
     parser.add_argument("--empirical", type=Path, required=True)
     parser.add_argument("--visual-package", type=Path, required=True)
+    parser.add_argument("--visual-quality", type=Path)
     parser.add_argument("--trained-status", type=Path)
     parser.add_argument("--ablation-stress", type=Path)
     parser.add_argument("--output", type=Path, required=True)
@@ -195,6 +230,7 @@ def main() -> int:
         args.sparse_summary,
         args.empirical,
         args.visual_package,
+        args.visual_quality,
         args.trained_status,
         args.ablation_stress,
     )

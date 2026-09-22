@@ -52,6 +52,19 @@ Figure 2 uses the original author-supplied PNG bytes without cropping, redrawing
 
 The image's embedded micro-metrics are illustrative. Its caption distinguishes them from the frozen 60-case headline and qualifies its correctness language by the stated assumptions. All six tables use bounded widths; Table 3's note wraps below the table. Numerical columns remain aligned and text columns wrap.
 
+## Graphics benchmark and visual-fidelity audit
+
+The submission-facing graphics audit now makes two requirements explicit:
+
+- the public matrix uses named benchmark inputs from **Tanks & Temples** (Train, Truck) and **Deep Blending** (Dr Johnson, Playroom), with the source archive pinned by size/SHA-256;
+- `research/analysis/cbrc_visual_quality.py` compares each final selected benchmark-view render with the independently rendered FULL-after reference and emits JSON, CSV, and `F13_benchmark_visual_quality.png`.
+
+The audit reports byte-domain MAE/RMSE/max error, exact-pixel fraction, PSNR semantics, and before-to-FULL changed-pixel fraction. FULL fallback cases are scored using the actual selected FULL execution; the rejected local candidate is retained separately. These metrics establish **repair fidelity to FULL for the evaluated representation**, not photorealistic reconstruction quality against the original source photographs.
+
+In the verified 60-case public rerun, all **44/44 LOCAL** selected renders were byte-identical to the independent FULL-after render at 8-bit RGB precision; the remaining 16 cases correctly selected FULL. Before-to-FULL edits changed a median **1.74%** of pixels across all frozen views (range **0--7.88%**), with at least one changed pixel in **57/60** views. Dataset medians were **1.89%** for Deep Blending and **1.71%** for Tanks & Temples. The visual-quality rerun is used only for these image-space metrics and does **not** replace the canonical frozen work-calibration headline (0.36953 work/FULL, 2.706x lower calibrated work).
+
+The same audit runs on the pinned trained-3DGS validation. In the verified five-case run, all four LOCAL selected renders were byte-identical to FULL-after; the fifth case selected FULL. The before-to-FULL edits changed 1.60--2.66% of pixels across those frozen views (median 2.23%).
+
 ## Build and CI
 
 The canonical local build is:

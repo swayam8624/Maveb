@@ -42,6 +42,22 @@ jobs:
           chmod +x run_trained_3dgs_campaign.sh
           ./run_trained_3dgs_campaign.sh
 
+      - name: Run trained-3DGS rendered visual-quality benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          .venv-maveb/bin/python research/analysis/cbrc_visual_quality.py \
+            --campaign-dir build/trained-3dgs-campaign/campaign \
+            --output-dir build/trained-3dgs-campaign/visual-quality
+
+      - name: Publish trained visual-quality summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f build/trained-3dgs-campaign/visual-quality/CBRC_VISUAL_QUALITY.json ]]; then
+            cat build/trained-3dgs-campaign/visual-quality/CBRC_VISUAL_QUALITY.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload compact trained-3DGS evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,4 +77,5 @@ jobs:
             build/trained-3dgs-campaign/campaign/REAL_CAMPAIGN_ANSWER.*
             build/trained-3dgs-campaign/campaign/paper-artifacts/**
             build/trained-3dgs-campaign/siggraph-visuals/**
+            build/trained-3dgs-campaign/visual-quality/**
             build/trained-3dgs-campaign/TRAINED_3DGS_STATUS.json

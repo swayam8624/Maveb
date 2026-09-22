@@ -15,12 +15,13 @@ WORLD_ROOT="$OUT/world"
 FROZEN="$OUT/frozen-inputs"
 RESULTS="$OUT/campaign"
 VIS="$OUT/siggraph-visuals"
+VISUAL_QUALITY="$OUT/visual-quality"
 
 SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 
-mkdir -p "$SOURCE" "$WORLD_ROOT" "$FROZEN" "$RESULTS" "$VIS"
+mkdir -p "$SOURCE" "$WORLD_ROOT" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
 echo "============================================================"
 echo "MAVEB public trained-3DGS CBRC validation"
@@ -31,12 +32,12 @@ echo "Output     : $OUT"
 echo "User data  : NONE"
 echo
 
-echo "==> [1/7] Ensuring Hugging Face download dependency"
+echo "==> [1/8] Ensuring Hugging Face download dependency"
 if ! "$PYTHON" -c 'import huggingface_hub' >/dev/null 2>&1; then
   "$PYTHON" -m pip install "huggingface_hub>=0.34,<2"
 fi
 
-echo "==> [2/7] Fetching one public trained 3DGS model with frozen provenance"
+echo "==> [2/8] Fetching one public trained 3DGS model with frozen provenance"
 FETCH_ARGS=(--output-dir "$SOURCE")
 if [[ -n "${MAVEB_TRAINED_3DGS_REPO:-}" ]]; then
   FETCH_ARGS+=(--repo-id "$MAVEB_TRAINED_3DGS_REPO")
@@ -46,15 +47,15 @@ if [[ -n "${MAVEB_TRAINED_3DGS_FILE:-}" ]]; then
 fi
 "$PYTHON" benchmarks/scripts/cbrc_fetch_trained_3dgs.py "${FETCH_ARGS[@]}" > "$SOURCE/fetch.stdout"
 
-echo "==> [3/7] Building trained-3DGS seeder and CBRC evidence tools"
+echo "==> [3/8] Building trained-3DGS seeder and CBRC evidence tools"
 cmake --preset ci
 cmake --build --preset ci --target   maveb-seed-trained-3dgs-world   maveb-cbrc-revision   maveb-cbrc-gaussian-oracle   --parallel
 
-echo "==> [4/7] Converting trained 3DGS into a persistent MAVEB world"
+echo "==> [4/8] Converting trained 3DGS into a persistent MAVEB world"
 WORLD="$WORLD_ROOT/public-trained.aetherworld"
 "$SEED"   --ply "$SOURCE/trained-point-cloud.ply"   --output "$WORLD"   --target-diagonal 2.0   --json   > "$WORLD_ROOT/trained-seed.json"
 
-echo "==> [5/7] Freezing and running trained-3DGS revision cases"
+echo "==> [5/8] Freezing and running trained-3DGS revision cases"
 rm -rf "$FROZEN" "$RESULTS"
 mkdir -p "$FROZEN" "$RESULTS"
 PREP_ARGS=(
@@ -71,14 +72,19 @@ set +e
 CAMPAIGN_STATUS=$?
 set -e
 
-echo "==> [6/7] Generating trained-3DGS answer and visual package"
+echo "==> [6/8] Generating trained-3DGS answer and visual package"
 set +e
 "$PYTHON" research/analysis/cbrc_real_campaign_report.py --results-dir "$RESULTS"
 REPORT_STATUS=$?
 set -e
 "$PYTHON" research/visualization/cbrc_siggraph_visuals.py   --campaign-dir "$RESULTS"   --output-dir "$VIS"   --max-mosaic-cases 5
 
-echo "==> [7/7] Freezing trained-3DGS validation status"
+echo "==> [7/8] Measuring selected-repair visual fidelity against FULL-after"
+"$PYTHON" research/analysis/cbrc_visual_quality.py \
+  --campaign-dir "$RESULTS" \
+  --output-dir "$VISUAL_QUALITY"
+
+echo "==> [8/8] Freezing trained-3DGS validation status"
 "$PYTHON" - "$OUT" "$CAMPAIGN_STATUS" "$REPORT_STATUS" <<'PY'
 import json,sys
 from pathlib import Path
