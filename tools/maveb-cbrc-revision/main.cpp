@@ -527,12 +527,56 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
-    auto edited = aether::world_gaussian::translatePersistentGaussianEntityIndexed(
-        *world, *asset, *ownership, *overlay, EntityId{options->entity}, options->target,
-        options->timestamp);
-    if (!edited) {
-        std::cerr << edited.error().describe() << '\n';
-        return EXIT_FAILURE;
+    std::size_t editedGaussians{};
+    aether::world_gaussian::GaussianLocalUpdateSelection reoptimizationSelection;
+    bool usedOverlayIndex{};
+    bool overlayIndexValid{true};
+    bool overlayIndexCompacted{};
+    aether::world_gaussian::GaussianOverlaySelectionDiagnostics overlayDiagnostics;
+    std::size_t dirtyRegionCount{};
+
+    if (options->editKind == EditKind::translation) {
+        auto edited = aether::world_gaussian::translatePersistentGaussianEntityIndexed(
+            *world, *asset, *ownership, *overlay, EntityId{options->entity}, options->target,
+            options->timestamp);
+        if (!edited) {
+            std::cerr << edited.error().describe() << '\n';
+            return EXIT_FAILURE;
+        }
+        editedGaussians = editedGaussians;
+        reoptimizationSelection = std::move(edited->reoptimizationSelection);
+        usedOverlayIndex = usedOverlayIndex;
+        overlayIndexValid = overlayIndexValid;
+        overlayIndexCompacted = overlayIndexCompacted;
+        overlayDiagnostics = edited->overlayDiagnostics;
+        dirtyRegionCount = dirtyRegionCount;
+    } else {
+        GaussianEntityEdit edit;
+        if (options->editKind == EditKind::rotation) {
+            edit.kind = GaussianEntityEditKind::rotation;
+            edit.rotationAxis = options->rotationAxis;
+            edit.rotationRadians = options->rotationRadians;
+        } else if (options->editKind == EditKind::uniformScale) {
+            edit.kind = GaussianEntityEditKind::uniformScale;
+            edit.uniformScale = options->uniformScale;
+        } else {
+            edit.kind = GaussianEntityEditKind::opacity;
+            edit.opacityLogitDelta = options->opacityLogitDelta;
+        }
+        auto edited = aether::world_gaussian::editPersistentGaussianEntityIndexed(
+            *world, *asset, *ownership, *overlay, EntityId{options->entity}, edit,
+            options->timestamp);
+        if (!edited) {
+            std::cerr << edited.error().describe() << '\n';
+            return EXIT_FAILURE;
+        }
+        editedGaussians = edited->editedGaussians;
+        reoptimizationSelection = std::move(edited->reoptimizationSelection);
+        usedOverlayIndex = usedOverlayIndex;
+        overlayIndexValid = overlayIndexValid;
+        overlayIndexCompacted = overlayIndexCompacted;
+        overlayDiagnostics = edited->overlayDiagnostics;
+        dirtyRegionCount = dirtyRegionCount;
     }
 
     GaussianAsset afterChanged;
@@ -618,7 +662,12 @@ int main(int argc, char** argv) try {
         temporal.normalizedRect = {};
     }
 
-    const std::uint64_t revision = edited->worldEdit.candidate.revision;
+    const auto* afterWorld = world->latest();
+    if (!afterWorld || afterWorld->revision <= previousRevision) {
+        std::cerr << "CBRC edit did not advance persistent world revision\n";
+        return EXIT_FAILURE;
+    }
+    const std::uint64_t revision = afterWorld->revision;
     const auto afterGaussianPath = gaussianSidecar(options->archive, revision);
     const auto afterOwnershipPath = ownershipSidecar(options->archive, revision);
     auto encodedGaussians = aether::gaussian::GaussianCodec::encode(*asset);
@@ -661,23 +710,26 @@ int main(int argc, char** argv) try {
         << jsonEscape(gaussianSidecar(options->archive, previousRevision).string()) << "\","
         << "\"afterGaussianSidecar\":\"" << jsonEscape(afterGaussianPath.string()) << "\","
         << "\"gaussianInputFormat\":\"aether-bin\","
-        << "\"translatedGaussians\":" << edited->translatedGaussians << ','
-        << "\"gaussiansInspected\":" << edited->reoptimizationSelection.inspectedGaussians << ','
-        << "\"usedOverlayIndex\":" << (edited->usedOverlayIndex ? "true" : "false") << ','
-        << "\"overlayIndexValid\":" << (edited->overlayIndexValid ? "true" : "false") << ','
-        << "\"overlayIndexCompacted\":" << (edited->overlayIndexCompacted ? "true" : "false") << ','
-        << "\"overlayDirtyRegionsQueried\":" << edited->overlayDiagnostics.dirtyRegionsQueried
-        << ',' << "\"overlayBaseEntriesVisited\":" << edited->overlayDiagnostics.baseEntriesVisited
+        << "\"editKind\":\"" << editKindName(options->editKind) << "\","
+        << "\"editedGaussians\":" << editedGaussians << ','
+        << "\"translatedGaussians\":"
+        << (options->editKind == EditKind::translation ? editedGaussians : 0) << ','
+        << "\"gaussiansInspected\":" << reoptimizationSelection.inspectedGaussians << ','
+        << "\"usedOverlayIndex\":" << (usedOverlayIndex ? "true" : "false") << ','
+        << "\"overlayIndexValid\":" << (overlayIndexValid ? "true" : "false") << ','
+        << "\"overlayIndexCompacted\":" << (overlayIndexCompacted ? "true" : "false") << ','
+        << "\"overlayDirtyRegionsQueried\":" << overlayDiagnostics.dirtyRegionsQueried
+        << ',' << "\"overlayBaseEntriesVisited\":" << overlayDiagnostics.baseEntriesVisited
         << ',' << "\"overlayStaleBaseEntriesSkipped\":"
-        << edited->overlayDiagnostics.staleBaseEntriesSkipped << ','
-        << "\"overlayDeltaEntriesVisited\":" << edited->overlayDiagnostics.deltaEntriesVisited
+        << overlayDiagnostics.staleBaseEntriesSkipped << ','
+        << "\"overlayDeltaEntriesVisited\":" << overlayDiagnostics.deltaEntriesVisited
         << ','
-        << "\"reoptimizationGaussians\":" << edited->reoptimizationSelection.gaussianIndices.size()
+        << "\"reoptimizationGaussians\":" << reoptimizationSelection.gaussianIndices.size()
         << ',' << "\"protectedStableGaussians\":"
-        << edited->reoptimizationSelection.rejectedStableOwnedGaussians << ','
+        << reoptimizationSelection.rejectedStableOwnedGaussians << ','
         << "\"conservativeBoundaryGaussians\":"
-        << edited->reoptimizationSelection.conservativeUnownedMatches << ','
-        << "\"dirtyRegionCount\":" << edited->worldEdit.selectiveUpdate.dirtyRegions.size() << ','
+        << reoptimizationSelection.conservativeUnownedMatches << ','
+        << "\"dirtyRegionCount\":" << dirtyRegionCount << ','
         << "\"persisted\":true,"
         << "\"persistenceError\":\"\""
         << "}\n";
@@ -696,7 +748,7 @@ int main(int argc, char** argv) try {
          << "\"schemaVersion\":1,"
          << "\"available\":true,"
          << "\"revisionVersion\":" << revision << ','
-         << "\"changedGaussians\":" << edited->translatedGaussians << ','
+         << "\"changedGaussians\":" << editedGaussians << ','
          << "\"affectedPixels\":" << affectedCount << ',' << "\"fullFramePixels\":" << fullPixels
          << ',' << "\"affectedPixelRatio\":" << affectedRatio << ','
          << "\"maximumCurrentRgbBound\":" << certificate->maximumRgbLInfBound << ','
