@@ -17,11 +17,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -91,17 +90,3 @@ jobs:
             researchpaper/MAVEB_supplement.pdf
             researchpaper/MAVEB_manuscript_package.zip
           if-no-files-found: error
-
-      - name: Commit generated outputs to manuscript branch
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/manuscript/')
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            researchpaper/MAVEB_manuscript.pdf \
-            researchpaper/MAVEB_manuscript.docx \
-            researchpaper/MAVEB_supplement.pdf \
-            researchpaper/MAVEB_manuscript_package.zip
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Build final MAVEB manuscript artifacts"
-          git push origin HEAD:${GITHUB_REF_NAME}

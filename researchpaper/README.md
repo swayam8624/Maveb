@@ -60,8 +60,8 @@ The canonical local build is:
 python3 researchpaper/build_manuscript.py --build-dir /tmp/maveb-manuscript-build
 ```
 
-The GitHub manuscript workflow uses the same builder. It runs for manuscript changes on `main`, on `manuscript/**` branches, and on pull requests targeting `main`. It verifies the exact Figure 2 SHA-256 before compiling. On `manuscript/**` push events it may commit regenerated PDF/DOCX/supplement/package artifacts back to the manuscript branch; on protected `main` it validates without attempting to push generated files.
+The GitHub manuscript workflow uses the same builder. It runs for manuscript changes on `main`, on `manuscript/**` branches, and on pull requests targeting `main`. It verifies the exact Figure 2 SHA-256 before compiling, then validates and uploads the PDF, editable DOCX, supplement, and package as workflow artifacts. CI does not rewrite repository files or push generated commits.
 
-The PDF is the authoritative two-column ACM author manuscript. The DOCX is an editable single-column export; it is not an ACM typesetting substitute. Artifact completion does not imply venue acceptance or any publication-tier outcome.
+The PDF is the authoritative two-column ACM author manuscript. The DOCX is an editable single-column export; it preserves the manuscript figures, six content tables, sixteen editable equations with stable Word-side numbering, and the exact Figure 2 media bytes. It is not an ACM typesetting substitute. Artifact completion does not imply venue acceptance or any publication-tier outcome.
 
 See `MANUSCRIPT_QA.md` for the exact verification gates and scope.
