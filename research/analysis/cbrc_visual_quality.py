@@ -102,9 +102,15 @@ def evaluate(
         case_id = str(row["case_id"])
         paths = image_paths(campaign_dir, case_id)
         before = load_rgb(paths["before"])
-        selected = load_rgb(paths["selected"])
+        candidate = load_rgb(paths["selected"])
         full = load_rgb(paths["full"])
+        fallback = bool(row.get("fallback_full", False))
+        # The oracle's selected-repair PPM is the candidate local repair. When
+        # the planner falls back, the actual selected execution is FULL, so the
+        # final-output fidelity comparison must use the FULL-after image.
+        selected = full if fallback else candidate
         selected_full = metrics(selected, full)
+        candidate_full = metrics(candidate, full)
         before_full = metrics(before, full)
         records.append(
             {
@@ -114,7 +120,7 @@ def evaluate(
                     str(row.get("scene_id", "unknown")),
                     str(row.get("scene_id", "unknown")),
                 ),
-                "fallbackFull": bool(row.get("fallback_full", False)),
+                "fallbackFull": fallback,
                 "couplingRegime": str(row.get("coupling_regime", "unknown")),
                 "workRatioFull": (
                     float(row["planner_work"]) / float(row["full_work"])
@@ -122,6 +128,10 @@ def evaluate(
                     else None
                 ),
                 "selectedVsFull": selected_full,
+                "candidateRepairVsFull": candidate_full,
+                "selectedImageSource": (
+                    "full-after-fallback" if fallback else "candidate-local-repair"
+                ),
                 "beforeVsFull": before_full,
             }
         )
@@ -170,6 +180,19 @@ def evaluate(
             record["selectedVsFull"]["maxAbsByte"] == 0 for record in records
         )
         / len(records),
+        "localSelectedExactCases": sum(
+            (not record["fallbackFull"])
+            and record["selectedVsFull"]["maxAbsByte"] == 0
+            for record in records
+        ),
+        "localSelectedExactCaseRate": (
+            sum(
+                (not record["fallbackFull"])
+                and record["selectedVsFull"]["maxAbsByte"] == 0
+                for record in records
+            )
+            / max(1, sum(not record["fallbackFull"] for record in records))
+        ),
         "maximumSelectedVsFullMaxAbsByte": max(
             record["selectedVsFull"]["maxAbsByte"] for record in records
         ),
@@ -294,8 +317,9 @@ def render_grid(
         ids.append(record["caseId"])
         paths = image_paths(campaign_dir, record["caseId"])
         before = Image.open(paths["before"]).convert("RGB")
-        selected_img = Image.open(paths["selected"]).convert("RGB")
+        candidate_img = Image.open(paths["selected"]).convert("RGB")
         full = Image.open(paths["full"]).convert("RGB")
+        selected_img = full.copy() if record["fallbackFull"] else candidate_img
         heat = residual_heat(np.asarray(selected_img), np.asarray(full))
         images = [before, selected_img, full, heat]
         y = title_h + row_index * row_h
@@ -306,7 +330,7 @@ def render_grid(
         state = "FULL fallback" if record["fallbackFull"] else "LOCAL"
         caption = (
             f'{record["sceneLabel"]} · {state} · case {record["caseId"]} · '
-            f'selected↔FULL max |Δ|={metric["maxAbsByte"]}/255, '
+            f'final selected↔FULL max |Δ|={metric["maxAbsByte"]}/255, '
             f'exact pixels={metric["exactPixelFraction"]:.3%} · '
             f'edited pixels={edit["changedPixelFraction"]:.3%}'
         )
