@@ -114,13 +114,23 @@ def evaluate(
         before_full = metrics(before, full)
         scene_id = str(row.get("scene_id", "unknown"))
         scene_label = labels.get(scene_id, scene_id)
-        dataset = scene_label.split(" / ", 1)[0] if " / " in scene_label else "unclassified"
+        dataset = str(row.get("dataset_id", "")).strip()
+        if not dataset:
+            dataset = (
+                scene_label.split(" / ", 1)[0]
+                if " / " in scene_label
+                else "unclassified"
+            )
+        representation = str(row.get("representation", "unknown"))
+        edit_family = str(row.get("edit_family", row.get("edit_kind", "unknown")))
         records.append(
             {
                 "caseId": case_id,
                 "sceneId": scene_id,
                 "sceneLabel": scene_label,
                 "dataset": dataset,
+                "representation": representation,
+                "editFamily": edit_family,
                 "fallbackFull": fallback,
                 "couplingRegime": str(row.get("coupling_regime", "unknown")),
                 "workRatioFull": (
@@ -165,6 +175,30 @@ def evaluate(
         local_subset = [record for record in subset if not record["fallbackFull"]]
         by_dataset[dataset] = {
             "cases": len(subset),
+            "scenes": len({record["sceneId"] for record in subset}),
+            "localCases": len(local_subset),
+            "fullFallbackCases": sum(record["fallbackFull"] for record in subset),
+            "selectedExactCases": sum(
+                record["selectedVsFull"]["maxAbsByte"] == 0 for record in subset
+            ),
+            "localSelectedExactCases": sum(
+                record["selectedVsFull"]["maxAbsByte"] == 0 for record in local_subset
+            ),
+            "maximumSelectedVsFullMaxAbsByte": max(
+                record["selectedVsFull"]["maxAbsByte"] for record in subset
+            ),
+            "medianBeforeVsFullChangedPixelFraction": statistics.median(
+                record["beforeVsFull"]["changedPixelFraction"] for record in subset
+            ),
+        }
+
+    by_edit_family: dict[str, dict[str, Any]] = {}
+    for edit_family in sorted({record["editFamily"] for record in records}):
+        subset = [record for record in records if record["editFamily"] == edit_family]
+        local_subset = [record for record in subset if not record["fallbackFull"]]
+        by_edit_family[edit_family] = {
+            "cases": len(subset),
+            "datasets": len({record["dataset"] for record in subset}),
             "scenes": len({record["sceneId"] for record in subset}),
             "localCases": len(local_subset),
             "fullFallbackCases": sum(record["fallbackFull"] for record in subset),
@@ -232,6 +266,7 @@ def evaluate(
         "maximumBeforeVsFullChangedPixelFraction": max(edit_changed),
         "byScene": by_scene,
         "byDataset": by_dataset,
+        "byEditFamily": by_edit_family,
         "scientificBoundary": (
             "Selected-vs-FULL metrics measure fidelity to the independent FULL-after "
             "oracle render for the evaluated representation. They are not photorealistic "
@@ -384,6 +419,9 @@ def write_csv(records: list[dict[str, Any]], output: Path) -> None:
                 "case_id",
                 "scene_id",
                 "scene_label",
+                "dataset",
+                "representation",
+                "edit_family",
                 "fallback_full",
                 "coupling_regime",
                 "work_ratio_full",
@@ -406,6 +444,9 @@ def write_csv(records: list[dict[str, Any]], output: Path) -> None:
                     "case_id": record["caseId"],
                     "scene_id": record["sceneId"],
                     "scene_label": record["sceneLabel"],
+                    "dataset": record["dataset"],
+                    "representation": record["representation"],
+                    "edit_family": record["editFamily"],
                     "fallback_full": record["fallbackFull"],
                     "coupling_regime": record["couplingRegime"],
                     "work_ratio_full": record["workRatioFull"],
