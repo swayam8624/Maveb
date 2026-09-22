@@ -114,3 +114,14 @@ The final integration also retains the graphics-facing benchmark extension from 
 - the graphics rerun does not replace the frozen 2026-09-21 canonical work headline of 0.36953 work/FULL and 2.706x lower calibrated four-domain work.
 
 The graphics evidence source of truth is `research/results/CBRC_GRAPHICS_BENCHMARK_EVIDENCE_2026-09-22.json`.
+
+
+## Final artifact publication verification
+
+The protected-branch artifact publication pass rebuilt the finalized manuscript source without changing the scientific content. The generated repository artifacts are:
+
+- `MAVEB_manuscript.pdf`: SHA-256 `7bc9da45edf406417d2430fd632cd4598607fc7b41e68f61882b03f649d4a32d`
+- `MAVEB_manuscript.docx`: SHA-256 `df751319727e5f61dfed8faf8ee5343d51abf39c49f694ed52ada889c552b3c6`
+- `MAVEB_supplement.pdf`: SHA-256 `e8779b93c3cba4a4a93ebf4789d19e6575f6b39854c84339fdc01a89cf99e954`
+
+The checksum manifest is stored in `researchpaper/FINAL_MANUSCRIPT_SHA256.txt`. The publication workflow itself was temporary and removed from the final branch; future manuscript CI uploads artifacts but does not attempt to bypass protected-branch pull-request requirements.
