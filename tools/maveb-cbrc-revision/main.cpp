@@ -543,13 +543,13 @@ int main(int argc, char** argv) try {
             std::cerr << edited.error().describe() << '\n';
             return EXIT_FAILURE;
         }
-        editedGaussians = editedGaussians;
+        editedGaussians = edited->translatedGaussians;
         reoptimizationSelection = std::move(edited->reoptimizationSelection);
-        usedOverlayIndex = usedOverlayIndex;
-        overlayIndexValid = overlayIndexValid;
-        overlayIndexCompacted = overlayIndexCompacted;
+        usedOverlayIndex = edited->usedOverlayIndex;
+        overlayIndexValid = edited->overlayIndexValid;
+        overlayIndexCompacted = edited->overlayIndexCompacted;
         overlayDiagnostics = edited->overlayDiagnostics;
-        dirtyRegionCount = dirtyRegionCount;
+        dirtyRegionCount = edited->worldEdit.selectiveUpdate.dirtyRegions.size();
     } else {
         GaussianEntityEdit edit;
         if (options->editKind == EditKind::rotation) {
@@ -572,11 +572,11 @@ int main(int argc, char** argv) try {
         }
         editedGaussians = edited->editedGaussians;
         reoptimizationSelection = std::move(edited->reoptimizationSelection);
-        usedOverlayIndex = usedOverlayIndex;
-        overlayIndexValid = overlayIndexValid;
-        overlayIndexCompacted = overlayIndexCompacted;
+        usedOverlayIndex = edited->usedOverlayIndex;
+        overlayIndexValid = edited->overlayIndexValid;
+        overlayIndexCompacted = edited->overlayIndexCompacted;
         overlayDiagnostics = edited->overlayDiagnostics;
-        dirtyRegionCount = dirtyRegionCount;
+        dirtyRegionCount = edited->worldEdit.selectiveUpdate.dirtyRegions.size();
     }
 
     GaussianAsset afterChanged;
