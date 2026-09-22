@@ -339,7 +339,7 @@ which corresponds to 2.706$\times$ lower calibrated work. We avoid calling this 
 Table~\ref{tab:baselines} compares the method-level baselines on the same 60 frozen cases. Every selected cone is re-certified using the conservative certificate, so \emph{certificate pass} should not be confused with an independent measured-error metric. The exact-only, radius, and changed-fraction policies often select very little work, but most of those selections do not pass the certificate. The empirical-order baseline uses empirical magnitudes only to decide expansion order; the final candidate is still certified with analytic bounds plus exact closure for unsupported dependencies. We discuss the held-out changed-fraction heuristic separately below.
 
 \begin{table*}[t]
-\caption{Frozen public method comparison. The work column is the baseline suite's native work-ratio metric and is distinct from the calibrated heterogeneous headline ratio of 0.36953. \emph{Uncertified} means the selected cone failed the conservative certificate, not that an independent oracle violation was observed. All four tested radius policies produced the same aggregate values on this matrix.}
+\caption{Frozen public method comparison. The work column is the baseline suite's native work-ratio metric and is distinct from the calibrated four-domain headline ratio of 0.36953. \emph{Uncertified} means the selected cone failed the conservative certificate, not that an independent oracle violation was observed. All four tested radius policies produced the same aggregate values on this matrix.}
 \label{tab:baselines}
 \centering
 \footnotesize
