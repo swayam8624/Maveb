@@ -408,7 +408,8 @@ int main(int argc, char** argv) try {
     summary << "\"logScaleClampedComponents\":" << clampedLogScaleComponents << ',';
     summary << "\"logScaleClampRange\":[-30,30],";
     summary << "\"ownershipMode\":\"deterministic-spatial-grid-not-semantic\",";
-    summary << "\"representation\":\"trained-3dgs-preserved-sh-opacity-rotation-with-canonical-scale\"";
+    summary
+        << "\"representation\":\"trained-3dgs-preserved-sh-opacity-rotation-with-canonical-scale\"";
     summary << "}\n";
     std::cout << summary.str();
     return EXIT_SUCCESS;
