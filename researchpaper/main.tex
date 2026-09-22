@@ -305,7 +305,7 @@ The public campaign uses four real scenes reconstructed with COLMAP/SfM \citep{s
 
 \section{Evaluation}
 \subsection{Questions and protocol}
-The evaluation asks seven questions: certificate validity against full-after replay (RQ1), \LOCAL{}/\FULL{} crossover (RQ2), calibrated work (RQ3), locality of the campaign-measured domains (RQ4), baseline behavior (RQ5), transfer to trained 3DGS (RQ6), and whether exact sparse discovery removes the full-scan bottleneck (RQ7).
+The evaluation asks seven questions: certificate validity (RQ1), local-versus-full crossover (RQ2), calibrated work (RQ3), measured-domain locality (RQ4), baseline behavior (RQ5), transfer to trained 3DGS (RQ6), and exact sparse discovery (RQ7).
 
 The final public v2.1 campaign contains 60 frozen revisions over Tanks \& Temples Train/Truck \citep{knapitsch2017tandt} and Deep Blending Dr Johnson/Playroom \citep{hedman2018deepblending} inputs from the pinned GraphDECO bundle \citep{kerbl2023gaussians}. The repository manifest fixes the source archive size and SHA-256, and the work calibration is frozen before this campaign is run. We also keep an earlier execution in which a requested translation fell below the production effective-edit threshold. Rather than retuning or deleting that case, we preserve it as protocol history; v2.1 enforces the production precondition and records both requested and applied edit deltas.
 
