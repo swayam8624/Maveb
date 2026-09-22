@@ -117,7 +117,7 @@ def three_r_scan_images(scene: dict[str, Any], cache: Path, maximum: int) -> lis
     root = Path(scene["referenceRoot"])
     sequence = root / "sequence"
     if sequence.is_dir():
-        return stable_sample(list(sequence.glob("frame-*.color.jpg")), maximum)
+        return overlap_preserving_sample(list(sequence.glob("frame-*.color.jpg")), maximum)
     archive = root / "sequence.zip"
     if not archive.is_file():
         return []
