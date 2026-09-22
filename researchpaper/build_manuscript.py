@@ -49,6 +49,7 @@ def export_word(build):
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     from docx.shared import RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     source = (ROOT / 'main.tex').read_text()
     abstract = re.search(r'\\begin\{abstract\}(.*?)\\end\{abstract\}', source, re.S)[1]
@@ -98,16 +99,42 @@ def export_word(build):
                 depth -= 1
             end += 1
         source = source[:start] + r'\par ' + source[pos:end - 1] + r'\par' + source[end:]
-    equation_count = 0
+    # Word/Pandoc export: leave display equations unnumbered during conversion.
+    # Plain Word equation numbers are added beside editable OMML equations below.
+    equation_count = len(re.findall(r'\\begin\{equation\}', source))
 
-    def number_equation(match):
-        nonlocal equation_count
-        equation_count += 1
-        return (r'\begin{equation}' + match[1] +
-                r'\qquad\text{(' + str(equation_count) + r')}\end{equation}')
+    # Pandoc/LibreOffice do not reliably render AMS aligned markers in OMML.
+    # Flatten the two multi-line displays for the editable Word export only.
+    criticality_aligned = r'''\begin{aligned}
+\chi(C)&=\max_q r_q(C),\\
+r_q(C)&=
+\begin{cases}
+ B_q(C)/\varepsilon_q, & \varepsilon_q>0,\\
+ 0, & \varepsilon_q=B_q(C)=0,\\
+ +\infty, & \varepsilon_q=0<B_q(C).
+\end{cases}
+\end{aligned}'''
+    criticality_flat = r'''\chi(C)=\max_q r_q(C),\qquad
+r_q(C)=\begin{cases}
+ B_q(C)/\varepsilon_q, & \varepsilon_q>0,\\
+ 0, & \varepsilon_q=B_q(C)=0,\\
+ +\infty, & \varepsilon_q=0<B_q(C).
+\end{cases}'''
+    gaussian_aligned = r'''\begin{aligned}
+\Delta_p
+&=\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty,\\
+\Delta_p
+&\le C_{\mathrm{color}}\min\!\left(1,A_p(E_0)+A_p(E_1)\right).
+\end{aligned}'''
+    gaussian_flat = r'''\Delta_p=\left\lVert R_p(U\cup E_0)-R_p(U\cup E_1)\right\rVert_\infty,\qquad
+\Delta_p\le C_{\mathrm{color}}\min\!\left(1,A_p(E_0)+A_p(E_1)\right).'''
+    source = source.replace(criticality_aligned, criticality_flat)
+    source = source.replace(gaussian_aligned, gaussian_flat)
 
-    source = re.sub(r'\\begin\{equation\}(.*?)\\end\{equation\}',
-                    number_equation, source, flags=re.S)
+    # Avoid font-dependent math-dagger fallback boxes in Word tables/notes.
+    source = source.replace(r'$^\dagger$', '†')
+    source = source.replace(r'\setminus', '∖')
+
     source = source.replace(r'\begin{minipage}{\columnwidth}', '').replace(r'\end{minipage}', '')
     word_source = build / 'word-source.tex'
     word_source.write_text(source)
@@ -186,7 +213,33 @@ def export_word(build):
         if para.style.name == 'Captioned Figure':
             para.paragraph_format.keep_with_next = True
     assert caption_counts == {'Image Caption': 3, 'Table Caption': 6}
-    assert sum('oMathPara' in p._p.xml for p in doc.paragraphs) == equation_count == 16
+
+    # Keep equation math editable while rendering numbers cleanly across Word/LibreOffice.
+    equation_paragraphs = [p for p in doc.paragraphs if 'oMathPara' in p._p.xml]
+    assert len(equation_paragraphs) == equation_count == 16
+    for number, para in enumerate(equation_paragraphs, 1):
+        eq_table = doc.add_table(rows=1, cols=2)
+        eq_table.autofit = False
+        eq_table.columns[0].width = Inches(6.35)
+        eq_table.columns[1].width = Inches(0.45)
+        eq_borders = OxmlElement('w:tblBorders')
+        for edge in ['top', 'left', 'bottom', 'right', 'insideH', 'insideV']:
+            border = OxmlElement('w:' + edge)
+            border.set(qn('w:val'), 'nil')
+            eq_borders.append(border)
+        eq_table._tbl.tblPr.append(eq_borders)
+        left = eq_table.cell(0, 0).paragraphs[0]
+        right = eq_table.cell(0, 1).paragraphs[0]
+        math_nodes = [child for child in list(para._p) if child.tag.endswith('oMathPara')]
+        assert len(math_nodes) == 1
+        para._p.remove(math_nodes[0])
+        left._p.append(math_nodes[0])
+        left.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        right.text = f'({number})'
+        right.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        para._p.addnext(eq_table._tbl)
+        para._p.getparent().remove(para._p)
+
     assert not any('$$' in p.text for p in doc.paragraphs), 'Unconverted TeX equation'
     assert 'Persistent captured-world systems maintain more than' in '\n'.join(p.text for p in doc.paragraphs)
     output = ROOT / 'MAVEB_manuscript.docx'
