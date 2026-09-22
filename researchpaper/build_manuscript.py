@@ -241,7 +241,7 @@ r_q(C)=\begin{cases}
         para._p.getparent().remove(para._p)
 
     assert not any('$$' in p.text for p in doc.paragraphs), 'Unconverted TeX equation'
-    assert 'Persistent captured-world systems maintain more than' in '\n'.join(p.text for p in doc.paragraphs)
+    assert 'Repair What Matters' in '\n'.join(p.text for p in doc.paragraphs)
     output = ROOT / 'MAVEB_manuscript.docx'
     doc.save(output)
     with zipfile.ZipFile(output) as z:
