@@ -22,6 +22,15 @@ class BroadWorldPreparationTests(unittest.TestCase):
         self.assertEqual(sampled[-1], Path("19.jpg"))
         self.assertEqual(len(sampled), 5)
 
+    def test_overlap_preserving_sample_uses_centered_bounded_stride(self):
+        values = [Path(f"{i:03d}.jpg") for i in range(100)]
+        sampled = mod.overlap_preserving_sample(values, 10, maximum_stride=4)
+        indices = [int(path.stem) for path in sampled]
+        self.assertEqual(len(indices), 10)
+        self.assertLessEqual(max(b - a for a, b in zip(indices, indices[1:])), 4)
+        self.assertGreater(indices[0], 0)
+        self.assertLess(indices[-1], 99)
+
     def test_find_model_accepts_colmap_text_or_binary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
