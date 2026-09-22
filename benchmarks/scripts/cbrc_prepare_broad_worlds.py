@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import struct
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -156,6 +157,29 @@ def find_model(root: Path) -> Path | None:
     return sorted(set(candidates), key=lambda p: (len(p.parts), p.as_posix()))[0] if candidates else None
 
 
+def model_point_count(model: Path) -> int:
+    binary = model / "points3D.bin"
+    if binary.is_file():
+        with binary.open("rb") as stream:
+            raw = stream.read(8)
+        return int(struct.unpack("<Q", raw)[0]) if len(raw) == 8 else 0
+    text = model / "points3D.txt"
+    if text.is_file():
+        return sum(
+            1
+            for line in text.read_text(errors="replace").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+    return 0
+
+
+def usable_model(root: Path, minimum_points: int = 64) -> Path | None:
+    model = find_model(root)
+    if model is None:
+        return None
+    return model if model_point_count(model) >= minimum_points else None
+
+
 def reconstruct_colmap(
     images: list[Path],
     workspace: Path,
@@ -187,28 +211,65 @@ def reconstruct_colmap(
         ],
         workspace / "feature_extractor.log",
     )
-    matcher = "sequential_matcher" if sequential else "exhaustive_matcher"
+
+    primary_matcher = "sequential_matcher" if sequential else "exhaustive_matcher"
     run(
-        [colmap, matcher, "--database_path", str(database)],
-        workspace / f"{matcher}.log",
+        [colmap, primary_matcher, "--database_path", str(database)],
+        workspace / f"{primary_matcher}.log",
     )
-    run(
-        [
-            colmap,
-            "mapper",
-            "--database_path",
-            str(database),
-            "--image_path",
-            str(staged),
-            "--output_path",
-            str(sparse),
-        ],
-        workspace / "mapper.log",
+
+    def reset_sparse() -> None:
+        if sparse.exists():
+            shutil.rmtree(sparse)
+        sparse.mkdir(parents=True)
+
+    def map_once(log_name: str) -> tuple[Path | None, str | None]:
+        try:
+            run(
+                [
+                    colmap,
+                    "mapper",
+                    "--database_path",
+                    str(database),
+                    "--image_path",
+                    str(staged),
+                    "--output_path",
+                    str(sparse),
+                ],
+                workspace / log_name,
+            )
+            error = None
+        except RuntimeError as exc:
+            error = str(exc)
+        return usable_model(sparse), error
+
+    model, primary_error = map_once("mapper.log")
+    if model is not None:
+        return model, count
+
+    # Stable temporal subsampling can make neighbouring staged frames too far
+    # apart for sequential matching. Keep the first attempt for provenance,
+    # then deterministically add all-pairs matches and retry from a clean
+    # sparse directory. This is a preparation fallback, not CBRC retuning.
+    if primary_matcher != "exhaustive_matcher":
+        run(
+            [colmap, "exhaustive_matcher", "--database_path", str(database)],
+            workspace / "exhaustive_matcher_fallback.log",
+        )
+        reset_sparse()
+        model, fallback_error = map_once("mapper_exhaustive_fallback.log")
+        if model is not None:
+            return model, count
+        raise RuntimeError(
+            "COLMAP reconstruction failed after sequential and exhaustive matching.\n"
+            f"primary: {primary_error or 'model had fewer than 64 points'}\n"
+            f"fallback: {fallback_error or 'model had fewer than 64 points'}"
+        )
+
+    raise RuntimeError(
+        "COLMAP reconstruction failed after exhaustive matching: "
+        + (primary_error or "model had fewer than 64 points")
     )
-    model = find_model(sparse)
-    if model is None:
-        raise RuntimeError("COLMAP mapper completed without a points3D model")
-    return model, count
 
 
 def seed_colmap(
@@ -235,6 +296,8 @@ def seed_colmap(
             source_url,
             "--maximum-points",
             "750000",
+            "--minimum-track-length",
+            "2",
         ],
         output.parent / f"{scene_id}.seed.log",
         cwd=ROOT,
@@ -258,6 +321,7 @@ def prepare_graphdeco(
             str(world),
             "--target-diagonal",
             "2.0",
+            "--clamp-log-scale",
             "--json",
         ],
         world.parent / f"{scene['sceneId']}.seed.log",
@@ -513,8 +577,10 @@ def main(argv: list[str] | None = None) -> int:
         "scientificBoundary": (
             "GraphDECO entries preserve trained 3DGS representations. ScanNet++ uses its provided "
             "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn use deterministic RGB-derived COLMAP "
-            "sparse geometry for the CBRC Gaussian output-side test; their metric depth/pose data are "
-            "retained as independent dataset context and are not mislabeled as part of that seed."
+            "sparse geometry for the CBRC Gaussian output-side test, with a frozen sequential-to-"
+            "exhaustive matching fallback and minimum two-view point tracks for world seeding; their "
+            "metric depth/pose data remain independent dataset context and are not mislabeled as part "
+            "of that seed."
         ),
     }
     write(output / "BROAD_WORLDS.json", manifest)
