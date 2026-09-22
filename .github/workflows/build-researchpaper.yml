@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -63,6 +63,14 @@ jobs:
             exit "$status"
           fi
 
+      - name: Record final manuscript checksums
+        run: |
+          sha256sum \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            > researchpaper/FINAL_MANUSCRIPT_SHA256.txt
+
       - name: Package manuscript
         run: |
           rm -f researchpaper/MAVEB_manuscript_package.zip
@@ -72,6 +80,8 @@ jobs:
             researchpaper/README.md \
             researchpaper/MANUSCRIPT_QA.md \
             researchpaper/REVIEW_RESPONSE_2026-09-21.md \
+            researchpaper/CLAIM_METHOD_CITATION_AUDIT_2026-09-22.md \
+            researchpaper/FINAL_MANUSCRIPT_SHA256.txt \
             researchpaper/build_manuscript.py \
             researchpaper/supplement.tex \
             researchpaper/supplement_gaussian_bound.tex \
@@ -79,6 +89,24 @@ jobs:
             researchpaper/MAVEB_manuscript.pdf \
             researchpaper/MAVEB_manuscript.docx \
             researchpaper/MAVEB_supplement.pdf
+
+      - name: Commit finalized manuscript artifacts to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/FINAL_MANUSCRIPT_SHA256.txt
+          if git diff --cached --quiet; then
+            echo "Final manuscript artifacts are unchanged."
+          else
+            git commit -m "paper: compile final MAVEB artifacts [skip ci]"
+            git push origin HEAD:main
+          fi
 
       - name: Upload manuscript artifacts
         uses: actions/upload-artifact@v4
