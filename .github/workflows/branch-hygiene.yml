@@ -1,0 +1,62 @@
+name: Branch hygiene
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/branch-hygiene.yml'
+  pull_request:
+    types:
+      - closed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap-prune:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Delete all stale remote branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          mapfile -t branches < <(
+            git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin |
+            grep -vE '^(HEAD|main)$' || true
+          )
+
+          for branch in "${branches[@]}"; do
+            echo "Deleting stale branch: ${branch}"
+            git push origin --delete "${branch}"
+          done
+
+  delete-merged-head:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Delete merged pull-request branch
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          echo "Deleting merged branch: ${HEAD_BRANCH}"
+          git push origin --delete "${HEAD_BRANCH}" || true
