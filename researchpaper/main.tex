@@ -152,13 +152,13 @@ Let the current system state be partitioned into blocks
 \begin{equation}
 V = \{1,\ldots,n\}.
 \end{equation}
-A block may represent an observation region, TSDF block, mesh patch, texture page, material state, Gaussian subset, GPU publication range, temporal-history region, or another derived state unit. Blocks are therefore computational ownership units, not necessarily equal-sized spatial cells.
+A block can stand for an observation region, TSDF block, mesh patch, texture page, material state, Gaussian subset, GPU publication range, temporal-history region, or some other unit of derived state. We use the block as a unit of computational ownership; it does not have to correspond to a regular spatial cell, and different blocks need not have comparable size.
 
-A physical revision induces a direct change envelope $b\in\mathbb{R}_{\ge 0}^{n}$. The planner chooses a repair cone $C\subseteq V$ and leaves the exterior
+A physical revision gives a direct change envelope $b\in\mathbb{R}_{\ge 0}^{n}$. From there, the planner chooses a repair cone $C\subseteq V$ and leaves the exterior
 \begin{equation}
 O = V\setminus C
 \end{equation}
-unrepaired. The goal is not to minimize $|C|$. It is to find a certified feasible cone whose effect on the protected output remains inside tolerance and whose measured or calibrated work is lower than the equivalent full rebuild.
+untouched. Small cones are useful, but minimizing $|C|$ by itself is not the objective. The cone has to remain feasible under the output certificate, and its measured or calibrated work must still beat the corresponding full rebuild.
 
 \subsection{Typed dependencies}
 Each dependency has one of three semantics (Table~\ref{tab:edges}).
@@ -179,17 +179,17 @@ Type & Meaning & Certificate role \\
 \end{tabularx}
 \end{table}
 
-This separation is intentionally conservative. For example, dependencies from observations to TSDF, from TSDF to mesh ownership, from meshes to texture-page identity, and from Gaussian records to GPU publication remain exact. These relations and unstable temporal validation are \hard{} in the v1 implementation. Gaussian-to-image influence and stable temporal blending have implemented \analytic{} bounds. Relations without a useful conservative theorem are not weakened merely to produce a smaller cone.
+We keep this separation conservative on purpose. Dependencies from observations to TSDF state, TSDF to mesh ownership, meshes to texture-page identity, and Gaussian records to GPU publication remain exact in v1. Unstable temporal validation is treated the same way. By contrast, Gaussian-to-image influence and stable temporal blending have implemented \analytic{} bounds. If we do not have a conservative argument for a relation, we do not soften it simply because doing so would produce a smaller cone.
 
 \subsection{Output and work contracts}
-For each quantity of interest $q$, let $\varepsilon_q\ge0$ be the declared tolerance. A local repair is admissible only if its certified residual satisfies $B_q(C)\le\varepsilon_q$ for every protected $q$. The experiment then checks the stronger independent contract in Eq.~\ref{eq:contract}.
+For each quantity of interest $q$, let $\varepsilon_q\ge0$ denote its declared tolerance. A local repair is admissible only when $B_q(C)\le\varepsilon_q$ for every protected output. That is the planner-side requirement. The experiment then asks the harder question by checking the independent full-reference contract in Eq.~\ref{eq:contract}.
 
-The planner also requires regional work to be lower than \FULL{}. Native work counters are heterogeneous, so they are not added directly. If $n_d(C)$ is native work in domain $d$ and $\kappa_d$ is a frozen calibrated cost per native unit, the public campaign uses
+Locality also has to be worth doing. The planner therefore requires regional work to remain below \FULL{}. Because the native counters describe different kinds of work, adding them directly would be meaningless. If $n_d(C)$ is native work in domain $d$ and $\kappa_d$ is the frozen calibrated cost of one native unit, the public campaign uses
 \begin{equation}
 W(C)=\sum_d \kappa_d n_d(C),
 \label{eq:work}
 \end{equation}
-with an independently measured $W_{\mathrm{full}}$. The calibration is frozen before the final campaign. This distinction matters: Eq.~\ref{eq:work} is a work model, not an end-to-end runtime measurement.
+with $W_{\mathrm{full}}$ measured independently. The calibration is frozen before the final campaign. We keep this distinction explicit throughout the paper: Eq.~\ref{eq:work} models heterogeneous work; it is not an end-to-end timing measurement.
 
 \section{Criticality-Bounded Revision Cones}
 \subsection{Exact predecessor closure}
@@ -198,10 +198,10 @@ If a repaired state block $v$ requires an exact predecessor $u$, then the predec
  v\in C,\; u\in\mathrm{Pred}_{\hard}(v) \;\Longrightarrow\; u\in C.
 \label{eq:hardclosure}
 \end{equation}
-This rule handles structural dependencies before any approximate reasoning begins. A candidate violating Eq.~\ref{eq:hardclosure} is invalid, even if a local numeric sensitivity estimate is small.
+This condition is checked before any approximate reasoning. If Eq.~\ref{eq:hardclosure} is violated, the candidate is invalid regardless of how small a local sensitivity estimate happens to be.
 
 \subsection{Conservative exterior propagation}
-For \analytic{} dependencies, define a componentwise non-negative influence matrix $K\in\mathbb{R}_{\ge0}^{n\times n}$, where $K_{vu}$ upper-bounds the normalized finite change that block $u$ can transmit to block $v$. Let $z_C$ denote known change bounds for repaired state. The exterior satisfies
+For \analytic{} dependencies we use a componentwise non-negative influence matrix $K\in\mathbb{R}_{\ge0}^{n\times n}$. Each entry $K_{vu}$ upper-bounds the normalized finite change that block $u$ can transmit to block $v$. Let $z_C$ collect known change bounds for the repaired state. The unrepaired exterior then satisfies
 \begin{equation}
 \delta_O \le b_O + K_{OC}z_C + K_{OO}\delta_O.
 \label{eq:exterior}
@@ -216,7 +216,7 @@ and therefore
 \delta_O\le\hat{\delta}_O.
 \label{eq:resolvent}
 \end{equation}
-The native v1 planner uses sparse finite DAG propagation rather than general cyclic resolvent evaluation. Unsupported analytic cycles fail closed: the cone must expand until the unsupported exterior is removed, or the planner selects \FULL{}. Equation~\ref{eq:resolvent} is therefore the reference formulation, not a claim that arbitrary cyclic systems are handled by the production planner.
+The native v1 planner does not evaluate a general cyclic resolvent. It uses sparse finite propagation on supported DAG exteriors. If an analytic cycle falls outside that supported case, the planner fails closed: either the cone expands until the unsupported exterior disappears, or the result becomes \FULL{}. Equation~\ref{eq:resolvent} should therefore be read as the reference formulation, not as a claim that arbitrary cyclic systems are handled in production.
 
 \subsection{Quantity-of-interest certificate}
 Let $R_q$ map state perturbation to the protected output quantity. The exterior contribution is bounded by
@@ -224,10 +224,10 @@ Let $R_q$ map state perturbation to the protected output quantity. The exterior 
 B_q(C)=\left\lVert |R_{q,O}|\hat{\delta}_O\right\rVert_\infty.
 \label{eq:qoi}
 \end{equation}
-A candidate cone is certificate-feasible only if $B_q(C)\le\varepsilon_q$ for all declared outputs. This allows two revisions with identical changed geometry to produce different decisions when their protected outputs differ. It also prevents an internal state norm from silently standing in for the user-visible error being claimed.
+A candidate is certificate-feasible only when $B_q(C)\le\varepsilon_q$ for every declared output. As a result, the same geometric change can lead to different revision decisions when the protected outputs differ. This is intentional: the certificate is tied to what the user actually asks us to preserve, rather than to an internal state norm that may or may not correlate with visible error.
 
 \subsection{Revision criticality}
-We define the revision criticality of a candidate cone as the worst normalized certified residual
+We use \emph{revision criticality} for the worst normalized certified residual of a candidate cone
 \begin{equation}
 \begin{aligned}
 \chi(C)&=\max_q r_q(C),\\
@@ -240,7 +240,7 @@ r_q(C)&=
 \end{aligned}
 \label{eq:criticality}
 \end{equation}
-The threshold $\chi(C)=1$ is the certificate boundary: $\chi(C)\le1$ is certificate-feasible, whereas $\chi(C)>1$ is supercritical for at least one protected output and requires cone expansion or \FULL{}. The term \emph{criticality-bounded} refers to this explicit normalized output-error boundary; it is not intended as a new physical critical-phenomena model.
+The decision boundary is $\chi(C)=1$. Values at or below one are certificate-feasible; a value above one means that at least one protected output is supercritical and the cone must grow or fall back to \FULL{}. We use the phrase \emph{criticality-bounded} in this narrow sense of a normalized output-error boundary. It is not meant to suggest a new model of physical critical phenomena.
 
 \subsection{Gaussian display-space bound}
 For a projected Gaussian $i$ at pixel $p$, \system{} starts from the projected opacity model
@@ -248,7 +248,7 @@ For a projected Gaussian $i$ at pixel $p$, \system{} starts from the projected o
 \alpha_i(p)=o_i\exp\left(-\frac{1}{2}q_i(p)\right),
 \label{eq:alpha}
 \end{equation}
-where $o_i$ is peak opacity and $q_i(p)$ is squared Mahalanobis distance in projected Gaussian space. In the bound below, $\alpha_i$ denotes the effective value after the renderer's clamp and cutoff rules, rather than the raw expression in Eq.~\ref{eq:alpha}. For edited set $E$, define aggregate opacity mass
+where $o_i$ is peak opacity and $q_i(p)$ is the squared Mahalanobis distance in projected Gaussian space. In the bound that follows, $\alpha_i$ means the effective value after the renderer's clamp and cutoff rules, not simply the raw value from Eq.~\ref{eq:alpha}. For an edited set $E$, we define the aggregate opacity mass
 \begin{equation}
 A_p(E)=1-\prod_{i\in E}\left(1-\alpha_i(p)\right).
 \end{equation}
@@ -266,10 +266,10 @@ Let $U$ denote the unchanged Gaussian state and $E_0,E_1$ the complete before/af
 \end{equation}
 
 \paragraph{Assumptions.}
-The bound requires: (i) front-to-back alpha compositing with effective post-clamp/post-cutoff alpha in $[0,1]$; (ii) each protected color channel lies in an interval of width $C_{\mathrm{color}}$, including the background and the bounded spherical-harmonic evaluation used by the renderer; (iii) $E_0,E_1$ contain every Gaussian whose projected opacity, color, insertion/deletion state, or depth relation to unchanged support can change because of the edit; and (iv) renderer behavior not represented by these bounded quantities is treated as unsupported and therefore promoted to an exact dependency or \FULL{} fallback.
+The proposition rests on four conditions. First, compositing is front-to-back, with effective post-clamp/post-cutoff alpha in $[0,1]$. Second, each protected color channel, including the background and the renderer's bounded spherical-harmonic evaluation, lies in an interval of width $C_{\mathrm{color}}$. Third, $E_0$ and $E_1$ include every Gaussian whose projected opacity, color, insertion/deletion state, or depth relation to unchanged support can change because of the edit. Finally, renderer behavior that is not captured by these bounded quantities is treated as unsupported and is promoted to an exact dependency or a \FULL{} fallback.
 
 \paragraph{Proof sketch.}
-For one edited set, front-to-back compositing changes the final channel value by at most the channel range multiplied by the total opacity mass through which edited support can replace, attenuate, or reveal unchanged radiance. This gives $C_{\mathrm{color}}A_p(E)$. Insertion and deletion are the cases in which one edited set is empty. For a general before/after edit, apply the triangle inequality through the common unchanged state $U$ to obtain $C_{\mathrm{color}}(A_p(E_0)+A_p(E_1))$, then clamp by the maximum possible channel-range change $C_{\mathrm{color}}$. The protected-image certificate is the maximum of Eq.~\ref{eq:gaussianbound} over the declared pixel support. A fuller algebraic derivation is included with the manuscript supplement.
+For a single edited set, front-to-back compositing can alter a channel by no more than the channel range times the opacity mass through which edited support replaces, attenuates, or reveals unchanged radiance. This gives $C_{\mathrm{color}}A_p(E)$. Insertion and deletion are the special cases in which one edited set is empty. For a general before/after edit, we pass through the common unchanged state $U$ and apply the triangle inequality, obtaining $C_{\mathrm{color}}(A_p(E_0)+A_p(E_1))$. The result is then capped by the largest possible channel-range change, $C_{\mathrm{color}}$. The image-level certificate takes the maximum of Eq.~\ref{eq:gaussianbound} over the declared protected pixels. The supplement gives the algebra in more detail.
 
 \subsection{Stable temporal history}
 For stable temporal validation, let $E_c$ denote current-frame error, $E_h$ retained-history error, $E_n$ neighborhood or clamping error, and $w\in[0,1]$ the history weight. With $E_r=\max(E_h,E_n)$,
@@ -277,50 +277,50 @@ For stable temporal validation, let $E_c$ denote current-frame error, $E_h$ reta
 E_{\mathrm{resolved}}\le(1-w)E_c+wE_r.
 \label{eq:temporal}
 \end{equation}
-If validation, reprojection, or disocclusion may itself change, \system{} promotes the relation to \hard{} invalidation instead of applying Eq.~\ref{eq:temporal}. Thus the temporal path demonstrates the central design rule: use a soft bound only while its preconditions are certifiable.
+If validation, reprojection, or disocclusion can itself change, \system{} does not apply Eq.~\ref{eq:temporal}; it promotes the relation to \hard{} invalidation. The temporal case is a useful example of the design rule we follow throughout: a soft bound is used only for as long as its own preconditions can be certified.
 
 \subsection{Greedy feasible-cone search and crossover}
-The v1 search orders candidates using the numerical score $\tilde\chi(C)=\max_q B_q(C)/\max(\varepsilon_q,10^{-15})$ for stable exteriors. This floored score guides search only; acceptance still requires the original inequalities $B_q(C)\le\varepsilon_q$, including when tolerance is zero. For a candidate expansion $C\rightarrow C'$ with positive added work, it scores
+The v1 search needs a numerical ordering even when a declared tolerance is zero. For stable exteriors it therefore uses $\tilde\chi(C)=\max_q B_q(C)/\max(\varepsilon_q,10^{-15})$ as a search score. The floor exists only for ordering; it never relaxes acceptance, which still uses the original inequalities $B_q(C)\le\varepsilon_q$. For an expansion $C\rightarrow C'$ with positive added work, the utility is
 \begin{equation}
 \mathrm{utility}(C\rightarrow C')=
 \frac{\tilde\chi(C)-\tilde\chi(C')}{W(C')-W(C)}.
 \label{eq:utility}
 \end{equation}
-Every candidate is first closed over exact predecessors and then re-certified. Search stops when a cone is both certificate-feasible and cheaper than \FULL{}, or when no useful local candidate remains. The algorithm claims a certified feasible cone, not the global minimum-work cone.
+Each candidate is closed over its exact predecessors before it is certified again. The search ends when it finds a cone that is both certificate-feasible and cheaper than \FULL{}, or when there is no useful local candidate left to try. This procedure gives us a certified feasible cone. We do not claim that it is the globally cheapest safe cone.
 
 \section{System Implementation}
-\system{} separates the scientific reference path from the production-oriented execution path. The dense Python certifier implements the mathematical contract directly and is used for falsification and regression. The native C++23 path implements a sparse revision graph with typed nodes and edges, sparse analytic propagation over supported DAG exteriors, exact predecessor consistency, a greedy feasible-cone search, and deterministic certificate serialization. Native and reference-planner decisions are compared in the campaign.
+\system{} keeps the scientific reference path separate from the production-oriented execution path. The dense Python certifier follows the mathematical contract directly and serves as a falsification and regression reference. The native C++23 implementation uses a sparse typed revision graph, sparse analytic propagation over supported DAG exteriors, exact predecessor checks, greedy feasible-cone search, and deterministic certificate serialization. The campaign compares the native planner's final decisions against the reference planner rather than assuming the two implementations are equivalent.
 
 \paragraph{Revision transactions.}
-The production path records persistent Gaussian entity translations, immutable before/after Gaussian revision sidecars, exact camera binding, a production Gaussian image certificate, and planner-selected temporal repair or retention. The headless path loads a persistent world, applies indexed Gaussian transactions, writes a new durable revision and sidecars, evaluates the Gaussian certificate, executes the output-cone planner, and emits canonical evidence JSON. A revision that cannot satisfy consistency checks fails closed rather than publishing partial state.
+The production path records persistent Gaussian entity translations, immutable before/after sidecars, exact camera binding, a production image certificate, and the planner's temporal repair or retention decision. In headless operation, the system loads a persistent world, applies indexed Gaussian transactions, writes the new durable revision and sidecars, evaluates the Gaussian certificate, runs the output-cone planner, and emits canonical evidence JSON. If the consistency checks do not pass, the revision fails closed instead of publishing a partly updated world.
 
 \paragraph{Cross-derived-state accounting.}
-A \texttt{LocalityLedger} is the counter source of truth for observation, TSDF, mesh, texture-page, material, Gaussian, GPU-publication, and temporal domains. Ledger/mesher disagreement is treated as an error. Native counts remain in their own units; conversion to the public scalar work model occurs only through a frozen versioned calibration. This design avoids hiding a full-world stage behind a local metric from a single subsystem.
+A \texttt{LocalityLedger} acts as the counter source of truth across observation, TSDF, mesh, texture-page, material, Gaussian, GPU-publication, and temporal domains. A disagreement between the ledger and the mesher is an error, not something averaged away. Native counts stay in their own units until they are converted by the frozen, versioned calibration used for the public scalar work model. The point of this bookkeeping is simple: a local-looking metric from one subsystem should not be able to hide a full-world stage elsewhere in the pipeline.
 
 \paragraph{Independent oracle.}
-The Gaussian oracle is separate from the selected revision planner. It renders or evaluates the equivalent full-after state and reports per-pixel actual error alongside the emitted bound. The strict evaluator enforces Eq.~\ref{eq:contract}; production/offline certificate disagreement or a measured error above the emitted certificate is a correctness failure. Evidence bundles are hashed, and the canonical campaign records workflow IDs, artifact hashes, source hashes, and planner parity.
+The Gaussian oracle is deliberately independent of the planner that selected the revision. It evaluates the equivalent full-after state and reports per-pixel measured error next to the emitted bound. The strict evaluator then enforces Eq.~\ref{eq:contract}. If the production and offline certificates disagree, or if measured error exceeds the emitted certificate, we count that as a correctness failure. Evidence bundles are hashed, and the canonical campaign records workflow IDs, artifact hashes, source hashes, and native/reference planner parity.
 
 \paragraph{Representation scope.}
-The public campaign uses four real scenes reconstructed with COLMAP/SfM and seeds isotropic Gaussians from the reconstructed points. These fields are not described as trained photorealistic 3DGS, and public coordinates are normalized rather than metric-scale. A secondary validation path uses a pinned external trained GraphDECO-style PLY while preserving spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Persistent ownership in this path is deterministic spatial ownership, not semantic segmentation.
+The public campaign uses four real scenes reconstructed with COLMAP/SfM, from which we seed isotropic Gaussians at the reconstructed points. We do not describe these fields as trained photorealistic 3DGS, and the public coordinates are normalized rather than metric-scale. A second validation path uses a pinned external trained GraphDECO-style PLY and preserves its spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Ownership in this path is deterministic and spatial; it should not be read as semantic segmentation.
 
 \section{Evaluation}
 \subsection{Questions and protocol}
-The evaluation asks seven questions: (RQ1) does the emitted certificate survive independent full replay; (RQ2) when does the method select \LOCAL{} versus \FULL{}; (RQ3) how much calibrated work is selected relative to \FULL{}; (RQ4) which native work domains remain local; (RQ5) how do simple exact, radius, changed-fraction, and empirical policies compare under the same campaign; (RQ6) does the safety contract transfer to a trained 3DGS representation; and (RQ7) can exact sparse discovery address the observed full-scan Gaussian bottleneck.
+We structure the evaluation around seven questions. RQ1 asks whether the emitted certificate survives an independent full replay. RQ2 asks when the method chooses \LOCAL{} rather than \FULL{}. RQ3 measures selected calibrated work relative to \FULL{}, and RQ4 looks at which native work domains actually remain local. RQ5 compares exact, radius, changed-fraction, and empirical policies under the same campaign. RQ6 checks whether the safety contract carries over to a trained 3DGS representation. Finally, RQ7 asks whether exact sparse discovery can remove the full-scan Gaussian bottleneck seen in the frozen path.
 
-The final public v2.1 campaign freezes 60 revisions across Tanks \& Temples Train/Truck and Deep Blending Dr Johnson/Playroom inputs distributed in the pinned GraphDECO bundle. The source archive size and SHA-256 are fixed in the repository manifest. The work calibration is frozen before the final campaign. A prior execution in which a requested translation fell below the production effective-edit threshold is preserved as protocol history rather than retuned or removed; v2.1 enforces the production precondition and records requested and applied edit deltas.
+The final public v2.1 campaign contains 60 frozen revisions over Tanks \& Temples Train/Truck and Deep Blending Dr Johnson/Playroom inputs from the pinned GraphDECO bundle. The repository manifest fixes the source archive size and SHA-256, and the work calibration is frozen before this campaign is run. We also keep an earlier execution in which a requested translation fell below the production effective-edit threshold. Rather than retuning or deleting that case, we preserve it as protocol history; v2.1 enforces the production precondition and records both requested and applied edit deltas.
 
-For every selected repair, the campaign records the source edit, selected cone, local/full decision, certificate, independent full-reference residual, native work, calibrated work, and provenance. Fallback cases are retained as results rather than excluded from summary statistics.
+For each selected repair, the campaign stores the source edit, chosen cone, local/full decision, certificate, independent full-reference residual, native work, calibrated work, and provenance. Fallbacks stay in the dataset and in the summary statistics; they are part of the method's behavior, not failed trials to be filtered out.
 
 \paragraph{Runtime scope.}
-The current campaign does not contain paired end-to-end \LOCAL{}-versus-\FULL{} wall-clock trials under identical execution conditions. Accordingly, no speedup claim is made anywhere in the paper. The public headline is a frozen heterogeneous millisecond-calibrated work ratio, while the baseline suite below reports its own native work-ratio metric. These quantities are intentionally labeled separately.
+The current campaign does not include paired end-to-end \LOCAL{}-versus-\FULL{} wall-clock trials under identical execution conditions. We therefore make no speedup claim. The public headline is a frozen heterogeneous work ratio calibrated from millisecond measurements, whereas the baseline suite reports a different native work-ratio metric. We label the two separately because collapsing them into one number would overstate what was actually measured.
 
 \subsection{Baselines and ablations}
-The implemented method-level suite contains \FULL{}, exact-only repair, fixed radius policies, a changed-fraction policy, a held-out empirical scheduler, and \method{}. The empirical signal is permitted to order work but is not certificate-eligible. Structural and analytic ablations remove or replace individual components, while a separately labeled deterministic mechanism-isolation suite constructs stress cases for exact closure, analytic Gaussian influence, temporal influence, quantity-of-interest specialization, hard/soft separation, graph-structured propagation, and fallback behavior.
+The method-level suite includes \FULL{}, exact-only repair, fixed-radius policies, a changed-fraction policy, a held-out empirical scheduler, and \method{}. Empirical information may change the order in which candidates are explored, but it is not allowed into the certificate. Structural and analytic ablations remove or replace individual components. Separately, a deterministic mechanism-isolation suite creates stress cases for exact closure, analytic Gaussian influence, temporal influence, quantity-of-interest specialization, hard/soft separation, graph propagation, and fallback behavior.
 
-The real campaign is not retuned to force every ablation to separate. Several structural ablations are neutral on the frozen matrix; those results are reported as neutral. The synthetic mechanism suite demonstrates that a mechanism can be falsified under a constructed stress case, not that the same mechanism determines effect size on every real revision.
+We do not retune the real campaign just to make every ablation look different. Several structural ablations are neutral on the frozen matrix, and we report them that way. The synthetic mechanism suite serves a different purpose: it shows that a mechanism can be made consequential in a controlled stress case, not that the same mechanism determines effect size for every real revision.
 
 \subsection{Metrics}
-The primary correctness metric is violation count under Eq.~\ref{eq:contract}. We also report local/fallback selection counts, native/reference planner parity, source-edit effect before repair, the median selected calibrated work ratio, and native-domain ratios. Effectivity $\eta=B_q/E_q^{\mathrm{full-ref}}$ is reported only when the independent residual is non-zero; it is undefined for numerically zero residual rather than divided by an arbitrary floor.
+Our primary correctness metric is the number of violations of Eq.~\ref{eq:contract}. We also report local/fallback counts, native/reference planner agreement, the source-edit effect before repair, the median selected calibrated work ratio, and native-domain ratios. Effectivity, $\eta=B_q/E_q^{\mathrm{full-ref}}$, is only meaningful when the independent residual is non-zero. When the measured residual is numerically zero, we leave effectivity undefined rather than manufacture a finite value with an arbitrary denominator floor.
 
 \section{Results}
 \label{sec:results}
