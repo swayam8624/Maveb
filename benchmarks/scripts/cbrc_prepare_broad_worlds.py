@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import struct
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -80,6 +81,21 @@ def stable_sample(paths: list[Path], maximum: int) -> list[Path]:
     return list(dict.fromkeys(chosen))
 
 
+def overlap_preserving_sample(
+    paths: list[Path], maximum: int, maximum_stride: int = 8
+) -> list[Path]:
+    """Choose a deterministic temporal crop while retaining inter-frame overlap."""
+    ordered = sorted(paths)
+    if maximum <= 0 or len(ordered) <= maximum:
+        return ordered
+    if maximum == 1:
+        return [ordered[len(ordered) // 2]]
+    stride = max(1, min(maximum_stride, (len(ordered) - 1) // (maximum - 1)))
+    span = stride * (maximum - 1)
+    start = max(0, (len(ordered) - 1 - span) // 2)
+    return [ordered[start + index * stride] for index in range(maximum)]
+
+
 def stage_images(paths: list[Path], output: Path, maximum: int) -> int:
     selected = stable_sample([p for p in paths if p.is_file()], maximum)
     if len(selected) < 8:
@@ -101,7 +117,7 @@ def three_r_scan_images(scene: dict[str, Any], cache: Path, maximum: int) -> lis
     root = Path(scene["referenceRoot"])
     sequence = root / "sequence"
     if sequence.is_dir():
-        return stable_sample(list(sequence.glob("frame-*.color.jpg")), maximum)
+        return overlap_preserving_sample(list(sequence.glob("frame-*.color.jpg")), maximum)
     archive = root / "sequence.zip"
     if not archive.is_file():
         return []
@@ -113,7 +129,7 @@ def three_r_scan_images(scene: dict[str, Any], cache: Path, maximum: int) -> lis
             for name in zf.namelist()
             if name.endswith(".color.jpg") and "frame-" in Path(name).name
         )
-        selected = stable_sample([Path(name) for name in members], maximum)
+        selected = overlap_preserving_sample([Path(name) for name in members], maximum)
         result = []
         for member_path in selected:
             destination = target / member_path.name
@@ -128,7 +144,7 @@ def arkit_images(scene: dict[str, Any], maximum: int) -> list[Path]:
     root = Path(scene["root"])
     images = list((root / "lowres_wide").glob("*.png"))
     images += list((root / "lowres_wide").glob("*.jpg"))
-    return stable_sample(images, maximum)
+    return overlap_preserving_sample(images, maximum)
 
 
 def bonn_images(scene: dict[str, Any], maximum: int) -> list[Path]:
@@ -143,7 +159,7 @@ def bonn_images(scene: dict[str, Any], maximum: int) -> list[Path]:
             path = root / fields[1]
             if path.is_file():
                 rows.append(path)
-    return stable_sample(rows, maximum)
+    return overlap_preserving_sample(rows, maximum)
 
 
 def find_model(root: Path) -> Path | None:
@@ -154,6 +170,29 @@ def find_model(root: Path) -> Path | None:
     for name in ("points3D.bin", "points3D.txt"):
         candidates.extend(path.parent for path in root.rglob(name))
     return sorted(set(candidates), key=lambda p: (len(p.parts), p.as_posix()))[0] if candidates else None
+
+
+def model_point_count(model: Path) -> int:
+    binary = model / "points3D.bin"
+    if binary.is_file():
+        with binary.open("rb") as stream:
+            raw = stream.read(8)
+        return int(struct.unpack("<Q", raw)[0]) if len(raw) == 8 else 0
+    text = model / "points3D.txt"
+    if text.is_file():
+        return sum(
+            1
+            for line in text.read_text(errors="replace").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+    return 0
+
+
+def usable_model(root: Path, minimum_points: int = 64) -> Path | None:
+    model = find_model(root)
+    if model is None:
+        return None
+    return model if model_point_count(model) >= minimum_points else None
 
 
 def reconstruct_colmap(
@@ -187,28 +226,65 @@ def reconstruct_colmap(
         ],
         workspace / "feature_extractor.log",
     )
-    matcher = "sequential_matcher" if sequential else "exhaustive_matcher"
+
+    primary_matcher = "sequential_matcher" if sequential else "exhaustive_matcher"
     run(
-        [colmap, matcher, "--database_path", str(database)],
-        workspace / f"{matcher}.log",
+        [colmap, primary_matcher, "--database_path", str(database)],
+        workspace / f"{primary_matcher}.log",
     )
-    run(
-        [
-            colmap,
-            "mapper",
-            "--database_path",
-            str(database),
-            "--image_path",
-            str(staged),
-            "--output_path",
-            str(sparse),
-        ],
-        workspace / "mapper.log",
+
+    def reset_sparse() -> None:
+        if sparse.exists():
+            shutil.rmtree(sparse)
+        sparse.mkdir(parents=True)
+
+    def map_once(log_name: str) -> tuple[Path | None, str | None]:
+        try:
+            run(
+                [
+                    colmap,
+                    "mapper",
+                    "--database_path",
+                    str(database),
+                    "--image_path",
+                    str(staged),
+                    "--output_path",
+                    str(sparse),
+                ],
+                workspace / log_name,
+            )
+            error = None
+        except RuntimeError as exc:
+            error = str(exc)
+        return usable_model(sparse), error
+
+    model, primary_error = map_once("mapper.log")
+    if model is not None:
+        return model, count
+
+    # Stable temporal subsampling can make neighbouring staged frames too far
+    # apart for sequential matching. Keep the first attempt for provenance,
+    # then deterministically add all-pairs matches and retry from a clean
+    # sparse directory. This is a preparation fallback, not CBRC retuning.
+    if primary_matcher != "exhaustive_matcher":
+        run(
+            [colmap, "exhaustive_matcher", "--database_path", str(database)],
+            workspace / "exhaustive_matcher_fallback.log",
+        )
+        reset_sparse()
+        model, fallback_error = map_once("mapper_exhaustive_fallback.log")
+        if model is not None:
+            return model, count
+        raise RuntimeError(
+            "COLMAP reconstruction failed after sequential and exhaustive matching.\n"
+            f"primary: {primary_error or 'model had fewer than 64 points'}\n"
+            f"fallback: {fallback_error or 'model had fewer than 64 points'}"
+        )
+
+    raise RuntimeError(
+        "COLMAP reconstruction failed after exhaustive matching: "
+        + (primary_error or "model had fewer than 64 points")
     )
-    model = find_model(sparse)
-    if model is None:
-        raise RuntimeError("COLMAP mapper completed without a points3D model")
-    return model, count
 
 
 def seed_colmap(
@@ -235,6 +311,8 @@ def seed_colmap(
             source_url,
             "--maximum-points",
             "750000",
+            "--minimum-track-length",
+            "2",
         ],
         output.parent / f"{scene_id}.seed.log",
         cwd=ROOT,
@@ -258,6 +336,7 @@ def prepare_graphdeco(
             str(world),
             "--target-diagonal",
             "2.0",
+            "--clamp-log-scale",
             "--json",
         ],
         world.parent / f"{scene['sceneId']}.seed.log",
@@ -513,8 +592,10 @@ def main(argv: list[str] | None = None) -> int:
         "scientificBoundary": (
             "GraphDECO entries preserve trained 3DGS representations. ScanNet++ uses its provided "
             "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn use deterministic RGB-derived COLMAP "
-            "sparse geometry for the CBRC Gaussian output-side test; their metric depth/pose data are "
-            "retained as independent dataset context and are not mislabeled as part of that seed."
+            "sparse geometry for the CBRC Gaussian output-side test, with a frozen overlap-preserving "
+            "temporal sampler, sequential-to-exhaustive matching fallback, and minimum two-view point "
+            "tracks for world seeding; their metric depth/pose data remain independent dataset context "
+            "and are not mislabeled as part of that seed."
         ),
     }
     write(output / "BROAD_WORLDS.json", manifest)
