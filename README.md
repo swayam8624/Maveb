@@ -12,11 +12,12 @@ A research system for deciding how little of a captured 3D world can be recomput
 <img src="https://img.shields.io/badge/C%2B%2B-23-00599C" alt="C++23">
 <img src="https://img.shields.io/badge/Metal-3-black" alt="Metal">
 <img src="https://img.shields.io/badge/research-CBRC-7b2cbf" alt="CBRC">
-<img src="https://img.shields.io/badge/software-Apache--2.0-blue" alt="Software license">\n<img src="https://img.shields.io/badge/research%20content-CC%20BY%204.0-lightgrey" alt="Research content license">
+<img src="https://img.shields.io/badge/software-Apache--2.0-blue" alt="Software license">
+<img src="https://img.shields.io/badge/research%20content-CC%20BY%204.0-lightgrey" alt="Research content license">
 </p>
 
 <p align="center">
-<img src="research/results/visualizations/public/MAVEB_teaser.gif" width="900" alt="MAVEB animated teaser">
+<img src="research/results/visualizations/public/MAVEB_teaser.gif" width="100%" alt="MAVEB animated teaser">
 </p>
 
 MAVEB is the research project. AETHER is the reconstruction, persistent-world, rendering, revision, and evidence stack used to test it.
@@ -700,18 +701,23 @@ Canonical evidence:
 | Certified-local selections | 44 |
 | Automatic FULL fallbacks | 16 |
 | Observed certificate violations | 0 |
-| Native/Python planner parity | 60 / 60 |
+| Native/Python output-cone planner parity | 60 / 60 |
 | Source edits above protected RGB tolerance before repair | 56 / 60 |
-| Median calibrated heterogeneous work / FULL | 0.36953 |
+| Median calibrated four-domain work / FULL | 0.36953 |
 | Calibrated work reduction factor | 2.706x |
-| Maximum measured selected RGB residual | 0.0 |
+| Maximum measured selected support-replay residual | 0.0 |
 | Maximum selected certified bound | $2\times10^{-6}$ |
+| LOCAL trained-3DGS renders matching FULL-after | 4 / 4 |
+| Median before-to-FULL changed-pixel fraction | 2.23% |
 | Sparse-discovery median inspected fraction | 0.01 |
 | Sparse-discovery minimum inspected fraction | 0.001 |
+| LOCAL selected renders matching FULL-after at 8-bit RGB | 44 / 44 |
+| Median before-to-FULL changed-pixel fraction | 1.74% |
+| Views with at least one changed pixel | 57 / 60 |
 
-The 2.706x value is a reduction in calibrated heterogeneous work under the frozen millisecond model. It is not a paired end-to-end wall-clock speedup.
+The 2.706x value is a reduction in calibrated four-domain work under the frozen millisecond model. It is not a paired end-to-end wall-clock speedup.
 
-The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian field is seeded from real SfM points and is not described as trained photorealistic 3DGS.
+The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian field is seeded from real SfM points and is not described as trained photorealistic 3DGS. The rendered-fidelity audit compares each selected benchmark-view render against the independent FULL-after render of the same representation and camera; it is repair-fidelity evidence, not a photorealistic reconstruction score against source photographs.
 
 ## Trained-3DGS validation
 
@@ -1019,6 +1025,13 @@ cd Maveb
 git submodule update --init --recursive</code></pre>
 
 ## Complete verification
+
+The canonical public research reproduction also emits the visual-fidelity audit used by the submission:
+
+<pre><code class="language-bash">./run_public_real_campaign_v2.sh
+./run_trained_3dgs_campaign.sh</code></pre>
+
+The public v2 run writes `build/public-real-v2/visual-quality/CBRC_VISUAL_QUALITY.json` and includes it in the paper-readiness gate.
 
 <pre><code class="language-bash">chmod +x bootstrap_and_run.sh
 ./bootstrap_and_run.sh</code></pre>
