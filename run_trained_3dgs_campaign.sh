@@ -77,6 +77,7 @@ set +e
 REPORT_STATUS=$?
 set -e
 "$PYTHON" research/visualization/cbrc_siggraph_visuals.py   --campaign-dir "$RESULTS"   --output-dir "$VIS"   --max-mosaic-cases 5
+"$PYTHON" research/analysis/cbrc_visual_quality.py   --campaign-dir "$RESULTS"   --output-dir "$VISUAL_QUALITY"
 
 echo "==> [7/7] Freezing trained-3DGS validation status"
 "$PYTHON" - "$OUT" "$CAMPAIGN_STATUS" "$REPORT_STATUS" <<'PY'
