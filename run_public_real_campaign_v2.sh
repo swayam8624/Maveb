@@ -17,6 +17,7 @@ SPARSE="$OUT/sparse-discovery"
 FROZEN="$OUT/frozen-inputs"
 RESULTS="$OUT/campaign"
 VIS="$OUT/siggraph-visuals"
+VISUAL_QUALITY="$OUT/visual-quality"
 MANIFEST="$ROOT/research/config/cbrc_public_real_sources.json"
 
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
@@ -24,7 +25,7 @@ ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-orac
 WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
 LOCALITY_BENCH="$ROOT/build/ci/tools/maveb-gaussian-locality-bench/maveb-gaussian-locality-bench"
 
-mkdir -p "$SOURCE" "$WORLDS" "$CAL" "$SPARSE" "$FROZEN" "$RESULTS" "$VIS"
+mkdir -p "$SOURCE" "$WORLDS" "$CAL" "$SPARSE" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
 echo "============================================================"
 echo "MAVEB CBRC paper-grade public campaign v2"
