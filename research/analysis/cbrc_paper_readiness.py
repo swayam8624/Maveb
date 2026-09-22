@@ -32,6 +32,7 @@ def audit(
     sparse_summary: Path,
     empirical: Path,
     visual_package: Path,
+    visual_quality: Path | None = None,
     trained_status: Path | None = None,
     ablation_stress: Path | None = None,
 ) -> dict[str, Any]:
@@ -126,6 +127,24 @@ def audit(
         and all(path.is_file() for path in visual_files),
     }
 
+    visual_quality_status = None
+    if visual_quality is not None and visual_quality.is_file():
+        visual_quality_status = load(visual_quality)
+        visual_aggregate = visual_quality_status.get("aggregate", {})
+        checks["visualQualityAuditPresent"] = (
+            visual_quality_status.get("artifact")
+            == "maveb-cbrc-visual-quality-audit"
+        )
+        checks["visualQualityCoversCampaign"] = int(
+            visual_aggregate.get("case_count", -1)
+        ) == len(campaign_rows)
+        checks["visualQualityCoversScenes"] = int(
+            visual_aggregate.get("scene_count", -1)
+        ) >= len(scenes)
+        checks["visualQualityShowsNontrivialEdits"] = int(
+            visual_aggregate.get("cases_with_visible_pixel_change", 0)
+        ) >= max(1, len(campaign_rows) // 2)
+
     trained = None
     if trained_status is not None and trained_status.is_file():
         trained = load(trained_status)
@@ -168,6 +187,7 @@ def audit(
         "workCostModelVersions": sorted(model_versions),
         "checks": checks,
         "corePaperEvidenceReady": core_ready,
+        "visualQualityStatus": visual_quality_status,
         "trained3dgsStatus": trained,
         "ablationStressStatus": stress,
         "interpretationBoundary": (
@@ -195,6 +215,7 @@ def main() -> int:
         args.sparse_summary,
         args.empirical,
         args.visual_package,
+        args.visual_quality,
         args.trained_status,
         args.ablation_stress,
     )
