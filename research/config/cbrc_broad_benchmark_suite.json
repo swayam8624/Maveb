@@ -12,26 +12,30 @@
       "id": "translation",
       "status": "implemented",
       "engineCapability": "persistent-gaussian-entity-translation",
-      "magnitudes": ["small", "medium", "large"],
+      "magnitudes": [
+        "small",
+        "medium",
+        "large"
+      ],
       "note": "Current production-supported authored Gaussian edit. Runs in the first broad campaign."
     },
     {
       "id": "rotation",
-      "status": "capability-required",
+      "status": "implemented",
       "engineCapability": "persistent-gaussian-entity-rotation",
-      "note": "Must not enter the campaign until the headless revision/oracle transaction is implemented and tested."
+      "note": "Implemented as a same-cardinality persistent entity/Gaussian rotation with conservative rotated AABB and independent image certification."
     },
     {
       "id": "uniform-scale",
-      "status": "capability-required",
+      "status": "implemented",
       "engineCapability": "persistent-gaussian-entity-uniform-scale",
-      "note": "Must not enter the campaign until world bounds and Gaussian covariance changes are handled conservatively."
+      "note": "Implemented as a same-cardinality persistent entity/Gaussian uniform scale with covariance-scale update and independent image certification."
     },
     {
-      "id": "appearance",
-      "status": "capability-required",
-      "engineCapability": "persistent-gaussian-entity-appearance",
-      "note": "Must not enter the campaign until appearance signatures and Gaussian SH/opacity changes have a frozen oracle path."
+      "id": "opacity",
+      "status": "implemented",
+      "engineCapability": "persistent-gaussian-entity-opacity",
+      "note": "Concrete appearance edit: shifts owned Gaussian opacity logits and versions the persistent entity appearance signature; independently image-certified."
     },
     {
       "id": "removal",
@@ -57,15 +61,29 @@
       "selection": {
         "mode": "explicit-scenes",
         "scenes": [
-          "bicycle", "bonsai", "counter", "flowers", "garden", "kitchen", "room",
-          "stump", "treehill", "train", "truck", "drjohnson", "playroom"
+          "bicycle",
+          "bonsai",
+          "counter",
+          "flowers",
+          "garden",
+          "kitchen",
+          "room",
+          "stump",
+          "treehill",
+          "train",
+          "truck",
+          "drjohnson",
+          "playroom"
         ]
       },
       "requiredAny": [
         "point_cloud/iteration_30000/point_cloud.ply",
         "point_cloud/iteration_7000/point_cloud.ply"
       ],
-      "optional": ["cameras.json", "cfg_args"],
+      "optional": [
+        "cameras.json",
+        "cfg_args"
+      ],
       "redistribute": false,
       "scientificRole": "Canonical trained photorealistic 3DGS evaluation across all 13 standard GraphDECO scenes."
     },
@@ -87,7 +105,10 @@
         "semseg.v2.json",
         "labels.instances.annotated.v2.ply"
       ],
-      "sequenceAny": ["sequence", "sequence.zip"],
+      "sequenceAny": [
+        "sequence",
+        "sequence.zip"
+      ],
       "redistribute": false,
       "scientificRole": "Natural longitudinal scene changes. The adapter freezes reference/rescan transforms and changed-object metadata before outcomes."
     },
@@ -146,11 +167,15 @@
         "mode": "discover-sequences",
         "targetSequences": 12
       },
-      "required": ["rgb.txt", "depth.txt", "groundtruth.txt"],
+      "required": [
+        "rgb.txt",
+        "depth.txt",
+        "groundtruth.txt"
+      ],
       "camera": {
         "fx": 542.822841,
-        "fy": 542.576870,
-        "cx": 315.593520,
+        "fy": 542.57687,
+        "cx": 315.59352,
         "cy": 237.756098
       },
       "redistribute": false,
