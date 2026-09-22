@@ -71,7 +71,7 @@ class VisualQualityTests(unittest.TestCase):
                 {
                     "case_id": "case-b",
                     "scene_id": "scene-b",
-                    "fallback_full": True,
+                    "fallback_full": False,
                     "coupling_regime": "high",
                     "planner_work": 100.0,
                     "full_work": 100.0,
@@ -85,6 +85,35 @@ class VisualQualityTests(unittest.TestCase):
             self.assertEqual(records[0]["selectedVsFull"]["maxAbsByte"], 1)
             self.assertFalse(records[0]["selectedVsFull"]["psnrInfinite"])
             self.assertGreater(records[0]["selectedVsFull"]["psnrDb"], 40.0)
+
+    def test_fallback_final_output_is_full_reference(self):
+        with tempfile.TemporaryDirectory() as directory:
+            campaign = Path(directory) / "campaign"
+            write_case(
+                campaign,
+                "case-fallback",
+                (0, 0, 0),
+                (10, 10, 10),
+                (0, 0, 0),
+            )
+            rows = [
+                {
+                    "case_id": "case-fallback",
+                    "scene_id": "scene-fallback",
+                    "fallback_full": True,
+                    "coupling_regime": "high",
+                    "planner_work": 100.0,
+                    "full_work": 100.0,
+                }
+            ]
+            (campaign / "campaign-rows.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows)
+            )
+            report, records = mod.evaluate(campaign, rows, {})
+            self.assertEqual(report["selectedExactCases"], 1)
+            self.assertEqual(records[0]["selectedVsFull"]["maxAbsByte"], 0)
+            self.assertGreater(records[0]["candidateRepairVsFull"]["maxAbsByte"], 0)
+            self.assertEqual(records[0]["selectedImageSource"], "full-after-fallback")
 
     def test_grid_generation(self):
         with tempfile.TemporaryDirectory() as directory:
