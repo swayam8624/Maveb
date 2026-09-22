@@ -76,7 +76,7 @@ ${sanitized_env[@]} cmake -S ${source_dir} -B ${build_dir} -GNinja \
   -DCUDA_ENABLED=OFF \
   -DTESTS_ENABLED=OFF
 
-if grep -Eiq '/(anaconda|miniconda|conda)/' ${build_dir}/CMakeCache.txt; then
+if grep -Eiq '/(anaconda[^/]*|miniconda[^/]*|conda[^/]*)/' ${build_dir}/CMakeCache.txt; then
   print -u2 "Refusing COLMAP build: Conda/Anaconda paths leaked into CMakeCache.txt."
   print -u2 "Deactivate Conda and rerun tools/build-colmap-macos.zsh."
   exit 5
