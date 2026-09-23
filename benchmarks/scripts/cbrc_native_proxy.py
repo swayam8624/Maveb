@@ -78,13 +78,24 @@ def nearest_timestamp(target: float, values: list[float], tolerance: float) -> f
 
 
 def timestamp_from_path(path: Path) -> float:
-    try:
-        return float(path.stem.rsplit("_", 1)[1])
-    except (IndexError, ValueError):
+    # ARKitScenes' reference loader defines the frame id as the second
+    # underscore-delimited filename field. Prefer that convention before
+    # falling back to the historical last-field/plain-stem parsing.
+    fields = path.stem.split("_")
+    candidates: list[str] = []
+    if len(fields) > 1:
+        candidates.append(fields[1])
+        if fields[-1] != fields[1]:
+            candidates.append(fields[-1])
+    candidates.append(path.stem)
+    for candidate in candidates:
         try:
-            return float(path.stem)
-        except ValueError as exc:
-            raise ValueError(f"cannot parse timestamp from {path.name}") from exc
+            value = float(candidate)
+        except ValueError:
+            continue
+        if math.isfinite(value):
+            return value
+    raise ValueError(f"cannot parse timestamp from {path.name}")
 
 
 def timestamp_index(paths: Iterable[Path]) -> tuple[list[float], dict[float, Path]]:
@@ -148,6 +159,132 @@ def quaternion_matrix(x: float, y: float, z: float, w: float) -> list[list[float
         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
         [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
     ]
+
+
+def rotation_quaternion(
+    rotation: list[list[float]],
+) -> tuple[float, float, float, float]:
+    trace = rotation[0][0] + rotation[1][1] + rotation[2][2]
+    if trace > 0.0:
+        scale = math.sqrt(trace + 1.0) * 2.0
+        w = 0.25 * scale
+        x = (rotation[2][1] - rotation[1][2]) / scale
+        y = (rotation[0][2] - rotation[2][0]) / scale
+        z = (rotation[1][0] - rotation[0][1]) / scale
+    elif rotation[0][0] > rotation[1][1] and rotation[0][0] > rotation[2][2]:
+        scale = math.sqrt(1.0 + rotation[0][0] - rotation[1][1] - rotation[2][2]) * 2.0
+        w = (rotation[2][1] - rotation[1][2]) / scale
+        x = 0.25 * scale
+        y = (rotation[0][1] + rotation[1][0]) / scale
+        z = (rotation[0][2] + rotation[2][0]) / scale
+    elif rotation[1][1] > rotation[2][2]:
+        scale = math.sqrt(1.0 + rotation[1][1] - rotation[0][0] - rotation[2][2]) * 2.0
+        w = (rotation[0][2] - rotation[2][0]) / scale
+        x = (rotation[0][1] + rotation[1][0]) / scale
+        y = 0.25 * scale
+        z = (rotation[1][2] + rotation[2][1]) / scale
+    else:
+        scale = math.sqrt(1.0 + rotation[2][2] - rotation[0][0] - rotation[1][1]) * 2.0
+        w = (rotation[1][0] - rotation[0][1]) / scale
+        x = (rotation[0][2] + rotation[2][0]) / scale
+        y = (rotation[1][2] + rotation[2][1]) / scale
+        z = 0.25 * scale
+    norm = math.sqrt(x * x + y * y + z * z + w * w)
+    if not math.isfinite(norm) or norm < 1.0e-12:
+        raise ValueError("degenerate rotation matrix")
+    return x / norm, y / norm, z / norm, w / norm
+
+
+def slerp_quaternion(
+    first: tuple[float, float, float, float],
+    second: tuple[float, float, float, float],
+    alpha: float,
+) -> tuple[float, float, float, float]:
+    if not 0.0 <= alpha <= 1.0:
+        raise ValueError("quaternion interpolation alpha must be in [0,1]")
+    a = list(first)
+    b = list(second)
+    dot = sum(a[index] * b[index] for index in range(4))
+    if dot < 0.0:
+        b = [-value for value in b]
+        dot = -dot
+    dot = max(-1.0, min(1.0, dot))
+    if dot > 0.9995:
+        blended = [a[index] + alpha * (b[index] - a[index]) for index in range(4)]
+        norm = math.sqrt(sum(value * value for value in blended))
+        if norm < 1.0e-12:
+            raise ValueError("degenerate quaternion interpolation")
+        return tuple(value / norm for value in blended)
+    theta_zero = math.acos(dot)
+    sine_zero = math.sin(theta_zero)
+    theta = theta_zero * alpha
+    first_weight = math.cos(theta) - dot * math.sin(theta) / sine_zero
+    second_weight = math.sin(theta) / sine_zero
+    return tuple(
+        first_weight * a[index] + second_weight * b[index]
+        for index in range(4)
+    )
+
+
+def trajectory_cadence(pose_times: list[float]) -> tuple[float, float]:
+    intervals = [
+        later - earlier
+        for earlier, later in zip(pose_times, pose_times[1:])
+        if math.isfinite(later - earlier) and later > earlier
+    ]
+    if not intervals:
+        raise ValueError("ARKit trajectory does not contain increasing timestamps")
+    intervals.sort()
+    midpoint = len(intervals) // 2
+    if len(intervals) % 2:
+        typical = intervals[midpoint]
+    else:
+        typical = 0.5 * (intervals[midpoint - 1] + intervals[midpoint])
+    maximum_gap = min(0.5, max(0.05, typical * 3.0))
+    return typical, maximum_gap
+
+
+def arkit_pose_at_timestamp(
+    target: float,
+    pose_times: list[float],
+    poses: dict[float, tuple[list[list[float]], tuple[float, float, float]]],
+    maximum_interpolation_gap: float,
+) -> tuple[
+    tuple[list[list[float]], tuple[float, float, float]] | None,
+    str,
+    float | None,
+]:
+    nearest = nearest_timestamp(target, pose_times, AR_KIT_POSE_TOLERANCE)
+    if nearest is not None:
+        return poses[nearest], "direct", abs(nearest - target)
+
+    upper_index = bisect.bisect_left(pose_times, target)
+    if upper_index == 0 or upper_index >= len(pose_times):
+        return None, "outside-trajectory-range", None
+
+    lower_time = pose_times[upper_index - 1]
+    upper_time = pose_times[upper_index]
+    gap = upper_time - lower_time
+    if (
+        not math.isfinite(gap)
+        or gap <= 0.0
+        or gap > maximum_interpolation_gap
+    ):
+        return None, "trajectory-gap-too-large", gap
+
+    alpha = (target - lower_time) / gap
+    lower_rotation, lower_position = poses[lower_time]
+    upper_rotation, upper_position = poses[upper_time]
+    lower_quaternion = rotation_quaternion(lower_rotation)
+    upper_quaternion = rotation_quaternion(upper_rotation)
+    x, y, z, w = slerp_quaternion(lower_quaternion, upper_quaternion, alpha)
+    rotation = quaternion_matrix(x, y, z, w)
+    position = tuple(
+        lower_position[axis]
+        + alpha * (upper_position[axis] - lower_position[axis])
+        for axis in range(3)
+    )
+    return (rotation, position), "interpolated", gap
 
 
 def transform(
@@ -484,6 +621,7 @@ def build_arkit(
             raise ValueError(f"missing ARKitScenes asset: {required}")
 
     pose_times, poses = load_arkit_trajectory(trajectory)
+    typical_pose_interval, maximum_pose_interpolation_gap = trajectory_cadence(pose_times)
     rgb_times, rgbs = timestamp_index(rgb_dir.glob("*.png"))
     depth_times, depths = timestamp_index(depth_dir.glob("*.png"))
     intr_times, intrinsics = timestamp_index(intrinsics_dir.glob("*.pincam"))
@@ -522,20 +660,34 @@ def build_arkit(
     }
     depth_errors: list[str] = []
     selected_provenance: list[float] = []
+    pose_association = {
+        "direct": 0,
+        "interpolated": 0,
+        "outsideTrajectoryRange": 0,
+        "trajectoryGapTooLarge": 0,
+    }
 
     for timestamp in selected_times:
         intr_timestamp = nearest_timestamp(
             timestamp, intr_times, AR_KIT_ASSET_TOLERANCE
         )
-        pose_timestamp = nearest_timestamp(
-            timestamp, pose_times, AR_KIT_POSE_TOLERANCE
+        pose, pose_mode, _pose_gap = arkit_pose_at_timestamp(
+            timestamp,
+            pose_times,
+            poses,
+            maximum_pose_interpolation_gap,
         )
         if intr_timestamp is None:
             skipped["intrinsics"] += 1
             continue
-        if pose_timestamp is None:
+        if pose is None:
             skipped["pose"] += 1
+            if pose_mode == "outside-trajectory-range":
+                pose_association["outsideTrajectoryRange"] += 1
+            else:
+                pose_association["trajectoryGapTooLarge"] += 1
             continue
+        pose_association[pose_mode] += 1
 
         _intrinsic_width, _intrinsic_height, fx, fy, cx, cy = read_intrinsics(
             intrinsics[intr_timestamp]
@@ -594,8 +746,8 @@ def build_arkit(
                 cx=cx,
                 cy=cy,
                 depth_scale=0.001,
-                rotation=poses[pose_timestamp][0],
-                translation=poses[pose_timestamp][1],
+                rotation=pose[0],
+                translation=pose[1],
                 pixel_stride=pixel_stride,
                 maximum_depth=10.0,
             )
@@ -616,6 +768,11 @@ def build_arkit(
             f"vertices={len(mesh.vertices)} faces={len(mesh.faces)} "
             f"skipped={json.dumps(skipped, sort_keys=True)} "
             f"appearance={json.dumps(appearance, sort_keys=True)} "
+            f"poseAssociation={json.dumps(pose_association, sort_keys=True)} "
+            f"trajectoryRange={[pose_times[0], pose_times[-1]]} "
+            f"selectedDepthRange={[selected_times[0], selected_times[-1]]} "
+            f"typicalPoseInterval={typical_pose_interval} "
+            f"maximumPoseInterpolationGap={maximum_pose_interpolation_gap} "
             f"depthErrors={json.dumps(depth_errors)}"
         )
     return mesh, {
@@ -627,6 +784,18 @@ def build_arkit(
         "skipped": skipped,
         "appearance": appearance,
         "depthErrors": depth_errors,
+        "poseAssociation": pose_association,
+        "trajectory": {
+            "range": [pose_times[0], pose_times[-1]],
+            "typicalIntervalSeconds": typical_pose_interval,
+            "maximumInterpolationGapSeconds": maximum_pose_interpolation_gap,
+            "policy": (
+                "Use Apple-provided lowres_wide.traj directly when a pose is within 5.1 ms; "
+                "otherwise interpolate only between bracketing trajectory samples using linear "
+                "translation and quaternion SLERP rotation. Never extrapolate outside the "
+                "provided trajectory or across an anomalously large trajectory gap."
+            ),
+        },
         "resolutionPolicy": (
             "Use actual depth PNG dimensions for unprojection; RGB is center-padded/cropped "
             "to the depth canvas when dimensions differ, matching the ARKitScenes reference "
