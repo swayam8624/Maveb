@@ -131,14 +131,22 @@ described as trained 3DGS.
 
 ### 3RScan / ARKitScenes / Bonn
 
-The first broad CBRC output-side campaign uses a deterministic RGB subset and COLMAP to make a
-Gaussian persistent world. Original depth, pose, transform, and change metadata remain provenance
-and independent benchmark context. The harness does not claim that those metric channels were used
-to train the seeded Gaussian field.
+World preparation is native-first. 3RScan uses the provided reference mesh. ARKitScenes uses its
+registered low-resolution depth, per-frame intrinsics, and provided trajectory. Bonn uses its
+registered depth, fixed camera calibration, and ground-truth trajectory. The resulting native
+geometry is uniformly canonicalized to the same 2 m scene-diagonal convention before deterministic
+Gaussian world seeding; this is benchmark coordinate normalization, not a claim that the source
+metric scale was estimated by MAVEB.
+
+RGB-derived COLMAP remains only a deterministic per-scene fallback when native preparation fails.
+Any fallback records the native failure in `BROAD_WORLDS.json` as
+`preparationPath=rgb-colmap-fallback`; it is never silently substituted. The campaign still aborts
+if any selected world remains blocked or failed.
 
 For 3RScan, changed reference/rescan pairs are frozen from the official metadata before outcomes.
-That pair annotation is retained while the broad multi-edit campaign uses the reference scan
-as the output-side world.
+Each pair receives a unique pair-ID world name, while its provided reference mesh is the
+output-side geometry and the rescan/change annotations remain provenance for the natural-change
+benchmark role.
 
 ## 5. Package compact evidence for Git
 
