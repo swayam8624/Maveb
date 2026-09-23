@@ -1042,6 +1042,38 @@ The public v2 run writes `build/public-real-v2/visual-quality/CBRC_VISUAL_QUALIT
 
 This executes the public v2.1 campaign, frozen hardware work calibration, sparse discovery, full and heuristic baselines, ablations, planner parity, held-out empirical evaluation, trained-3DGS validation, mechanism-isolation suite, cross-representation figure, and readiness audit.
 
+## Post-reviewer practical-evidence campaign
+
+The broad cross-dataset campaign and the original CBRC v1 evidence remain frozen. A separate reviewer-hardening protocol addresses practical graphics-review questions without rewriting the original results.
+
+<pre><code class="language-bash">bash run_reviewer_stress_campaign.sh</code></pre>
+
+The protocol deterministically selects prepared public worlds, repeats identical physical edits across a fixed epsilon ladder, and measures the independent FULL-reference residual for every LOCAL decision. Within one tolerance-crossover group, source state, selected entity, edit parameters, camera, timestamp, temporal settings, and work model are fixed; epsilon is the only changed variable.
+
+The generated audit reports, rather than forces, whether the run contains:
+
+- certified LOCAL cases with measurable non-zero residual;
+- near-boundary LOCAL cases;
+- FULL-to-LOCAL tolerance crossovers;
+- non-zero LOCAL evidence across multiple datasets;
+- dynamic captured-scene examples with resolvable source RGB context.
+
+An unmet reviewer-evidence target remains OPEN. Cases are not deleted or retuned after outcomes are observed.
+
+Primary generated artifacts:
+
+<pre>
+build/reviewer-stress/
++-- frozen/reviewer-stress-campaign.json
++-- frozen/REVIEWER_STRESS_FREEZE.json
++-- campaign/campaign-rows.jsonl
++-- analysis/REVIEWER_EVIDENCE_AUDIT.json
++-- analysis/REVIEWER_EVIDENCE_AUDIT.md
++-- visuals/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
++-- visuals/F_REVIEWER_TOLERANCE_CROSSOVER.png
++-- visuals/REVIEWER_VISUALS.json
+</pre>
+
 ## Open generated visuals
 
 <pre><code class="language-bash">bash show_paper_visuals.sh</code></pre>
@@ -1132,22 +1164,20 @@ Primary working paper title:
 
 The complete paper handoff is maintained in [research/manuscript/MAVEB_SIGGRAPH_KT.md](research/manuscript/MAVEB_SIGGRAPH_KT.md), with the figure/video map in [research/manuscript/MEDIA_INDEX.md](research/manuscript/MEDIA_INDEX.md).
 
-This repository marks the end of the implementation and evidence-construction phase for the current CBRC v1 paper line.
+The original CBRC v1 implementation and its canonical public/trained-representation evidence are frozen. Those results are not rewritten in response to later reviewer feedback.
 
-The following are frozen:
+A separate post-reviewer hardening phase is active. Its purpose is to test practical effectiveness and graphics-facing evidence more directly: measurable non-zero certified LOCAL residuals, tolerance crossovers, broader real-world stress cases, and source-RGB-grounded visual demonstrations. New measurements may enter the manuscript only after they are produced by the frozen reviewer protocol and pass the same machine-readable provenance discipline.
 
-- the v1 research question;
-- the method boundary;
-- public and trained-representation evidence;
-- canonical run provenance;
-- quantitative headline values;
-- supported and unsupported claim wording;
+The following original v1 items remain frozen:
+
+- the v1 research question and method boundary;
+- canonical public and trained-representation evidence;
+- original run provenance and quantitative headline values;
+- original supported/unsupported claim wording;
 - measured limitations;
-- publication figures;
-- animated supplementary material;
-- reproducibility scripts.
+- existing publication figures and supplementary media.
 
-The next stage is manuscript construction.
+The reviewer-hardening protocol is additive evidence, not a post-hoc replacement of the original campaign.
 
 The manuscript should not introduce new headline measurements by manual transcription. Every result should trace to the canonical machine-readable evidence.
 
@@ -1185,6 +1215,6 @@ The manuscript should preserve the distinctions enforced here:
 
 # Project status
 
-CBRC v1 implementation and evidence construction are complete.
+CBRC v1 implementation and canonical evidence construction are complete and frozen.
 
-The repository is now in manuscript-preparation state.
+The repository is now in post-reviewer experimental hardening plus manuscript-preparation state. The active additive protocol is run with `run_reviewer_stress_campaign.sh`; its results are not treated as established until the generated reviewer-evidence audit reports them.
