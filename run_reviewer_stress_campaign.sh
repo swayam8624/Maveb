@@ -134,7 +134,8 @@ else
   cache_done audit "$AUDIT_KEY"
 fi
 
-VISUAL_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-visual-package-v1   --file "$IMPORT"   --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json"   --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py"   --value "campaign_rows_sha=$("$PYTHON" "$CACHE_KEY" --label rows --file "$CAMPAIGN/campaign-rows.jsonl")")"
+ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v1 --file "$CAMPAIGN/campaign-rows.jsonl")"
+VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v1 --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
 
 step 5 "Build real captured-scene reviewer figures"
 if cache_hit visuals "$VISUAL_KEY"    && [[ -f "$VISUALS/REVIEWER_VISUALS.json" ]]; then
