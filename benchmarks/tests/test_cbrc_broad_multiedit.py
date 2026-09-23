@@ -83,6 +83,37 @@ class BroadMultiEditFreezeTests(unittest.TestCase):
         self.assertNotIn("target", appearance["revision"])
         self.assertLess(appearance["revision"]["edit"]["logit_delta"], 0.0)
 
+    def test_three_case_smoke_does_not_require_unfrozen_high_or_full_outcome(self):
+        policy = freeze.broad_gate_policy(
+            [
+                {"coupling_regime": "low"},
+                {"coupling_regime": "low"},
+                {"coupling_regime": "low"},
+            ]
+        )
+        self.assertFalse(policy["require_full_fallback"])
+        self.assertFalse(policy["require_high_coupling"])
+        self.assertEqual(
+            policy["metadata"]["frozenCouplingRegimes"],
+            ["low"],
+        )
+
+    def test_paper_matrix_requires_high_coverage_but_not_a_particular_fallback_outcome(self):
+        policy = freeze.broad_gate_policy(
+            [
+                {"coupling_regime": "low"},
+                {"coupling_regime": "medium"},
+                {"coupling_regime": "high"},
+                {"coupling_regime": "adversarial"},
+            ]
+        )
+        self.assertFalse(policy["require_full_fallback"])
+        self.assertTrue(policy["require_high_coupling"])
+        self.assertEqual(
+            policy["metadata"]["fullFallback"],
+            "observed-outcome-not-required",
+        )
+
     def test_capture_case_builds_rotation_cli(self):
         value = case()
         freeze.apply_edit_family(value, 1)
