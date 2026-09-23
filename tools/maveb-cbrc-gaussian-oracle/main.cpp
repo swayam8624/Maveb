@@ -552,6 +552,8 @@ int main(int argc, char** argv) try {
     std::vector<double> repairResiduals;
     if (!options->spatialOutputPath.empty()) {
         actualResiduals.resize(oldImage->color.size());
+    }
+    if (!options->spatialOutputPath.empty() || !options->visualOutputDir.empty()) {
         repairResiduals.resize(oldImage->color.size());
     }
 
@@ -573,10 +575,10 @@ int main(int argc, char** argv) try {
                     static_cast<double>(newImage->color[pixel][channel])));
         }
         const double repairBound = repairBounds[pixel];
-        if (!actualResiduals.empty()) {
+        if (!actualResiduals.empty())
             actualResiduals[pixel] = actual;
+        if (!repairResiduals.empty())
             repairResiduals[pixel] = repairResidual;
-        }
         maximumActual = std::max(maximumActual, actual);
         maximumBound = std::max(maximumBound, bound);
         maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
