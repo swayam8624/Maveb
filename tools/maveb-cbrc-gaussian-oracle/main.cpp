@@ -450,14 +450,12 @@ int main(int argc, char** argv) try {
         omittedCount = std::max<std::size_t>(1, omittedCount);
         omittedCount = std::min<std::size_t>(changed->size() - 1, omittedCount);
         for (std::size_t k = 0; k < omittedCount; ++k) {
-            const std::size_t changedPosition =
-                std::min<std::size_t>(
-                    changed->size() - 1,
-                    ((k + 1) * changed->size()) / (omittedCount + 1));
+            const std::size_t changedPosition = std::min<std::size_t>(
+                changed->size() - 1, ((k + 1) * changed->size()) / (omittedCount + 1));
             isOmitted[(*changed)[changedPosition]] = true;
         }
-        omittedCount = static_cast<std::size_t>(
-            std::count(isOmitted.begin(), isOmitted.end(), true));
+        omittedCount =
+            static_cast<std::size_t>(std::count(isOmitted.begin(), isOmitted.end(), true));
     }
 
     GaussianAsset omittedBefore;
@@ -568,11 +566,10 @@ int main(int argc, char** argv) try {
         const bool repairedPixel = bound > 0.0;
         double repairResidual{};
         for (std::size_t channel = 0; channel < 3; ++channel) {
-            repairResidual = std::max(
-                repairResidual,
-                std::abs(
-                    static_cast<double>(repairImage->color[pixel][channel]) -
-                    static_cast<double>(newImage->color[pixel][channel])));
+            repairResidual =
+                std::max(repairResidual,
+                         std::abs(static_cast<double>(repairImage->color[pixel][channel]) -
+                                  static_cast<double>(newImage->color[pixel][channel])));
         }
         const double repairBound = repairBounds[pixel];
         if (!actualResiduals.empty())
@@ -588,8 +585,7 @@ int main(int argc, char** argv) try {
         certificateViolations += static_cast<std::size_t>(certificateViolation);
         const bool repairCertificateViolation =
             repairResidual > repairBound + kOracleNumericalSlack;
-        repairCertificateViolations +=
-            static_cast<std::size_t>(repairCertificateViolation);
+        repairCertificateViolations += static_cast<std::size_t>(repairCertificateViolation);
         const bool outsideTolerance = actual > options->epsilon + kOracleNumericalSlack;
         toleranceViolations += static_cast<std::size_t>(outsideTolerance);
     }
@@ -625,8 +621,7 @@ int main(int argc, char** argv) try {
             spatial << x << ',' << y << ',' << actual << ',' << bound << ',';
             spatial << repairResidual << ',' << repairBound << ',';
             spatial << (actual > bound + kOracleNumericalSlack ? 1 : 0) << ',';
-            spatial << (repairResidual > repairBound + kOracleNumericalSlack ? 1 : 0)
-                    << '\n';
+            spatial << (repairResidual > repairBound + kOracleNumericalSlack ? 1 : 0) << '\n';
         }
         spatial.close();
         if (!spatial) {
@@ -655,11 +650,11 @@ int main(int argc, char** argv) try {
             const double bound = certificate->rgbLInfBounds[pixel];
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
-            supportHeat[pixel] = heatColor(
-                options->repairOmitFraction > 0.0 ? residualBound : bound,
-                options->repairOmitFraction > 0.0
-                    ? std::max(maximumRepairResidualBound, 1.0e-12)
-                    : maximumBound);
+            supportHeat[pixel] =
+                heatColor(options->repairOmitFraction > 0.0 ? residualBound : bound,
+                          options->repairOmitFraction > 0.0
+                              ? std::max(maximumRepairResidualBound, 1.0e-12)
+                              : maximumBound);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
                 const double beforeChannel = oldImage->color[pixel][channel];
@@ -668,8 +663,7 @@ int main(int argc, char** argv) try {
             }
             const double residual = repairResiduals[pixel];
             effectHeat[pixel] = heatColor(actual, maximumActual);
-            residualHeat[pixel] =
-                heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
+            residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
         }
 
         const std::array<std::pair<std::string_view, const Pixels*>, 6> images{{
@@ -694,8 +688,7 @@ int main(int argc, char** argv) try {
         static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
-    const double repairResidualBound =
-        maximumRepairResidualBound + kOracleNumericalSlack;
+    const double repairResidualBound = maximumRepairResidualBound + kOracleNumericalSlack;
     const bool repairResidualCertified = repairCertificateViolations == 0;
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
@@ -720,11 +713,9 @@ int main(int argc, char** argv) try {
               << "\"repair_qois\":{\"rgb_linf\":{\"epsilon\":" << options->epsilon << ','
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
-              << "\"effectivity\":" << effectivity << ','
-              << "\"repairMode\":\""
-              << (options->repairOmitFraction > 0.0
-                      ? "certified-omitted-gaussians-v1"
-                      : "exact-changed-support-v1")
+              << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
+              << (options->repairOmitFraction > 0.0 ? "certified-omitted-gaussians-v1"
+                                                    : "exact-changed-support-v1")
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
