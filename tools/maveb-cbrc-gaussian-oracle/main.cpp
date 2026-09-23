@@ -444,11 +444,11 @@ int main(int argc, char** argv) try {
 
     std::vector<bool> isOmitted(before->gaussians.size(), false);
     std::size_t omittedCount{};
-    if (options->repairOmitFraction > 0.0 && !changed->empty()) {
+    if (options->repairOmitFraction > 0.0 && changed->size() >= 2) {
         omittedCount = static_cast<std::size_t>(
             std::floor(options->repairOmitFraction * static_cast<double>(changed->size())));
         omittedCount = std::max<std::size_t>(1, omittedCount);
-        omittedCount = std::min<std::size_t>(changed->size(), omittedCount);
+        omittedCount = std::min<std::size_t>(changed->size() - 1, omittedCount);
         for (std::size_t k = 0; k < omittedCount; ++k) {
             const std::size_t changedPosition =
                 std::min<std::size_t>(
@@ -610,7 +610,8 @@ int main(int argc, char** argv) try {
             return EXIT_FAILURE;
         }
         spatial << "x,y,actual_rgb_linf,certified_bound,post_repair_residual_rgb_linf,"
-                   "certificate_violation\n";
+                   "post_repair_certified_bound,certificate_violation,"
+                   "post_repair_certificate_violation\n";
         spatial << std::setprecision(17);
         for (std::size_t pixel = 0; pixel < actualResiduals.size(); ++pixel) {
             const std::size_t x = pixel % camera.width;
@@ -618,9 +619,12 @@ int main(int argc, char** argv) try {
             const double actual = actualResiduals[pixel];
             const double bound = certificate->rgbLInfBounds[pixel];
             const double repairResidual = repairResiduals[pixel];
+            const double repairBound = repairBounds[pixel];
             spatial << x << ',' << y << ',' << actual << ',' << bound << ',';
-            spatial << repairResidual << ',';
-            spatial << (actual > bound + kOracleNumericalSlack ? 1 : 0) << '\n';
+            spatial << repairResidual << ',' << repairBound << ',';
+            spatial << (actual > bound + kOracleNumericalSlack ? 1 : 0) << ',';
+            spatial << (repairResidual > repairBound + kOracleNumericalSlack ? 1 : 0)
+                    << '\n';
         }
         spatial.close();
         if (!spatial) {
@@ -660,9 +664,10 @@ int main(int argc, char** argv) try {
                 const double afterChannel = newImage->color[pixel][channel];
                 actual = std::max(actual, std::abs(beforeChannel - afterChannel));
             }
-            const double residual = repaired ? 0.0 : actual;
+            const double residual = repairResiduals[pixel];
             effectHeat[pixel] = heatColor(actual, maximumActual);
-            residualHeat[pixel] = heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
+            residualHeat[pixel] =
+                heatColor(residual, std::max(maximumRepairResidual, 1.0e-12));
         }
 
         const std::array<std::pair<std::string_view, const Pixels*>, 6> images{{
