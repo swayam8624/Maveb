@@ -14,6 +14,7 @@ struct PlyLimits final {
     std::size_t maximumHeaderBytes{1ULL * 1024ULL * 1024ULL};
     std::size_t maximumProperties{256};
     std::size_t maximumGaussians{100'000'000};
+    float maximumAbsoluteLogScale{30.0F};
 };
 
 class PlyLoader final {
