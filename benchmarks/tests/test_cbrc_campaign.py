@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -124,6 +126,92 @@ class CBRCCampaignTests(unittest.TestCase):
         result = mod.verify_native_python_planner_parity(manifest, baseline)
         self.assertFalse(result["pass"])
         self.assertFalse(result["fallbackMatch"])
+
+    def test_restore_case_input_reverts_mutated_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.aetherworld"
+            destination = root / "case" / "input.aetherworld"
+            source.write_text("pristine-world\n")
+            Path(str(source) + ".gaussians.r1.bin").write_bytes(b"gaussian-r1")
+            Path(str(source) + ".ownership.r1.bin").write_bytes(b"ownership-r1")
+
+            destination.parent.mkdir(parents=True)
+            destination.write_text("mutated-world\n")
+            Path(str(destination) + ".gaussians.r1.bin").write_bytes(b"old-r1")
+            Path(str(destination) + ".ownership.r1.bin").write_bytes(b"old-own-r1")
+            Path(str(destination) + ".gaussians.r2.bin").write_bytes(b"stale-r2")
+            Path(str(destination) + ".ownership.r2.bin").write_bytes(b"stale-own-r2")
+
+            mod.restore_case_input(
+                {
+                    "revision": {
+                        "archive": str(destination),
+                    }
+                },
+                {
+                    "source_archive": str(source),
+                    "source_revision": 1,
+                },
+            )
+
+            self.assertEqual(destination.read_text(), "pristine-world\n")
+            self.assertEqual(
+                Path(str(destination) + ".gaussians.r1.bin").read_bytes(),
+                b"gaussian-r1",
+            )
+            self.assertEqual(
+                Path(str(destination) + ".ownership.r1.bin").read_bytes(),
+                b"ownership-r1",
+            )
+            self.assertFalse(Path(str(destination) + ".gaussians.r2.bin").exists())
+            self.assertFalse(Path(str(destination) + ".ownership.r2.bin").exists())
+
+    def test_reusable_case_can_adopt_matching_pre_marker_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            case_dir = Path(directory)
+            (case_dir / "replay-manifest.json").write_text(
+                json.dumps({"git_sha": "abc123"}) + "\n"
+            )
+            (case_dir / "revision-row.json").write_text(
+                json.dumps({"case_id": "case-1"}) + "\n"
+            )
+            (case_dir / "baselines.json").write_text(
+                json.dumps({"case_id": "case-1"}) + "\n"
+            )
+
+            adopted = mod.reusable_case(
+                case_dir,
+                case_id="case-1",
+                signature="signature",
+                git_sha="abc123",
+                adopt_existing=True,
+            )
+            self.assertIsNotNone(adopted)
+            self.assertTrue(adopted["adoptedExisting"])
+
+            rejected = mod.reusable_case(
+                case_dir,
+                case_id="case-1",
+                signature="signature",
+                git_sha="different",
+                adopt_existing=True,
+            )
+            self.assertIsNone(rejected)
+
+    def test_adoption_timing_payload_can_preserve_measured_values(self):
+        measured = {
+            "case_id": "case-1",
+            "capture_wall_ms": 11.0,
+            "evidence_wall_ms": 22.0,
+            "baseline_wall_ms": 33.0,
+            "case_wall_ms": 66.0,
+        }
+        adopted = dict(measured)
+        adopted["resumed"] = True
+        adopted["adoptedExisting"] = True
+        self.assertEqual(adopted["case_wall_ms"], 66.0)
+        self.assertEqual(adopted["evidence_wall_ms"], 22.0)
 
     def test_baseline_summary_aggregates_method_statistics(self):
         records = [
