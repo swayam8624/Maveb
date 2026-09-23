@@ -132,6 +132,8 @@ def execution_signature(
         ),
     }
     for path in (
+        Path(__file__).resolve(),
+        Path(__file__).resolve().with_name("cbrc_storage.py"),
         Path(__file__).resolve().with_name("cbrc_evidence_bundle.py"),
         Path(__file__).resolve().with_name("cbrc_bind_live_revision.py"),
         Path(__file__).resolve().with_name("cbrc_replay.py"),
