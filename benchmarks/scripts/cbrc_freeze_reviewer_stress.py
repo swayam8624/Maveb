@@ -202,9 +202,6 @@ def build(
             f"{len(candidates)} candidates"
         )
 
-    record_by_world = {
-        Path(record["world"]).resolve(): record for record in records
-    }
     candidate_by_world = {
         candidate.archive.resolve(): candidate for candidate in candidates
     }
