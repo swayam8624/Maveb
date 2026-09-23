@@ -22,6 +22,44 @@ class NativeProxyTests(unittest.TestCase):
         self.assertGreater(indices[0], 0)
         self.assertLess(indices[-1], 99)
 
+    def test_arkit_timestamp_parser_matches_reference_second_field(self):
+        self.assertEqual(
+            mod.timestamp_from_path(Path("41069050_123.456_extra_999.png")),
+            123.456,
+        )
+        self.assertEqual(
+            mod.timestamp_from_path(Path("41069050_123.456.png")),
+            123.456,
+        )
+
+    def test_arkit_pose_interpolates_between_sparse_vio_samples(self):
+        pose_times = [0.0, 0.1]
+        poses = {
+            0.0: (
+                [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                (0.0, 0.0, 0.0),
+            ),
+            0.1: (
+                [[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                (1.0, 0.0, 0.0),
+            ),
+        }
+        pose, mode, gap = mod.arkit_pose_at_timestamp(
+            0.05,
+            pose_times,
+            poses,
+            maximum_interpolation_gap=0.3,
+        )
+        self.assertIsNotNone(pose)
+        assert pose is not None
+        self.assertEqual(mode, "interpolated")
+        self.assertAlmostEqual(gap, 0.1)
+        self.assertAlmostEqual(pose[1][0], 0.5)
+        # Midway between identity and +90 degree Z rotation is +45 degrees.
+        root_half = 2.0 ** -0.5
+        self.assertAlmostEqual(pose[0][0][0], root_half, places=6)
+        self.assertAlmostEqual(pose[0][1][0], root_half, places=6)
+
     def test_obj_mesh_triangulates_polygon_and_canonicalizes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -139,6 +177,63 @@ class NativeProxyTests(unittest.TestCase):
             self.assertEqual(
                 provenance["appearance"]["neutralRgbMissingOrDecodeFailed"], 0
             )
+
+    def test_arkit_raw_depth_uses_interpolated_sparse_trajectory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "41069050"
+            rgb_dir = root / "lowres_wide"
+            depth_dir = root / "lowres_depth"
+            intrinsics_dir = root / "lowres_wide_intrinsics"
+            rgb_dir.mkdir(parents=True)
+            depth_dir.mkdir()
+            intrinsics_dir.mkdir()
+
+            (root / "lowres_wide.traj").write_text(
+                "0.0 0 0 0 0 0 0\n"
+                "0.1 0 0 0 -0.1 0 0\n"
+                "0.2 0 0 0 -0.2 0 0\n"
+            )
+
+            def write_png_header(path: Path, width: int, height: int) -> None:
+                path.write_bytes(
+                    mod.PNG_SIGNATURE
+                    + struct.pack(">I", 13)
+                    + b"IHDR"
+                    + struct.pack(">II", width, height)
+                )
+
+            # RAW ARKitScenes depth can be sampled between the lower-rate VIO poses.
+            timestamps = (0.025, 0.075)
+            for timestamp in timestamps:
+                stem = f"41069050_{timestamp:.3f}"
+                write_png_header(rgb_dir / f"{stem}.png", 12, 10)
+                write_png_header(depth_dir / f"{stem}.png", 12, 10)
+                (intrinsics_dir / f"{stem}.pincam").write_text(
+                    "12 10 6 6 5.5 4.5\n"
+                )
+
+            depth_raw = b"".join(
+                struct.pack("<H", 1000) for _ in range(12 * 10)
+            )
+            rgb_raw = bytes([120, 80, 40]) * (12 * 10)
+
+            def fake_decode(_ffmpeg, _source, pixel_format):
+                return depth_raw if pixel_format == "gray16le" else rgb_raw
+
+            with mock.patch.object(mod, "ffmpeg_decode", side_effect=fake_decode):
+                mesh, provenance = mod.build_arkit(
+                    root,
+                    maximum_frames=2,
+                    maximum_vertices=10000,
+                    ffmpeg="ffmpeg",
+                )
+
+            self.assertGreaterEqual(len(mesh.vertices), 64)
+            self.assertGreater(len(mesh.faces), 0)
+            self.assertEqual(provenance["convertedFrames"], 2)
+            self.assertEqual(provenance["poseAssociation"]["direct"], 0)
+            self.assertEqual(provenance["poseAssociation"]["interpolated"], 2)
+            self.assertEqual(provenance["skipped"]["pose"], 0)
 
     def test_bonn_uses_registered_depth_and_groundtruth_pose(self):
         with tempfile.TemporaryDirectory() as directory:
