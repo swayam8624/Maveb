@@ -199,6 +199,20 @@ class CBRCCampaignTests(unittest.TestCase):
             )
             self.assertIsNone(rejected)
 
+    def test_adoption_timing_payload_can_preserve_measured_values(self):
+        measured = {
+            "case_id": "case-1",
+            "capture_wall_ms": 11.0,
+            "evidence_wall_ms": 22.0,
+            "baseline_wall_ms": 33.0,
+            "case_wall_ms": 66.0,
+        }
+        adopted = dict(measured)
+        adopted["resumed"] = True
+        adopted["adoptedExisting"] = True
+        self.assertEqual(adopted["case_wall_ms"], 66.0)
+        self.assertEqual(adopted["evidence_wall_ms"], 22.0)
+
     def test_baseline_summary_aggregates_method_statistics(self):
         records = [
             {
