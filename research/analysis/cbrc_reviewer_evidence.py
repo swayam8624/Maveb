@@ -66,6 +66,21 @@ def classify_row(
     diagnostics = row.get("candidateDiagnostics", {})
     candidate_actual = float(diagnostics.get("candidateActualRgbError", actual))
     candidate_bound = float(diagnostics.get("candidateRgbBound", bound))
+    repair_mode = str(
+        diagnostics.get("repairMode", "exact-changed-support-v1")
+    )
+    repair_omit_fraction = float(
+        diagnostics.get("repairOmitFractionRequested", 0.0)
+    )
+    repair_omitted_gaussians = int(
+        diagnostics.get("repairOmittedGaussians", 0)
+    )
+    repair_applied_gaussians = int(
+        diagnostics.get("repairAppliedChangedGaussians", 0)
+    )
+    repair_certificate_violations = int(
+        diagnostics.get("repairCertificateViolationPixels", 0)
+    )
     matrix = case.get("matrix_tags", {}) if isinstance(case, dict) else {}
 
     certificate_ok = actual <= bound + 1e-12 and bound <= epsilon + 1e-12
@@ -147,6 +162,11 @@ def classify_row(
         "affectedPixelFraction": float(
             diagnostics.get("affectedPixelFraction", 0.0)
         ),
+        "repairMode": repair_mode,
+        "repairOmitFraction": repair_omit_fraction,
+        "repairOmittedGaussians": repair_omitted_gaussians,
+        "repairAppliedChangedGaussians": repair_applied_gaussians,
+        "repairCertificateViolationPixels": repair_certificate_violations,
         "naturalChangePair": matrix.get(
             "natural_change_pair",
             matrix.get("naturalChangePair"),
@@ -278,8 +298,22 @@ def analyze(
         ),
     )
 
+    repair_certificate_violations = [
+        record
+        for record in records
+        if int(record["repairCertificateViolationPixels"]) > 0
+    ]
+    partial_mode_records = [
+        record
+        for record in records
+        if record["repairMode"] == "certified-omitted-gaussians-v1"
+        and record["repairOmittedGaussians"] > 0
+    ]
+
     readiness_gates = {
         "noCertificateViolations": not certificate_violations,
+        "noRepairCertificateViolations": not repair_certificate_violations,
+        "hasCertifiedPartialRepairMode": bool(partial_mode_records),
         "hasCertifiedNonzeroLocal": bool(nonzero),
         "hasToleranceCrossover": bool(crossover_groups),
         "nonzeroAcrossAtLeastTwoDatasets": len(datasets_nonzero) >= 2,
@@ -295,6 +329,8 @@ def analyze(
         "localCases": len(local),
         "fullFallbackCases": len(full),
         "certificateViolationCount": len(certificate_violations),
+        "repairCertificateViolationCount": len(repair_certificate_violations),
+        "certifiedPartialRepairCases": len(partial_mode_records),
         "certifiedNonzeroLocalCases": len(nonzero),
         "nearBoundaryLocalCases": len(near),
         "nonzeroLocalDatasets": datasets_nonzero,
@@ -387,6 +423,11 @@ def write_csv(records: list[dict[str, Any]], path: Path) -> None:
         "nearBoundaryLocal",
         "workRatioFull",
         "affectedPixelFraction",
+        "repairMode",
+        "repairOmitFraction",
+        "repairOmittedGaussians",
+        "repairAppliedChangedGaussians",
+        "repairCertificateViolationPixels",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as stream:

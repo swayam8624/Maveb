@@ -31,7 +31,7 @@ import cbrc_prepare_real_campaign as base
 
 
 EDIT_FAMILIES = ("translation", "rotation", "uniform-scale", "opacity")
-EPSILON_LEVELS_255 = (0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0)
+EPSILON_LEVELS_255 = (0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0)
 SEVERITY_PROFILES: tuple[dict[str, Any], ...] = (
     {
         "name": "medium",
@@ -40,6 +40,7 @@ SEVERITY_PROFILES: tuple[dict[str, Any], ...] = (
         "entity_fraction": 0.12,
         "history_weight": 0.90,
         "history_stable": True,
+        "repair_omit_fraction": 0.01,
     },
     {
         "name": "strong",
@@ -48,6 +49,7 @@ SEVERITY_PROFILES: tuple[dict[str, Any], ...] = (
         "entity_fraction": 0.20,
         "history_weight": 0.97,
         "history_stable": True,
+        "repair_omit_fraction": 0.05,
     },
 )
 
@@ -256,7 +258,7 @@ def build(
                     timestamp = fixed_timestamp
 
                     matrix_tags = {
-                        "protocol": "post-reviewer-tolerance-crossover-v1",
+                        "protocol": "post-reviewer-certified-partial-repair-v2",
                         "stress_key": stress_key,
                         "dataset_id": dataset_id,
                         "source_scene_id": source_scene_id,
@@ -267,6 +269,7 @@ def build(
                         "selected_entity_fraction": owned_count / candidate.gaussian_count,
                         "history_weight": float(profile["history_weight"]),
                         "history_stable": bool(profile["history_stable"]),
+                        "repair_omit_fraction": float(profile["repair_omit_fraction"]),
                         "edit_family": family,
                         "epsilon_255": float(epsilon_255),
                         "epsilon": epsilon,
@@ -283,6 +286,9 @@ def build(
                         "coupling_regime": str(profile["coupling"]),
                         "edit_family": family,
                         "edit_class": f"gaussian-{family}",
+                        "reviewer_repair_omit_fraction": float(
+                            profile["repair_omit_fraction"]
+                        ),
                         "matrix_tags": matrix_tags,
                         "revision": {
                             "archive": str(archive_copy),
@@ -320,6 +326,9 @@ def build(
                             "severity_profile": profile["name"],
                             "edit_family": family,
                             "edit_parameters": edit,
+                            "repair_omit_fraction": float(
+                                profile["repair_omit_fraction"]
+                            ),
                             "epsilon_255": float(epsilon_255),
                             "epsilon": epsilon,
                             "matrix": matrix_tags,
@@ -334,8 +343,8 @@ def build(
     )
     campaign = {
         "schemaVersion": 1,
-        "campaignId": "maveb-cbrc-reviewer-tolerance-crossover-v1",
-        "protocol": "post-reviewer-tolerance-crossover-v1",
+        "campaignId": "maveb-cbrc-reviewer-certified-partial-repair-v2",
+        "protocol": "post-reviewer-certified-partial-repair-v2",
         "minimum_revisions": len(cases),
         "minimum_scenes": len(selected_scenes),
         "require_local_success": False,
@@ -353,10 +362,10 @@ def build(
         ],
         "cases": cases,
         "freeze_note": (
-            "Post-reviewer stress protocol frozen before outcomes are inspected. "
+            "Post-reviewer certified-partial-repair v2 protocol frozen before outcomes are inspected. "
             "Scene selection is deterministic and result-independent. Each stress key "
             "repeats the same physical edit on an independent source-world copy while "
-            "only epsilon changes across the fixed tolerance ladder. No case may be "
+            "only epsilon changes across the fixed tolerance ladder. The deterministic omitted-Gaussian fraction is fixed by severity profile before execution. No case may be "
             "removed or retuned after observing LOCAL/FULL decisions or residuals."
         ),
     }

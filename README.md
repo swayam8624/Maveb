@@ -1071,7 +1071,7 @@ The broad cross-dataset campaign and the original CBRC v1 evidence remain frozen
 
 <pre><code class="language-bash">bash run_reviewer_stress_campaign.sh</code></pre>
 
-The protocol deterministically selects prepared public worlds, repeats identical physical edits across a fixed epsilon ladder, and measures the independent FULL-reference residual for every LOCAL decision. Within one tolerance-crossover group, source state, selected entity, edit parameters, camera, timestamp, temporal settings, and work model are fixed; epsilon is the only changed variable.
+The v2 protocol deterministically selects prepared public worlds, repeats identical physical edits across a fixed epsilon ladder, and measures the independent FULL-reference residual for every LOCAL decision. A fixed, predeclared fraction of changed Gaussians is deliberately left stale in each severity profile; the omitted subset receives its own conservative display-space certificate and the selected-repair image is rendered from the resulting hybrid Gaussian state. Within one tolerance-crossover group, source state, selected entity, edit parameters, camera, timestamp, temporal settings, omitted-Gaussian rule, and work model are fixed; epsilon is the only changed input variable.
 
 The generated audit reports, rather than forces, whether the run contains:
 
@@ -1086,7 +1086,7 @@ An unmet reviewer-evidence target remains OPEN. Cases are not deleted or retuned
 Primary generated artifacts:
 
 <pre>
-build/reviewer-stress/
+build/reviewer-stress-v2/
 +-- frozen/reviewer-stress-campaign.json
 +-- frozen/REVIEWER_STRESS_FREEZE.json
 +-- campaign/campaign-rows.jsonl

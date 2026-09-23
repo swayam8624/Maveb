@@ -16,7 +16,7 @@ elif [[ -f "$ROOT/build/broad-benchmark-paper/worlds/BROAD_WORLDS.json" ]]; then
 else
   SOURCE_ROOT="$ROOT/build/broad-benchmark-smoke"
 fi
-OUT="${MAVEB_REVIEWER_RESULTS_DIR:-$ROOT/build/reviewer-stress}"
+OUT="${MAVEB_REVIEWER_RESULTS_DIR:-$ROOT/build/reviewer-stress-v2}"
 SCENES_PER_DATASET="${MAVEB_REVIEWER_SCENES_PER_DATASET:-1}"
 REUSE="${MAVEB_REVIEWER_REUSE:-1}"
 
@@ -82,7 +82,9 @@ echo "Protocol:"
 echo "  - deterministic real-world selection"
 echo "  - 2 fixed edit-severity profiles"
 echo "  - translation / rotation / scale / opacity"
-echo "  - epsilon ladder: 0.25,0.5,1,2,4,8,16 / 255"
+echo "  - epsilon ladder: 0.25,0.5,1,2,4,8,16,32 / 255"
+echo "  - fixed deterministic omitted-Gaussian fraction: 1% medium / 5% strong"
+echo "  - omitted subset receives an independent conservative display-space certificate"
 echo "  - within each stress key, epsilon is the ONLY changed variable"
 echo
 
@@ -115,7 +117,7 @@ if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GI
   exit 3
 fi
 
-FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v1   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
+FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v2-partial-repair   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
 
 step 2 "Freeze reviewer tolerance-crossover matrix"
 if cache_hit freeze "$FREEZE_KEY"    && [[ -f "$FREEZE/reviewer-stress-campaign.json" ]]    && [[ -f "$FREEZE/REVIEWER_STRESS_FREEZE.json" ]]; then
@@ -141,7 +143,7 @@ echo "  If interrupted, rerun this script; completed matching cases are reused."
 
 "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume
 
-AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v1   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence.py")"
+AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v2-partial-repair   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence.py")"
 
 step 4 "Analyze non-zero certified residuals and FULL-to-LOCAL crossovers"
 if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]; then
@@ -153,8 +155,8 @@ else
   cache_done audit "$AUDIT_KEY"
 fi
 
-ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v1 --file "$CAMPAIGN/campaign-rows.jsonl")"
-VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v1 --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
+ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v2-partial-repair --file "$CAMPAIGN/campaign-rows.jsonl")"
+VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v2-partial-repair --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
 
 if ! "$PYTHON" - <<'PY'
 try:
@@ -192,6 +194,8 @@ for key in (
     "recordCount",
     "localCases",
     "fullFallbackCases",
+    "certifiedPartialRepairCases",
+    "repairCertificateViolationCount",
     "certifiedNonzeroLocalCases",
     "nearBoundaryLocalCases",
     "toleranceCrossoverGroups",

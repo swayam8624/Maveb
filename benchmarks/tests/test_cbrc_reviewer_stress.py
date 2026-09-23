@@ -170,6 +170,15 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                 first_revision.pop("archive")
                 second_revision.pop("archive")
                 self.assertEqual(first_revision, second_revision)
+                self.assertGreater(first["reviewer_repair_omit_fraction"], 0.0)
+                self.assertEqual(
+                    first["reviewer_repair_omit_fraction"],
+                    second["reviewer_repair_omit_fraction"],
+                )
+                self.assertEqual(
+                    first["matrix_tags"]["repair_omit_fraction"],
+                    second["matrix_tags"]["repair_omit_fraction"],
+                )
 
 
 class ReviewerStressRunnerTests(unittest.TestCase):
@@ -271,6 +280,11 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
                 "candidateDiagnostics": {
                     "candidateActualRgbError": 1.0 / 255.0,
                     "candidateRgbBound": 1.5 / 255.0,
+                    "repairMode": "certified-omitted-gaussians-v1",
+                    "repairOmitFractionRequested": 0.05,
+                    "repairOmittedGaussians": 5,
+                    "repairAppliedChangedGaussians": 95,
+                    "repairCertificateViolationPixels": 0,
                 },
             },
             {
@@ -290,6 +304,11 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
                     "candidateActualRgbError": 1.0 / 255.0,
                     "candidateRgbBound": 1.5 / 255.0,
                     "affectedPixelFraction": 0.2,
+                    "repairMode": "certified-omitted-gaussians-v1",
+                    "repairOmitFractionRequested": 0.05,
+                    "repairOmittedGaussians": 5,
+                    "repairAppliedChangedGaussians": 95,
+                    "repairCertificateViolationPixels": 0,
                 },
             },
         ]
@@ -299,6 +318,9 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
         self.assertEqual(report["dynamicCapturedSceneCandidates"], 1)
         self.assertEqual(report["capturedChangeContextCandidates"], 1)
         self.assertTrue(report["readinessGates"]["hasCapturedChangeContext"])
+        self.assertTrue(report["readinessGates"]["hasCertifiedPartialRepairMode"])
+        self.assertTrue(report["readinessGates"]["noRepairCertificateViolations"])
+        self.assertEqual(report["certifiedPartialRepairCases"], 2)
         self.assertTrue(records[1]["certificateOk"])
         self.assertTrue(records[1]["nonzeroLocal"])
 

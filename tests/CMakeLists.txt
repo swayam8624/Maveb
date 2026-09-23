@@ -68,6 +68,15 @@ if(Python3_Interpreter_FOUND)
     endif()
 endif()
 
+if(TARGET maveb-cbrc-gaussian-oracle AND Python3_Interpreter_FOUND)
+    add_test(NAME MavebCbrcGaussianPartialRepair
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-cbrc-partial-repair.py"
+            $<TARGET_FILE:maveb-cbrc-gaussian-oracle>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-before.ply"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-after-two-changes.ply")
+endif()
+
 if(TARGET AetherCapture)
     add_executable(AetherCaptureTests CaptureTests.cpp)
     target_link_libraries(AetherCaptureTests PRIVATE Aether::Capture

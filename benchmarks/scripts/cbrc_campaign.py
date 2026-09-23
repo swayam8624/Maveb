@@ -648,6 +648,10 @@ def main() -> int:
             for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
                 if key in case:
                     row[key] = case[key]
+            if "reviewer_repair_omit_fraction" in case:
+                row["reviewer_repair_omit_fraction"] = float(
+                    case["reviewer_repair_omit_fraction"]
+                )
             (case_dir / "revision-row.json").write_text(
                 json.dumps(row, indent=2, sort_keys=True) + "\n"
             )
@@ -739,6 +743,11 @@ def main() -> int:
             ]
             if case.get("work_cost_model"):
                 command.extend(["--work-cost-model", str(Path(case["work_cost_model"]))])
+            repair_omit_fraction = float(case.get("reviewer_repair_omit_fraction", 0.0))
+            if repair_omit_fraction > 0.0:
+                command.extend(
+                    ["--repair-omit-fraction", str(repair_omit_fraction)]
+                )
             if native_planner is not None:
                 command.extend(
                     ["--native-planner-certificate", str(native_planner)]

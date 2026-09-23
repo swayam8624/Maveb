@@ -85,6 +85,79 @@ class CBRCReplayTests(unittest.TestCase):
         self.assertIn("--detect-changed", command)
         self.assertNotIn("--changed", command)
 
+    def test_reviewer_partial_repair_manifest_threads_oracle_flag(self):
+        m = manifest()
+        m.update(
+            {
+                "before_ply": "before.ply",
+                "after_ply": "after.ply",
+                "epsilon_rgb_linf": 0.1,
+                "changed_indices": [1, 2, 3],
+                "repair_omit_fraction": 0.05,
+                "camera": {
+                    "width": 64,
+                    "height": 64,
+                    "focal_x": 70,
+                    "focal_y": 70,
+                    "center_x": 32,
+                    "center_y": 32,
+                },
+            }
+        )
+        command = mod.build_oracle_command(Path("oracle"), m)
+        self.assertIn("--repair-omit-fraction", command)
+        index = command.index("--repair-omit-fraction")
+        self.assertEqual(command[index + 1], "0.05")
+
+    def test_production_partial_repair_keeps_nonzero_certified_residual(self):
+        m = manifest()
+        m["production_certificate"] = {
+            "maximumCurrentRgbBound": 0.5,
+            "invalidationCoversCertifiedSupport": True,
+            "outputConePlanner": {
+                "stable": True,
+                "passes": True,
+                "fullRepair": False,
+                "temporalRepairSelected": True,
+                "resolvedRgbBound": 0.001,
+            },
+        }
+        source = oracle(bound=0.5, actual=0.2, within=False)
+        source["repair_qois"] = {
+            "rgb_linf": {
+                "epsilon": 0.06,
+                "certified_bound": 0.02,
+                "measured_full_reference_error": 0.012,
+            }
+        }
+        source.update(
+            {
+                "repairMode": "certified-omitted-gaussians-v1",
+                "repairOmitFractionRequested": 0.05,
+                "repairOmittedGaussians": 4,
+                "repairAppliedChangedGaussians": 96,
+                "repairCertificateViolationPixels": 0,
+            }
+        )
+        row = mod.finalize_row(m, source, 3)
+        self.assertFalse(row["fallback_full"])
+        self.assertAlmostEqual(
+            row["qois"]["rgb_linf"]["measured_full_reference_error"],
+            0.012,
+        )
+        self.assertAlmostEqual(
+            row["qois"]["rgb_linf"]["certified_bound"],
+            0.021,
+        )
+        self.assertEqual(
+            row["candidateDiagnostics"]["repairMode"],
+            "certified-omitted-gaussians-v1",
+        )
+        self.assertEqual(
+            row["candidateDiagnostics"]["repairOmittedGaussians"],
+            4,
+        )
+
     def test_native_scalar_work_supports_uncalibrated_real_campaign(self):
         m = manifest()
         m.pop("candidate_work")
