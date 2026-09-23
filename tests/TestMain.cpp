@@ -1261,6 +1261,34 @@ void testGaussianPly() {
            "PLY Gaussian allocation limit is enforced before payload allocation");
     std::filesystem::remove(path);
 
+    const auto outlierPath =
+        std::filesystem::temp_directory_path() / "aether-gaussian-scale-outlier-test.ply";
+    {
+        std::ofstream stream(outlierPath, std::ios::binary);
+        stream << "ply\n"
+                  "format ascii 1.0\n"
+                  "element vertex 1\n"
+                  "property float x\nproperty float y\nproperty float z\n"
+                  "property float f_dc_0\nproperty float f_dc_1\nproperty float f_dc_2\n"
+                  "property float opacity\n"
+                  "property float scale_0\nproperty float scale_1\nproperty float scale_2\n"
+                  "property float rot_0\nproperty float rot_1\nproperty float rot_2\n"
+                  "property float rot_3\n"
+                  "end_header\n"
+                  "0 0 0 0 0 0 0 31 -31 0 1 0 0 0\n";
+    }
+    expect(!aether::gaussian::PlyLoader::load(outlierPath).has_value(),
+           "Default 3DGS PLY loader rejects log-scale outliers");
+    aether::gaussian::PlyLimits relaxedScaleLimits;
+    relaxedScaleLimits.maximumAbsoluteLogScale = 1.0e12F;
+    const auto relaxedScaleAsset =
+        aether::gaussian::PlyLoader::load(outlierPath, relaxedScaleLimits);
+    expect(relaxedScaleAsset.has_value() &&
+               relaxedScaleAsset->gaussians[0].logScale[0] == 31.0F &&
+               relaxedScaleAsset->gaussians[0].logScale[1] == -31.0F,
+           "Explicit relaxed 3DGS load bound preserves finite source scale outliers for callers");
+    std::filesystem::remove(outlierPath);
+
     const auto binaryPath =
         std::filesystem::temp_directory_path() / "aether-gaussian-binary-test.ply";
     {
