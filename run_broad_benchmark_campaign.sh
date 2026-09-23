@@ -372,11 +372,26 @@ step 6 "Executing CBRC + oracle + baselines + ablations"
 if [[ "${MAVEB_BROAD_FORCE_STEP6:-0}" != "1" ]] && cache_hit step6 "$STEP6_FINAL_KEY" && validate_step6; then
   cache_banner "Step 6 reused — all cases/oracle/baselines/ablations already complete"
 else
-  ADOPT_ARG=()
   if [[ "$ADOPT_EXISTING" == "1" ]]; then
-    ADOPT_ARG+=(--adopt-existing)
+    "$PYTHON" benchmarks/scripts/cbrc_campaign.py \
+      --campaign "$FREEZE_DIR/broad-campaign.json" \
+      --freeze-provenance "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" \
+      --oracle "$ORACLE" \
+      --revision-tool "$REVISION" \
+      --git-sha "$EVIDENCE_SHA" \
+      --output-dir "$RESULTS_DIR" \
+      --resume \
+      --adopt-existing
+  else
+    "$PYTHON" benchmarks/scripts/cbrc_campaign.py \
+      --campaign "$FREEZE_DIR/broad-campaign.json" \
+      --freeze-provenance "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" \
+      --oracle "$ORACLE" \
+      --revision-tool "$REVISION" \
+      --git-sha "$EVIDENCE_SHA" \
+      --output-dir "$RESULTS_DIR" \
+      --resume
   fi
-  "$PYTHON" benchmarks/scripts/cbrc_campaign.py     --campaign "$FREEZE_DIR/broad-campaign.json"     --freeze-provenance "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json"     --oracle "$ORACLE"     --revision-tool "$REVISION"     --git-sha "$EVIDENCE_SHA"     --output-dir "$RESULTS_DIR"     --resume     "${ADOPT_ARG[@]}"
   validate_step6
   cache_complete step6 "$STEP6_FINAL_KEY"
 fi
