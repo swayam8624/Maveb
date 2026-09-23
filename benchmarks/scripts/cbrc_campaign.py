@@ -192,6 +192,8 @@ def reusable_case(
     *,
     case_id: str,
     signature: str,
+    git_sha: str,
+    adopt_existing: bool,
 ) -> dict[str, Any] | None:
     marker = case_dir / "CASE_COMPLETE.json"
     required = (
@@ -199,15 +201,43 @@ def reusable_case(
         case_dir / "revision-row.json",
         case_dir / "baselines.json",
     )
-    if not marker.is_file() or not all(path.is_file() for path in required):
+    if not all(path.is_file() for path in required):
         return None
+
+    if marker.is_file():
+        try:
+            payload = json.loads(marker.read_text())
+        except (OSError, ValueError, json.JSONDecodeError):
+            payload = {}
+        if (
+            payload.get("caseId") == case_id
+            and payload.get("executionSignature") == signature
+        ):
+            return payload
+
+    if not adopt_existing:
+        return None
+
     try:
-        payload = json.loads(marker.read_text())
+        manifest = json.loads((case_dir / "replay-manifest.json").read_text())
+        row = json.loads((case_dir / "revision-row.json").read_text())
+        baseline = json.loads((case_dir / "baselines.json").read_text())
     except (OSError, ValueError, json.JSONDecodeError):
         return None
-    if payload.get("caseId") != case_id or payload.get("executionSignature") != signature:
+    if str(manifest.get("git_sha", "")) != git_sha:
         return None
-    return payload
+    if str(row.get("case_id", case_id)) != case_id:
+        return None
+    if str(baseline.get("case_id", case_id)) != case_id:
+        return None
+    return {
+        "schemaVersion": 1,
+        "artifact": "maveb-cbrc-case-adopted",
+        "caseId": case_id,
+        "executionSignature": signature,
+        "timing": None,
+        "adoptedExisting": True,
+    }
 
 
 def load_campaign(path: Path) -> dict[str, Any]:
@@ -456,6 +486,14 @@ def main() -> int:
         action="store_true",
         help="Disable progress bars and heartbeat messages.",
     )
+    parser.add_argument(
+        "--adopt-existing",
+        action="store_true",
+        help=(
+            "Explicitly adopt complete pre-marker case outputs whose replay git_sha matches "
+            "--git-sha. Intended only for one-time migration into the resume cache."
+        ),
+    )
     args = parser.parse_args()
     PROGRESS_ENABLED = not args.no_progress
 
@@ -522,7 +560,13 @@ def main() -> int:
         case_id = str(case["id"])
         case_dir = root / "cases" / case_id
         marker = (
-            reusable_case(case_dir, case_id=case_id, signature=signature)
+            reusable_case(
+                case_dir,
+                case_id=case_id,
+                signature=signature,
+                git_sha=args.git_sha,
+                adopt_existing=args.adopt_existing,
+            )
             if args.resume
             else None
         )
@@ -559,6 +603,22 @@ def main() -> int:
                 }
             timing = dict(timing)
             timing["resumed"] = True
+            if marker.get("adoptedExisting"):
+                if not parity["pass"]:
+                    raise RuntimeError(
+                        f"cannot adopt existing case {case_id}: planner parity failed"
+                    )
+                write_json(
+                    case_dir / "CASE_COMPLETE.json",
+                    {
+                        "schemaVersion": 1,
+                        "artifact": "maveb-cbrc-case-complete",
+                        "caseId": case_id,
+                        "executionSignature": signature,
+                        "timing": timing,
+                        "adoptedExisting": True,
+                    },
+                )
         else:
             if PROGRESS_ENABLED:
                 print(
