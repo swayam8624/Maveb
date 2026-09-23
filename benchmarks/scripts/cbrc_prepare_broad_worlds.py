@@ -559,22 +559,30 @@ def prepare_reconstructed(
 
     workspace = cache / "colmap" / dataset["datasetId"] / scene_id
     workspace.mkdir(parents=True, exist_ok=True)
-    model, image_count = reconstruct_colmap(
-        images,
-        workspace,
-        colmap=colmap,
-        maximum_images=maximum_images,
-        sequential=sequential,
-    )
-    world = output / dataset["datasetId"] / f"{scene_id}.aetherworld"
-    world.parent.mkdir(parents=True, exist_ok=True)
-    seed_colmap(
-        model,
-        world,
-        dataset_id=dataset["datasetId"],
-        scene_id=scene_id,
-        source_url=dataset.get("officialUrl") or "",
-    )
+    try:
+        model, image_count = reconstruct_colmap(
+            images,
+            workspace,
+            colmap=colmap,
+            maximum_images=maximum_images,
+            sequential=sequential,
+        )
+        world = output / dataset["datasetId"] / f"{scene_id}.aetherworld"
+        world.parent.mkdir(parents=True, exist_ok=True)
+        seed_colmap(
+            model,
+            world,
+            dataset_id=dataset["datasetId"],
+            scene_id=scene_id,
+            source_url=dataset.get("officialUrl") or "",
+        )
+    except (OSError, RuntimeError, ValueError) as fallback_error:
+        raise RuntimeError(
+            "dataset-native preparation failed:\n"
+            + (native_error or "unknown native preparation failure")
+            + "\nRGB/COLMAP fallback failed:\n"
+            + str(fallback_error)
+        ) from fallback_error
     return {
         "datasetId": dataset["datasetId"],
         "sceneId": scene_id,
