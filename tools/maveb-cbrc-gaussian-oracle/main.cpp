@@ -60,6 +60,7 @@ struct Options final {
         0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F,
     };
     double epsilon{0.01};
+    double repairOmitFraction{};
 };
 
 [[nodiscard]] std::optional<double> parseDouble(std::string_view text) {
@@ -183,7 +184,8 @@ template <std::size_t N>
                 options.height = *parsed;
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--background-r" || arg == "--background-g" || arg == "--background-b") {
+                   arg == "--repair-omit-fraction" || arg == "--background-r" ||
+                   arg == "--background-g" || arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -204,6 +206,8 @@ template <std::size_t N>
                 options.farPlane = static_cast<float>(*parsed);
             else if (arg == "--epsilon")
                 options.epsilon = *parsed;
+            else if (arg == "--repair-omit-fraction")
+                options.repairOmitFraction = *parsed;
             else if (arg == "--background-r")
                 options.background[0] = static_cast<float>(*parsed);
             else if (arg == "--background-g")
@@ -222,7 +226,9 @@ template <std::size_t N>
                       << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
                       << "  --camera-world-position x,y,z\n"
                       << "  --background-r F --background-g F --background-b F\n"
-                      << "  --epsilon F\n";
+                      << "  --epsilon F\n"
+                      << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
+                         "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -233,6 +239,7 @@ template <std::size_t N>
     const bool hasExplicitChanged = !options.changedCsv.empty();
     if (options.beforePath.empty() || options.afterPath.empty() ||
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
+        options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
         options.farPlane <= options.nearPlane)
         return std::nullopt;
@@ -435,6 +442,45 @@ int main(int argc, char** argv) try {
         }
     }
 
+    std::vector<bool> isOmitted(before->gaussians.size(), false);
+    std::size_t omittedCount{};
+    if (options->repairOmitFraction > 0.0 && !changed->empty()) {
+        omittedCount = static_cast<std::size_t>(
+            std::floor(options->repairOmitFraction * static_cast<double>(changed->size())));
+        omittedCount = std::max<std::size_t>(1, omittedCount);
+        omittedCount = std::min<std::size_t>(changed->size(), omittedCount);
+        for (std::size_t k = 0; k < omittedCount; ++k) {
+            const std::size_t changedPosition =
+                std::min<std::size_t>(
+                    changed->size() - 1,
+                    ((k + 1) * changed->size()) / (omittedCount + 1));
+            isOmitted[(*changed)[changedPosition]] = true;
+        }
+        omittedCount = static_cast<std::size_t>(
+            std::count(isOmitted.begin(), isOmitted.end(), true));
+    }
+
+    GaussianAsset omittedBefore;
+    GaussianAsset omittedAfter;
+    omittedBefore.name = "before-omitted";
+    omittedAfter.name = "after-omitted";
+    omittedBefore.sphericalHarmonicDegree = before->sphericalHarmonicDegree;
+    omittedAfter.sphericalHarmonicDegree = after->sphericalHarmonicDegree;
+    omittedBefore.gaussians.reserve(omittedCount);
+    omittedAfter.gaussians.reserve(omittedCount);
+
+    GaussianAsset repairedState = *after;
+    repairedState.name = "selected-partial-repair";
+    if (omittedCount > 0) {
+        for (const std::size_t index : *changed) {
+            if (!isOmitted[index])
+                continue;
+            omittedBefore.gaussians.push_back(before->gaussians[index]);
+            omittedAfter.gaussians.push_back(after->gaussians[index]);
+            repairedState.gaussians[index] = before->gaussians[index];
+        }
+    }
+
     ReferenceCamera camera;
     camera.width = options->width;
     camera.height = options->height;
@@ -459,6 +505,12 @@ int main(int argc, char** argv) try {
         std::cerr << newImage.error().describe() << '\n';
         return EXIT_FAILURE;
     }
+    auto repairImage =
+        aether::gaussian::ReferenceRasterizer::render(repairedState, camera, options->background);
+    if (!repairImage) {
+        std::cerr << repairImage.error().describe() << '\n';
+        return EXIT_FAILURE;
+    }
 
     const double colorCap = sceneColorCap(*before, *after);
     if (!std::isfinite(colorCap)) {
@@ -472,12 +524,29 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
+    std::vector<double> repairBounds(oldImage->color.size(), 0.0);
+    if (omittedCount > 0) {
+        auto repairCertificate = aether::world_gaussian::certifyGaussianImageRevision(
+            omittedBefore, omittedAfter, camera, colorCap);
+        if (!repairCertificate) {
+            std::cerr << repairCertificate.error().describe() << '\n';
+            return EXIT_FAILURE;
+        }
+        repairBounds = repairCertificate->rgbLInfBounds;
+        if (repairBounds.size() != oldImage->color.size()) {
+            std::cerr << "Partial-repair certificate pixel cardinality mismatch\n";
+            return EXIT_FAILURE;
+        }
+    }
+
     constexpr double kOracleNumericalSlack = 2.0e-6;
     double maximumActual{};
     double maximumBound{};
     double maximumRepairResidual{};
+    double maximumRepairResidualBound{};
     std::size_t affectedPixels{};
     std::size_t certificateViolations{};
+    std::size_t repairCertificateViolations{};
     std::size_t toleranceViolations{};
     std::vector<double> actualResiduals;
     std::vector<double> repairResiduals;
@@ -495,7 +564,15 @@ int main(int argc, char** argv) try {
         }
         const double bound = certificate->rgbLInfBounds[pixel];
         const bool repairedPixel = bound > 0.0;
-        const double repairResidual = repairedPixel ? 0.0 : actual;
+        double repairResidual{};
+        for (std::size_t channel = 0; channel < 3; ++channel) {
+            repairResidual = std::max(
+                repairResidual,
+                std::abs(
+                    static_cast<double>(repairImage->color[pixel][channel]) -
+                    static_cast<double>(newImage->color[pixel][channel])));
+        }
+        const double repairBound = repairBounds[pixel];
         if (!actualResiduals.empty()) {
             actualResiduals[pixel] = actual;
             repairResiduals[pixel] = repairResidual;
@@ -503,9 +580,14 @@ int main(int argc, char** argv) try {
         maximumActual = std::max(maximumActual, actual);
         maximumBound = std::max(maximumBound, bound);
         maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
+        maximumRepairResidualBound = std::max(maximumRepairResidualBound, repairBound);
         affectedPixels += static_cast<std::size_t>(repairedPixel);
         const bool certificateViolation = actual > bound + kOracleNumericalSlack;
         certificateViolations += static_cast<std::size_t>(certificateViolation);
+        const bool repairCertificateViolation =
+            repairResidual > repairBound + kOracleNumericalSlack;
+        repairCertificateViolations +=
+            static_cast<std::size_t>(repairCertificateViolation);
         const bool outsideTolerance = actual > options->epsilon + kOracleNumericalSlack;
         toleranceViolations += static_cast<std::size_t>(outsideTolerance);
     }
@@ -559,15 +641,19 @@ int main(int argc, char** argv) try {
 
     if (!options->visualOutputDir.empty()) {
         const std::filesystem::path visualRoot = options->visualOutputDir;
-        Pixels repairImage(oldImage->color.size());
+        Pixels selectedRepairPixels(oldImage->color.size());
         Pixels supportHeat(oldImage->color.size());
         Pixels effectHeat(oldImage->color.size());
         Pixels residualHeat(oldImage->color.size());
         for (std::size_t pixel = 0; pixel < oldImage->color.size(); ++pixel) {
             const double bound = certificate->rgbLInfBounds[pixel];
-            const bool repaired = bound > 0.0;
-            repairImage[pixel] = repaired ? newImage->color[pixel] : oldImage->color[pixel];
-            supportHeat[pixel] = heatColor(bound, maximumBound);
+            const double residualBound = repairBounds[pixel];
+            selectedRepairPixels[pixel] = repairImage->color[pixel];
+            supportHeat[pixel] = heatColor(
+                options->repairOmitFraction > 0.0 ? residualBound : bound,
+                options->repairOmitFraction > 0.0
+                    ? std::max(maximumRepairResidualBound, 1.0e-12)
+                    : maximumBound);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
                 const double beforeChannel = oldImage->color[pixel][channel];
@@ -582,7 +668,7 @@ int main(int argc, char** argv) try {
         const std::array<std::pair<std::string_view, const Pixels*>, 6> images{{
             {"before.ppm", &oldImage->color},
             {"full-after.ppm", &newImage->color},
-            {"selected-repair.ppm", &repairImage},
+            {"selected-repair.ppm", &selectedRepairPixels},
             {"certified-support.ppm", &supportHeat},
             {"edit-effect.ppm", &effectHeat},
             {"post-repair-residual.ppm", &residualHeat},
@@ -601,8 +687,9 @@ int main(int argc, char** argv) try {
         static_cast<double>(affectedPixels) / static_cast<double>(oldImage->color.size());
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
-    const double repairResidualBound = certified ? kOracleNumericalSlack : maximumRepairResidual;
-    const bool repairResidualCertified = maximumRepairResidual <= repairResidualBound + 1.0e-12;
+    const double repairResidualBound =
+        std::max(maximumRepairResidualBound, kOracleNumericalSlack);
+    const bool repairResidualCertified = repairCertificateViolations == 0;
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
 
@@ -627,7 +714,16 @@ int main(int argc, char** argv) try {
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
               << "\"effectivity\":" << effectivity << ','
+              << "\"repairMode\":\""
+              << (options->repairOmitFraction > 0.0
+                      ? "certified-omitted-gaussians-v1"
+                      : "exact-changed-support-v1")
+              << "\","
+              << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
+              << "\"repairOmittedGaussians\":" << omittedCount << ','
+              << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
               << "\"certificateViolationPixels\":" << certificateViolations << ','
+              << "\"repairCertificateViolationPixels\":" << repairCertificateViolations << ','
               << "\"toleranceViolationPixels\":" << toleranceViolations << ','
               << "\"certified\":" << (certified ? "true" : "false") << ','
               << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << ','
