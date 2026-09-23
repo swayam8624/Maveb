@@ -147,7 +147,10 @@ def classify_row(
         "affectedPixelFraction": float(
             diagnostics.get("affectedPixelFraction", 0.0)
         ),
-        "naturalChangePair": matrix.get("natural_change_pair"),
+        "naturalChangePair": matrix.get(
+            "natural_change_pair",
+            matrix.get("naturalChangePair"),
+        ),
     }
 
 
@@ -238,6 +241,12 @@ def analyze(
         for record in nonzero
         if record["dataset"] in DYNAMIC_DATASETS
     ]
+    natural_change_candidates = [
+        record
+        for record in nonzero
+        if record.get("naturalChangePair")
+        or record["dataset"] == "bonn-rgbd-dynamic"
+    ]
     effectivities = [
         float(record["effectivity"])
         for record in nonzero
@@ -275,6 +284,7 @@ def analyze(
         "hasToleranceCrossover": bool(crossover_groups),
         "nonzeroAcrossAtLeastTwoDatasets": len(datasets_nonzero) >= 2,
         "hasDynamicCapturedSceneCandidate": bool(dynamic_candidates),
+        "hasCapturedChangeContext": bool(natural_change_candidates),
     }
 
     report = {
@@ -289,6 +299,7 @@ def analyze(
         "nearBoundaryLocalCases": len(near),
         "nonzeroLocalDatasets": datasets_nonzero,
         "dynamicCapturedSceneCandidates": len(dynamic_candidates),
+        "capturedChangeContextCandidates": len(natural_change_candidates),
         "toleranceCrossoverGroups": len(crossover_groups),
         "zeroTolerance": zero_tol,
         "nearBoundaryRatioThreshold": near_boundary_ratio,
@@ -471,6 +482,9 @@ def main() -> int:
                 "nonzeroLocalDatasets": report["nonzeroLocalDatasets"],
                 "dynamicCapturedSceneCandidates": report[
                     "dynamicCapturedSceneCandidates"
+                ],
+                "capturedChangeContextCandidates": report[
+                    "capturedChangeContextCandidates"
                 ],
                 "report": str(json_path),
             },
