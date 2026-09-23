@@ -213,7 +213,7 @@ def build(
     profile_counts: Counter[str] = Counter()
 
     inputs = output_dir / "inputs"
-    case_serial = 0
+    stress_serial = 0
 
     for record in records:
         source_world = Path(record["world"]).resolve()
@@ -241,9 +241,11 @@ def build(
                     f"{dataset_id}::{source_scene_id}::{profile['name']}::{family}"
                 )
 
-                for epsilon_index, epsilon_255 in enumerate(epsilon_levels_255):
+                stress_serial += 1
+                fixed_timestamp = candidate.timestamp + stress_serial * 1_000_000
+
+                for epsilon_255 in epsilon_levels_255:
                     epsilon = float(epsilon_255) / 255.0
-                    case_serial += 1
                     epsilon_label = str(epsilon_255).replace(".", "p")
                     case_id = (
                         f"reviewer--{dataset_id}--{family}--{profile['name']}--"
@@ -251,11 +253,7 @@ def build(
                     )
                     case_input_dir = inputs / case_id
                     archive_copy = base.copy_before_state(candidate, case_input_dir)
-                    timestamp = (
-                        candidate.timestamp
-                        + case_serial * 1_000_000
-                        + (epsilon_index + 1) * 10_000
-                    )
+                    timestamp = fixed_timestamp
 
                     matrix_tags = {
                         "protocol": "post-reviewer-tolerance-crossover-v1",
@@ -394,7 +392,7 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--worlds", type=Path, required=True)
     result.add_argument("--output-dir", type=Path, required=True)
-    result.add_argument("--scenes-per-dataset", type=int, default=2)
+    result.add_argument("--scenes-per-dataset", type=int, default=1)
     result.add_argument("--work-cost-model", type=Path)
     return result
 
