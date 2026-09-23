@@ -156,6 +156,7 @@ def main() -> int:
         "build/broad-benchmark-smoke",
         "build/broad-benchmark-paper",
         "build/reviewer-stress",
+        "build/reviewer-stress-v2",
         "build/ci",
     ):
         path = repo / relative
@@ -203,6 +204,7 @@ def main() -> int:
         repo / "build/broad-benchmark-smoke/frozen",
         repo / "build/broad-benchmark-paper/frozen",
         repo / "build/reviewer-stress/frozen",
+        repo / "build/reviewer-stress-v2/frozen",
     ):
         inputs = root / "inputs"
         if not inputs.exists():
