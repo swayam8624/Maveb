@@ -13,15 +13,14 @@ import json
 import math
 import mmap
 import os
-import shutil
-
-import cbrc_storage
 import struct
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+import cbrc_storage
 
 GAUSSIAN_MAGIC = b"AETHGS\x00\x00"
 OWNERSHIP_MAGIC = b"MVGOWNR\x00"
