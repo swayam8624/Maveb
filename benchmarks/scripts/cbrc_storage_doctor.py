@@ -97,11 +97,11 @@ def graphdeco_archive_candidate(data_root: Path) -> tuple[Path | None, bool]:
 def report_path(label: str, path: Path) -> dict[str, Any]:
     physical = cbrc_storage.allocated_bytes(path)
     logical = cbrc_storage.logical_bytes(path)
-    print(f"{label:<42} physical={human(physical):>10} logical={human(logical):>10}")
+    print(f"{label:<42} allocated={human(physical):>10} logical={human(logical):>10}")
     return {
         "label": label,
         "path": str(path),
-        "physicalBytes": physical,
+        "allocatedBytes": physical,
         "logicalBytes": logical,
     }
 
@@ -148,6 +148,7 @@ def main() -> int:
     print(f"repo : {repo}")
     print(f"data : {data if data else 'not configured'}")
     print(f"free : {human(cbrc_storage.free_bytes(repo))}")
+    print("note : allocated bytes may double-count shared APFS clone extents; free disk is authoritative")
     print()
 
     records: list[dict[str, Any]] = []
