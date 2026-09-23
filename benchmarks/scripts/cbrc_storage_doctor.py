@@ -58,13 +58,28 @@ def freeze_inputs_recoverable(freeze_dir: Path) -> tuple[bool, str]:
     for item in frozen:
         if not isinstance(item, dict):
             continue
-        source = item.get("source_archive")
-        if source and not Path(str(source)).is_file():
-            missing.append(str(source))
+        source_value = item.get("source_archive")
+        revision_value = item.get("source_revision")
+        if not source_value or revision_value is None:
+            missing.append(str(source_value or "<missing-source>"))
             if len(missing) >= 3:
                 break
+            continue
+        source = Path(str(source_value))
+        revision = int(revision_value)
+        required = (
+            source,
+            Path(str(source) + f".gaussians.r{revision}.bin"),
+            Path(str(source) + f".ownership.r{revision}.bin"),
+        )
+        for path in required:
+            if not path.is_file():
+                missing.append(str(path))
+                break
+        if len(missing) >= 3:
+            break
     if missing:
-        return False, "source prepared worlds are missing"
+        return False, "source prepared world or revision sidecars are missing"
     return True, "all case inputs can be rematerialized from prepared worlds"
 
 
