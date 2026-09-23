@@ -1283,8 +1283,7 @@ void testGaussianPly() {
     relaxedScaleLimits.maximumAbsoluteLogScale = 1.0e12F;
     const auto relaxedScaleAsset =
         aether::gaussian::PlyLoader::load(outlierPath, relaxedScaleLimits);
-    expect(relaxedScaleAsset.has_value() &&
-               relaxedScaleAsset->gaussians[0].logScale[0] == 31.0F &&
+    expect(relaxedScaleAsset.has_value() && relaxedScaleAsset->gaussians[0].logScale[0] == 31.0F &&
                relaxedScaleAsset->gaussians[0].logScale[1] == -31.0F,
            "Explicit relaxed 3DGS load bound preserves finite source scale outliers for callers");
     std::filesystem::remove(outlierPath);
