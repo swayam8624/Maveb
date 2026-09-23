@@ -173,6 +173,26 @@ def main() -> int:
             if path.exists():
                 records.append(report_path(f"datasets/{name}", path))
 
+    if data and data.exists():
+        archives: list[tuple[int, Path]] = []
+        for pattern in ("*.zip", "*.tar", "*.tar.gz", "*.tgz", "*.7z"):
+            for path in data.rglob(pattern):
+                try:
+                    if path.is_file():
+                        archives.append((cbrc_storage.allocated_bytes(path), path))
+                except OSError:
+                    continue
+        if archives:
+            print()
+            print("DATASET ARCHIVES (report only unless explicitly marked SAFE below)")
+            print("-" * 72)
+            seen: set[Path] = set()
+            for size, path in sorted(archives, reverse=True):
+                if path in seen:
+                    continue
+                seen.add(path)
+                print(f"{human(size):>10}  {path}")
+
     candidates: list[tuple[str, Path, str]] = []
     print()
     print("SAFE CLEANUP CANDIDATES")
