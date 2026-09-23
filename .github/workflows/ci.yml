@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_broad_benchmark_campaign.sh run_paper_grade_research.sh
+          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_broad_benchmark_campaign.sh run_paper_grade_research.sh run_reviewer_stress_campaign.sh cleanup_maveb_storage.sh
           zsh -n tools/build-colmap-macos.zsh
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
