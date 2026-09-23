@@ -235,6 +235,7 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
                         "stress_key": "k",
                         "severity_profile": "strong",
                         "epsilon_255": 0.5,
+                        "naturalChangePair": "reference__rescan",
                     },
                 },
                 {
@@ -248,6 +249,7 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
                         "stress_key": "k",
                         "severity_profile": "strong",
                         "epsilon_255": 2.0,
+                        "naturalChangePair": "reference__rescan",
                     },
                 },
             ],
@@ -295,6 +297,8 @@ class ReviewerEvidenceAuditTests(unittest.TestCase):
         self.assertEqual(report["certifiedNonzeroLocalCases"], 1)
         self.assertEqual(report["toleranceCrossoverGroups"], 1)
         self.assertEqual(report["dynamicCapturedSceneCandidates"], 1)
+        self.assertEqual(report["capturedChangeContextCandidates"], 1)
+        self.assertTrue(report["readinessGates"]["hasCapturedChangeContext"])
         self.assertTrue(records[1]["certificateOk"])
         self.assertTrue(records[1]["nonzeroLocal"])
 
