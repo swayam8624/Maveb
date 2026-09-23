@@ -156,6 +156,19 @@ fi
 ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v1 --file "$CAMPAIGN/campaign-rows.jsonl")"
 VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v1 --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
 
+if ! "$PYTHON" - <<'PY'
+try:
+    import PIL  # noqa: F401
+except ModuleNotFoundError:
+    raise SystemExit(1)
+PY
+then
+  echo "Reviewer figure generation requires Pillow in MAVEB_PYTHON." >&2
+  echo "Install once with:" >&2
+  echo "  \"$PYTHON\" -m pip install Pillow" >&2
+  exit 4
+fi
+
 step 5 "Build real captured-scene reviewer figures"
 if cache_hit visuals "$VISUAL_KEY"    && [[ -f "$VISUALS/REVIEWER_VISUALS.json" ]]; then
   echo "  [██████████████████████████████] 100.00% | CACHE | reviewer visuals reused"
