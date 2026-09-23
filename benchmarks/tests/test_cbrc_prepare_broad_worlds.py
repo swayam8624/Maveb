@@ -161,6 +161,41 @@ class BroadWorldPreparationTests(unittest.TestCase):
             seed.assert_called_once()
 
 
+    def test_prepare_reconstructed_preserves_native_error_when_fallback_fails(self):
+        dataset = {"datasetId": "arkitscenes", "kind": "arkit-scenes", "role": "mobile"}
+        scene = {"sceneId": "41069043", "root": "/tmp/41069043"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            images = [root / f"{index}.png" for index in range(8)]
+            for image in images:
+                image.write_bytes(b"x")
+            with mock.patch.object(
+                mod,
+                "prepare_native",
+                side_effect=RuntimeError("native resolution mismatch"),
+            ):
+                with mock.patch.object(mod, "arkit_images", return_value=images):
+                    with mock.patch.object(
+                        mod,
+                        "reconstruct_colmap",
+                        side_effect=RuntimeError("fallback sparse reconstruction failed"),
+                    ):
+                        with self.assertRaises(RuntimeError) as caught:
+                            mod.prepare_reconstructed(
+                                dataset,
+                                scene,
+                                root / "worlds",
+                                root / "cache",
+                                colmap="/fake/colmap",
+                                native_seeder="/fake/maveb-seed-world",
+                                maximum_images=40,
+                                ffmpeg="/fake/ffmpeg",
+                                allow_rgb_fallback=True,
+                            )
+        message = str(caught.exception)
+        self.assertIn("native resolution mismatch", message)
+        self.assertIn("fallback sparse reconstruction failed", message)
+
     def test_stage_images_rejects_too_few_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
