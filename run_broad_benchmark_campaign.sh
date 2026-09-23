@@ -55,6 +55,8 @@ cmake --preset ci
 cmake --build --preset ci   --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     maveb-cbrc-work-bench     maveb-seed-trained-3dgs-world     maveb-seed-world   --parallel
 
 echo "==> [3/9] Preparing normalized persistent worlds"
+rm -rf "$WORLDS_DIR"
+mkdir -p "$WORLDS_DIR"
 "$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py   --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"   --output-dir "$WORLDS_DIR"   --trained-seeder "$TRAINED_SEED"   --native-seeder "$NATIVE_SEED"   "${DATASET_ARGS[@]}"   --max-images "${MAVEB_BROAD_MAX_IMAGES:-120}"
 
 "$PYTHON" - "$WORLDS_DIR/BROAD_WORLDS.json" <<'PY'
