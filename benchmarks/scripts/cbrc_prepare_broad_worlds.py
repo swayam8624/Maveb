@@ -26,6 +26,7 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
 COLMAP_SEEDER = ROOT / "benchmarks/scripts/cbrc_seed_colmap_world.py"
+NATIVE_PROXY = ROOT / "benchmarks/scripts/cbrc_native_proxy.py"
 
 
 def load(path: Path) -> Any:
@@ -383,6 +384,123 @@ def prepare_scannetpp(
     }
 
 
+def seed_native_proxy(
+    proxy: Path,
+    world: Path,
+    *,
+    native_seeder: str,
+) -> None:
+    run(
+        [
+            native_seeder,
+            "--proxy",
+            str(proxy),
+            "--output",
+            str(world),
+            "--max-gaussians",
+            "750000",
+            "--json",
+        ],
+        world.parent / f"{world.stem}.native-seed.log",
+        cwd=ROOT,
+    )
+
+
+def prepare_native(
+    dataset: dict[str, Any],
+    scene: dict[str, Any],
+    output: Path,
+    cache: Path,
+    *,
+    native_seeder: str,
+    maximum_images: int,
+    ffmpeg: str | None,
+) -> dict[str, Any]:
+    kind = dataset["kind"]
+    if kind == "longitudinal-rgbd":
+        scene_id = scene.get("pairId") or scene["referenceScan"]
+        source = Path(scene["referenceRoot"]) / "mesh.refined.v2.obj"
+        proxy_kind = "3rscan"
+        extra: list[str] = []
+        source_geometry = str(source)
+    elif kind == "arkit-scenes":
+        scene_id = scene["sceneId"]
+        source = Path(scene["root"])
+        proxy_kind = "arkitscenes"
+        extra = []
+        source_geometry = str(source)
+        if ffmpeg is None:
+            raise RuntimeError("ffmpeg not found for ARKitScenes native RGB-D preparation")
+        extra.extend(["--ffmpeg", ffmpeg])
+    elif kind == "tum-rgbd":
+        scene_id = scene["sceneId"]
+        source = Path(scene["root"])
+        proxy_kind = "bonn-rgbd"
+        camera = scene.get("camera") or {}
+        source_geometry = str(source)
+        if ffmpeg is None:
+            raise RuntimeError("ffmpeg not found for Bonn native RGB-D preparation")
+        extra = [
+            "--ffmpeg",
+            ffmpeg,
+            "--width",
+            "640",
+            "--height",
+            "480",
+            "--fx",
+            str(camera.get("fx", 542.822841)),
+            "--fy",
+            str(camera.get("fy", 542.576870)),
+            "--cx",
+            str(camera.get("cx", 315.593520)),
+            "--cy",
+            str(camera.get("cy", 237.756098)),
+        ]
+    else:
+        raise ValueError(f"unsupported native dataset kind: {kind}")
+
+    workspace = cache / "native" / dataset["datasetId"] / scene_id
+    if workspace.exists():
+        shutil.rmtree(workspace)
+    workspace.mkdir(parents=True)
+    proxy = workspace / "proxy.ply"
+    argv = [
+        sys.executable,
+        str(NATIVE_PROXY),
+        "--kind",
+        proxy_kind,
+        "--source",
+        str(source),
+        "--output",
+        str(proxy),
+        "--max-frames",
+        str(maximum_images),
+        "--target-diagonal",
+        "2.0",
+        *extra,
+    ]
+    run(argv, workspace / "native-proxy.log", cwd=ROOT)
+
+    world = output / dataset["datasetId"] / f"{scene_id}.aetherworld"
+    world.parent.mkdir(parents=True, exist_ok=True)
+    seed_native_proxy(proxy, world, native_seeder=native_seeder)
+    return {
+        "datasetId": dataset["datasetId"],
+        "sceneId": scene_id,
+        "status": "ready",
+        "world": str(world.resolve()),
+        "representation": "dataset-native-geometry-seeded-gaussians",
+        "preparationPath": "dataset-native-geometry",
+        "source": source_geometry,
+        "proxy": str(proxy.resolve()),
+        "nativeProvenance": str(Path(str(proxy) + ".source.json").resolve()),
+        "sourceRole": dataset.get("role"),
+        "naturalChangePair": scene.get("pairId"),
+        "referenceScan": scene.get("referenceScan"),
+        "rescan": scene.get("rescan"),
+    }
+
+
 def prepare_reconstructed(
     dataset: dict[str, Any],
     scene: dict[str, Any],
@@ -390,19 +508,43 @@ def prepare_reconstructed(
     cache: Path,
     *,
     colmap: str | None,
+    native_seeder: str | None,
     maximum_images: int,
+    ffmpeg: str | None,
+    allow_rgb_fallback: bool,
 ) -> dict[str, Any]:
+    native_error: str | None = None
+    if native_seeder is not None:
+        try:
+            return prepare_native(
+                dataset,
+                scene,
+                output,
+                cache,
+                native_seeder=native_seeder,
+                maximum_images=maximum_images,
+                ffmpeg=ffmpeg,
+            )
+        except (OSError, RuntimeError, ValueError) as exc:
+            native_error = str(exc)
+    else:
+        native_error = "maveb-seed-world not found"
+
+    if not allow_rgb_fallback:
+        raise RuntimeError(
+            "dataset-native preparation failed and RGB reconstruction fallback is disabled: "
+            + (native_error or "unknown native preparation failure")
+        )
     if colmap is None:
-        return {
-            "datasetId": dataset["datasetId"],
-            "sceneId": scene.get("sceneId") or scene.get("pairId"),
-            "status": "blocked",
-            "reason": "colmap-not-found",
-        }
+        raise RuntimeError(
+            "dataset-native preparation failed and COLMAP fallback is unavailable: "
+            + (native_error or "unknown native preparation failure")
+        )
+
     kind = dataset["kind"]
     if kind == "longitudinal-rgbd":
         images = three_r_scan_images(scene, cache, maximum_images)
-        scene_id = scene["referenceScan"]
+        scene_id = scene.get("pairId") or scene["referenceScan"]
         sequential = True
     elif kind == "arkit-scenes":
         images = arkit_images(scene, maximum_images)
@@ -439,12 +581,15 @@ def prepare_reconstructed(
         "status": "ready",
         "world": str(world.resolve()),
         "representation": "rgb-derived-colmap-seeded-gaussians",
+        "preparationPath": "rgb-colmap-fallback",
         "source": str(model),
         "stagedRgbFrames": image_count,
+        "nativePreparationError": native_error,
         "sourceRole": dataset.get("role"),
         "naturalChangePair": scene.get("pairId"),
+        "referenceScan": scene.get("referenceScan"),
+        "rescan": scene.get("rescan"),
     }
-
 
 def copy_existing(dataset: dict[str, Any], output: Path) -> list[dict[str, Any]]:
     root = Path(dataset["root"]) if dataset.get("root") else None
@@ -482,7 +627,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--dataset", action="append", default=[])
     p.add_argument("--no-rgb-reconstruction", action="store_true")
     p.add_argument("--colmap")
+    p.add_argument("--ffmpeg")
     p.add_argument("--trained-seeder")
+    p.add_argument("--native-seeder")
     return p
 
 
@@ -507,6 +654,14 @@ def main(argv: list[str] | None = None) -> int:
             "maveb-seed-trained-3dgs-world",
         ]
     )
+    native = args.native_seeder or executable(
+        [
+            ROOT / "build/ci/tools/maveb-seed-world/maveb-seed-world",
+            ROOT / "build/debug/tools/maveb-seed-world/maveb-seed-world",
+            "maveb-seed-world",
+        ]
+    )
+    ffmpeg = args.ffmpeg or executable(["ffmpeg"])
 
     records: list[dict[str, Any]] = []
     for dataset in imported["datasets"]:
@@ -545,22 +700,17 @@ def main(argv: list[str] | None = None) -> int:
                 elif dataset["kind"] == "scannetpp":
                     record = prepare_scannetpp(dataset, scene, output)
                 elif dataset["kind"] in {"longitudinal-rgbd", "arkit-scenes", "tum-rgbd"}:
-                    if args.no_rgb_reconstruction:
-                        record = {
-                            "datasetId": dataset_id,
-                            "sceneId": scene.get("sceneId") or scene.get("pairId"),
-                            "status": "blocked",
-                            "reason": "rgb-reconstruction-disabled",
-                        }
-                    else:
-                        record = prepare_reconstructed(
-                            dataset,
-                            scene,
-                            output,
-                            cache,
-                            colmap=colmap,
-                            maximum_images=args.max_images,
-                        )
+                    record = prepare_reconstructed(
+                        dataset,
+                        scene,
+                        output,
+                        cache,
+                        colmap=colmap,
+                        native_seeder=native,
+                        maximum_images=args.max_images,
+                        ffmpeg=ffmpeg,
+                        allow_rgb_fallback=not args.no_rgb_reconstruction,
+                    )
                 else:
                     record = {
                         "datasetId": dataset_id,
@@ -583,19 +733,21 @@ def main(argv: list[str] | None = None) -> int:
         "importManifest": str(args.import_manifest.resolve()),
         "outputRoot": str(output),
         "colmap": colmap,
+        "ffmpeg": ffmpeg,
         "trainedSeeder": trained,
-        "maximumRgbFramesPerReconstructedScene": args.max_images,
+        "nativeSeeder": native,
+        "maximumSourceFramesPerScene": args.max_images,
         "records": records,
         "readyWorlds": sum(record.get("status") == "ready" for record in records),
         "blockedWorlds": sum(record.get("status") == "blocked" for record in records),
         "failedWorlds": sum(record.get("status") == "failed" for record in records),
         "scientificBoundary": (
             "GraphDECO entries preserve trained 3DGS representations. ScanNet++ uses its provided "
-            "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn use deterministic RGB-derived COLMAP "
-            "sparse geometry for the CBRC Gaussian output-side test, with a frozen overlap-preserving "
-            "temporal sampler, sequential-to-exhaustive matching fallback, and minimum two-view point "
-            "tracks for world seeding; their metric depth/pose data remain independent dataset context "
-            "and are not mislabeled as part of that seed."
+            "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn prefer dataset-native geometry or "
+            "registered depth plus provided poses, uniformly canonicalized to the same 2 m broad-"
+            "benchmark scene-diagonal convention. RGB-derived COLMAP is retained only as an explicit "
+            "per-scene fallback and its native-preparation failure is recorded in provenance. No "
+            "dataset-specific CBRC threshold or result gate is changed."
         ),
     }
     write(output / "BROAD_WORLDS.json", manifest)
