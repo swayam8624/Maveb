@@ -126,7 +126,7 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                 ]
             }
 
-            def fake_copy(_candidate, destination):
+            def fake_copy(_candidate, destination, **_kwargs):
                 destination.mkdir(parents=True, exist_ok=True)
                 target = destination / "scene.aetherworld"
                 target.write_bytes(b"x")
