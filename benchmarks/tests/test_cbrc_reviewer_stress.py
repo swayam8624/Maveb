@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -26,6 +27,10 @@ freeze = load_module(
 audit = load_module(
     "cbrc_reviewer_evidence",
     "research/analysis/cbrc_reviewer_evidence.py",
+)
+visuals = load_module(
+    "cbrc_reviewer_visuals",
+    "research/analysis/cbrc_reviewer_visuals.py",
 )
 
 
@@ -127,6 +132,52 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                 first_revision.pop("archive")
                 second_revision.pop("archive")
                 self.assertEqual(first_revision, second_revision)
+
+
+class ReviewerStressRunnerTests(unittest.TestCase):
+    def test_runner_shell_syntax(self):
+        result = subprocess.run(
+            ["bash", "-n", str(ROOT / "run_reviewer_stress_campaign.sh")],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_crossover_visual_smoke(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "crossover.png"
+            report = {
+                "records": [
+                    {
+                        "stressKey": "k",
+                        "dataset": "3rscan",
+                        "sourceSceneId": "scene",
+                        "editFamily": "translation",
+                        "severityProfile": "strong",
+                        "epsilon255": 0.5,
+                        "local": False,
+                        "nonzeroLocal": False,
+                        "actual": 0.0,
+                    },
+                    {
+                        "stressKey": "k",
+                        "dataset": "3rscan",
+                        "sourceSceneId": "scene",
+                        "editFamily": "translation",
+                        "severityProfile": "strong",
+                        "epsilon255": 2.0,
+                        "local": True,
+                        "nonzeroLocal": True,
+                        "actual": 1.0 / 255.0,
+                        "actualToEpsilon": 0.5,
+                    },
+                ],
+                "crossoverGroups": [{"stressKey": "k"}],
+            }
+            result = visuals.render_crossover(report, output)
+            self.assertTrue(output.is_file())
+            self.assertEqual(result["stressKeys"], ["k"])
 
 
 class ReviewerEvidenceAuditTests(unittest.TestCase):
