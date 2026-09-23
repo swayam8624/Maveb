@@ -70,7 +70,17 @@ class ReviewerStressFreezeTests(unittest.TestCase):
             archive = root / "scene.aetherworld"
             gaussian = root / "scene.aetherworld.gaussians.r1.bin"
             ownership = root / "scene.aetherworld.ownership.r1.bin"
-            for path in (archive, gaussian, ownership):
+            archive2 = root / "scene2.aetherworld"
+            gaussian2 = root / "scene2.aetherworld.gaussians.r1.bin"
+            ownership2 = root / "scene2.aetherworld.ownership.r1.bin"
+            for path in (
+                archive,
+                gaussian,
+                ownership,
+                archive2,
+                gaussian2,
+                ownership2,
+            ):
                 path.write_bytes(b"x")
 
             candidate = freeze.base.Candidate(
@@ -85,6 +95,18 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                 minimum=(-1.0, -1.0, -1.0),
                 maximum=(1.0, 1.0, 1.0),
             )
+            candidate2 = freeze.base.Candidate(
+                archive=archive2,
+                revision=1,
+                timestamp=2_000_000,
+                entities={8: {"translation": [0.1, 0.0, 0.0]}},
+                gaussian_sidecar=gaussian2,
+                ownership_sidecar=ownership2,
+                gaussian_count=100,
+                owners=tuple([8] * 100),
+                minimum=(-1.0, -1.0, -1.0),
+                maximum=(1.0, 1.0, 1.0),
+            )
             prepared = {
                 "records": [
                     {
@@ -93,7 +115,14 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                         "status": "ready",
                         "world": str(archive),
                         "representation": "test",
-                    }
+                    },
+                    {
+                        "datasetId": "testset2",
+                        "sceneId": "scene2",
+                        "status": "ready",
+                        "world": str(archive2),
+                        "representation": "test",
+                    },
                 ]
             }
 
@@ -104,7 +133,11 @@ class ReviewerStressFreezeTests(unittest.TestCase):
                 return target
 
             with (
-                mock.patch.object(freeze.base, "discover", return_value=([candidate], [])),
+                mock.patch.object(
+                    freeze.base,
+                    "discover",
+                    return_value=([candidate, candidate2], []),
+                ),
                 mock.patch.object(freeze.base, "copy_before_state", side_effect=fake_copy),
                 mock.patch.object(freeze.base, "derive_camera", return_value={"width": 4, "height": 4}),
                 mock.patch.object(freeze.base, "scene_scale", return_value=2.0),
