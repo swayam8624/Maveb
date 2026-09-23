@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import shutil
 import sys
 from collections import Counter
 from pathlib import Path
@@ -106,7 +105,7 @@ def build(
                 f"v2-{candidate.archive.stem}-{template_index:02d}-"
                 f"{template['name']}"
             )
-            archive_copy = base.copy_before_state(candidate, inputs / case_id)
+            archive_copy = base.copy_before_state(candidate, inputs / case_id, materialize=False)
             case: dict[str, Any] = {
                 "id": case_id,
                 "scene_id": candidate.archive.stem,

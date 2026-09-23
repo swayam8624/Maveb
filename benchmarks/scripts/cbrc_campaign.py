@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import json
-import shutil
 import subprocess
 import sys
 import statistics
@@ -14,6 +14,12 @@ import time
 from collections import Counter
 from pathlib import Path
 from typing import Any
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+import cbrc_storage
 
 
 PROGRESS_ENABLED = True
@@ -130,6 +136,8 @@ def execution_signature(
         ),
     }
     for path in (
+        Path(__file__).resolve(),
+        Path(__file__).resolve().with_name("cbrc_storage.py"),
         Path(__file__).resolve().with_name("cbrc_evidence_bundle.py"),
         Path(__file__).resolve().with_name("cbrc_bind_live_revision.py"),
         Path(__file__).resolve().with_name("cbrc_replay.py"),
@@ -176,7 +184,16 @@ def restore_case_input(
         if stale.is_file() or stale.is_symlink():
             stale.unlink()
 
-    shutil.copy2(source, destination)
+    require_clone = (
+        sys.platform == "darwin"
+        and os.environ.get("MAVEB_REQUIRE_COW", "1").lower()
+        not in {"0", "false", "no", "off"}
+    )
+    cbrc_storage.copy_storage_efficient(
+        source,
+        destination,
+        require_clone=require_clone,
+    )
     for suffix in (
         f".gaussians.r{source_revision}.bin",
         f".ownership.r{source_revision}.bin",
@@ -184,7 +201,19 @@ def restore_case_input(
         source_sidecar = Path(str(source) + suffix)
         if not source_sidecar.is_file():
             raise FileNotFoundError(f"frozen source sidecar is missing: {source_sidecar}")
-        shutil.copy2(source_sidecar, Path(str(destination) + suffix))
+        cbrc_storage.copy_storage_efficient(
+            source_sidecar,
+            Path(str(destination) + suffix),
+            require_clone=require_clone,
+        )
+
+
+def compact_case_input(case: dict[str, Any]) -> int:
+    revision = case.get("revision")
+    if not isinstance(revision, dict):
+        return 0
+    archive = Path(str(revision["archive"]))
+    return cbrc_storage.remove_materialized_world(archive)
 
 
 def reusable_case(
@@ -494,6 +523,14 @@ def main() -> int:
             "--git-sha. Intended only for one-time migration into the resume cache."
         ),
     )
+    parser.add_argument(
+        "--keep-case-inputs",
+        action="store_true",
+        help=(
+            "Keep mutable per-case world archives after evidence is captured. "
+            "Default behavior compacts them immediately to bound disk usage."
+        ),
+    )
     args = parser.parse_args()
     PROGRESS_ENABLED = not args.no_progress
 
@@ -798,6 +835,15 @@ def main() -> int:
         parity_results.append(parity)
         all_rows.append(row)
         timing_results.append(timing)
+
+        if not args.keep_case_inputs:
+            removed = compact_case_input(case)
+            if removed and PROGRESS_ENABLED:
+                print(
+                    f"      ↳ compacted mutable case input ({removed} file(s)); "
+                    "evidence retained",
+                    flush=True,
+                )
         spatial = case_dir / "spatial-evidence.csv"
         if spatial_for_figure is None and spatial.is_file():
             spatial_for_figure = spatial

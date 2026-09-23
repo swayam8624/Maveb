@@ -25,6 +25,19 @@ research/results/visualizations/
 | F11 | research/results/visualizations/sparse/F11_sparse_discovery.svg | sparse discovery scaling |
 | F12 | research/results/visualizations/representation/F12_representation_comparison.svg | representation validation |
 
+# Post-reviewer practical-evidence media
+
+These assets are generated only after running the separate frozen reviewer-stress campaign. They must not be cited as established results before the corresponding audit exists.
+
+| Asset | Generated path | Role |
+|---|---|---|
+| reviewer real-scene panel | build/reviewer-stress/visuals/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png | captured RGB context + LOCAL/FULL/residual/support evidence |
+| tolerance crossover | build/reviewer-stress/visuals/F_REVIEWER_TOLERANCE_CROSSOVER.png | identical edit across fixed epsilon ladder |
+| reviewer evidence audit | build/reviewer-stress/analysis/REVIEWER_EVIDENCE_AUDIT.json | machine-readable non-zero/crossover/readiness evidence |
+| reviewer visual provenance | build/reviewer-stress/visuals/REVIEWER_VISUALS.json | source-RGB and figure provenance |
+
+The paper should promote these into numbered figures only after the frozen run produces the claimed phenomenon. An OPEN readiness gate is reported as a limitation rather than hidden by cherry-picking.
+
 # Trained-3DGS visual set
 
 | Asset | Path |

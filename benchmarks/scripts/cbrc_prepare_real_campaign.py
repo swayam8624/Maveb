@@ -13,13 +13,18 @@ import json
 import math
 import mmap
 import os
-import shutil
 import struct
 import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+import cbrc_storage
 
 GAUSSIAN_MAGIC = b"AETHGS\x00\x00"
 OWNERSHIP_MAGIC = b"MVGOWNR\x00"
@@ -275,19 +280,41 @@ def derive_camera(candidate: Candidate) -> dict:
     }
 
 
-def copy_before_state(candidate: Candidate, case_dir: Path) -> Path:
+def copy_before_state(
+    candidate: Candidate,
+    case_dir: Path,
+    *,
+    materialize: bool = True,
+    require_clone: bool = False,
+) -> Path:
+    """Return the independent case archive path.
+
+    Broad/reviewer campaigns freeze this path lazily and materialize it only
+    immediately before execution. Legacy callers can still request eager
+    materialization. When eager, copy-on-write clones are preferred.
+    """
+
     case_dir.mkdir(parents=True, exist_ok=True)
-    archive = case_dir / candidate.archive.name
-    shutil.copy2(candidate.archive, archive)
-    shutil.copy2(
+    archive = (case_dir / candidate.archive.name).resolve()
+    if not materialize:
+        return archive
+
+    cbrc_storage.copy_storage_efficient(
+        candidate.archive,
+        archive,
+        require_clone=require_clone,
+    )
+    cbrc_storage.copy_storage_efficient(
         candidate.gaussian_sidecar,
         Path(str(archive) + f".gaussians.r{candidate.revision}.bin"),
+        require_clone=require_clone,
     )
-    shutil.copy2(
+    cbrc_storage.copy_storage_efficient(
         candidate.ownership_sidecar,
         Path(str(archive) + f".ownership.r{candidate.revision}.bin"),
+        require_clone=require_clone,
     )
-    return archive.resolve()
+    return archive
 
 
 def build_campaign(

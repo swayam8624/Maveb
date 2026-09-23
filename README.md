@@ -28,7 +28,7 @@ The project asks one question:
 
 The central method is **Criticality-Bounded Revision Cones**, abbreviated **CBRC**. CBRC combines exact dependency closure, conservative finite-change bounds, quantity-of-interest tolerances, a heterogeneous work model, and an automatic full-rebuild fallback. A regional repair is accepted only when the unrepaired exterior can be certified. If the system cannot prove locality, it rebuilds.
 
-The v1 implementation, frozen public real-scene campaign, trained-3DGS validation, sparse-discovery study, mechanism-isolation suite, publication figures, animated supplementary material, reproducibility infrastructure, and manuscript package are complete. The next stage is venue-specific submission preparation and final artifact packaging.
+The v1 implementation and its frozen evidence package are complete. A separate post-reviewer hardening protocol is now implemented to test practical-effectiveness questions that are not established by the v1 evidence alone: certified non-zero LOCAL residuals, tolerance crossovers, and real captured-scene visual comparisons. Those post-reviewer results are only claimed after the new frozen campaign is actually executed and audited.
 
 ## Contents
 
@@ -1042,6 +1042,61 @@ The public v2 run writes `build/public-real-v2/visual-quality/CBRC_VISUAL_QUALIT
 
 This executes the public v2.1 campaign, frozen hardware work calibration, sparse discovery, full and heuristic baselines, ablations, planner parity, held-out empirical evaluation, trained-3DGS validation, mechanism-isolation suite, cross-representation figure, and readiness audit.
 
+## Disk-safe broad campaigns
+
+The broad and paper-grade runners are designed for workstation-scale storage. Do not delete an entire reusable result root before every rerun: prepared worlds, completed case evidence, and stage fingerprints are intentionally reused.
+
+Before or after a campaign, inspect storage without deleting anything:
+
+<pre><code class="language-bash">bash cleanup_maveb_storage.sh</code></pre>
+
+Run only verified-safe cleanup with:
+
+<pre><code class="language-bash">bash cleanup_maveb_storage.sh --safe</code></pre>
+
+Safe cleanup is deliberately narrow. It removes rematerializable frozen-case inputs and a GraphDECO download archive only when the extracted model tree is verified. It does not automatically remove 3RScan, ARKitScenes, Bonn, prepared worlds, or completed evidence.
+
+Paper/reviewer case matrices are frozen lazily: the freeze records immutable source hashes and independent destination paths without duplicating the Gaussian sidecars. During execution, one case is materialized at a time. On macOS, APFS copy-on-write cloning is required by default; after oracle, baseline, timing, and visual evidence are captured, the mutable case world and revision sidecars are compacted. This bounds peak case-storage growth instead of retaining one full world copy per case.
+
+Useful controls:
+
+<pre><code class="language-bash">export MAVEB_REQUIRE_COW=1
+export MAVEB_MIN_FREE_GIB=5
+export MAVEB_BROAD_REUSE=1
+</code></pre>
+
+## Post-reviewer practical-evidence campaign
+
+The broad cross-dataset campaign and the original CBRC v1 evidence remain frozen. A separate reviewer-hardening protocol addresses practical graphics-review questions without rewriting the original results.
+
+<pre><code class="language-bash">bash run_reviewer_stress_campaign.sh</code></pre>
+
+The protocol deterministically selects prepared public worlds, repeats identical physical edits across a fixed epsilon ladder, and measures the independent FULL-reference residual for every LOCAL decision. Within one tolerance-crossover group, source state, selected entity, edit parameters, camera, timestamp, temporal settings, and work model are fixed; epsilon is the only changed variable.
+
+The generated audit reports, rather than forces, whether the run contains:
+
+- certified LOCAL cases with measurable non-zero residual;
+- near-boundary LOCAL cases;
+- FULL-to-LOCAL tolerance crossovers;
+- non-zero LOCAL evidence across multiple datasets;
+- dynamic captured-scene examples with resolvable source RGB context.
+
+An unmet reviewer-evidence target remains OPEN. Cases are not deleted or retuned after outcomes are observed.
+
+Primary generated artifacts:
+
+<pre>
+build/reviewer-stress/
++-- frozen/reviewer-stress-campaign.json
++-- frozen/REVIEWER_STRESS_FREEZE.json
++-- campaign/campaign-rows.jsonl
++-- analysis/REVIEWER_EVIDENCE_AUDIT.json
++-- analysis/REVIEWER_EVIDENCE_AUDIT.md
++-- visuals/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
++-- visuals/F_REVIEWER_TOLERANCE_CROSSOVER.png
++-- visuals/REVIEWER_VISUALS.json
+</pre>
+
 ## Open generated visuals
 
 <pre><code class="language-bash">bash show_paper_visuals.sh</code></pre>
@@ -1132,22 +1187,20 @@ Primary working paper title:
 
 The complete paper handoff is maintained in [research/manuscript/MAVEB_SIGGRAPH_KT.md](research/manuscript/MAVEB_SIGGRAPH_KT.md), with the figure/video map in [research/manuscript/MEDIA_INDEX.md](research/manuscript/MEDIA_INDEX.md).
 
-This repository marks the end of the implementation and evidence-construction phase for the current CBRC v1 paper line.
+The original CBRC v1 implementation and its canonical public/trained-representation evidence are frozen. Those results are not rewritten in response to later reviewer feedback.
 
-The following are frozen:
+A separate post-reviewer hardening phase is active. Its purpose is to test practical effectiveness and graphics-facing evidence more directly: measurable non-zero certified LOCAL residuals, tolerance crossovers, broader real-world stress cases, and source-RGB-grounded visual demonstrations. New measurements may enter the manuscript only after they are produced by the frozen reviewer protocol and pass the same machine-readable provenance discipline.
 
-- the v1 research question;
-- the method boundary;
-- public and trained-representation evidence;
-- canonical run provenance;
-- quantitative headline values;
-- supported and unsupported claim wording;
+The following original v1 items remain frozen:
+
+- the v1 research question and method boundary;
+- canonical public and trained-representation evidence;
+- original run provenance and quantitative headline values;
+- original supported/unsupported claim wording;
 - measured limitations;
-- publication figures;
-- animated supplementary material;
-- reproducibility scripts.
+- existing publication figures and supplementary media.
 
-The next stage is manuscript construction.
+The reviewer-hardening protocol is additive evidence, not a post-hoc replacement of the original campaign.
 
 The manuscript should not introduce new headline measurements by manual transcription. Every result should trace to the canonical machine-readable evidence.
 
@@ -1185,6 +1238,6 @@ The manuscript should preserve the distinctions enforced here:
 
 # Project status
 
-CBRC v1 implementation and evidence construction are complete.
+CBRC v1 implementation and canonical evidence construction are complete and frozen.
 
-The repository is now in manuscript-preparation state.
+The repository is now in post-reviewer experimental hardening plus manuscript-preparation state. The active additive protocol is run with `run_reviewer_stress_campaign.sh`; its results are not treated as established until the generated reviewer-evidence audit reports them.

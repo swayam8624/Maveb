@@ -79,14 +79,26 @@ class CampaignV2Tests(unittest.TestCase):
             self.assertEqual(freeze["world_diff_translation_threshold"], v2.WORLD_DIFF_TRANSLATION_THRESHOLD)
             self.assertEqual(freeze["minimum_effective_translation"], v2.MINIMUM_EFFECTIVE_TRANSLATION)
 
-    def test_case_archives_are_independent_copies(self):
+    def test_case_archives_have_unique_lazy_destinations(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            c = candidate(root, "scene", 0.0)
-            campaign, _ = v2.build([c, candidate(root, "scene2", 1.0)], root / "freeze", cases_per_scene=2, work_cost_model=None)
+            first = candidate(root, "scene", 0.0)
+            second = candidate(root, "scene2", 1.0)
+            campaign, freeze = v2.build(
+                [first, second],
+                root / "freeze",
+                cases_per_scene=2,
+                work_cost_model=None,
+            )
             paths = [Path(case["revision"]["archive"]) for case in campaign["cases"]]
             self.assertEqual(len(paths), len(set(paths)))
-            self.assertTrue(all(path.is_file() for path in paths))
+            self.assertTrue(all(not path.exists() for path in paths))
+            self.assertTrue(
+                all(
+                    Path(item["source_archive"]).is_file()
+                    for item in freeze["frozen_inputs"]
+                )
+            )
 
 
 if __name__ == "__main__":
