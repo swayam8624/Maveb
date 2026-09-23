@@ -1042,6 +1042,29 @@ The public v2 run writes `build/public-real-v2/visual-quality/CBRC_VISUAL_QUALIT
 
 This executes the public v2.1 campaign, frozen hardware work calibration, sparse discovery, full and heuristic baselines, ablations, planner parity, held-out empirical evaluation, trained-3DGS validation, mechanism-isolation suite, cross-representation figure, and readiness audit.
 
+## Disk-safe broad campaigns
+
+The broad and paper-grade runners are designed for workstation-scale storage. Do not delete an entire reusable result root before every rerun: prepared worlds, completed case evidence, and stage fingerprints are intentionally reused.
+
+Before or after a campaign, inspect storage without deleting anything:
+
+<pre><code class="language-bash">bash cleanup_maveb_storage.sh</code></pre>
+
+Run only verified-safe cleanup with:
+
+<pre><code class="language-bash">bash cleanup_maveb_storage.sh --safe</code></pre>
+
+Safe cleanup is deliberately narrow. It removes rematerializable frozen-case inputs and a GraphDECO download archive only when the extracted model tree is verified. It does not automatically remove 3RScan, ARKitScenes, Bonn, prepared worlds, or completed evidence.
+
+Paper/reviewer case matrices are frozen lazily: the freeze records immutable source hashes and independent destination paths without duplicating the Gaussian sidecars. During execution, one case is materialized at a time. On macOS, APFS copy-on-write cloning is required by default; after oracle, baseline, timing, and visual evidence are captured, the mutable case world and revision sidecars are compacted. This bounds peak case-storage growth instead of retaining one full world copy per case.
+
+Useful controls:
+
+<pre><code class="language-bash">export MAVEB_REQUIRE_COW=1
+export MAVEB_MIN_FREE_GIB=5
+export MAVEB_BROAD_REUSE=1
+</code></pre>
+
 ## Post-reviewer practical-evidence campaign
 
 The broad cross-dataset campaign and the original CBRC v1 evidence remain frozen. A separate reviewer-hardening protocol addresses practical graphics-review questions without rewriting the original results.
