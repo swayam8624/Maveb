@@ -20,6 +20,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
 from typing import Any, Iterable
@@ -51,21 +52,71 @@ def executable(candidates: Iterable[Path | str]) -> str | None:
     return None
 
 
+PROGRESS_ENABLED = os.environ.get("MAVEB_PROGRESS", "1").lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+
+
+def format_duration(seconds: float) -> str:
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m {secs:02d}s"
+    if minutes:
+        return f"{minutes}m {secs:02d}s"
+    return f"{secs}s"
+
+
+def progress_bar(done: int, total: int, *, label: str, started: float) -> None:
+    if not PROGRESS_ENABLED:
+        return
+    total = max(total, 1)
+    ratio = min(max(done / total, 0.0), 1.0)
+    width = 30
+    filled = int(round(width * ratio))
+    bar = "█" * filled + "░" * (width - filled)
+    elapsed = time.monotonic() - started
+    eta = None
+    if done > 0 and done < total and elapsed > 0:
+        eta = elapsed / done * (total - done)
+    eta_text = f" | ETA {format_duration(eta)}" if eta is not None else ""
+    print(
+        f"  [{bar}] {done:>3}/{total:<3} {ratio * 100:6.2f}%"
+        f" | elapsed {format_duration(elapsed)}{eta_text} | {label}",
+        flush=True,
+    )
+
+
 def run(argv: list[str], log: Path, cwd: Path | None = None) -> None:
     log.parent.mkdir(parents=True, exist_ok=True)
-    process = subprocess.run(
-        argv,
-        cwd=str(cwd) if cwd else None,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    log.write_text(process.stdout, encoding="utf-8")
+    started = time.monotonic()
+    with log.open("w", encoding="utf-8") as stream:
+        process = subprocess.Popen(
+            argv,
+            cwd=str(cwd) if cwd else None,
+            text=True,
+            stdout=stream,
+            stderr=subprocess.STDOUT,
+        )
+        last_heartbeat = started
+        while process.poll() is None:
+            time.sleep(0.5)
+            now = time.monotonic()
+            if PROGRESS_ENABLED and now - last_heartbeat >= 15.0:
+                print(
+                    f"      ↳ {Path(argv[0]).name} still running "
+                    f"({format_duration(now - started)}) — log: {log}",
+                    flush=True,
+                )
+                last_heartbeat = now
     if process.returncode != 0:
+        tail = log.read_text(encoding="utf-8", errors="replace")[-4000:]
         raise RuntimeError(
-            f"command failed ({process.returncode}): {' '.join(argv)}\n"
-            f"{process.stdout[-4000:]}"
+            f"command failed ({process.returncode}): {' '.join(argv)}\n{tail}"
         )
 
 
@@ -643,6 +694,16 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--ffmpeg")
     p.add_argument("--trained-seeder")
     p.add_argument("--native-seeder")
+    p.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse already completed ready scenes from BROAD_WORLDS.partial.json.",
+    )
+    p.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="Print a compact final summary instead of the full manifest.",
+    )
     return p
 
 
@@ -676,11 +737,57 @@ def main(argv: list[str] | None = None) -> int:
     )
     ffmpeg = args.ffmpeg or executable(["ffmpeg"])
 
+    selected_datasets = [
+        dataset
+        for dataset in imported["datasets"]
+        if not selected or dataset["datasetId"] in selected
+    ]
+    total_units = sum(
+        max(1, len(dataset.get("scenes", [])))
+        for dataset in selected_datasets
+    )
+    started = time.monotonic()
+    completed_units = 0
+
+    partial_path = output / "BROAD_WORLDS.partial.json"
+    reusable: dict[tuple[str, str], dict[str, Any]] = {}
+    if args.resume and partial_path.is_file():
+        try:
+            partial = load(partial_path)
+            for record in partial.get("records", []):
+                if record.get("status") != "ready":
+                    continue
+                world = record.get("world")
+                if not world or not Path(world).is_file():
+                    continue
+                key = (
+                    str(record.get("datasetId", "")),
+                    str(record.get("sceneId", "")),
+                )
+                if all(key):
+                    reusable[key] = record
+            if reusable:
+                print(
+                    f"  ↻ Step-3 resume checkpoint: {len(reusable)} completed world(s) reusable",
+                    flush=True,
+                )
+        except (OSError, ValueError, json.JSONDecodeError):
+            reusable = {}
+
     records: list[dict[str, Any]] = []
-    for dataset in imported["datasets"]:
+
+    def checkpoint() -> None:
+        write(
+            partial_path,
+            {
+                "schemaVersion": 1,
+                "artifact": "maveb-cbrc-broad-preparation-checkpoint",
+                "records": records,
+            },
+        )
+
+    for dataset in selected_datasets:
         dataset_id = dataset["datasetId"]
-        if selected and dataset_id not in selected:
-            continue
         if dataset["status"] == "blocked":
             records.append(
                 {
@@ -690,55 +797,112 @@ def main(argv: list[str] | None = None) -> int:
                     "issues": dataset.get("issues", []),
                 }
             )
+            completed_units += 1
+            checkpoint()
+            progress_bar(
+                completed_units,
+                total_units,
+                label=f"{dataset_id}: blocked by import",
+                started=started,
+            )
             continue
+
         if dataset["kind"] == "existing-campaign":
-            records.extend(copy_existing(dataset, output))
+            copied = copy_existing(dataset, output)
+            records.extend(copied)
+            completed_units += max(1, len(dataset.get("scenes", [])))
+            checkpoint()
+            progress_bar(
+                completed_units,
+                total_units,
+                label=f"{dataset_id}: reused existing campaign worlds",
+                started=started,
+            )
             continue
-        for scene in dataset.get("scenes", []):
+
+        scenes = dataset.get("scenes", [])
+        if not scenes:
+            completed_units += 1
+            progress_bar(
+                completed_units,
+                total_units,
+                label=f"{dataset_id}: no scenes",
+                started=started,
+            )
+            continue
+
+        for scene in scenes:
+            scene_id = str(scene.get("pairId") or scene.get("sceneId") or "unknown")
+            key = (dataset_id, scene_id)
+            unit_started = time.monotonic()
+
             if scene.get("status") != "ready":
-                records.append(
-                    {
-                        "datasetId": dataset_id,
-                        "sceneId": scene.get("sceneId") or scene.get("pairId"),
-                        "status": "blocked",
-                        "reason": "scene-import-blocked",
-                    }
-                )
-                continue
-            try:
-                if dataset["kind"] == "trained-3dgs":
-                    if trained is None:
-                        raise RuntimeError("maveb-seed-trained-3dgs-world not found")
-                    record = prepare_graphdeco(dataset, scene, output, trained)
-                elif dataset["kind"] == "scannetpp":
-                    record = prepare_scannetpp(dataset, scene, output)
-                elif dataset["kind"] in {"longitudinal-rgbd", "arkit-scenes", "tum-rgbd"}:
-                    record = prepare_reconstructed(
-                        dataset,
-                        scene,
-                        output,
-                        cache,
-                        colmap=colmap,
-                        native_seeder=native,
-                        maximum_images=args.max_images,
-                        ffmpeg=ffmpeg,
-                        allow_rgb_fallback=not args.no_rgb_reconstruction,
-                    )
-                else:
-                    record = {
-                        "datasetId": dataset_id,
-                        "sceneId": scene.get("sceneId"),
-                        "status": "blocked",
-                        "reason": f"unsupported-dataset-kind:{dataset['kind']}",
-                    }
-            except (OSError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
                 record = {
                     "datasetId": dataset_id,
-                    "sceneId": scene.get("pairId") or scene.get("sceneId"),
-                    "status": "failed",
-                    "reason": str(exc),
+                    "sceneId": scene_id,
+                    "status": "blocked",
+                    "reason": "scene-import-blocked",
                 }
+                reused = False
+            elif key in reusable:
+                record = reusable[key]
+                reused = True
+            else:
+                reused = False
+                if PROGRESS_ENABLED:
+                    print(
+                        f"      → preparing {dataset_id}/{scene_id}",
+                        flush=True,
+                    )
+                try:
+                    if dataset["kind"] == "trained-3dgs":
+                        if trained is None:
+                            raise RuntimeError("maveb-seed-trained-3dgs-world not found")
+                        record = prepare_graphdeco(dataset, scene, output, trained)
+                    elif dataset["kind"] == "scannetpp":
+                        record = prepare_scannetpp(dataset, scene, output)
+                    elif dataset["kind"] in {"longitudinal-rgbd", "arkit-scenes", "tum-rgbd"}:
+                        record = prepare_reconstructed(
+                            dataset,
+                            scene,
+                            output,
+                            cache,
+                            colmap=colmap,
+                            native_seeder=native,
+                            maximum_images=args.max_images,
+                            ffmpeg=ffmpeg,
+                            allow_rgb_fallback=not args.no_rgb_reconstruction,
+                        )
+                    else:
+                        record = {
+                            "datasetId": dataset_id,
+                            "sceneId": scene_id,
+                            "status": "blocked",
+                            "reason": f"unsupported-dataset-kind:{dataset['kind']}",
+                        }
+                except (OSError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
+                    record = {
+                        "datasetId": dataset_id,
+                        "sceneId": scene_id,
+                        "status": "failed",
+                        "reason": str(exc),
+                    }
+
             records.append(record)
+            completed_units += 1
+            checkpoint()
+            status = str(record.get("status", "unknown"))
+            path = str(record.get("preparationPath") or record.get("representation") or "")
+            marker = "cache" if reused else path or status
+            progress_bar(
+                completed_units,
+                total_units,
+                label=(
+                    f"{dataset_id}/{scene_id}: {status} [{marker}] "
+                    f"({format_duration(time.monotonic() - unit_started)})"
+                ),
+                started=started,
+            )
 
     manifest = {
         "schemaVersion": 1,
@@ -770,7 +934,26 @@ def main(argv: list[str] | None = None) -> int:
         ),
     }
     write(output / "BROAD_WORLDS.json", manifest)
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    checkpoint()
+
+    if args.summary_only:
+        print(
+            json.dumps(
+                {
+                    "readyWorlds": manifest["readyWorlds"],
+                    "blockedWorlds": manifest["blockedWorlds"],
+                    "failedWorlds": manifest["failedWorlds"],
+                    "nativePreparedWorlds": manifest["nativePreparedWorlds"],
+                    "rgbFallbackWorlds": manifest["rgbFallbackWorlds"],
+                    "elapsed": format_duration(time.monotonic() - started),
+                    "manifest": str((output / "BROAD_WORLDS.json").resolve()),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+    else:
+        print(json.dumps(manifest, indent=2, sort_keys=True))
     return 1 if manifest["failedWorlds"] else 0
 
 
