@@ -124,6 +124,9 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
     visual_output_dir = manifest.get("visual_output_dir")
     if visual_output_dir:
         command.extend(["--visual-output-dir", str(visual_output_dir)])
+    repair_omit_fraction = float(manifest.get("repair_omit_fraction", 0.0))
+    if repair_omit_fraction > 0.0:
+        command.extend(["--repair-omit-fraction", str(repair_omit_fraction)])
 
     command.extend([
         "--width", str(int(camera["width"])),
@@ -331,6 +334,17 @@ def finalize_row(
             "effectivity": float(oracle["effectivity"]),
             "certificateViolationPixels": int(
                 oracle["certificateViolationPixels"]
+            ),
+            "repairMode": str(oracle.get("repairMode", "exact-changed-support-v1")),
+            "repairOmitFractionRequested": float(
+                oracle.get("repairOmitFractionRequested", 0.0)
+            ),
+            "repairOmittedGaussians": int(oracle.get("repairOmittedGaussians", 0)),
+            "repairAppliedChangedGaussians": int(
+                oracle.get("repairAppliedChangedGaussians", oracle.get("changedGaussians", 0))
+            ),
+            "repairCertificateViolationPixels": int(
+                oracle.get("repairCertificateViolationPixels", 0)
             ),
         },
     }
