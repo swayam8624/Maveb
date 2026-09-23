@@ -28,7 +28,9 @@ from typing import Iterable
 
 AR_KIT_POSE_TOLERANCE = 0.0051
 AR_KIT_ASSET_TOLERANCE = 0.0011
+AR_KIT_RGB_TOLERANCE = 0.0051
 BONN_ASSOCIATION_TOLERANCE = 0.05
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 class Mesh:
@@ -193,6 +195,58 @@ def ffmpeg_decode(ffmpeg: str, source: Path, pixel_format: str) -> bytes:
     if process.returncode:
         raise RuntimeError(process.stderr.decode(errors="replace").strip())
     return process.stdout
+
+
+def png_dimensions(path: Path) -> tuple[int, int]:
+    with path.open("rb") as stream:
+        header = stream.read(24)
+    if (
+        len(header) != 24
+        or header[:8] != PNG_SIGNATURE
+        or header[12:16] != b"IHDR"
+    ):
+        raise ValueError(f"invalid PNG header: {path}")
+    width, height = struct.unpack(">II", header[16:24])
+    if width <= 0 or height <= 0 or width > 16384 or height > 16384:
+        raise ValueError(f"implausible PNG dimensions {width}x{height}: {path}")
+    return width, height
+
+
+def fit_rgb_to_depth_canvas(
+    rgb_raw: bytes,
+    rgb_width: int,
+    rgb_height: int,
+    depth_width: int,
+    depth_height: int,
+) -> tuple[bytes, str]:
+    expected = rgb_width * rgb_height * 3
+    if len(rgb_raw) != expected:
+        raise ValueError(f"RGB byte count mismatch: {len(rgb_raw)} != {expected}")
+    if (rgb_width, rgb_height) == (depth_width, depth_height):
+        return rgb_raw, "native-resolution"
+
+    canvas = bytearray(depth_width * depth_height * 3)
+    copy_width = min(rgb_width, depth_width)
+    copy_height = min(rgb_height, depth_height)
+    source_x = max(0, (rgb_width - depth_width) // 2)
+    source_y = max(0, (rgb_height - depth_height) // 2)
+    target_x = max(0, (depth_width - rgb_width) // 2)
+    target_y = max(0, (depth_height - rgb_height) // 2)
+
+    for row in range(copy_height):
+        source_offset = ((source_y + row) * rgb_width + source_x) * 3
+        target_offset = ((target_y + row) * depth_width + target_x) * 3
+        byte_count = copy_width * 3
+        canvas[target_offset : target_offset + byte_count] = rgb_raw[
+            source_offset : source_offset + byte_count
+        ]
+    return bytes(canvas), "center-pad-or-crop-to-depth"
+
+
+def neutral_rgb(width: int, height: int, value: int = 128) -> bytes:
+    if not 0 <= value <= 255:
+        raise ValueError("neutral RGB value must be uint8")
+    return bytes([value, value, value]) * (width * height)
 
 
 def add_depth_frame(
@@ -415,7 +469,12 @@ def limit_mesh(mesh: Mesh, maximum_vertices: int) -> dict[str, int | str]:
         "selection": f"deterministic-face-stride-{stride}",
     }
 
-def build_arkit(source: Path, maximum_frames: int, maximum_vertices: int, ffmpeg: str) -> tuple[Mesh, dict]:
+def build_arkit(
+    source: Path,
+    maximum_frames: int,
+    maximum_vertices: int,
+    ffmpeg: str,
+) -> tuple[Mesh, dict]:
     trajectory = source / "lowres_wide.traj"
     rgb_dir = source / "lowres_wide"
     depth_dir = source / "lowres_depth"
@@ -428,60 +487,123 @@ def build_arkit(source: Path, maximum_frames: int, maximum_vertices: int, ffmpeg
     rgb_times, rgbs = timestamp_index(rgb_dir.glob("*.png"))
     depth_times, depths = timestamp_index(depth_dir.glob("*.png"))
     intr_times, intrinsics = timestamp_index(intrinsics_dir.glob("*.pincam"))
-    selected_times = [depth_times[index] for index in overlap_preserving_indices(len(depth_times), maximum_frames)]
+    selected_times = [
+        depth_times[index]
+        for index in overlap_preserving_indices(len(depth_times), maximum_frames)
+    ]
     if not selected_times:
         raise ValueError("no ARKitScenes depth frames")
 
-    first_intr_timestamp = nearest_timestamp(selected_times[0], intr_times, AR_KIT_ASSET_TOLERANCE)
-    if first_intr_timestamp is None:
-        raise ValueError("no ARKitScenes intrinsics matched the selected depth frames")
-    width, height, *_ = read_intrinsics(intrinsics[first_intr_timestamp])
+    depth_dimensions: dict[float, tuple[int, int]] = {}
+    for timestamp in selected_times:
+        depth_dimensions[timestamp] = png_dimensions(depths[timestamp])
+    maximum_pixels = max(width * height for width, height in depth_dimensions.values())
     pixel_stride = max(
         1,
-        math.ceil(math.sqrt((width * height * max(len(selected_times), 1)) / maximum_vertices)),
+        math.ceil(
+            math.sqrt(
+                (maximum_pixels * max(len(selected_times), 1)) / maximum_vertices
+            )
+        ),
     )
 
     mesh = Mesh([], [])
     converted = 0
-    skipped = {"rgb": 0, "intrinsics": 0, "pose": 0, "decode": 0, "empty": 0}
+    skipped = {
+        "intrinsics": 0,
+        "pose": 0,
+        "depthDecode": 0,
+        "empty": 0,
+    }
+    appearance = {
+        "nativeRgb": 0,
+        "resolutionAdaptedRgb": 0,
+        "neutralRgbMissingOrDecodeFailed": 0,
+    }
+    depth_errors: list[str] = []
     selected_provenance: list[float] = []
+
     for timestamp in selected_times:
-        rgb_timestamp = nearest_timestamp(timestamp, rgb_times, AR_KIT_ASSET_TOLERANCE)
-        intr_timestamp = nearest_timestamp(timestamp, intr_times, AR_KIT_ASSET_TOLERANCE)
-        pose_timestamp = nearest_timestamp(timestamp, pose_times, AR_KIT_POSE_TOLERANCE)
-        if rgb_timestamp is None:
-            skipped["rgb"] += 1
-            continue
+        intr_timestamp = nearest_timestamp(
+            timestamp, intr_times, AR_KIT_ASSET_TOLERANCE
+        )
+        pose_timestamp = nearest_timestamp(
+            timestamp, pose_times, AR_KIT_POSE_TOLERANCE
+        )
         if intr_timestamp is None:
             skipped["intrinsics"] += 1
             continue
         if pose_timestamp is None:
             skipped["pose"] += 1
             continue
-        width, height, fx, fy, cx, cy = read_intrinsics(intrinsics[intr_timestamp])
+
+        _intrinsic_width, _intrinsic_height, fx, fy, cx, cy = read_intrinsics(
+            intrinsics[intr_timestamp]
+        )
+        depth_width, depth_height = depth_dimensions[timestamp]
         try:
             depth_raw = ffmpeg_decode(ffmpeg, depths[timestamp], "gray16le")
-            rgb_raw = ffmpeg_decode(ffmpeg, rgbs[rgb_timestamp], "rgb24")
-        except RuntimeError:
-            skipped["decode"] += 1
+            if len(depth_raw) != depth_width * depth_height * 2:
+                raise ValueError(
+                    f"depth byte count mismatch: {len(depth_raw)} != "
+                    f"{depth_width * depth_height * 2}"
+                )
+        except (RuntimeError, ValueError) as exc:
+            skipped["depthDecode"] += 1
+            if len(depth_errors) < 3:
+                depth_errors.append(f"{depths[timestamp].name}: {exc}")
             continue
-        before = len(mesh.vertices)
-        add_depth_frame(
-            mesh,
-            depth_raw=depth_raw,
-            rgb_raw=rgb_raw,
-            width=width,
-            height=height,
-            fx=fx,
-            fy=fy,
-            cx=cx,
-            cy=cy,
-            depth_scale=0.001,
-            rotation=poses[pose_timestamp][0],
-            translation=poses[pose_timestamp][1],
-            pixel_stride=pixel_stride,
-            maximum_depth=10.0,
+
+        rgb_timestamp = nearest_timestamp(
+            timestamp, rgb_times, AR_KIT_RGB_TOLERANCE
         )
+        rgb_canvas: bytes
+        if rgb_timestamp is None:
+            rgb_canvas = neutral_rgb(depth_width, depth_height)
+            appearance["neutralRgbMissingOrDecodeFailed"] += 1
+        else:
+            try:
+                rgb_path = rgbs[rgb_timestamp]
+                rgb_width, rgb_height = png_dimensions(rgb_path)
+                rgb_raw = ffmpeg_decode(ffmpeg, rgb_path, "rgb24")
+                rgb_canvas, adaptation = fit_rgb_to_depth_canvas(
+                    rgb_raw,
+                    rgb_width,
+                    rgb_height,
+                    depth_width,
+                    depth_height,
+                )
+                if adaptation == "native-resolution":
+                    appearance["nativeRgb"] += 1
+                else:
+                    appearance["resolutionAdaptedRgb"] += 1
+            except (RuntimeError, ValueError):
+                rgb_canvas = neutral_rgb(depth_width, depth_height)
+                appearance["neutralRgbMissingOrDecodeFailed"] += 1
+
+        before = len(mesh.vertices)
+        try:
+            add_depth_frame(
+                mesh,
+                depth_raw=depth_raw,
+                rgb_raw=rgb_canvas,
+                width=depth_width,
+                height=depth_height,
+                fx=fx,
+                fy=fy,
+                cx=cx,
+                cy=cy,
+                depth_scale=0.001,
+                rotation=poses[pose_timestamp][0],
+                translation=poses[pose_timestamp][1],
+                pixel_stride=pixel_stride,
+                maximum_depth=10.0,
+            )
+        except ValueError as exc:
+            skipped["depthDecode"] += 1
+            if len(depth_errors) < 3:
+                depth_errors.append(f"{depths[timestamp].name}: {exc}")
+            continue
         if len(mesh.vertices) == before:
             skipped["empty"] += 1
             continue
@@ -491,7 +613,10 @@ def build_arkit(source: Path, maximum_frames: int, maximum_vertices: int, ffmpeg
     if converted < 2 or len(mesh.vertices) < 64 or not mesh.faces:
         raise ValueError(
             f"ARKitScenes native fusion is too sparse: frames={converted} "
-            f"vertices={len(mesh.vertices)} faces={len(mesh.faces)}"
+            f"vertices={len(mesh.vertices)} faces={len(mesh.faces)} "
+            f"skipped={json.dumps(skipped, sort_keys=True)} "
+            f"appearance={json.dumps(appearance, sort_keys=True)} "
+            f"depthErrors={json.dumps(depth_errors)}"
         )
     return mesh, {
         "sourceRepresentation": "arkitscenes-registered-depth-plus-provided-trajectory",
@@ -500,8 +625,15 @@ def build_arkit(source: Path, maximum_frames: int, maximum_vertices: int, ffmpeg
         "selectedDepthTimestamps": selected_provenance,
         "pixelStride": pixel_stride,
         "skipped": skipped,
+        "appearance": appearance,
+        "depthErrors": depth_errors,
+        "resolutionPolicy": (
+            "Use actual depth PNG dimensions for unprojection; RGB is center-padded/cropped "
+            "to the depth canvas when dimensions differ, matching the ARKitScenes reference "
+            "loader's registered-RGB-D handling. Missing/undecodable RGB uses neutral appearance "
+            "without discarding valid depth geometry."
+        ),
     }
-
 
 def build_bonn(
     source: Path,

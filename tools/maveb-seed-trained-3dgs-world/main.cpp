@@ -234,7 +234,10 @@ int main(int argc, char** argv) try {
         return EXIT_FAILURE;
     }
 
-    auto asset = aether::gaussian::PlyLoader::load(options->ply);
+    aether::gaussian::PlyLimits plyLimits;
+    if (options->clampLogScale)
+        plyLimits.maximumAbsoluteLogScale = 1.0e12F;
+    auto asset = aether::gaussian::PlyLoader::load(options->ply, plyLimits);
     if (!asset) {
         std::cerr << asset.error().describe() << '\n';
         return EXIT_FAILURE;

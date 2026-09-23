@@ -17,8 +17,17 @@
 namespace aether::gaussian {
 namespace {
 
-enum class Format { ascii, binaryLittleEndian };
-enum class ScalarType { int8, uint8, int16, uint16, int32, uint32, float32, float64 };
+enum class Format : std::uint8_t { ascii, binaryLittleEndian };
+enum class ScalarType : std::uint8_t {
+    int8,
+    uint8,
+    int16,
+    uint16,
+    int32,
+    uint32,
+    float32,
+    float64
+};
 
 struct Property final {
     ScalarType type;
@@ -310,7 +319,7 @@ Result<std::size_t> validateSchema(const Header& header, GaussianAsset& asset) {
     return restCount;
 }
 
-Result<void> normalize(Gaussian& gaussian, std::size_t restCount) {
+Result<void> normalize(Gaussian& gaussian, std::size_t restCount, float maximumAbsoluteLogScale) {
     double normSquared = 0.0;
     for (const float value : gaussian.rotation)
         normSquared += static_cast<double>(value) * value;
@@ -320,7 +329,7 @@ Result<void> normalize(Gaussian& gaussian, std::size_t restCount) {
     for (float& value : gaussian.rotation)
         value *= inverseNorm;
     for (const float value : gaussian.logScale) {
-        if (value < -30.0F || value > 30.0F)
+        if (std::abs(value) > maximumAbsoluteLogScale)
             return fail(ErrorCode::corruptData, "PLY Gaussian log scale is outside safe range");
     }
     gaussian.restCount = restCount;
@@ -330,6 +339,10 @@ Result<void> normalize(Gaussian& gaussian, std::size_t restCount) {
 } // namespace
 
 Result<GaussianAsset> PlyLoader::load(const std::filesystem::path& path, const PlyLimits& limits) {
+    if (!std::isfinite(limits.maximumAbsoluteLogScale) || limits.maximumAbsoluteLogScale <= 0.0F) {
+        return fail(ErrorCode::invalidArgument,
+                    "PLY maximum absolute log scale must be finite and positive");
+    }
     std::error_code filesystemError;
     const auto fileBytes = std::filesystem::file_size(path, filesystemError);
     if (filesystemError)
@@ -373,7 +386,8 @@ Result<GaussianAsset> PlyLoader::load(const std::filesystem::path& path, const P
                 if (auto result = assign(gaussian, property, *value); !result)
                     return std::unexpected(result.error());
             }
-            if (auto result = normalize(gaussian, *restCount); !result)
+            if (auto result = normalize(gaussian, *restCount, limits.maximumAbsoluteLogScale);
+                !result)
                 return std::unexpected(result.error());
         }
     } else {
@@ -392,7 +406,8 @@ Result<GaussianAsset> PlyLoader::load(const std::filesystem::path& path, const P
             std::string extra;
             if (values >> extra)
                 return fail(ErrorCode::corruptData, "PLY ASCII vertex has too many values");
-            if (auto result = normalize(gaussian, *restCount); !result)
+            if (auto result = normalize(gaussian, *restCount, limits.maximumAbsoluteLogScale);
+                !result)
                 return std::unexpected(result.error());
         }
         while (std::getline(stream, line)) {
