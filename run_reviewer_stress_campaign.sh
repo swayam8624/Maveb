@@ -196,6 +196,7 @@ for key in (
     "nearBoundaryLocalCases",
     "toleranceCrossoverGroups",
     "dynamicCapturedSceneCandidates",
+    "capturedChangeContextCandidates",
 ):
     print(f"{key:32}: {audit.get(key)}")
 print(f"{'nonzeroLocalDatasets':32}: {audit.get('nonzeroLocalDatasets')}")
