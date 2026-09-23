@@ -574,8 +574,33 @@ def main() -> int:
         if marker is not None:
             reused_count += 1
             manifest_payload = json.loads((case_dir / "replay-manifest.json").read_text())
-            baseline_result = json.loads((case_dir / "baselines.json").read_text())
+            baseline_path = case_dir / "baselines.json"
+            baseline_result = json.loads(baseline_path.read_text())
+            baseline_result["case_id"] = case_id
+            baseline_result["scene_id"] = str(case["scene_id"])
+            baseline_result["coupling_regime"] = str(
+                case.get("coupling_regime", "unknown")
+            )
+            for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
+                if key in case:
+                    baseline_result[key] = case[key]
+            baseline_path.write_text(
+                json.dumps(baseline_result, indent=2, sort_keys=True) + "\n"
+            )
+
             row = json.loads((case_dir / "revision-row.json").read_text())
+            row["case_id"] = case_id
+            row["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
+            row["edit_class"] = str(
+                case.get("edit_class", row.get("edit_class", "gaussian"))
+            )
+            for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
+                if key in case:
+                    row[key] = case[key]
+            (case_dir / "revision-row.json").write_text(
+                json.dumps(row, indent=2, sort_keys=True) + "\n"
+            )
+
             parity = verify_native_python_planner_parity(
                 manifest_payload, baseline_result
             )
