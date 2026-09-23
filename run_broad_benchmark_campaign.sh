@@ -107,6 +107,20 @@ cache_banner() {
   echo "  [██████████████████████████████] 100.00% | CACHE | $message"
 }
 
+validate_calibration() {
+  "$PYTHON" - "$CAL_DIR/work-cost-model.json" <<'PY'
+import json,sys
+from pathlib import Path
+p=Path(sys.argv[1])
+if not p.is_file():
+    raise SystemExit(1)
+m=json.loads(p.read_text())
+if not isinstance(m,dict) or not m:
+    raise SystemExit(1)
+print(f"  ✓ validated existing hardware work calibration: {p}")
+PY
+}
+
 validate_worlds() {
   "$PYTHON" - "$WORLDS_DIR/BROAD_WORLDS.json" <<'PY'
 import json,sys
@@ -137,7 +151,20 @@ if not campaign.is_file() or not freeze.is_file():
 c=json.loads(campaign.read_text())
 if not c.get("cases"):
     raise SystemExit(1)
-print(f"  ✓ validated frozen campaign: {len(c['cases'])} cases")
+regimes=sorted({str(x.get("coupling_regime","")).lower() for x in c["cases"]})
+expected_high=bool(set(regimes)&{"high","adversarial"})
+expected_policy={
+    "fullFallback":"observed-outcome-not-required",
+    "highCouplingRequired":expected_high,
+    "frozenCouplingRegimes":regimes,
+}
+if c.get("require_full_fallback") is not False:
+    raise SystemExit(1)
+if bool(c.get("require_high_coupling")) != expected_high:
+    raise SystemExit(1)
+if c.get("broad_gate_policy") != expected_policy:
+    raise SystemExit(1)
+print(f"  ✓ validated frozen campaign: {len(c['cases'])} cases; gate policy current")
 PY
 }
 
@@ -235,8 +262,12 @@ fi
 STEP4_KEY="$("$PYTHON" "$CACHE_KEY"   --label step4-work-calibration-v1   --file "$WORK_BENCH"   --file "$ROOT/benchmarks/scripts/cbrc_calibrate_work.py"   --value "arch=$(uname -m)"   --value "os=$(uname -s)"   --value "gaussians=${MAVEB_CAL_GAUSSIANS:-1000000}"   --value "publication_bytes=${MAVEB_CAL_PUBLICATION_BYTES:-268435456}"   --value "pixels=${MAVEB_CAL_PIXELS:-921600}"   --value "repeats=${MAVEB_CAL_REPEATS:-9}")"
 
 step 4 "Freezing one hardware work calibration"
-if [[ "${MAVEB_BROAD_FORCE_STEP4:-0}" != "1" ]] && cache_hit step4 "$STEP4_KEY" && [[ -f "$CAL_DIR/work-cost-model.json" ]]; then
+if [[ "${MAVEB_BROAD_FORCE_STEP4:-0}" != "1" ]] && cache_hit step4 "$STEP4_KEY" && validate_calibration; then
   cache_banner "Step 4 reused — hardware work calibration unchanged"
+elif [[ "${MAVEB_BROAD_FORCE_STEP4:-0}" != "1" && "$ADOPT_EXISTING" == "1" ]] && validate_calibration >/dev/null 2>&1; then
+  validate_calibration
+  cache_complete step4 "$STEP4_KEY"
+  cache_banner "Step 4 adopted existing hardware calibration"
 else
   rm -rf "$CAL_DIR"
   mkdir -p "$CAL_DIR"
@@ -246,9 +277,15 @@ else
   cache_complete step4 "$STEP4_KEY"
 fi
 
-STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v2   --file "$WORLDS_DIR/BROAD_WORLDS.json"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
+STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v2   --file "$WORLDS_DIR/BROAD_WORLDS.json"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_migrate_broad_gate_policy.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
 
 step 5 "Freezing cross-dataset cases before reading outcomes"
+if [[ "$ADOPT_EXISTING" == "1" && -f "$FREEZE_DIR/broad-campaign.json" && -f "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" ]]; then
+  "$PYTHON" benchmarks/scripts/cbrc_migrate_broad_gate_policy.py \
+    --campaign "$FREEZE_DIR/broad-campaign.json" \
+    --freeze "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" \
+    --runner-git-sha "$HEAD_SHA"
+fi
 if [[ "${MAVEB_BROAD_FORCE_STEP5:-0}" != "1" ]] && cache_hit step5 "$STEP5_KEY" && validate_freeze; then
   cache_banner "Step 5 reused — frozen case matrix unchanged"
 elif [[ "${MAVEB_BROAD_FORCE_STEP5:-0}" != "1" && "$ADOPT_EXISTING" == "1" ]] && validate_freeze >/dev/null 2>&1; then
