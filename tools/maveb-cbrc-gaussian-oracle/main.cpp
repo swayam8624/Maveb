@@ -566,10 +566,11 @@ int main(int argc, char** argv) try {
         const bool repairedPixel = bound > 0.0;
         double repairResidual{};
         for (std::size_t channel = 0; channel < 3; ++channel) {
+            const double repairedChannel =
+                static_cast<double>(repairImage->color[pixel][channel]);
+            const double fullChannel = static_cast<double>(newImage->color[pixel][channel]);
             repairResidual =
-                std::max(repairResidual,
-                         std::abs(static_cast<double>(repairImage->color[pixel][channel]) -
-                                  static_cast<double>(newImage->color[pixel][channel])));
+                std::max(repairResidual, std::abs(repairedChannel - fullChannel));
         }
         const double repairBound = repairBounds[pixel];
         if (!actualResiduals.empty())
@@ -650,11 +651,13 @@ int main(int argc, char** argv) try {
             const double bound = certificate->rgbLInfBounds[pixel];
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
-            supportHeat[pixel] =
-                heatColor(options->repairOmitFraction > 0.0 ? residualBound : bound,
-                          options->repairOmitFraction > 0.0
-                              ? std::max(maximumRepairResidualBound, 1.0e-12)
-                              : maximumBound);
+            const double supportValue =
+                options->repairOmitFraction > 0.0 ? residualBound : bound;
+            const double supportMaximum =
+                options->repairOmitFraction > 0.0
+                    ? std::max(maximumRepairResidualBound, 1.0e-12)
+                    : maximumBound;
+            supportHeat[pixel] = heatColor(supportValue, supportMaximum);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
                 const double beforeChannel = oldImage->color[pixel][channel];
