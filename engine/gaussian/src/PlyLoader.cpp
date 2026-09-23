@@ -17,8 +17,8 @@
 namespace aether::gaussian {
 namespace {
 
-enum class Format { ascii, binaryLittleEndian };
-enum class ScalarType { int8, uint8, int16, uint16, int32, uint32, float32, float64 };
+enum class Format : std::uint8_t { ascii, binaryLittleEndian };
+enum class ScalarType : std::uint8_t { int8, uint8, int16, uint16, int32, uint32, float32, float64 };
 
 struct Property final {
     ScalarType type;
