@@ -695,7 +695,7 @@ int main(int argc, char** argv) try {
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
     const double repairResidualBound =
-        std::max(maximumRepairResidualBound, kOracleNumericalSlack);
+        maximumRepairResidualBound + kOracleNumericalSlack;
     const bool repairResidualCertified = repairCertificateViolations == 0;
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
