@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -59,6 +60,23 @@ class CBRCCampaignStorageTests(unittest.TestCase):
             self.assertEqual(removed, len(files))
             self.assertTrue(all(not path.exists() for path in files))
             self.assertEqual(unrelated.read_text(), "keep")
+
+    @unittest.skipUnless(sys.platform == "darwin", "APFS clonefile test is macOS-only")
+    def test_require_clone_uses_macos_copy_on_write(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.bin"
+            destination = root / "destination.bin"
+            source.write_bytes(b"a" * (1024 * 1024))
+
+            mode = storage.copy_storage_efficient(
+                source,
+                destination,
+                require_clone=True,
+            )
+
+            self.assertEqual(mode, "clone")
+            self.assertEqual(destination.read_bytes(), source.read_bytes())
 
     def test_storage_efficient_copy_is_independent(self):
         with tempfile.TemporaryDirectory() as directory:
