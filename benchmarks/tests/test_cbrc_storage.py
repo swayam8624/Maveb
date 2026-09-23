@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,6 +19,22 @@ doctor_spec = importlib.util.spec_from_file_location("cbrc_storage_doctor_test",
 doctor = importlib.util.module_from_spec(doctor_spec)
 assert doctor_spec.loader
 doctor_spec.loader.exec_module(doctor)
+
+
+class ShellSyntaxTests(unittest.TestCase):
+    def test_storage_and_campaign_shell_syntax(self):
+        for relative in (
+            "run_broad_benchmark_campaign.sh",
+            "run_reviewer_stress_campaign.sh",
+            "cleanup_maveb_storage.sh",
+        ):
+            result = subprocess.run(
+                ["bash", "-n", str(ROOT / relative)],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, f"{relative}: {result.stderr}")
 
 
 class CBRCCampaignStorageTests(unittest.TestCase):
