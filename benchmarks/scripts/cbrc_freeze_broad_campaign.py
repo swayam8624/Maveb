@@ -86,6 +86,25 @@ def apply_edit_family(case: dict[str, Any], template_index: int) -> str:
     return kind
 
 
+def broad_gate_policy(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    coupling_regimes = {
+        str(case.get("coupling_regime", "")).lower()
+        for case in cases
+    }
+    high_required = bool(
+        coupling_regimes.intersection({"high", "adversarial"})
+    )
+    return {
+        "require_full_fallback": False,
+        "require_high_coupling": high_required,
+        "metadata": {
+            "fullFallback": "observed-outcome-not-required",
+            "highCouplingRequired": high_required,
+            "frozenCouplingRegimes": sorted(coupling_regimes),
+        },
+    }
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Freeze broad multi-dataset CBRC campaign")
     p.add_argument("--worlds", type=Path, required=True, help="BROAD_WORLDS.json")
@@ -191,24 +210,14 @@ def main(argv: list[str] | None = None) -> int:
     campaign["campaignId"] = "maveb-cbrc-broad-benchmark-v1"
     campaign["minimum_scenes"] = len(records)
     campaign["minimum_revisions"] = len(campaign["cases"])
-    coupling_regimes = {
-        str(case.get("coupling_regime", "")).lower()
-        for case in campaign["cases"]
-    }
+    policy = broad_gate_policy(campaign["cases"])
     # Broad campaigns treat FULL fallback frequency as an empirical outcome,
-    # not as a success criterion. Requiring a fallback would make a stronger
-    # all-local result fail the campaign by construction.
-    campaign["require_full_fallback"] = False
-    # Coverage must match the matrix actually frozen. Small smoke campaigns
-    # can intentionally use only the first low-coupling templates.
-    campaign["require_high_coupling"] = bool(
-        coupling_regimes.intersection({"high", "adversarial"})
-    )
-    campaign["broad_gate_policy"] = {
-        "fullFallback": "observed-outcome-not-required",
-        "highCouplingRequired": campaign["require_high_coupling"],
-        "frozenCouplingRegimes": sorted(coupling_regimes),
-    }
+    # not as a success criterion. Coverage requirements follow the matrix
+    # actually frozen, so small smoke campaigns are not required to contain
+    # high/adversarial cases that were never selected.
+    campaign["require_full_fallback"] = policy["require_full_fallback"]
+    campaign["require_high_coupling"] = policy["require_high_coupling"]
+    campaign["broad_gate_policy"] = policy["metadata"]
     campaign["dataset_case_counts"] = dict(sorted(dataset_counts.items()))
     campaign["representation_case_counts"] = dict(sorted(representation_counts.items()))
     campaign["edit_family_case_counts"] = dict(sorted(edit_family_counts.items()))
