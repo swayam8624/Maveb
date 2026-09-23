@@ -310,8 +310,7 @@ Result<std::size_t> validateSchema(const Header& header, GaussianAsset& asset) {
     return restCount;
 }
 
-Result<void> normalize(Gaussian& gaussian, std::size_t restCount,
-                       float maximumAbsoluteLogScale) {
+Result<void> normalize(Gaussian& gaussian, std::size_t restCount, float maximumAbsoluteLogScale) {
     double normSquared = 0.0;
     for (const float value : gaussian.rotation)
         normSquared += static_cast<double>(value) * value;
@@ -331,8 +330,7 @@ Result<void> normalize(Gaussian& gaussian, std::size_t restCount,
 } // namespace
 
 Result<GaussianAsset> PlyLoader::load(const std::filesystem::path& path, const PlyLimits& limits) {
-    if (!std::isfinite(limits.maximumAbsoluteLogScale) ||
-        limits.maximumAbsoluteLogScale <= 0.0F) {
+    if (!std::isfinite(limits.maximumAbsoluteLogScale) || limits.maximumAbsoluteLogScale <= 0.0F) {
         return fail(ErrorCode::invalidArgument,
                     "PLY maximum absolute log scale must be finite and positive");
     }
