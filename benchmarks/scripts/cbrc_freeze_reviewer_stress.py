@@ -252,7 +252,7 @@ def build(
                         f"{source_scene_id}--eps{epsilon_label}"
                     )
                     case_input_dir = inputs / case_id
-                    archive_copy = base.copy_before_state(candidate, case_input_dir)
+                    archive_copy = base.copy_before_state(candidate, case_input_dir, materialize=False)
                     timestamp = fixed_timestamp
 
                     matrix_tags = {
