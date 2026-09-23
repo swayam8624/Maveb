@@ -23,7 +23,6 @@ import shutil
 import struct
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
@@ -32,10 +31,14 @@ AR_KIT_ASSET_TOLERANCE = 0.0011
 BONN_ASSOCIATION_TOLERANCE = 0.05
 
 
-@dataclass
 class Mesh:
-    vertices: list[tuple[float, float, float, int, int, int]]
-    faces: list[tuple[int, int, int]]
+    def __init__(
+        self,
+        vertices: list[tuple[float, float, float, int, int, int]] | None = None,
+        faces: list[tuple[int, int, int]] | None = None,
+    ) -> None:
+        self.vertices = [] if vertices is None else vertices
+        self.faces = [] if faces is None else faces
 
 
 def sha256(path: Path) -> str:
@@ -318,51 +321,99 @@ def parse_groundtruth(path: Path) -> tuple[list[float], dict[float, tuple[list[l
 def obj_mesh(path: Path) -> Mesh:
     positions: list[tuple[float, float, float, int, int, int]] = []
     faces: list[tuple[int, int, int]] = []
-    for line_number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        fields = stripped.split()
-        if fields[0] == "v" and len(fields) >= 4:
-            try:
-                x, y, z = map(float, fields[1:4])
-            except ValueError as exc:
-                raise ValueError(f"{path}:{line_number}: invalid vertex") from exc
-            if len(fields) >= 7:
+    with path.open("r", encoding="utf-8", errors="replace") as stream:
+        for line_number, line in enumerate(stream, 1):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            fields = stripped.split()
+            if fields[0] == "v" and len(fields) >= 4:
                 try:
-                    raw = [float(value) for value in fields[4:7]]
-                    if max(raw) <= 1.0:
-                        color = tuple(max(0, min(255, round(value * 255.0))) for value in raw)
-                    else:
-                        color = tuple(max(0, min(255, round(value))) for value in raw)
-                except ValueError:
-                    color = (180, 180, 180)
-            else:
-                color = (180, 180, 180)
-            positions.append((x, y, z, color[0], color[1], color[2]))
-        elif fields[0] == "f" and len(fields) >= 4:
-            indices: list[int] = []
-            for token in fields[1:]:
-                raw = token.split("/", 1)[0]
-                try:
-                    index = int(raw)
+                    x, y, z = map(float, fields[1:4])
                 except ValueError as exc:
-                    raise ValueError(f"{path}:{line_number}: invalid face index") from exc
-                if index < 0:
-                    index = len(positions) + index
+                    raise ValueError(f"{path}:{line_number}: invalid vertex") from exc
+                if len(fields) >= 7:
+                    try:
+                        raw = [float(value) for value in fields[4:7]]
+                        if max(raw) <= 1.0:
+                            color = tuple(
+                                max(0, min(255, round(value * 255.0))) for value in raw
+                            )
+                        else:
+                            color = tuple(max(0, min(255, round(value))) for value in raw)
+                    except ValueError:
+                        color = (180, 180, 180)
                 else:
-                    index -= 1
-                if index < 0 or index >= len(positions):
-                    raise ValueError(f"{path}:{line_number}: face index out of range")
-                indices.append(index)
-            for offset in range(1, len(indices) - 1):
-                triangle = (indices[0], indices[offset], indices[offset + 1])
-                if len(set(triangle)) == 3:
-                    faces.append(triangle)
+                    color = (180, 180, 180)
+                positions.append((x, y, z, color[0], color[1], color[2]))
+            elif fields[0] == "f" and len(fields) >= 4:
+                indices: list[int] = []
+                for token in fields[1:]:
+                    raw = token.split("/", 1)[0]
+                    try:
+                        index = int(raw)
+                    except ValueError as exc:
+                        raise ValueError(f"{path}:{line_number}: invalid face index") from exc
+                    if index < 0:
+                        index = len(positions) + index
+                    else:
+                        index -= 1
+                    if index < 0 or index >= len(positions):
+                        raise ValueError(f"{path}:{line_number}: face index out of range")
+                    indices.append(index)
+                for offset in range(1, len(indices) - 1):
+                    triangle = (indices[0], indices[offset], indices[offset + 1])
+                    if len(set(triangle)) == 3:
+                        faces.append(triangle)
     if len(positions) < 3 or not faces:
         raise ValueError(f"{path} did not contain a usable triangle mesh")
     return Mesh(positions, faces)
 
+
+def limit_mesh(mesh: Mesh, maximum_vertices: int) -> dict[str, int | str]:
+    """Deterministically spread a bounded face sample across a large source mesh."""
+    input_vertices = len(mesh.vertices)
+    input_faces = len(mesh.faces)
+    if input_vertices <= maximum_vertices:
+        return {
+            "inputVertices": input_vertices,
+            "inputFaces": input_faces,
+            "selectedVertices": input_vertices,
+            "selectedFaces": input_faces,
+            "selection": "all",
+        }
+
+    target_faces = max(1, maximum_vertices // 3)
+    stride = max(1, math.ceil(input_faces / target_faces))
+    selected_faces = mesh.faces[::stride]
+    remap: dict[int, int] = {}
+    vertices: list[tuple[float, float, float, int, int, int]] = []
+    faces: list[tuple[int, int, int]] = []
+
+    for face in selected_faces:
+        missing = [index for index in face if index not in remap]
+        if len(vertices) + len(missing) > maximum_vertices:
+            continue
+        converted: list[int] = []
+        for index in face:
+            if index not in remap:
+                remap[index] = len(vertices)
+                vertices.append(mesh.vertices[index])
+            converted.append(remap[index])
+        if len(set(converted)) == 3:
+            faces.append((converted[0], converted[1], converted[2]))
+
+    if len(vertices) < 3 or not faces:
+        raise ValueError("deterministic 3RScan mesh bounding produced no usable faces")
+    mesh.vertices = vertices
+    mesh.faces = faces
+    return {
+        "inputVertices": input_vertices,
+        "inputFaces": input_faces,
+        "selectedVertices": len(vertices),
+        "selectedFaces": len(faces),
+        "selection": f"deterministic-face-stride-{stride}",
+    }
 
 def build_arkit(source: Path, maximum_frames: int, maximum_vertices: int, ffmpeg: str) -> tuple[Mesh, dict]:
     trajectory = source / "lowres_wide.traj"
@@ -619,10 +670,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.kind == "3rscan":
             mesh = obj_mesh(source)
+            selection = limit_mesh(mesh, args.maximum_vertices)
             source_details = {
                 "sourceRepresentation": "3rscan-provided-reference-mesh",
                 "sourceGeometry": str(source),
                 "sourceGeometrySha256": sha256(source),
+                "meshSelection": selection,
             }
         elif args.kind == "arkitscenes":
             mesh, source_details = build_arkit(
