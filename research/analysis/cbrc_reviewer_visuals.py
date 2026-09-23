@@ -252,6 +252,26 @@ def captured_context(
     context = Image.new("RGB", (width, height), (247, 248, 250))
     context.paste(fit(frames[0][0], half, height), (0, 0))
     context.paste(fit(frames[1][0], width - half - gap, height), (half + gap, 0))
+    labels = (
+        ("captured reference", "captured rescan")
+        if dataset == "3rscan"
+        else ("captured t0", "captured t1")
+    )
+    draw = ImageDraw.Draw(context)
+    for x, label in ((6, labels[0]), (half + gap + 6, labels[1])):
+        box = draw.textbbox((0, 0), label, font=font(11, True))
+        box_width = box[2] - box[0] + 10
+        box_height = box[3] - box[1] + 8
+        draw.rectangle(
+            (x, 6, x + box_width, 6 + box_height),
+            fill=(15, 18, 24),
+        )
+        draw.text(
+            (x + 5, 10),
+            label,
+            font=font(11, True),
+            fill=(255, 255, 255),
+        )
     return context, [frames[0][1], frames[1][1]]
 
 
