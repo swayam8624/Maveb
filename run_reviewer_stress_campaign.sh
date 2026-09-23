@@ -9,7 +9,13 @@ if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
 fi
 
-SOURCE_ROOT="${MAVEB_REVIEWER_SOURCE_ROOT:-$ROOT/build/broad-benchmark-smoke}"
+if [[ -n "${MAVEB_REVIEWER_SOURCE_ROOT:-}" ]]; then
+  SOURCE_ROOT="$MAVEB_REVIEWER_SOURCE_ROOT"
+elif [[ -f "$ROOT/build/broad-benchmark-paper/worlds/BROAD_WORLDS.json" ]]; then
+  SOURCE_ROOT="$ROOT/build/broad-benchmark-paper"
+else
+  SOURCE_ROOT="$ROOT/build/broad-benchmark-smoke"
+fi
 OUT="${MAVEB_REVIEWER_RESULTS_DIR:-$ROOT/build/reviewer-stress}"
 SCENES_PER_DATASET="${MAVEB_REVIEWER_SCENES_PER_DATASET:-1}"
 REUSE="${MAVEB_REVIEWER_REUSE:-1}"
@@ -26,6 +32,9 @@ CACHE="$OUT/.stage-cache"
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 CACHE_KEY="$ROOT/benchmarks/scripts/cbrc_cache_key.py"
+STORAGE_DOCTOR="$ROOT/benchmarks/scripts/cbrc_storage_doctor.py"
+export MAVEB_REQUIRE_COW="${MAVEB_REQUIRE_COW:-1}"
+MIN_FREE_GIB="${MAVEB_MIN_FREE_GIB:-5}"
 
 mkdir -p "$FREEZE" "$CAMPAIGN" "$ANALYSIS" "$VISUALS" "$CACHE"
 
@@ -64,6 +73,10 @@ echo "Prepared-world root: $SOURCE_ROOT"
 echo "Output             : $OUT"
 echo "Scenes / dataset   : $SCENES_PER_DATASET"
 echo "Reuse              : $REUSE"
+echo "Require COW        : $MAVEB_REQUIRE_COW"
+echo "Min free disk      : $MIN_FREE_GIB GiB"
+echo
+"$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib 0 || true
 echo
 echo "Protocol:"
 echo "  - deterministic real-world selection"
@@ -96,7 +109,13 @@ PY
 cmake --preset ci
 cmake --build --preset ci   --target maveb-cbrc-revision maveb-cbrc-gaussian-oracle   --parallel
 
-FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v1   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
+if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GIB"; then
+  echo "Insufficient free disk for reviewer stress execution." >&2
+  echo "Run: \"$PYTHON\" \"$STORAGE_DOCTOR\" --repo \"$ROOT\" --cleanup-safe --minimum-free-gib 0" >&2
+  exit 3
+fi
+
+FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v1   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
 
 step 2 "Freeze reviewer tolerance-crossover matrix"
 if cache_hit freeze "$FREEZE_KEY"    && [[ -f "$FREEZE/reviewer-stress-campaign.json" ]]    && [[ -f "$FREEZE/REVIEWER_STRESS_FREEZE.json" ]]; then
