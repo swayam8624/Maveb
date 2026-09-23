@@ -28,10 +28,15 @@ audit = load_module(
     "cbrc_reviewer_evidence",
     "research/analysis/cbrc_reviewer_evidence.py",
 )
-visuals = load_module(
-    "cbrc_reviewer_visuals",
-    "research/analysis/cbrc_reviewer_visuals.py",
-)
+try:
+    visuals = load_module(
+        "cbrc_reviewer_visuals",
+        "research/analysis/cbrc_reviewer_visuals.py",
+    )
+except ModuleNotFoundError as error:
+    if error.name != "PIL":
+        raise
+    visuals = None
 
 
 class ReviewerStressFreezeTests(unittest.TestCase):
@@ -177,6 +182,7 @@ class ReviewerStressRunnerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    @unittest.skipIf(visuals is None, "Pillow is not installed in this CI environment")
     def test_crossover_visual_smoke(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "crossover.png"
