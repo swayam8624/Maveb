@@ -52,6 +52,9 @@ WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
 TRAINED_SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
 NATIVE_SEED="$ROOT/build/ci/tools/maveb-seed-world/maveb-seed-world"
 CACHE_KEY="$ROOT/benchmarks/scripts/cbrc_cache_key.py"
+STORAGE_DOCTOR="$ROOT/benchmarks/scripts/cbrc_storage_doctor.py"
+export MAVEB_REQUIRE_COW="${MAVEB_REQUIRE_COW:-1}"
+MIN_FREE_GIB="${MAVEB_MIN_FREE_GIB:-5}"
 
 COLMAP_BIN="${MAVEB_COLMAP:-}"
 if [[ -z "$COLMAP_BIN" ]]; then
@@ -214,6 +217,10 @@ echo "Reuse            : $REUSE"
 echo "Adopt existing   : $ADOPT_EXISTING"
 echo "Cases / scene    : $CASES_PER_SCENE"
 echo "Bootstrap iters  : $BOOTSTRAP_ITERATIONS"
+echo "Require COW      : $MAVEB_REQUIRE_COW"
+echo "Min free disk    : $MIN_FREE_GIB GiB"
+echo
+"$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib 0 || true
 echo
 
 step 1 "Validating/importing selected datasets"
@@ -265,6 +272,18 @@ else
   cache_complete step3 "$STEP3_KEY"
 fi
 
+echo
+echo "Checking disk budget before freeze/execution..."
+if ! "$PYTHON" "$STORAGE_DOCTOR" \
+    --repo "$ROOT" \
+    --minimum-free-gib "$MIN_FREE_GIB"; then
+  echo
+  echo "Insufficient free disk for a safe campaign run." >&2
+  echo "Run this safe cleanup, then rerun the campaign:" >&2
+  echo "  \"$PYTHON\" \"$STORAGE_DOCTOR\" --repo \"$ROOT\" --cleanup-safe --minimum-free-gib 0" >&2
+  exit 3
+fi
+
 STEP4_KEY="$("$PYTHON" "$CACHE_KEY"   --label step4-work-calibration-v1   --file "$WORK_BENCH"   --file "$ROOT/benchmarks/scripts/cbrc_calibrate_work.py"   --value "arch=$(uname -m)"   --value "os=$(uname -s)"   --value "gaussians=${MAVEB_CAL_GAUSSIANS:-1000000}"   --value "publication_bytes=${MAVEB_CAL_PUBLICATION_BYTES:-268435456}"   --value "pixels=${MAVEB_CAL_PIXELS:-921600}"   --value "repeats=${MAVEB_CAL_REPEATS:-9}")"
 
 step 4 "Freezing one hardware work calibration"
@@ -283,7 +302,7 @@ else
   cache_complete step4 "$STEP4_KEY"
 fi
 
-STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v2   --file "$WORLDS_DIR/BROAD_WORLDS.json"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_migrate_broad_gate_policy.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
+STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v3-lazy-inputs   --file "$WORLDS_DIR/BROAD_WORLDS.json"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_migrate_broad_gate_policy.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
 
 step 5 "Freezing cross-dataset cases before reading outcomes"
 if [[ "$ADOPT_EXISTING" == "1" && -f "$FREEZE_DIR/broad-campaign.json" && -f "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" ]]; then
@@ -306,7 +325,7 @@ else
   cache_complete step5 "$STEP5_KEY"
 fi
 
-STEP6_CASE_KEY="$("$PYTHON" "$CACHE_KEY"   --label step6-case-computation-v2   --file "$FREEZE_DIR/broad-campaign.json"   --file "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json"   --file "$ORACLE"   --file "$REVISION"   --file "$ROOT/benchmarks/scripts/cbrc_evidence_bundle.py"   --file "$ROOT/benchmarks/scripts/cbrc_bind_live_revision.py"   --file "$ROOT/benchmarks/scripts/cbrc_replay.py"   --file "$ROOT/benchmarks/scripts/cbrc_evaluate.py"   --file "$ROOT/research/experiments/cbrc_baseline_suite.py"   --file "$ROOT/research/cbrc/core.py"   --file "$ROOT/research/cbrc/edges.py")"
+STEP6_CASE_KEY="$("$PYTHON" "$CACHE_KEY"   --label step6-case-computation-v3-compacted   --file "$FREEZE_DIR/broad-campaign.json"   --file "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json"   --file "$ORACLE"   --file "$REVISION"   --file "$ROOT/benchmarks/scripts/cbrc_evidence_bundle.py"   --file "$ROOT/benchmarks/scripts/cbrc_bind_live_revision.py"   --file "$ROOT/benchmarks/scripts/cbrc_replay.py"   --file "$ROOT/benchmarks/scripts/cbrc_evaluate.py"   --file "$ROOT/research/experiments/cbrc_baseline_suite.py"   --file "$ROOT/research/cbrc/core.py"   --file "$ROOT/research/cbrc/edges.py"   --file "$ROOT/benchmarks/scripts/cbrc_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "require_cow=$MAVEB_REQUIRE_COW")"
 
 CASE_KEY_FILE="$CACHE_DIR/step6.case-key"
 EVIDENCE_SHA_FILE="$CACHE_DIR/step6.evidence-sha"
@@ -474,6 +493,9 @@ Reuse controls:
 Scientific boundary:
   * cache hits require deterministic fingerprints of the relevant inputs, tools, scripts, and parameters;
   * incomplete Step-3 worlds and Step-6 cases resume only under matching fingerprints;
+  * broad/reviewer case inputs are lazily materialized only when executed;
+  * macOS materialization uses APFS copy-on-write and refuses silent full copies by default;
+  * completed cases compact mutable world/sidecar files after evidence is captured;
   * an incomplete Step-6 case is restored from its immutable source before retry;
   * evidence keeps the Git SHA that actually generated/replayed it, even if a later runner only reuses it;
   * no dataset-specific threshold or result is changed by caching.
