@@ -194,6 +194,8 @@ for key in (
     "recordCount",
     "localCases",
     "fullFallbackCases",
+    "certifiedPartialRepairCases",
+    "repairCertificateViolationCount",
     "certifiedNonzeroLocalCases",
     "nearBoundaryLocalCases",
     "toleranceCrossoverGroups",
