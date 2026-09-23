@@ -11,8 +11,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
@@ -82,25 +81,24 @@ def load_render(path: Path) -> Image.Image:
 
 
 def residual_heat(local: Image.Image, full: Image.Image) -> Image.Image:
-    lhs = np.asarray(local, dtype=np.int16)
-    rhs = np.asarray(full, dtype=np.int16)
-    if lhs.shape != rhs.shape:
+    if local.size != full.size:
         raise ValueError("LOCAL/FULL render shape mismatch")
-    delta = np.max(np.abs(lhs - rhs), axis=2).astype(np.float32)
-    maximum = float(delta.max()) if delta.size else 0.0
-    if maximum <= 0.0:
-        rgb = np.zeros((*delta.shape, 3), dtype=np.uint8)
-    else:
-        t = np.clip(delta / maximum, 0.0, 1.0)
-        rgb = np.stack(
-            [
-                np.clip(255.0 * 2.0 * t, 0, 255),
-                np.clip(255.0 * 1.2 * t, 0, 255),
-                np.clip(255.0 * 0.2 * (1.0 - t), 0, 255),
-            ],
-            axis=2,
-        ).astype(np.uint8)
-    return Image.fromarray(rgb, mode="RGB")
+    difference = ImageChops.difference(
+        local.convert("RGB"),
+        full.convert("RGB"),
+    )
+    # This is a visualization only. Scientific residual values come from the
+    # independent oracle row, not from this colorized image.
+    magnitude = ImageOps.autocontrast(difference.convert("L"))
+    heat = Image.merge(
+        "RGB",
+        (
+            magnitude,
+            magnitude.point(lambda value: int(value * 0.45)),
+            magnitude.point(lambda value: int(value * 0.08)),
+        ),
+    )
+    return heat
 
 
 def import_scene_map(import_manifest: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
