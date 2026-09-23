@@ -40,6 +40,12 @@ fi
 
 mkdir -p "$IMPORT_DIR" "$WORLDS_DIR" "$CAL_DIR" "$FREEZE_DIR" "$RESULTS_DIR" "$VISUAL_DIR" "$STATS_DIR" "$CACHE_DIR"
 
+ADOPTION_SENTINEL="$CACHE_DIR/adoption-complete"
+if [[ "$ADOPT_EXISTING" == "1" && -f "$ADOPTION_SENTINEL" ]]; then
+  echo "Existing-artifact adoption was already completed for this output; ignoring MAVEB_BROAD_ADOPT_EXISTING=1."
+  ADOPT_EXISTING=0
+fi
+
 REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
@@ -247,7 +253,7 @@ elif [[ "${MAVEB_BROAD_FORCE_STEP3:-0}" != "1" && "$ADOPT_EXISTING" == "1" ]] &&
   cache_complete step3 "$STEP3_KEY"
   cache_banner "Step 3 adopted existing validated worlds"
 else
-  if [[ "${MAVEB_BROAD_FORCE_STEP3:-0}" == "1" ]] || ! same_inprogress step3 "$STEP3_KEY"; then
+  if [[ "$REUSE" != "1" || "${MAVEB_BROAD_FORCE_STEP3:-0}" == "1" ]] || ! same_inprogress step3 "$STEP3_KEY"; then
     rm -rf "$WORLDS_DIR"
     mkdir -p "$WORLDS_DIR"
   else
@@ -305,7 +311,7 @@ STEP6_CASE_KEY="$("$PYTHON" "$CACHE_KEY"   --label step6-case-computation-v2   -
 CASE_KEY_FILE="$CACHE_DIR/step6.case-key"
 EVIDENCE_SHA_FILE="$CACHE_DIR/step6.evidence-sha"
 
-if [[ "${MAVEB_BROAD_FORCE_STEP6:-0}" == "1" ]]; then
+if [[ "$REUSE" != "1" || "${MAVEB_BROAD_FORCE_STEP6:-0}" == "1" ]]; then
   rm -rf "$RESULTS_DIR"
   mkdir -p "$RESULTS_DIR"
   rm -f "$CASE_KEY_FILE" "$EVIDENCE_SHA_FILE" "$CACHE_DIR/step6.done"
@@ -435,6 +441,10 @@ print(json.dumps({
     "completionManifest":str(root/"BROAD_CAMPAIGN_COMPLETE.json"),
 },indent=2,sort_keys=True))
 PY
+
+if [[ "$ADOPT_EXISTING" == "1" ]]; then
+  : > "$ADOPTION_SENTINEL"
+fi
 
 cat <<EOF
 
