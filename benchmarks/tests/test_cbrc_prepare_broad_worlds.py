@@ -100,6 +100,67 @@ class BroadWorldPreparationTests(unittest.TestCase):
             self.assertIn("sequential_matcher", calls)
             self.assertIn("exhaustive_matcher", calls)
 
+    def test_prepare_reconstructed_prefers_native_path(self):
+        dataset = {"datasetId": "bonn-rgbd-dynamic", "kind": "tum-rgbd", "role": "dynamic"}
+        scene = {"sceneId": "sequence", "root": "/tmp/sequence"}
+        expected = {
+            "datasetId": dataset["datasetId"],
+            "sceneId": scene["sceneId"],
+            "status": "ready",
+            "preparationPath": "dataset-native-geometry",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(mod, "prepare_native", return_value=expected) as native:
+                with mock.patch.object(mod, "reconstruct_colmap") as reconstruct:
+                    result = mod.prepare_reconstructed(
+                        dataset,
+                        scene,
+                        Path(directory) / "worlds",
+                        Path(directory) / "cache",
+                        colmap="/fake/colmap",
+                        native_seeder="/fake/maveb-seed-world",
+                        maximum_images=40,
+                        ffmpeg="/fake/ffmpeg",
+                        allow_rgb_fallback=True,
+                    )
+        self.assertEqual(result, expected)
+        native.assert_called_once()
+        reconstruct.assert_not_called()
+
+    def test_prepare_reconstructed_records_native_failure_before_colmap_fallback(self):
+        dataset = {"datasetId": "bonn-rgbd-dynamic", "kind": "tum-rgbd", "role": "dynamic"}
+        scene = {"sceneId": "sequence", "root": "/tmp/sequence"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / "model"
+            model.mkdir()
+            images = [root / f"{index}.png" for index in range(8)]
+            for image in images:
+                image.write_bytes(b"x")
+            with mock.patch.object(mod, "prepare_native", side_effect=RuntimeError("native failed")):
+                with mock.patch.object(mod, "bonn_images", return_value=images):
+                    with mock.patch.object(
+                        mod, "reconstruct_colmap", return_value=(model, len(images))
+                    ) as reconstruct:
+                        with mock.patch.object(mod, "seed_colmap") as seed:
+                            result = mod.prepare_reconstructed(
+                                dataset,
+                                scene,
+                                root / "worlds",
+                                root / "cache",
+                                colmap="/fake/colmap",
+                                native_seeder="/fake/maveb-seed-world",
+                                maximum_images=40,
+                                ffmpeg="/fake/ffmpeg",
+                                allow_rgb_fallback=True,
+                            )
+            self.assertEqual(result["preparationPath"], "rgb-colmap-fallback")
+            self.assertIn("native failed", result["nativePreparationError"])
+            self.assertEqual(result["stagedRgbFrames"], 8)
+            reconstruct.assert_called_once()
+            seed.assert_called_once()
+
+
     def test_stage_images_rejects_too_few_inputs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

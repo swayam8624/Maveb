@@ -36,6 +36,7 @@ REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
 TRAINED_SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
+NATIVE_SEED="$ROOT/build/ci/tools/maveb-seed-world/maveb-seed-world"
 
 echo "============================================================"
 echo "MAVEB CBRC broad cross-dataset campaign"
@@ -51,10 +52,12 @@ echo "==> [1/9] Validating/importing selected datasets"
 
 echo "==> [2/9] Building CBRC research tools"
 cmake --preset ci
-cmake --build --preset ci   --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     maveb-cbrc-work-bench     maveb-seed-trained-3dgs-world   --parallel
+cmake --build --preset ci   --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     maveb-cbrc-work-bench     maveb-seed-trained-3dgs-world     maveb-seed-world   --parallel
 
 echo "==> [3/9] Preparing normalized persistent worlds"
-"$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py   --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"   --output-dir "$WORLDS_DIR"   --trained-seeder "$TRAINED_SEED"   "${DATASET_ARGS[@]}"   --max-images "${MAVEB_BROAD_MAX_IMAGES:-120}"
+rm -rf "$WORLDS_DIR"
+mkdir -p "$WORLDS_DIR"
+"$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py   --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"   --output-dir "$WORLDS_DIR"   --trained-seeder "$TRAINED_SEED"   --native-seeder "$NATIVE_SEED"   "${DATASET_ARGS[@]}"   --max-images "${MAVEB_BROAD_MAX_IMAGES:-120}"
 
 "$PYTHON" - "$WORLDS_DIR/BROAD_WORLDS.json" <<'PY'
 import json,sys
