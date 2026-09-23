@@ -538,6 +538,20 @@ def main() -> int:
     )
 
     frozen_by_case = frozen_inputs_by_case(freeze_provenance)
+    prior_timing_by_case: dict[str, dict[str, Any]] = {}
+    prior_timings_path = root / "campaign-timings.jsonl"
+    if args.adopt_existing and prior_timings_path.is_file():
+        for line in prior_timings_path.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            case_id = str(item.get("case_id", "")).strip()
+            if case_id:
+                prior_timing_by_case[case_id] = item
+
     all_rows: list[dict[str, Any]] = []
     all_baselines: list[dict[str, Any]] = []
     parity_results: list[dict[str, Any]] = []
@@ -607,6 +621,8 @@ def main() -> int:
             parity["case_id"] = case_id
             timing = marker.get("timing")
             if not isinstance(timing, dict):
+                timing = prior_timing_by_case.get(case_id)
+            if not isinstance(timing, dict):
                 timing = {
                     "case_id": case_id,
                     "scene_id": str(case["scene_id"]),
@@ -624,10 +640,10 @@ def main() -> int:
                         if float(row["full_work"]) > 0.0
                         else None
                     ),
-                    "resumed": True,
                 }
             timing = dict(timing)
             timing["resumed"] = True
+            timing["adoptedExisting"] = bool(marker.get("adoptedExisting"))
             if marker.get("adoptedExisting"):
                 if not parity["pass"]:
                     raise RuntimeError(
