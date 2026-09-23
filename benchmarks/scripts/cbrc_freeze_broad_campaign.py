@@ -191,6 +191,24 @@ def main(argv: list[str] | None = None) -> int:
     campaign["campaignId"] = "maveb-cbrc-broad-benchmark-v1"
     campaign["minimum_scenes"] = len(records)
     campaign["minimum_revisions"] = len(campaign["cases"])
+    coupling_regimes = {
+        str(case.get("coupling_regime", "")).lower()
+        for case in campaign["cases"]
+    }
+    # Broad campaigns treat FULL fallback frequency as an empirical outcome,
+    # not as a success criterion. Requiring a fallback would make a stronger
+    # all-local result fail the campaign by construction.
+    campaign["require_full_fallback"] = False
+    # Coverage must match the matrix actually frozen. Small smoke campaigns
+    # can intentionally use only the first low-coupling templates.
+    campaign["require_high_coupling"] = bool(
+        coupling_regimes.intersection({"high", "adversarial"})
+    )
+    campaign["broad_gate_policy"] = {
+        "fullFallback": "observed-outcome-not-required",
+        "highCouplingRequired": campaign["require_high_coupling"],
+        "frozenCouplingRegimes": sorted(coupling_regimes),
+    }
     campaign["dataset_case_counts"] = dict(sorted(dataset_counts.items()))
     campaign["representation_case_counts"] = dict(sorted(representation_counts.items()))
     campaign["edit_family_case_counts"] = dict(sorted(edit_family_counts.items()))
@@ -216,6 +234,7 @@ def main(argv: list[str] | None = None) -> int:
                 "removal",
                 "insertion",
             ],
+            "broadGatePolicy": campaign["broad_gate_policy"],
         }
     )
 
