@@ -68,6 +68,78 @@ class NativeProxyTests(unittest.TestCase):
             self.assertIn("property list uchar uint vertex_indices", payload)
             self.assertIn("3 0 1 2", payload)
 
+    def test_rgb_is_centered_on_larger_depth_canvas(self):
+        rgb = bytes(
+            [
+                255, 0, 0,
+                0, 255, 0,
+                0, 0, 255,
+                255, 255, 255,
+            ]
+        )
+        canvas, policy = mod.fit_rgb_to_depth_canvas(rgb, 2, 2, 4, 4)
+        self.assertEqual(policy, "center-pad-or-crop-to-depth")
+        self.assertEqual(len(canvas), 4 * 4 * 3)
+        center = (1 * 4 + 1) * 3
+        self.assertEqual(canvas[center : center + 3], bytes([255, 0, 0]))
+        self.assertEqual(canvas[:3], bytes([0, 0, 0]))
+
+    def test_arkit_uses_actual_depth_resolution_and_adapts_rgb(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "41069025"
+            rgb_dir = root / "lowres_wide"
+            depth_dir = root / "lowres_depth"
+            intrinsics_dir = root / "lowres_wide_intrinsics"
+            rgb_dir.mkdir(parents=True)
+            depth_dir.mkdir()
+            intrinsics_dir.mkdir()
+
+            timestamps = (0.0, 0.1)
+            (root / "lowres_wide.traj").write_text(
+                "0.0 0 0 0 0 0 0\n"
+                "0.1 0 0 0 0.1 0 0\n"
+            )
+
+            def write_png_header(path: Path, width: int, height: int) -> None:
+                path.write_bytes(
+                    mod.PNG_SIGNATURE
+                    + struct.pack(">I", 13)
+                    + b"IHDR"
+                    + struct.pack(">II", width, height)
+                )
+
+            for timestamp in timestamps:
+                stem = f"41069025_{timestamp:.1f}"
+                write_png_header(rgb_dir / f"{stem}.png", 8, 6)
+                write_png_header(depth_dir / f"{stem}.png", 12, 10)
+                (intrinsics_dir / f"{stem}.pincam").write_text(
+                    "8 6 4 4 6 5\n"
+                )
+
+            depth_raw = b"".join(
+                struct.pack("<H", 1000) for _ in range(12 * 10)
+            )
+            rgb_raw = bytes([120, 80, 40]) * (8 * 6)
+
+            def fake_decode(_ffmpeg, _source, pixel_format):
+                return depth_raw if pixel_format == "gray16le" else rgb_raw
+
+            with mock.patch.object(mod, "ffmpeg_decode", side_effect=fake_decode):
+                mesh, provenance = mod.build_arkit(
+                    root,
+                    maximum_frames=2,
+                    maximum_vertices=10000,
+                    ffmpeg="ffmpeg",
+                )
+
+            self.assertGreaterEqual(len(mesh.vertices), 64)
+            self.assertGreater(len(mesh.faces), 0)
+            self.assertEqual(provenance["convertedFrames"], 2)
+            self.assertEqual(provenance["appearance"]["resolutionAdaptedRgb"], 2)
+            self.assertEqual(
+                provenance["appearance"]["neutralRgbMissingOrDecodeFailed"], 0
+            )
+
     def test_bonn_uses_registered_depth_and_groundtruth_pose(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
