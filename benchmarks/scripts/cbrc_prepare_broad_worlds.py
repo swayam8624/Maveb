@@ -4,11 +4,11 @@
 Supported preparation paths:
 - official pretrained GraphDECO 3DGS PLY -> trained-3DGS world seeder;
 - ScanNet++ DSLR COLMAP model -> deterministic SfM-seeded Gaussian world;
-- 3RScan / ARKitScenes / Bonn RGB-D -> deterministic RGB staging -> COLMAP sparse model
-  -> SfM-seeded Gaussian world.
+- 3RScan -> provided reference mesh -> canonical proxy -> Gaussian world;
+- ARKitScenes / Bonn RGB-D -> registered depth + provided pose -> canonical proxy -> Gaussian world.
 
-The RGB-D fallback deliberately uses RGB/SfM for the CBRC output-side world. Metric depth/pose
-assets remain in the imported provenance and are not relabeled as part of the Gaussian seeding.
+RGB/SfM remains an explicit fallback for native-preparation failures. Every fallback records the
+native failure in the world manifest; benchmark acceptance/gating is unchanged.
 """
 
 from __future__ import annotations
@@ -17,10 +17,10 @@ import argparse
 import json
 import os
 import shutil
+import struct
 import subprocess
 import sys
 import zipfile
-import struct
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -591,6 +591,7 @@ def prepare_reconstructed(
         "rescan": scene.get("rescan"),
     }
 
+
 def copy_existing(dataset: dict[str, Any], output: Path) -> list[dict[str, Any]]:
     root = Path(dataset["root"]) if dataset.get("root") else None
     if root is None or not root.is_dir():
@@ -625,7 +626,11 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--max-images", type=int, default=120)
     p.add_argument("--dataset", action="append", default=[])
-    p.add_argument("--no-rgb-reconstruction", action="store_true")
+    p.add_argument(
+        "--no-rgb-reconstruction",
+        action="store_true",
+        help="Disable only the RGB/COLMAP fallback; dataset-native preparation still runs.",
+    )
     p.add_argument("--colmap")
     p.add_argument("--ffmpeg")
     p.add_argument("--trained-seeder")
@@ -721,7 +726,7 @@ def main(argv: list[str] | None = None) -> int:
             except (OSError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
                 record = {
                     "datasetId": dataset_id,
-                    "sceneId": scene.get("sceneId") or scene.get("pairId"),
+                    "sceneId": scene.get("pairId") or scene.get("sceneId"),
                     "status": "failed",
                     "reason": str(exc),
                 }
@@ -741,6 +746,12 @@ def main(argv: list[str] | None = None) -> int:
         "readyWorlds": sum(record.get("status") == "ready" for record in records),
         "blockedWorlds": sum(record.get("status") == "blocked" for record in records),
         "failedWorlds": sum(record.get("status") == "failed" for record in records),
+        "nativePreparedWorlds": sum(
+            record.get("preparationPath") == "dataset-native-geometry" for record in records
+        ),
+        "rgbFallbackWorlds": sum(
+            record.get("preparationPath") == "rgb-colmap-fallback" for record in records
+        ),
         "scientificBoundary": (
             "GraphDECO entries preserve trained 3DGS representations. ScanNet++ uses its provided "
             "DSLR COLMAP sparse model. 3RScan/ARKitScenes/Bonn prefer dataset-native geometry or "
