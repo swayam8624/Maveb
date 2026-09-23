@@ -23,6 +23,11 @@ doctor_spec.loader.exec_module(doctor)
 
 
 class ShellSyntaxTests(unittest.TestCase):
+    def test_broad_runner_does_not_expand_empty_optional_array(self):
+        content = (ROOT / "run_broad_benchmark_campaign.sh").read_text()
+        self.assertNotIn('${ADOPT_ARG[@]}', content)
+        self.assertIn('--adopt-existing', content)
+
     def test_storage_and_campaign_shell_syntax(self):
         for relative in (
             "run_broad_benchmark_campaign.sh",
