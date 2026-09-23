@@ -87,11 +87,14 @@ class CBRCCampaignStorageTests(unittest.TestCase):
             freeze = Path(directory)
             source = freeze / "source.aetherworld"
             source.write_text("{}")
+            Path(str(source) + ".gaussians.r1.bin").write_bytes(b"g")
+            Path(str(source) + ".ownership.r1.bin").write_bytes(b"o")
             payload = {
                 "frozen_inputs": [
                     {
                         "case_id": "case",
                         "source_archive": str(source),
+                        "source_revision": 1,
                     }
                 ]
             }
