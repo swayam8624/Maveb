@@ -7,8 +7,9 @@ selected FULL after the omitted-repair residual was added.
 
 v4 is a separate, pre-specified locality diagnostic. It changes the selected
 entity-size target across four frozen support profiles while preserving the
-same edit families and fixed epsilon/residual ladders. The revision tool is
-entity-level, so the smallest profile means the smallest available owned entity;
+same edit families, edit magnitude/direction, temporal-history setting, and
+fixed epsilon/residual ladders. The revision tool is entity-level, so the
+smallest profile means the smallest available owned entity;
 the protocol does not mislabel it as a single-Gaussian edit.
 """
 
@@ -38,23 +39,23 @@ SEVERITY_PROFILES: tuple[dict[str, Any], ...] = (
     {
         "name": "smallest-entity",
         "coupling": "low",
-        "delta_fraction": 0.015,
+        "delta_fraction": 0.06,
         "entity_fraction": 0.0001,
-        "history_weight": 0.50,
+        "history_weight": 0.90,
         "history_stable": True,
     },
     {
         "name": "tiny-local",
         "coupling": "low",
-        "delta_fraction": 0.030,
+        "delta_fraction": 0.06,
         "entity_fraction": 0.01,
-        "history_weight": 0.75,
+        "history_weight": 0.90,
         "history_stable": True,
     },
     {
         "name": "local",
-        "coupling": "low",
-        "delta_fraction": 0.060,
+        "coupling": "medium",
+        "delta_fraction": 0.06,
         "entity_fraction": 0.03,
         "history_weight": 0.90,
         "history_stable": True,
@@ -62,7 +63,7 @@ SEVERITY_PROFILES: tuple[dict[str, Any], ...] = (
     {
         "name": "broad-control",
         "coupling": "medium",
-        "delta_fraction": 0.12,
+        "delta_fraction": 0.06,
         "entity_fraction": 0.12,
         "history_weight": 0.90,
         "history_stable": True,
@@ -160,7 +161,9 @@ def build(
                     candidate=candidate,
                     entity_id=entity_id,
                     family_index=family_index,
-                    profile_index=profile_index,
+                    # Hold edit direction/sign constant across locality profiles.
+                    # The selected entity-size target is the intended v4 variable.
+                    profile_index=0,
                 )
                 stress_serial += 1
                 fixed_timestamp = candidate.timestamp + stress_serial * 1_000_000
@@ -294,7 +297,8 @@ def build(
         "freeze_note": (
             "Reviewer locality-diagnostic v4 is frozen independently of v3. It varies selected "
             "entity-size target across smallest-entity, tiny-local, local, and broad-control "
-            "profiles, with epsilon {1,4,16,32}/255 and residual {0,1/1024}. The current "
+            "profiles while holding edit magnitude/direction and temporal history fixed, "
+            "with epsilon {1,4,16,32}/255 and residual {0,1/1024}. The current "
             "revision primitive is entity-level; smallest-entity means the smallest available "
             "owned entity, not a fabricated single-Gaussian edit. No v4 case may be removed "
             "or retuned after outcomes are observed."
