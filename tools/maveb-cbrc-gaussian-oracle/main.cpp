@@ -23,10 +23,12 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <random>
 #include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -345,7 +347,11 @@ void storeRenderCache(const Path& root, std::string_view key, const ReferenceIma
     const Path destination = root / (std::string(key) + ".bin");
     if (std::filesystem::is_regular_file(destination))
         return;
-    const auto nonce = std::chrono::steady_clock::now().time_since_epoch().count();
+    std::random_device random;
+    const auto clockNonce =
+        static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+    const std::uint64_t nonce =
+        (clockNonce << 16U) ^ static_cast<std::uint64_t>(random());
     const Path temporary =
         root / (std::string(key) + ".tmp." + std::to_string(nonce));
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
@@ -837,7 +843,9 @@ int main(int argc, char** argv) try {
                               std::string_view backend) -> std::optional<std::string> {
         if (renderCacheRoot.empty() || source.empty())
             return std::nullopt;
-        return renderCacheKey(source, camera, options->background, backend);
+        const std::string cacheDomain =
+            std::string(backend) + ":" + options->inputFormat;
+        return renderCacheKey(source, camera, options->background, cacheDomain);
     };
     const auto renderCpu = [&](const GaussianAsset& asset,
                                const Path& source = Path{}) -> std::optional<ReferenceImage> {
