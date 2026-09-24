@@ -89,7 +89,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertIn(r"\IfFileExists{generated/reviewer_v2_state.tex}", text)
         self.assertGreaterEqual(text.count(r"\ifreviewervtwoready"), 5)
         self.assertIn("successful cases are reported as a separate stress result", text)
-        self.assertIn("Useful certified approximation with non-zero residual remains", text)
+        self.assertIn("Useful approximation with a measurable non-zero residual remains", text)
 
     def test_word_export_resolves_reviewer_state_and_inlines_results(self):
         source = (
@@ -167,11 +167,11 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertNotIn("generated/reviewer_v2_state.tex", expanded)
         self.assertNotIn("generated/reviewer_v2_results.tex", expanded)
         self.assertIn(
-            "Certificate tightness under an acceptable non-zero residual remains",
+            "targets the remaining question of useful approximation with a measurable non-zero residual",
             expanded,
         )
         self.assertIn(
-            "Useful certified approximation with non-zero residual remains",
+            "Useful approximation with a measurable non-zero residual remains",
             expanded,
         )
 
