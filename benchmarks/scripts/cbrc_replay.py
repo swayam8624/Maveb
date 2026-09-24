@@ -125,22 +125,15 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
     if visual_output_dir:
         command.extend(["--visual-output-dir", str(visual_output_dir)])
     repair_omit_fraction = float(manifest.get("repair_omit_fraction", 0.0))
-    repair_residual_budget_fraction = float(
-        manifest.get("repair_residual_budget_fraction", 0.0)
-    )
-    if repair_omit_fraction > 0.0 and repair_residual_budget_fraction > 0.0:
+    repair_residual_budget = float(manifest.get("repair_residual_budget", 0.0))
+    if repair_omit_fraction > 0.0 and repair_residual_budget > 0.0:
         raise ValueError(
-            "repair_omit_fraction and repair_residual_budget_fraction are mutually exclusive"
+            "repair_omit_fraction and repair_residual_budget are mutually exclusive"
         )
     if repair_omit_fraction > 0.0:
         command.extend(["--repair-omit-fraction", str(repair_omit_fraction)])
-    if repair_residual_budget_fraction > 0.0:
-        command.extend(
-            [
-                "--repair-residual-budget-fraction",
-                str(repair_residual_budget_fraction),
-            ]
-        )
+    if repair_residual_budget > 0.0:
+        command.extend(["--repair-residual-budget", str(repair_residual_budget)])
 
     command.extend([
         "--width", str(int(camera["width"])),
