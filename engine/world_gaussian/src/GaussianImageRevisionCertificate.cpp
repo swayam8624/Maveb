@@ -249,6 +249,9 @@ certifyGaussianOpacityOnlyImageRevision(const gaussian::GaussianAsset& beforeCha
     if (!std::isfinite(colorUpperBound) || colorUpperBound < 0.0)
         return fail(ErrorCode::invalidArgument,
                     "Gaussian opacity-delta color upper bound must be finite and non-negative");
+    if (beforeChanged.sphericalHarmonicDegree != afterChanged.sphericalHarmonicDegree)
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian opacity-delta certificate requires identical SH degree");
     if (beforeChanged.gaussians.size() != afterChanged.gaussians.size())
         return fail(ErrorCode::invalidArgument,
                     "Gaussian opacity-delta certificate requires paired primitive counts");
