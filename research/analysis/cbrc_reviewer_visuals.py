@@ -275,46 +275,60 @@ def captured_context(
     return context, [frames[0][1], frames[1][1]]
 
 
-def choose_cases(report: dict[str, Any], limit: int) -> list[dict[str, Any]]:
-    nonzero = [
-        record
-        for record in report.get("records", [])
-        if bool(record.get("nonzeroLocal"))
-    ]
-    nonzero.sort(
-        key=lambda record: (
+def choose_cases(
+    report: dict[str, Any],
+    limit: int,
+    *,
+    scene_map: dict[tuple[str, str], dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Choose representative figure cases without changing quantitative evidence.
+
+    Figure provenance is a first-class criterion: when a captured source frame is
+    resolvable, prefer it over an otherwise similar diagnostic case. The audit and
+    readiness gates are untouched; this only controls which already-evaluated cases
+    are rendered into the reviewer figure.
+    """
+    records = list(report.get("records", []))
+    scene_map = scene_map or {}
+
+    def source_resolvable(record: dict[str, Any]) -> bool:
+        key = (
+            str(record.get("dataset", "")),
+            str(record.get("sourceSceneId", "")),
+        )
+        return key in scene_map
+
+    def rank(record: dict[str, Any]) -> tuple[Any, ...]:
+        return (
+            0 if source_resolvable(record) else 1,
+            0 if bool(record.get("nonzeroLocal")) else 1,
             -float(record.get("actualToEpsilon") or 0.0),
             float(record.get("effectivity") or math.inf),
-            record.get("caseId", ""),
+            -float(record.get("candidateActual") or 0.0),
+            str(record.get("caseId", "")),
         )
-    )
+
+    ordered = sorted(records, key=rank)
     chosen: list[dict[str, Any]] = []
     datasets: set[str] = set()
-    for record in nonzero:
+
+    # First pass gives the figure dataset diversity while preferring source RGB.
+    for record in ordered:
         dataset = str(record.get("dataset", ""))
-        if dataset not in datasets:
-            chosen.append(record)
-            datasets.add(dataset)
+        if dataset in datasets:
+            continue
+        chosen.append(record)
+        datasets.add(dataset)
         if len(chosen) >= limit:
             return chosen
-    for record in nonzero:
+
+    # Second pass fills any remaining slots deterministically.
+    for record in ordered:
         if record not in chosen:
             chosen.append(record)
         if len(chosen) >= limit:
             break
-
-    if chosen:
-        return chosen
-
-    diagnostic = sorted(
-        report.get("records", []),
-        key=lambda record: (
-            -float(record.get("candidateActual") or 0.0),
-            record.get("caseId", ""),
-        ),
-    )
-    return diagnostic[:limit]
-
+    return chosen
 
 def visual_paths(campaign_dir: Path, case_id: str) -> dict[str, Path]:
     root = campaign_dir / "cases" / case_id / "visuals"
@@ -333,8 +347,8 @@ def render_case_panel(
     import_manifest: dict[str, Any],
     output: Path,
 ) -> dict[str, Any]:
-    selected = choose_cases(report, limit=4)
     scene_map = import_scene_map(import_manifest)
+    selected = choose_cases(report, limit=4, scene_map=scene_map)
 
     panel_w = 300
     panel_h = 195
@@ -637,6 +651,11 @@ def main() -> int:
         "artifact": "maveb-cbrc-reviewer-visual-package",
         "casePanel": panel,
         "crossoverFigure": crossover,
+        "figureSelectionRule": (
+            "Representative evaluated cases are selected deterministically with source-RGB "
+            "resolvability first, then non-zero LOCAL evidence and dataset diversity. "
+            "This does not alter the audit population or readiness gates."
+        ),
         "scientificBoundary": (
             "Captured RGB panels are original dataset source frames when resolvable. "
             "MAVEB before/LOCAL/FULL panels are renderer outputs of the evaluated "
