@@ -83,3 +83,24 @@ research/visualization/style.json
 5. Convert GIF-based motion to the target venue's preferred video format for final supplementary submission.
 6. Anonymize all review-stage media.
 7. Record third-party dataset/model attribution for scene-bearing media.
+
+## Paper-grade 2026-09-24 evidence
+
+Primary broad-campaign artifacts are now generated from the completed 1,275-case / 85-scene freeze:
+
+- `build/broad-benchmark-paper/BROAD_CAMPAIGN_COMPLETE.json`
+- `build/broad-benchmark-paper/visual-quality/CBRC_VISUAL_QUALITY.json`
+- `build/broad-benchmark-paper/statistics/CROSS_DATASET_STATISTICS.json`
+
+These supersede the old 60-case public and five-case trained-representation headline evidence for manuscript claims.
+
+## Reviewer-v2 manuscript bridge
+
+After `bash run_reviewer_stress_campaign.sh`, the fail-closed bridge writes:
+
+- `researchpaper/generated/reviewer_v2_status.md` — always records PASS/OPEN readiness gates.
+- `researchpaper/generated/reviewer_v2_results.tex` — contains manuscript claim text only when `reviewerEvidenceReady=true`; otherwise it contains comments only.
+- `researchpaper/figures/reviewer_v2_real_scene.png` — copied only from a ready frozen visual package.
+- `researchpaper/figures/reviewer_v2_crossover.png` — copied only when a frozen tolerance crossover figure exists and all readiness gates pass.
+
+`researchpaper/main.tex` conditionally includes the generated reviewer-v2 block. This prevents an OPEN reviewer experiment from silently becoming a manuscript claim.

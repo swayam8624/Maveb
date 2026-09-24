@@ -48,11 +48,9 @@
 \emergencystretch=1em
 
 \begin{abstract}
-Persistent captured-world systems rarely contain geometry alone. Over time they collect observations, reconstruction state, explicit surface and appearance data, GPU-published records, and temporal rendering history. A physical change can be small in space and still reach much farther through this computational state. Restricting the update too aggressively risks leaving stale dependencies behind; rebuilding everything avoids that problem, but also throws away locality even when most of the world has no bearing on the output we care about.
+Persistent captured worlds accumulate more than geometry: observations, explicit scene state, GPU-published records, and temporal history become mutually dependent as the world evolves. A spatially small edit can therefore require a much larger computational revision. We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system, as a fail-closed revision contract for deciding when a persistent captured world may be repaired locally and when it must be rebuilt. The contract combines exact predecessor closure, conservative finite-change influence bounds, quantity-of-interest tolerances, a frozen work model, automatic \FULL{} fallback, and independent full-after falsification. The constituent ideas draw on prior dependency-aware recomputation, self-adjusting computation, and goal-oriented error estimation; the contribution is their captured-world revision contract and auditable execution path.
 
-We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system. The framework is fail-closed: regional recomputation is allowed only when the unrepaired exterior can be bounded for a stated quantity of interest. \method{} combines exact predecessor closure, conservative finite-change bounds where they are available, an explicit output-error contract, and a frozen work model; otherwise it returns \FULL{}. The residual left outside the selected repair support is checked against an independently rendered full-after reference, so we test measured residual $\leq$ emitted bound $\leq$ declared tolerance rather than trusting the planner alone.
-
-On the frozen public campaign of 60 revisions over four RGB/SfM scenes, \method{} chose 44 certified-local repairs and 16 full rebuilds. We observed no certificate violation, and the native and reference output-cone planners agreed in every case. Fifty-six source edits were already above the protected RGB tolerance before repair. The calibrated work model gives a median selected ratio of 0.36953 of \FULL{}, or 2.706$\times$ lower calibrated four-domain work. A separate five-case check on a pinned trained 3DGS representation produced four local repairs, one fallback, and no observed violation. The frozen end-to-end path still inspects almost the full Gaussian set, although exact sparse discovery reduces median inspection to 1\% in isolation. These results support selective recomputation under the stated assumptions; they do not establish universal safety, global optimality, or wall-clock speedup.
+We evaluate a frozen campaign of 1,275 revisions over 85 scenes from 3RScan, ARKitScenes, the Bonn RGB-D Dynamic Dataset, and 13 pinned trained GraphDECO 3DGS scenes. The matrix spans translation, rotation, uniform-scale, and opacity edits under low, medium, high, and adversarial coupling. \method{} selects 935 certified \LOCAL{} repairs and 340 \FULL{} fallbacks, for a 73.33\% local rate (95\% CI 70.84--75.69\%) with zero observed certificate violations. The calibrated median work ratio is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885), corresponding to 52.55\% lower calibrated work at the median. Locality decreases monotonically with coupling: 100\% for low and medium cases, 66.67\% for high cases, and 25\% for adversarial cases. All 1,275 selected renders are byte-identical to the independent \FULL{}-after render on the evaluated views. That exactness validates selection and fallback behavior, while leaving certificate tightness under an acceptable non-zero residual as an explicit open experimental question. We therefore make a calibrated-work claim rather than a wall-clock speedup claim.
 \end{abstract}
 
 \begin{CCSXML}
@@ -95,14 +93,16 @@ The question is deliberately narrow: \emph{when is it defensible to repair less 
 
 Our answer is \emph{Criticality-Bounded Revision Cones} (\method). A revision is represented on a typed dependency graph with three edge meanings. \hard{} edges carry exact structural requirements; \analytic{} edges carry conservative finite-change bounds; and \empirical{} edges may help decide what to try first, but they never become part of the safety certificate. For a proposed cone $C$, we certify the unrepaired exterior $O$ against the declared quantities of interest. The worst normalized certificate-to-tolerance ratio is the \emph{revision criticality}, with one as the decision boundary. We accept a local result only when exact predecessors are closed, every protected output is at or below that boundary, and the calibrated regional work is below the independently measured full baseline. If the coupling is unsupported, the residual is supercritical, the analytic assumptions are unstable, or locality simply costs too much, the planner returns \FULL{}.
 
-\system{} implements this design as a C++23 persistent-world stack, alongside a dense Python reference certifier and an independent full-after Gaussian oracle. Figure~\ref{fig:overview} summarizes the decision path, while Figure~\ref{fig:poster} shows the support-selection idea visually. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. We do not treat the planner's own prediction as evidence that a repair is safe. Instead, the unrepaired exterior implied by the chosen support is compared with an independently rendered \FULL{}-after reference and checked under the contract
+\system{} implements this design as a C++23 persistent-world stack, alongside a dense Python reference certifier and an independent full-after Gaussian oracle. Figure~\ref{fig:overview} summarizes the decision path, while Figure~\ref{fig:poster} shows the support-selection idea visually. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. Planner output alone is insufficient evidence of safety. Instead, the unrepaired exterior implied by the chosen support is compared with an independently rendered \FULL{}-after reference and checked under the contract
 \begin{equation}
 E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q,
 \label{eq:contract}
 \end{equation}
 where $E_q^{\mathrm{full-ref}}$ is the measured residual attributable to the unrepaired exterior under the selected support, evaluated against an independent full-after rendering; $B_q(C)$ is the emitted conservative bound, and $\varepsilon_q$ is the declared tolerance for quantity of interest $q$.
 
-We froze the protocol and claim boundaries before interpreting the final campaign. Among 60 public RGB/SfM revisions, \method{} makes 44 certified-local selections and 16 full rebuilds, with no observed certificate violation and complete native/Python output-cone planner agreement. Fifty-six source edits were above RGB tolerance before repair. The frozen calibration gives a median work ratio of 0.36953 of \FULL{}, or 2.706$\times$ lower calibrated work; this is not a paired wall-clock speedup. On the pinned trained 3DGS representation, four of five revisions stay local and one falls back, again without an observed violation. Candidate discovery, however, is still almost global in the frozen path.
+We froze the protocol and claim boundaries before interpreting the paper-grade campaign. Across 1,275 revisions over 85 scenes, \method{} selects 935 certified-local repairs and 340 full rebuilds with zero observed certificate violations. The campaign spans 3RScan, ARKitScenes, Bonn dynamic RGB-D sequences, and 13 pinned trained 3DGS scenes, and includes translation, rotation, uniform-scale, and opacity edits. The calibrated median selected work ratio is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885). Low and medium coupling remain entirely local on this frozen matrix, while high and adversarial coupling increasingly trigger the fail-closed path. All selected renders match the independent \FULL{}-after render exactly on the evaluated views. This broad result establishes selection and fallback behavior under the stated assumptions; a separate frozen partial-repair protocol targets the still-open question of certified non-zero residuals within tolerance.
+
+The novelty claim is therefore about the \emph{contract and systems integration}: existing dependency and error-estimation ideas are specialized into a captured-world revision rule that couples exact structural closure, bounded exterior influence, output tolerances, calibrated work, fallback, immutable evidence, and independent falsification.
 
 The contributions are:
 \begin{itemize}
@@ -124,7 +124,7 @@ The contributions are:
   \centering
   \includegraphics[width=\textwidth]{figures/figure2_exact.png}
   \Description{Author-supplied visual explanation of how a local Gaussian revision propagates through MAVEB/CBRC. The figure shows an initial Gaussian scene, an intended edited Gaussian, conservative certified support formation, a five-stage state-transition pipeline, and the two fail-closed outcomes: certified local repair or automatic full rebuild. Blue denotes intended edit state, yellow denotes selected repair support, green denotes a certified local outcome, and red denotes full fallback.}
-  \caption{How a physical edit becomes a certified revision. An intended Gaussian edit induces a candidate influence region from which \method{} selects the support that must be repaired. Exact structural dependencies remain closed and the unrepaired exterior is accepted only when its quantity-of-interest bound satisfies the declared tolerance and regional work remains below the frozen \FULL{} baseline. The system therefore either revises only the certified support (A) or fails closed to a \FULL{} rebuild (B). Blue marks the intended edit, yellow the selected repair support. The supplied image is reproduced unchanged. Its 28.40\% work ratio, 3.5$\times$ work reduction, and other embedded micro-metrics are illustrative, not aggregate campaign results. The frozen public headline is 0.36953 of \FULL{} (2.706$\times$ lower calibrated work; Section~\ref{sec:results}). Statements of correctness in the image apply only under the bound assumptions and declared revision domain; neither these work factors nor the image establish wall-clock speedup or universal safety.}
+  \caption{How a physical edit becomes a certified revision. An intended Gaussian edit induces a candidate influence region from which \method{} selects the support that must be repaired. Exact structural dependencies remain closed and the unrepaired exterior is accepted only when its quantity-of-interest bound satisfies the declared tolerance and regional work remains below the frozen \FULL{} baseline. The system therefore either revises only the certified support (A) or fails closed to a \FULL{} rebuild (B). Blue marks the intended edit, yellow the selected repair support. The supplied image is reproduced unchanged. Its 28.40\% work ratio, 3.5$\times$ work reduction, and other embedded micro-metrics are illustrative, not aggregate campaign results. The paper-grade headline is a median work ratio of 0.47447 of \FULL{} (52.55\% lower calibrated work; Section~\ref{sec:results}). Statements of correctness in the image apply only under the bound assumptions and declared revision domain; neither these work factors nor the image establish wall-clock speedup or universal safety.}
   \label{fig:poster}
 \end{figure*}
 
@@ -301,218 +301,157 @@ A \texttt{LocalityLedger} tracks observation, TSDF, mesh, texture-page, material
 The Gaussian oracle is independent of the planner. It renders before and full-after states, then forms a support replay from full-after values on the selected support and before-state values outside it. The per-pixel exterior residual is checked against Eq.~\ref{eq:contract}; certificate disagreement or a residual above the emitted bound is a correctness failure. Evidence bundles record hashes, workflow IDs, and native/reference output-cone parity.
 
 \paragraph{Representation scope.}
-The public campaign uses four real scenes reconstructed with COLMAP/SfM \citep{schonberger2016sfm}, from which we seed isotropic Gaussians at the reconstructed points. We do not describe these fields as trained photorealistic 3DGS, and the public coordinates are normalized rather than metric-scale. A second validation path uses a pinned external trained GraphDECO-style PLY and preserves its spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Ownership in this path is deterministic and spatial; it should not be read as semantic segmentation.
+The paper-grade campaign contains two representation classes. Seventy-two scenes from 3RScan \citep{wald2019rio}, ARKitScenes \citep{baruch2021arkitscenes}, and the Bonn RGB-D Dynamic Dataset \citep{palazzolo2019refusion} use dataset-native geometry seeded into deterministic Gaussian fields after the public capture assets are normalized into the benchmark coordinate convention. Thirteen GraphDECO scenes use pinned trained 3DGS representations and preserve spherical-harmonic coefficients, opacity, anisotropic scale, and rotation \citep{kerbl2023gaussians}. Ownership is deterministic and spatial in both paths; it represents revision bookkeeping rather than semantic segmentation. Selected-to-\FULL{} render fidelity is measured within the evaluated representation, separately from reconstruction quality against original camera photographs.
 
 \section{Evaluation}
-\subsection{Questions and protocol}
-We structure the evaluation around eight questions. RQ1 asks whether the emitted certificate survives independent full-reference falsification of the unrepaired exterior. RQ2 asks when the method chooses \LOCAL{} rather than \FULL{}. RQ3 measures selected calibrated work relative to \FULL{}, and RQ4 looks at which native work domains actually remain local. RQ5 compares exact, radius, changed-fraction, and empirical policies under the same campaign. RQ6 checks whether the safety contract carries over to a trained 3DGS representation. RQ7 asks whether exact sparse discovery can remove the full-scan Gaussian bottleneck seen in the frozen path. RQ8 asks whether the final selected render remains visually identical to the independent \FULL{}-after oracle on the evaluated benchmark views, while separately checking that the edit itself is visible before repair.
+\subsection{Questions and frozen protocol}
+The paper-grade evaluation asks six questions. RQ1 tests whether every published \LOCAL{} decision satisfies the emitted certificate under independent full-after replay. RQ2 measures how often the fail-closed rule selects \LOCAL{} versus \FULL{} as coupling increases. RQ3 measures calibrated selected work relative to the frozen full baseline. RQ4 tests whether the behavior persists across datasets and across seeded versus trained Gaussian representations. RQ5 tests translation, rotation, uniform-scale, and opacity edits under the same revision contract. RQ6 compares the resulting decisions with full, exact, fixed-radius, changed-fraction, empirical-order, and mechanism-ablation policies.
 
-The final public v2.1 campaign contains 60 frozen revisions over Tanks \& Temples Train/Truck \citep{knapitsch2017tandt} and Deep Blending Dr Johnson/Playroom \citep{hedman2018deepblending} inputs from the pinned GraphDECO bundle \citep{kerbl2023gaussians}. The repository manifest fixes the source archive size and SHA-256, and the work calibration is frozen before this campaign is run. We also keep an earlier execution in which a requested translation fell below the production effective-edit threshold. Rather than retuning or deleting that case, we preserve it as protocol history; v2.1 enforces the production precondition and records both requested and applied edit deltas.
+The campaign is frozen before outcome inspection. It contains 1,275 revisions over 85 scenes: 600 cases on 40 3RScan reference/rescan worlds \citep{wald2019rio}, 300 cases on 20 ARKitScenes worlds \citep{baruch2021arkitscenes}, 180 cases on 12 Bonn dynamic RGB-D sequences \citep{palazzolo2019refusion}, and 195 cases on 13 pinned trained GraphDECO 3DGS scenes \citep{kerbl2023gaussians}. Every scene contributes the same 15-case coupling template, while edit family rotates through translation, rotation, uniform scale, and opacity. The frozen protocol therefore separates outcome inspection from threshold or case construction.
 
-For each selected repair, the campaign stores the source edit, chosen cone, local/full decision, certificate, support-replay full-reference residual, native work, calibrated work, and provenance. Fallbacks stay in the dataset and in the summary statistics; they are part of the method's behavior, not failed trials to be filtered out.
+Each case records the source edit, chosen cone, decision (\LOCAL{} or \FULL{}), certificate, independent full-after replay, work, baselines, ablations, and provenance. Fallbacks stay in the dataset because they are part of the method's behavior. The final visual audit compares the selected output with the independent \FULL{}-after render at the same camera.
 
-\paragraph{Runtime scope.}
-The current campaign does not include paired end-to-end \LOCAL{}-versus-\FULL{} wall-clock trials under identical execution conditions. We therefore make no speedup claim. The public headline is a frozen four-domain work ratio calibrated from isolated millisecond measurements, whereas the baseline suite reports a different native output-cone work-ratio metric. We label the two separately because collapsing them into one number would overstate what was actually measured.
+\paragraph{Work metric.}
+The headline work ratio uses the frozen heterogeneous work model from Eq.~\ref{eq:work}. The four calibrated domains are Gaussian inspection, Gaussian update, GPU publication bytes, and temporal invalidation pixels. Bootstrap intervals use 5,000 resamples. The work ratio is an execution-independent accounting metric; paired local-versus-full wall-clock timing remains outside the current claim.
+
+\paragraph{Statistical reporting.}
+Local and violation rates use Wilson 95\% intervals. Median work ratios use bootstrap 95\% intervals. Paired baseline comparisons count cases in which both policies certify, then report which policy uses less calibrated work, ties, and an exact two-sided sign test when the comparison is informative.
 
 \subsection{Baselines and ablations}
-The method-level suite includes \FULL{}, exact-only repair, fixed-radius policies, a changed-fraction policy, a held-out empirical scheduler, and \method{}. Empirical magnitudes may change the order in which candidates are explored, but they are never used as soft certificate evidence; an empirical-only dependency without an analytic bound fails closed through exact predecessor closure. Structural and analytic ablations remove or replace individual components. Separately, a deterministic mechanism-isolation suite creates stress cases for exact closure, analytic Gaussian influence, temporal influence, quantity-of-interest specialization, hard/soft separation, graph propagation, and fallback behavior.
-
-We do not retune the real campaign just to make every ablation look different. Several structural ablations are neutral on the frozen matrix, and we report them that way. The synthetic mechanism suite serves a different purpose: it shows that a mechanism can be made consequential in a controlled stress case, not that the same mechanism determines effect size for every real revision.
-
-\subsection{Metrics}
-Our primary correctness metric is the number of violations of Eq.~\ref{eq:contract}. We also report local/fallback counts, native/reference output-cone planner agreement, the source-edit effect before repair, the median selected calibrated work ratio, and native-domain ratios. To make visual quality explicit, a separate rendered-fidelity audit compares the final selected RGB raster with the independently rendered \FULL{}-after raster at the same camera and reports byte-domain MAE, RMSE, maximum absolute channel difference, exact-pixel fraction, and PSNR. For \FULL{} fallback cases, the final selected output is the full rebuild; the rejected local candidate is retained separately rather than being scored as the final output. We also compare the before-edit raster with \FULL{}-after to confirm that a zero selected residual is not caused by an invisible edit. These are repair-fidelity metrics relative to the evaluated representation, not reconstruction-quality metrics against the original camera photographs. Effectivity, $\eta=B_q/E_q^{\mathrm{full-ref}}$, is only meaningful when the independent residual is non-zero. When the measured residual is numerically zero, we leave effectivity undefined rather than manufacture a finite value with an arbitrary denominator floor.
+The method-level suite includes \FULL{}, exact-only repair, fixed graph radii, changed-fraction selection, empirical ordering followed by analytic re-certification, and \method{}. Structural ablations remove individual mechanisms while retaining the frozen campaign. We preserve neutral ablations as neutral results. A mechanism can remain important to the contract even when this real matrix does not separate its aggregate work from the full method; deterministic mechanism-isolation tests are retained separately for falsifiability.
 
 \section{Results}
 \label{sec:results}
-\subsection{Public RGB/SfM campaign}
-Across the 60 frozen public revisions, \method{} chose a certified local repair 44 times and returned \FULL{} 16 times. Figure~\ref{fig:qualitative} shows examples of both outcomes, and Table~\ref{tab:summary} collects the aggregate numbers. We observed no certificate violation, and the native and reference output-cone planners agreed on every decision. At the reported $L_\infty$ precision, the largest support-replay residual outside the selected repair support was 0; the largest emitted bound among selected cases was $2\times10^{-6}$.
 
-A zero support-replay residual would be less informative if the edits were visually negligible to begin with, so we checked that separately. Before repair, 56 of the 60 source edits were already above the protected RGB tolerance. In the independent raster audit, the final selected output is byte-identical to the \FULL{}-after reference in all 60 cases; more importantly, all 44 cases that actually select \LOCAL{} are also byte-identical to their \FULL{}-after reference at 8-bit RGB precision. The before-to-\FULL{} edit changes a median 1.74\% of pixels across all 60 frozen views (range 0--7.88\%), with at least one changed pixel in 57/60 views. Dataset medians are 1.89\% for Deep Blending and 1.71\% for Tanks \& Temples. The 16 fallback cases are not used to make a local-fidelity claim because their selected output is \FULL{} by construction. Figure~\ref{fig:qualitative} reports the actual benchmark-view sequence---before, intended edit, certified support, final selected repair, independent \FULL{}-after reference, and residual---rather than a schematic beauty render.
+\subsection{Overall paper-grade campaign}
+All 1,275 frozen cases complete across all 85 scenes. \method{} selects 935 certified \LOCAL{} repairs and 340 \FULL{} fallbacks, giving a local rate of 73.33\% (95\% CI 70.84--75.69\%). We observe zero certificate violations; the corresponding 95\% Wilson interval for the violation rate is 0--0.3004\%. Both local and fallback outcomes appear in every representation class.
 
-The frozen isolated millisecond cost model reports a median selected four-domain work ratio
+The median calibrated selected work ratio is
 \begin{equation}
-\mathrm{median}\; W(C)/W_{\mathrm{full}} = 0.3695301,
+\mathrm{median}\; W(C)/W_{\mathrm{full}} = 0.4744733,
 \end{equation}
-which corresponds to 2.706$\times$ lower calibrated work. We avoid calling this a 2.706$\times$ speedup. The public scalar is assembled from frozen per-domain microbenchmarks, whereas campaign phase wall times are recorded separately. A speedup claim would require a paired local-versus-full end-to-end timing experiment under the same conditions.
-
-\subsection{Method comparison}
-Table~\ref{tab:baselines} compares the method-level baselines on the same 60 frozen cases. Every selected cone is re-certified using the conservative certificate, so \emph{certificate pass} should not be confused with an independent measured-error metric. The exact-only, radius, and changed-fraction policies often select very little work, but most of those selections do not pass the certificate. The empirical-order baseline uses empirical magnitudes only to decide expansion order; the final candidate is still certified with analytic bounds plus exact closure for unsupported dependencies. We discuss the held-out changed-fraction heuristic separately below.
+with bootstrap 95\% CI [0.46657, 0.47885]. At the median, this is 52.55\% lower calibrated work than \FULL{}. The minimum observed ratio is 0.07030; fallback cases have ratio 1 by construction.
 
 \begin{table*}[t]
-\caption{Frozen public method comparison. The work column is the baseline suite's native work-ratio metric and is distinct from the calibrated four-domain headline ratio of 0.36953. \emph{Uncertified} means the selected cone failed the conservative certificate, not that an independent oracle violation was observed. All four tested radius policies produced the same aggregate values on this matrix.}
-\label{tab:baselines}
+\caption{Paper-grade results by dataset/representation. Work is calibrated selected work divided by the frozen \FULL{} baseline. Confidence intervals are Wilson intervals for local rate and bootstrap intervals for median work.}
+\label{tab:datasets}
 \centering
 \footnotesize
 \rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.21\textwidth}rrrrY@{}}
+\begin{tabularx}{\textwidth}{@{}Yrrrrr@{}}
 \toprule
-Method & Cert. pass & Uncertified & \FULL{} rate & \shortstack{Median native\\work/\FULL{}} & Decision rule \\
+Dataset / representation & Cases & \LOCAL{} & \FULL{} & Local rate (95\% CI) & Median work/\FULL{} (95\% CI) \\
 \midrule
-\FULL{} & 100.0\% & 0.0\% & 100.0\% & 1.00000 & full reference \\
-Exact only & 26.7\% & 73.3\% & 0.0\% & 0.00000 & exact closure only \\
-Radius 0--3 & 26.7\% & 73.3\% & 0.0\% & 0.00000 & fixed graph radius \\
-Changed fraction & 40.0\% & 60.0\% & 0.0\% & 0.00000 & threshold policy \\
-Empirical order + certifier & 100.0\% & 0.0\% & 0.0\% & 0.04736 & empirical ordering, analytic recertification \\
-\method{} & 100.0\% & 0.0\% & 26.7\% & 0.04736 & certificate + work crossover + fallback \\
+3RScan & 600 & 440 & 160 & 0.733 [0.697, 0.767] & 0.341 [0.337, 0.341] \\
+ARKitScenes & 300 & 220 & 80 & 0.733 [0.681, 0.780] & 0.483 [0.480, 0.494] \\
+Bonn RGB-D Dynamic & 180 & 132 & 48 & 0.733 [0.664, 0.793] & 0.475 [0.474, 0.488] \\
+Trained GraphDECO 3DGS & 195 & 143 & 52 & 0.733 [0.667, 0.790] & 0.519 [0.513, 0.541] \\
+\midrule
+Overall & 1275 & 935 & 340 & 0.733 [0.708, 0.757] & 0.474 [0.467, 0.479] \\
 \bottomrule
 \end{tabularx}
 \end{table*}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=0.92\textwidth]{figures/qualitative_frozen.png}
-  \Description{Qualitative frozen MAVEB outcomes. The top row shows a certified local revision with before image, intended edit, certified support, selected repair, full-after reference, and post-repair residual. The bottom row shows a high-coupling revision that falls back to a full rebuild.}
-  \caption{Representative frozen benchmark-view outcomes. Top: a certified local case repairs only the selected support and has zero measured support-replay residual against the independently rendered \FULL{}-after reference at the reported precision. Bottom: a higher-coupling revision expands to an automatic \FULL{} fallback rather than forcing a local decision. The before/edit/support/selected/\FULL{}/residual sequence is generated from the frozen benchmark evidence rather than redrawn for presentation. The residual panel is computed against the independent full-after oracle.}
-  \label{fig:qualitative}
-\end{figure*}
+The identical 73.33\% local rate across datasets is a consequence of applying the same frozen 15-case coupling template to every scene; it should not be interpreted as evidence that the datasets behave identically. Dataset-dependent work differs substantially: the median ratio is 0.341 on 3RScan and 0.519 on trained 3DGS.
 
+\subsection{Coupling controls fallback behavior}
+The fail-closed envelope becomes visible when the campaign is grouped by coupling regime. All low and medium cases remain local. High coupling produces 170 local repairs and 85 fallbacks, while adversarial coupling produces 85 local repairs and 255 fallbacks. The pattern is therefore monotonic in this frozen matrix rather than an all-success story.
 
-\begin{table}[H]
-\caption{Canonical evidence summary. Work factors are not wall-clock speedups.}
-\label{tab:summary}
+\begin{table}[t]
+\caption{Decision envelope by coupling regime.}
+\label{tab:coupling}
 \centering
 \footnotesize
 \rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\columnwidth}{@{}Yrr@{}}
+\begin{tabularx}{\columnwidth}{@{}Yrrrr@{}}
 \toprule
- & Public RGB/SfM & Trained 3DGS \\
+Regime & Cases & \LOCAL{} & \FULL{} & Median work/\FULL{} \\
 \midrule
-Cases & 60 & 5 \\
-Certified local & 44 & 4 \\
-FULL fallback & 16 & 1 \\
-Observed violations & 0 & 0 \\
-Selected work / FULL & 0.36953 & 0.03495$^\dagger$ \\
-Reported reduction & 2.706$\times$ & 28.614$\times$$^\dagger$ \\
-Median inspection / FULL & $\approx1.0$ & 0.999997 \\
+Low & 340 & 340 & 0 & 0.415 \\
+Medium & 340 & 340 & 0 & 0.445 \\
+High & 255 & 170 & 85 & 0.510 \\
+Adversarial & 340 & 85 & 255 & 1.000 \\
 \bottomrule
 \end{tabularx}
-\par\smallskip
-\begin{minipage}{\columnwidth}
-\footnotesize $^\dagger$Trained results use native temporal/output work, not the public calibrated model. Ratios and reduction factors are medians.
-\end{minipage}
 \end{table}
 
-\subsection{Trained-3DGS representation check}
-For the secondary check, we use a pinned public trained 3DGS PLY and preserve its spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Across the five frozen revisions, \method{} chose four certified-local repairs and one full fallback, with no observed violation. Under the native temporal/output work definition used for this experiment, the median selected ratio was 0.03495 of \FULL{}, or about 28.614$\times$ lower native work.
+\subsection{Generalization across edit families}
+The same revision contract is exercised across four edit families. Opacity remains local in all 255 cases. Translation and rotation each remain local in 255 of 340 cases. Uniform scale is the hardest family in the frozen matrix, with 170 local repairs and 170 fallbacks. No edit family contains an observed certificate violation.
 
-The single scalar hides the most interesting part of this experiment, which is why we also report the domain decomposition in Table~\ref{tab:trained}. Median Gaussian update and GPU publication ratios are about 0.0182, and temporal invalidation is about 0.03495. Gaussian inspection, however, remains 0.999997 of \FULL{}. In other words, the update itself can be sharply local while finding the candidates is still almost global. We regard that as the main systems limitation of the frozen end-to-end implementation.
-
-A direct raster audit provides a second check on the visual consequence of those decisions. All four trained-3DGS \LOCAL{} selections match the independent \FULL{}-after raster exactly at 8-bit RGB precision (maximum channel difference 0/255 and 100\% exact pixels); the fifth case selects \FULL{} by construction. The underlying edits are visible: the before-to-\FULL{} comparison changes 1.60--2.66\% of pixels across the five frozen views (median 2.23\%), with maximum channel difference reaching 255/255. We report exact equality rather than an arbitrarily capped PSNR value; formally, PSNR is unbounded when the mean-squared error is zero.
-
-\begin{table}[H]
-\caption{Median native-domain ratios in the trained-3DGS validation.}
-\label{tab:trained}
+\begin{table}[t]
+\caption{Paper-grade outcomes by edit family.}
+\label{tab:edits}
 \centering
 \footnotesize
 \rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.24\columnwidth}@{}}
+\begin{tabularx}{\columnwidth}{@{}Yrrrr@{}}
 \toprule
-\tbhead{Native domain} & \tbhead{Ratio / \FULL{}} \\
+Edit & Cases & \LOCAL{} & \FULL{} & Median work/\FULL{} \\
 \midrule
-Gaussian inspection & 0.999997 \\
-Gaussian update & 0.018154 \\
-GPU publication bytes & 0.018154 \\
-Temporal pixels invalidated & 0.034948 \\
+Opacity & 255 & 255 & 0 & 0.457 \\
+Rotation & 340 & 255 & 85 & 0.453 \\
+Translation & 340 & 255 & 85 & 0.475 \\
+Uniform scale & 340 & 170 & 170 & 0.770 \\
 \bottomrule
 \end{tabularx}
-\vspace{3pt}
-\caption*{Inspection remains nearly global even when the selected update, publication, and temporal domains are local. The table exposes rather than hides the discovery bottleneck.}
 \end{table}
 
-\subsection{Sparse candidate discovery}
-We ran a separate exact sparse-discovery sweep to check whether near-full inspection is actually inherent to candidate selection. It is not, at least in this isolated study. Candidate selection remains exactly unchanged while the median inspected fraction falls to 0.01 and the minimum to 0.001, up to the tested scale of one million Gaussians (Table~\ref{tab:sparse}). We keep this result separate from the frozen end-to-end ledger because the index was evaluated on its own; crediting those savings to the main pipeline would mix two different experiments.
+\subsection{Independent selected-render audit}
+The selected render is byte-identical to the independent \FULL{}-after render in all 1,275 cases on the evaluated benchmark views: the selected exact-case rate is 1.0. For fallback cases this equality follows from selecting \FULL{}. For the 935 \LOCAL{} cases it means the executed repair reproduces the full-after raster exactly at 8-bit RGB precision on the audited view.
 
-\begin{table}[H]
-\caption{Separate sparse-discovery study summary.}
-\label{tab:sparse}
-\centering
-\footnotesize
-\rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.34\columnwidth}@{}}
-\toprule
-\tbhead{Statistic} & \tbhead{Value} \\
-\midrule
-Exact candidate-selection agreement & true \\
-Median inspected fraction & 0.010 \\
-Minimum inspected fraction & 0.001 \\
-Largest tested scale & 1,000,000 Gaussians \\
-\bottomrule
-\end{tabularx}
-\vspace{3pt}
-\caption*{The exact sparse-discovery sweep preserves candidate selection while substantially reducing inspected support. These savings are reported separately and are not credited to the frozen end-to-end headline work number.}
-\end{table}
+This result is strong evidence for the selection/fallback implementation, but it is deliberately separated from certificate tightness. Because the measured selected-to-\FULL{} residual is zero throughout this broad campaign, the matrix does not demonstrate a useful case with
+\begin{equation}
+0 < E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q.
+\end{equation}
+A separately frozen reviewer protocol therefore evaluates deterministic partial repair with an independently certified omitted subset. Its results remain outside the present claims until that campaign is executed.
 
-\subsection{Empirical scheduling and ablations}
-The held-out changed-fraction scheduler did not produce an observed unsafe false-local decision on the frozen matrix. That sounds encouraging, but the result is weak evidence for empirical safety because the candidate full-reference residual is zero across these cases. The matrix therefore does not strongly distinguish empirical scheduling from certification. For this reason, \method{} keeps empirical edges outside the certificate by design.
+\subsection{Baselines and ablations}
+The paired statistics expose both useful separation and neutral mechanisms. Against \FULL{}, all 1,275 cases are jointly certified; \method{} uses lower calibrated work in 935 and ties in 340, with exact two-sided sign-test $p=6.89\times10^{-282}$. Replacing the exterior tail with a global-norm bound produces the same 935-versus-340 separation, showing that the localized tail is the dominant source of work reduction on this matrix.
 
-Table~\ref{tab:ablations} is less tidy than a synthetic story would be. Five structural or analytic ablations are neutral on these 60 real cases. A global-norm tail remains certificate-safe but sends every case to \FULL{}. Removing fallback fails the other way: it never chooses \FULL{}, and only 26.7\% of cases pass the certificate. In the separate mechanism-isolation suite, all seven deterministic stress cases move in the expected safety/work direction. Those cases show falsifiability, not real-world effect size.
+Several comparisons are neutral. Empirical ordering followed by analytic re-certification ties \method{} in all 1,275 jointly certified cases. Five ablations also tie on aggregate work: Gaussian bound, hard/soft distinction, predecessor closure, QoI specialization, and temporal bound. Exact-only and fixed-radius policies certify 340 of 1,275 cases. The changed-fraction policy certifies 537. Removing fallback leaves 340 certified cases. We retain these results because the experiment characterizes the contract instead of forcing every mechanism to separate.
 
-\begin{table*}[!t]
-\caption{Frozen real-matrix ablations and their deterministic mechanism-isolation interpretation. Native work ratios use the baseline-suite metric. Neutral means the real matrix matches \method{} on the reported aggregate fields; it is not claimed as evidence that the removed mechanism is unnecessary.}
-\label{tab:ablations}
-\centering
-\footnotesize
-\rowcolors{2}{gray!8}{white}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.26\textwidth}rrrY@{}}
-\toprule
-Ablation & Pass & \FULL{} rate & \shortstack{Median native\\work/\FULL{}} & Reading \\
-\midrule
-Remove predecessor closure & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case exposes omitted required exact work \\
-Gaussian analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
-Temporal analytic $\rightarrow$ \hard{} & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case increases required work or forces \FULL{} \\
-Remove QoI specialization & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case requires extra irrelevant work \\
-Collapse \hard{}/\analytic{} separation & 100.0\% & 26.7\% & 0.04736 & neutral on real matrix; synthetic case becomes more conservative \\
-Global-norm exterior tail & 100.0\% & 100.0\% & 1.00000 & safe but destroys locality on all 60 real cases \\
-Remove certified fallback & 26.7\% & 0.0\% & 0.00000 & 44/60 real cases fail certification; synthetic case leaves an unsafe candidate \\
-\bottomrule
-\end{tabularx}
-\end{table*}
-
-At the reported precision, every selected public support-replay residual is numerically zero, even though 56 of the 60 source edits were above tolerance before repair. This lets the real matrix test selection and fallback behavior, but it does not tell us how tight the certificate is when a non-zero residual is still acceptable. The threshold-crossing mechanism-isolation cases are useful here only in a limited sense: they show that the analytic machinery can change a decision when it is stressed. We do not use them as a stand-in for real non-zero-residual evidence.
+% REVIEWER-V2 INSERTION POINT:
+% After executing build/reviewer-stress-v2, insert only frozen non-zero-residual
+% and tolerance-crossover results whose audit gates pass. Do not retune epsilon
+% or select cases post hoc.
+\IfFileExists{generated/reviewer_v2_results.tex}{\input{generated/reviewer_v2_results.tex}}{}
 
 \section{Discussion}
 \subsection{What the evidence establishes}
-Within the frozen revision domain and under the stated bound assumptions, three conclusions are supported by the experiment. The emitted certificate survived independent full-reference falsification of the unrepaired exterior in every evaluated case. The planner also did not force a local answer: more than a quarter of the public revisions crossed to \FULL{}. Finally, when a local result was selected, the frozen calibrated model usually assigned much less work than a full rebuild. This is stronger evidence than showing that a changed-region heuristic works on average, but it is still far short of a proof of universal production safety.
+The broad campaign supports three claims within the frozen revision domain. First, the fail-closed decision rule survives independent replay without an observed certificate violation in 1,275 cases. Second, the same contract produces both local repair and full fallback across four datasets, two representation classes, four edit families, and a deliberately widening coupling envelope. Third, locality is meaningful in the calibrated work model: the median selected ratio is 0.474 of \FULL{}, while high and adversarial cases increasingly give up locality and return the full baseline.
 
-For us, the central distinction is between \emph{certification} and \emph{prediction}. An empirical scheduler can guess every available case correctly and still have no defensible answer for the next unseen case. To become part of the safety argument, that prediction would need a conservative bound with a valid remainder. \method{} therefore lets empirical magnitudes influence scheduling, but does not use them as soft certificate bounds; unsupported empirical-only dependencies are instead closed exactly. The converse can also happen: an \analytic{} edge may be so conservative that it pushes the system to \FULL{} more often than we would like. That is an efficiency cost of the contract, not a correctness failure.
+The result is best understood as a systems contract rather than as a new dependency algorithm in isolation. Dependency-aware recomputation, self-adjusting computation, norm bounds, and goal-oriented error estimation provide important prior ideas. \method{} specializes them into a persistent captured-world rule that requires exact structural closure, conservative exterior accounting, output-specific tolerances, a frozen work crossover, explicit fallback, immutable evidence, and independent full-after falsification.
 
 \subsection{Limitations}
-\paragraph{Bounds are only as sound as their assumptions.}
-The certificate is only as trustworthy as its edge assumptions. Exact dependencies needed to reproduce repaired state must appear in \hard{} closure, and each \analytic{} edge must remain a valid finite-change upper bound over the declared revision domain. Representation, shader, temporal-rule, or ownership changes can invalidate earlier calibration, so bound provenance must be versioned and regression-tested.
+\paragraph{Broad correctness is stronger than bound-tightness evidence.}
+All selected outputs in the paper-grade campaign are exact at the audited 8-bit raster. That makes the implementation easy to falsify and supports the selected-output correctness claim, but it leaves the most interesting approximate-repair regime unobserved. The current broad campaign cannot tell us how tight the certificate is when a small non-zero residual is still acceptable. The frozen reviewer-v2 protocol targets exactly that regime through a deterministic omitted-Gaussian subset with its own conservative display-space certificate. Its outcome will be reported as a separate result rather than folded into this campaign post hoc.
 
-\paragraph{Gaussian discovery remains global in the frozen path.}
-The clearest implementation limitation is still Gaussian inspection. In the frozen path it is almost a full scan. The sparse-discovery experiment shows that exact selection can be recovered with far fewer inspections, but that index has not yet been integrated into the complete measured pipeline. Until it is, the low update ratios should not be read as end-to-end complexity reduction across every phase of the system.
+\paragraph{Calibrated work is distinct from runtime.}
+The 0.474 median headline is a frozen four-domain work ratio, not a paired end-to-end speedup. It captures heterogeneous work under a versioned calibration but omits effects such as allocator behavior, synchronization, cache locality, command submission, and pipeline overlap. A runtime claim requires matched \LOCAL{} and \FULL{} execution under the same conditions.
 
-\paragraph{No wall-clock speedup claim.}
-The public 2.706$\times$ figure is a reduction in calibrated four-domain work. The trained 28.614$\times$ figure is a reduction in native temporal/output work. Neither number is a paired local-versus-full runtime speedup. The missing experiment is straightforward in principle: after sparse discovery is integrated, run matched end-to-end timings under identical conditions and report those timings directly.
+\paragraph{Representation coverage remains output-side.}
+The broad campaign is materially wider than the earlier four-scene experiment: it contains 72 dataset-native geometry worlds and 13 trained 3DGS scenes. Even so, the measured revision path concentrates on Gaussian inspection/update, GPU publication, and temporal output invalidation. The wider observation/TSDF/mesh/texture/material ledger is implemented and regression-tested but is not yet represented by an equally broad paper-grade performance campaign.
 
-\paragraph{Rendered fidelity is not reconstruction fidelity.}
-The new visual-quality audit compares a selected repair against the independent \FULL{}-after render of the same evaluated representation and camera. Exact selected-to-\FULL{} equality therefore supports the claim that the local repair preserves the full-update result on those views; it does not establish that the underlying reconstruction is photorealistic or matches held-out source photographs. This distinction is especially important for the public RGB/SfM campaign, whose Gaussian fields are seeded from COLMAP points rather than trained photorealistic 3DGS. The trained-3DGS check narrows that representation gap but remains a five-revision secondary validation.
+\paragraph{Dataset-normalized worlds are not a reconstruction benchmark.}
+For 3RScan, ARKitScenes, and Bonn, the benchmark evaluates deterministic seeded Gaussian representations derived from public captured-world assets. The trained GraphDECO subset evaluates pinned trained 3DGS. Selected-to-\FULL{} equality is therefore a revision-fidelity result within each evaluated representation, rather than a claim about photorealistic reconstruction quality against held-out photographs.
 
-\paragraph{Greedy search is not globally optimal.}
-Equation~\ref{eq:utility} gives us a certified feasible cone, not a proof that the cone is the cheapest safe one. Finding the global minimum-work solution is a combinatorial optimization problem and is outside the v1 claim.
+\paragraph{Some mechanisms are weakly identifiable on the real matrix.}
+Several ablations tie the full method on aggregate work and certification. We keep those ties visible. The mechanism-isolation tests establish that those components can become consequential under controlled stress, while the paper-grade matrix shows that they do not dominate the measured real-scene outcomes.
 
-\paragraph{Analytic cycles fail closed.}
-The reference formulation allows the classical resolvent when its assumptions are satisfied. The native v1 implementation is narrower and certifies finite analytic DAG exteriors. Unsupported cycles therefore cause the cone to expand or fall back to \FULL{}. General cyclic certification remains future work.
-
-\paragraph{Representation and dataset scope.}
-The primary public campaign is built from normalized RGB/SfM reconstructions seeded into Gaussian fields, not from trained photorealistic 3DGS, and it is not a metric-scale reconstruction benchmark. Its frozen evidence exercises Gaussian inspection/update, GPU publication, and temporal output invalidation; the broader observation/TSDF/mesh/texture/material ledger and captured-world graph are implemented and regression-tested but are not measured by the 60-case headline campaign. The trained-3DGS experiment helps, but it is only a five-revision representation check over the same output-side scope. A broader full-stack evaluation over trained scenes and additional derived-state domains is needed for stronger evidence of generality.
-
-\paragraph{Ablation identifiability.}
-Not every mechanism separates on the frozen real matrix. Rather than forcing a cleaner story, we keep the real-workload results distinct from the synthetic mechanism-isolation results. The paper therefore does not claim that every mechanism produces a measurable benefit in every scene.
+\paragraph{The planner is deliberately conservative.}
+Uniform-scale and adversarial cases trigger many full rebuilds. Those fallbacks are part of the intended behavior: when exterior influence, temporal stability, or work crossover cannot support a local result, the system prefers a full revision. The paper does not infer global optimality from the selected cones.
 
 \subsection{Implications}
-The broader point is not that persistent captured worlds should always update locally. Locality can instead become a runtime decision. If dependencies can be separated into exact relations and conservatively bounded ones, a local update can carry a falsifiable output contract rather than relying on a heuristic alone. The same principle can extend beyond Gaussian rendering to caches, temporal histories, spatial acceleration structures, compressed representations, and publication buffers when their dependency semantics are explicit.
+The main practical lesson is that locality should be treated as a contract, not as a geometric assumption. A small physical edit is a useful starting cue, but the publishable decision depends on the dependency closure, the output quantity being protected, the tolerated residual, and the cost of carrying the repair through derived state. This framing also makes failure informative. A \FULL{} result identifies a revision for which the current model cannot justify leaving enough of the world untouched.
 
-Failure is also more useful when it is kept intact. A certificate violation is not folded into an average quality score; we retain it as a regression target together with the revision manifest, graph version, chosen cone, emitted bound, full-reference output, and the first violated invariant. That may be less convenient than a single aggregate metric, but it matches the correctness burden introduced by selective recomputation.
-
+The broad experiment suggests that this distinction is useful across multiple kinds of real captured-world input. It also exposes the next research question cleanly: once selected repairs stop being exactly equal to the full-after result, can conservative exterior bounds remain tight enough to certify useful approximation? Reviewer-v2 is designed to answer that question without modifying the frozen broad evidence.
 \section{Reproducibility and Artifact Scope}
-The canonical evidence freeze records workflow run IDs, artifact IDs, Git SHAs, archive hashes, campaign-row hashes, calibration hashes, and the hash of the pinned trained PLY. The public source archive is fixed by byte size and SHA-256. The trained PLY is fetched from an explicit repository revision and path, with its byte size and SHA-256 checked, and \system{} does not redistribute it. The repository also contains the dense reference implementation, native planner and oracle, public and trained campaign drivers, baseline and ablation suites, the sparse-discovery sweep, deterministic paper-artifact generators, and regression tests.
+The paper-grade completion manifest binds the 1,275 campaign rows, 85 prepared worlds, dataset import manifests, frozen case matrix, work calibration, visual audit, cross-dataset statistics, tool fingerprints, and evidence Git SHA. Cases resume only under matching deterministic fingerprints, and completed mutable case worlds are compacted after evidence is retained. Public datasets remain upstream assets; the repository stores provenance and preparation rules rather than redistributing third-party content.
 
-Scene figures retain the relevant upstream terms. Original software is licensed under Apache-2.0, original research communication is scoped under CC BY 4.0, and third-party rights are recorded separately. For double-blind review, the identifiable repository and author metadata should be replaced with an anonymized frozen supplement that follows the target venue's policy.
+The repository contains the dense reference certifier, native planner and Gaussian oracle, trained and seeded representation paths, baseline and ablation suites, deterministic statistics and visual-audit generators, reviewer-v2 partial-repair machinery, regression tests, and storage-safe campaign runners. For double-blind review, identifiable repository and author metadata should be replaced with an anonymized frozen supplement that follows the target venue's policy.
 
 \section{Conclusion}
-We introduced Criticality-Bounded Revision Cones as a fail-closed rule for selective recomputation in persistent captured worlds. Criticality is the worst normalized certificate-to-tolerance ratio over the protected outputs. \method{} separates exact dependencies from bounded finite-change influence, ties the unrepaired exterior to explicit tolerances, compares regional work with a full baseline, and independently falsifies the residual outside the selected repair support against a full-after oracle. The frozen public and trained-representation experiments show that local repair and full fallback can coexist under one auditable contract. They also expose the remaining gaps: discovery is still close to global in the frozen path, and there is no paired wall-clock speedup result yet. Repair locally when the system can justify what it leaves alone; rebuild when it cannot.
+Criticality-Bounded Revision Cones turn selective recomputation into an explicit fail-closed contract for persistent captured worlds. A candidate repair must satisfy exact structural closure, conservative output-specific exterior bounds, declared tolerances, and a frozen work crossover; otherwise the system returns \FULL{}. The paper-grade campaign executes 1,275 revisions over 85 scenes, including trained 3DGS and dataset-native captured-world representations, and observes 935 certified local repairs, 340 fallbacks, and zero certificate violations. Median calibrated selected work is 0.474 of \FULL{}, while stronger coupling progressively drives the system toward rebuilds. The evaluated local outputs are exact to \FULL{} on the audited views, which strengthens the correctness result but leaves useful certified approximation with non-zero residual as the next empirical target. The contract makes that boundary explicit: repair only what can be justified, and rebuild the rest when the evidence runs out.
 
 \section*{Acknowledgments}
 \paragraph{Generative AI use disclosure.}
