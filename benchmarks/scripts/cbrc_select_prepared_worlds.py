@@ -22,6 +22,8 @@ def select_ready_worlds(payload: dict[str, Any], source: Path) -> tuple[dict[str
         if not world_value:
             continue
         world = Path(str(world_value)).expanduser()
+        if not world.is_absolute():
+            world = source.parent / world
         if not world.is_file():
             continue
         copied = dict(record)
