@@ -190,12 +190,10 @@ fi
 
 echo
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "▶ Manuscript bridge: emit reviewer-v2 claims only if every readiness gate passes"
+echo "▶ v3 evidence remains isolated from manuscript state"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-"$PYTHON" research/analysis/cbrc_reviewer_manuscript_block.py \
-  --audit "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" \
-  --visual-dir "$VISUALS" \
-  --repo-root "$ROOT"
+echo "  No researchpaper/generated reviewer state is written by this exploratory runner."
+echo
 
 "$PYTHON" - "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" "$VISUALS/REVIEWER_VISUALS.json" <<'PY'
 import json,sys
