@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+
 PYTHON="${MAVEB_PYTHON:-$ROOT/.venv-maveb/bin/python}"
 if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
@@ -17,9 +23,9 @@ RESULTS="$OUT/campaign"
 VIS="$OUT/siggraph-visuals"
 VISUAL_QUALITY="$OUT/visual-quality"
 
-SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+SEED="$BUILD_ROOT/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 
 mkdir -p "$SOURCE" "$WORLD_ROOT" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
@@ -48,8 +54,8 @@ fi
 "$PYTHON" benchmarks/scripts/cbrc_fetch_trained_3dgs.py "${FETCH_ARGS[@]}" > "$SOURCE/fetch.stdout"
 
 echo "==> [3/8] Building trained-3DGS seeder and CBRC evidence tools"
-cmake --preset ci
-cmake --build --preset ci --target   maveb-seed-trained-3dgs-world   maveb-cbrc-revision   maveb-cbrc-gaussian-oracle   --parallel
+cmake --preset "$BUILD_PRESET"
+cmake --build --preset "$BUILD_PRESET" --target   maveb-seed-trained-3dgs-world   maveb-cbrc-revision   maveb-cbrc-gaussian-oracle   --parallel
 
 echo "==> [4/8] Converting trained 3DGS into a persistent MAVEB world"
 WORLD="$WORLD_ROOT/public-trained.aetherworld"
@@ -68,7 +74,8 @@ fi
 "$PYTHON" benchmarks/scripts/cbrc_prepare_real_campaign.py "${PREP_ARGS[@]}"
 
 set +e
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS/.oracle-cache}"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"   --workers "$CASE_WORKERS"
 CAMPAIGN_STATUS=$?
 set -e
 
