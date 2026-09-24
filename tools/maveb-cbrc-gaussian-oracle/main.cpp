@@ -52,7 +52,7 @@ struct Options final {
     std::string inputFormat{"ply"};
     std::string spatialOutputPath;
     std::string visualOutputDir;
-    std::string backend{"auto"};
+    std::string backend{"cpu"};
     std::string cacheDir;
     bool detectChanged{};
     bool verifyMetalParity{};
@@ -549,7 +549,7 @@ template <std::size_t N>
             std::cout << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
                          "(--changed 1,4,9 | --detect-changed) [camera options]\n"
                       << "  --input-format ply|aether-bin (default: ply)\n"
-                      << "  --backend auto|cpu|metal (default: auto; env MAVEB_ORACLE_BACKEND)\n"
+                      << "  --backend auto|cpu|metal (default: cpu; env MAVEB_ORACLE_BACKEND)\n"
                       << "  --cache-dir DIR caches immutable before/after renders across cases\n"
                       << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
                       << "  --detect-changed compares stable source-order before/after records\n"
