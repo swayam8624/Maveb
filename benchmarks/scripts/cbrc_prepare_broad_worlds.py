@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import shutil
 import struct
 import subprocess
@@ -684,6 +685,12 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--output-dir", type=Path, required=True)
     p.add_argument("--cache-dir", type=Path)
     p.add_argument("--max-images", type=int, default=120)
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=max(1, min(3, (os.cpu_count() or 4) // 2)),
+        help="Prepare independent scenes concurrently. Use 2-3 on Apple Silicon to avoid memory pressure.",
+    )
     p.add_argument("--dataset", action="append", default=[])
     p.add_argument(
         "--no-rgb-reconstruction",
@@ -711,6 +718,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.max_images < 8:
         raise SystemExit("--max-images must be >= 8")
+    if args.workers < 1:
+        raise SystemExit("--workers must be >= 1")
     imported = load(args.import_manifest.resolve())
     output = args.output_dir.resolve()
     cache = (args.cache_dir or (output / "_cache")).resolve()
@@ -786,8 +795,65 @@ def main(argv: list[str] | None = None) -> int:
             },
         )
 
+    def prepare_scene(dataset: dict[str, Any], scene: dict[str, Any]) -> tuple[dict[str, Any], bool, str, str, float]:
+        dataset_id = str(dataset["datasetId"])
+        scene_id = str(scene.get("pairId") or scene.get("sceneId") or "unknown")
+        key = (dataset_id, scene_id)
+        unit_started = time.monotonic()
+
+        if scene.get("status") != "ready":
+            record = {
+                "datasetId": dataset_id,
+                "sceneId": scene_id,
+                "status": "blocked",
+                "reason": "scene-import-blocked",
+            }
+            reused = False
+        elif key in reusable:
+            record = reusable[key]
+            reused = True
+        else:
+            reused = False
+            if PROGRESS_ENABLED:
+                print(f"      → preparing {dataset_id}/{scene_id}", flush=True)
+            try:
+                if dataset["kind"] == "trained-3dgs":
+                    if trained is None:
+                        raise RuntimeError("maveb-seed-trained-3dgs-world not found")
+                    record = prepare_graphdeco(dataset, scene, output, trained)
+                elif dataset["kind"] == "scannetpp":
+                    record = prepare_scannetpp(dataset, scene, output)
+                elif dataset["kind"] in {"longitudinal-rgbd", "arkit-scenes", "tum-rgbd"}:
+                    record = prepare_reconstructed(
+                        dataset,
+                        scene,
+                        output,
+                        cache,
+                        colmap=colmap,
+                        native_seeder=native,
+                        maximum_images=args.max_images,
+                        ffmpeg=ffmpeg,
+                        allow_rgb_fallback=not args.no_rgb_reconstruction,
+                    )
+                else:
+                    record = {
+                        "datasetId": dataset_id,
+                        "sceneId": scene_id,
+                        "status": "blocked",
+                        "reason": f"unsupported-dataset-kind:{dataset['kind']}",
+                    }
+            except (OSError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
+                record = {
+                    "datasetId": dataset_id,
+                    "sceneId": scene_id,
+                    "status": "failed",
+                    "reason": str(exc),
+                }
+        return record, reused, dataset_id, scene_id, time.monotonic() - unit_started
+
+    pending: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for dataset in selected_datasets:
-        dataset_id = dataset["datasetId"]
+        dataset_id = str(dataset["datasetId"])
         if dataset["status"] == "blocked":
             records.append(
                 {
@@ -830,79 +896,53 @@ def main(argv: list[str] | None = None) -> int:
                 started=started,
             )
             continue
+        pending.extend((dataset, scene) for scene in scenes)
 
-        for scene in scenes:
-            scene_id = str(scene.get("pairId") or scene.get("sceneId") or "unknown")
-            key = (dataset_id, scene_id)
-            unit_started = time.monotonic()
-
-            if scene.get("status") != "ready":
-                record = {
-                    "datasetId": dataset_id,
-                    "sceneId": scene_id,
-                    "status": "blocked",
-                    "reason": "scene-import-blocked",
-                }
-                reused = False
-            elif key in reusable:
-                record = reusable[key]
-                reused = True
-            else:
-                reused = False
-                if PROGRESS_ENABLED:
-                    print(
-                        f"      → preparing {dataset_id}/{scene_id}",
-                        flush=True,
-                    )
-                try:
-                    if dataset["kind"] == "trained-3dgs":
-                        if trained is None:
-                            raise RuntimeError("maveb-seed-trained-3dgs-world not found")
-                        record = prepare_graphdeco(dataset, scene, output, trained)
-                    elif dataset["kind"] == "scannetpp":
-                        record = prepare_scannetpp(dataset, scene, output)
-                    elif dataset["kind"] in {"longitudinal-rgbd", "arkit-scenes", "tum-rgbd"}:
-                        record = prepare_reconstructed(
-                            dataset,
-                            scene,
-                            output,
-                            cache,
-                            colmap=colmap,
-                            native_seeder=native,
-                            maximum_images=args.max_images,
-                            ffmpeg=ffmpeg,
-                            allow_rgb_fallback=not args.no_rgb_reconstruction,
-                        )
-                    else:
-                        record = {
-                            "datasetId": dataset_id,
-                            "sceneId": scene_id,
-                            "status": "blocked",
-                            "reason": f"unsupported-dataset-kind:{dataset['kind']}",
-                        }
-                except (OSError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
-                    record = {
-                        "datasetId": dataset_id,
-                        "sceneId": scene_id,
-                        "status": "failed",
-                        "reason": str(exc),
-                    }
-
-            records.append(record)
-            completed_units += 1
-            checkpoint()
-            status = str(record.get("status", "unknown"))
-            path = str(record.get("preparationPath") or record.get("representation") or "")
-            marker = "cache" if reused else path or status
-            progress_bar(
-                completed_units,
-                total_units,
-                label=(
-                    f"{dataset_id}/{scene_id}: {status} [{marker}] "
-                    f"({format_duration(time.monotonic() - unit_started)})"
-                ),
-                started=started,
+    if pending:
+        worker_count = min(args.workers, len(pending))
+        if PROGRESS_ENABLED:
+            print(
+                f"  ↻ preparing {len(pending)} scene(s) with {worker_count} worker(s)",
+                flush=True,
             )
+        if worker_count == 1:
+            completed = [prepare_scene(dataset, scene) for dataset, scene in pending]
+            iterator = iter(completed)
+            for record, reused, dataset_id, scene_id, elapsed in iterator:
+                records.append(record)
+                completed_units += 1
+                checkpoint()
+                status = str(record.get("status", "unknown"))
+                path = str(record.get("preparationPath") or record.get("representation") or "")
+                marker = "cache" if reused else path or status
+                progress_bar(
+                    completed_units,
+                    total_units,
+                    label=f"{dataset_id}/{scene_id}: {status} [{marker}] ({format_duration(elapsed)})",
+                    started=started,
+                )
+        else:
+            with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="maveb-scene") as pool:
+                futures = {
+                    pool.submit(prepare_scene, dataset, scene): (dataset, scene)
+                    for dataset, scene in pending
+                }
+                for future in as_completed(futures):
+                    record, reused, dataset_id, scene_id, elapsed = future.result()
+                    records.append(record)
+                    completed_units += 1
+                    checkpoint()
+                    status = str(record.get("status", "unknown"))
+                    path = str(record.get("preparationPath") or record.get("representation") or "")
+                    marker = "cache" if reused else path or status
+                    progress_bar(
+                        completed_units,
+                        total_units,
+                        label=f"{dataset_id}/{scene_id}: {status} [{marker}] ({format_duration(elapsed)})",
+                        started=started,
+                    )
+
+    records.sort(key=lambda item: (str(item.get("datasetId", "")), str(item.get("sceneId", ""))))
 
     manifest = {
         "schemaVersion": 1,
