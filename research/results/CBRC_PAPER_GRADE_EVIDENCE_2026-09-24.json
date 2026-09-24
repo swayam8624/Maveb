@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "artifact": "maveb-cbrc-paper-grade-evidence-summary",
+  "evidenceDate": "2026-09-24",
+  "evidenceGitSha": "d61ef9ea7575def9d7d50f83c1a9a4da0761b950",
+  "sourceArtifacts": {
+    "completionManifest": "build/broad-benchmark-paper/BROAD_CAMPAIGN_COMPLETE.json",
+    "campaignRows": "build/broad-benchmark-paper/campaign/campaign-rows.jsonl",
+    "visualQuality": "build/broad-benchmark-paper/visual-quality/CBRC_VISUAL_QUALITY.json",
+    "crossDatasetStatistics": "build/broad-benchmark-paper/statistics/CROSS_DATASET_STATISTICS.json"
+  },
+  "overall": {
+    "cases": 1275,
+    "scenes": 85,
+    "datasets": 4,
+    "certifiedLocalCases": 935,
+    "fullFallbackCases": 340,
+    "certificateViolations": 0,
+    "localRate": 0.7333333333333333,
+    "localRate95CI": [
+      0.7083855263146683,
+      0.7568793397060887
+    ],
+    "medianSelectedWorkRatioFull": 0.47447329512000985,
+    "bootstrapMedian95CI": [
+      0.4665671065150408,
+      0.47885354255813894
+    ],
+    "selectedExactCases": 1275,
+    "selectedExactCaseRate": 1
+  },
+  "byDataset": {
+    "3rscan": {
+      "scenes": 40,
+      "cases": 600,
+      "local": 440,
+      "full": 160,
+      "medianWorkRatioFull": 0.34062833901105605
+    },
+    "arkitscenes": {
+      "scenes": 20,
+      "cases": 300,
+      "local": 220,
+      "full": 80,
+      "medianWorkRatioFull": 0.48321788238568175
+    },
+    "bonn-rgbd-dynamic": {
+      "scenes": 12,
+      "cases": 180,
+      "local": 132,
+      "full": 48,
+      "medianWorkRatioFull": 0.47548292276742016
+    },
+    "graphdeco-pretrained-3dgs": {
+      "scenes": 13,
+      "cases": 195,
+      "local": 143,
+      "full": 52,
+      "medianWorkRatioFull": 0.5191082972599733
+    }
+  },
+  "byEditFamily": {
+    "opacity": {
+      "cases": 255,
+      "local": 255,
+      "full": 0,
+      "medianWorkRatioFull": 0.4574933067049195
+    },
+    "rotation": {
+      "cases": 340,
+      "local": 255,
+      "full": 85,
+      "medianWorkRatioFull": 0.4525667055293071
+    },
+    "translation": {
+      "cases": 340,
+      "local": 255,
+      "full": 85,
+      "medianWorkRatioFull": 0.4747124367722649
+    },
+    "uniform-scale": {
+      "cases": 340,
+      "local": 170,
+      "full": 170,
+      "medianWorkRatioFull": 0.7704488877760516
+    }
+  },
+  "byCoupling": {
+    "low": {
+      "cases": 340,
+      "local": 340,
+      "full": 0,
+      "medianWorkRatioFull": 0.4146500478505142
+    },
+    "medium": {
+      "cases": 340,
+      "local": 340,
+      "full": 0,
+      "medianWorkRatioFull": 0.4447231340582757
+    },
+    "high": {
+      "cases": 255,
+      "local": 170,
+      "full": 85,
+      "medianWorkRatioFull": 0.5095653533505025
+    },
+    "adversarial": {
+      "cases": 340,
+      "local": 85,
+      "full": 255,
+      "medianWorkRatioFull": 1
+    }
+  },
+  "pairedFullComparison": {
+    "pairedCases": 1275,
+    "bothCertifiedCases": 1275,
+    "cbrcLowerWorkCases": 935,
+    "ties": 340,
+    "exactTwoSidedSignTestP": 6.886270049533194e-282
+  },
+  "interpretationBoundary": {
+    "work": "The work ratio is a calibrated heterogeneous-work metric, not a paired end-to-end wall-clock speedup.",
+    "fidelity": "Selected-to-FULL equality is revision-fidelity within the evaluated representation and camera, not reconstruction quality against source photographs.",
+    "residual": "The broad campaign has zero selected-to-FULL residual at audited 8-bit precision; certified useful non-zero residual remains a separate reviewer-v2 question."
+  },
+  "reviewerV2": {
+    "status": "implementation-complete-run-pending",
+    "resultRoot": "build/reviewer-stress-v2",
+    "claimRule": "No reviewer-v2 success claim is emitted unless reviewerEvidenceReady=true in the frozen audit."
+  }
+}
