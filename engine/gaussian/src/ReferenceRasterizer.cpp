@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <limits>
 #include <numeric>
+#include <thread>
 #include <vector>
 
 namespace aether::gaussian {
@@ -226,6 +228,12 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
     }
     std::ranges::stable_sort(projected, {}, &Projected::depth);
 
+    struct RowEntry final {
+        const Projected* gaussian{};
+        int minimumX{};
+        int maximumX{};
+    };
+    std::vector<std::vector<RowEntry>> rowEntries(camera.height);
     for (const Projected& gaussian : projected) {
         const int minimumX =
             std::max(0, static_cast<int>(std::floor(gaussian.centerX - gaussian.radius)));
@@ -237,8 +245,17 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
         const int maximumY =
             std::min(static_cast<int>(camera.height) - 1,
                      static_cast<int>(std::ceil(gaussian.centerY + gaussian.radius)));
-        for (int y = minimumY; y <= maximumY; ++y) {
-            for (int x = minimumX; x <= maximumX; ++x) {
+        if (minimumX > maximumX || minimumY > maximumY)
+            continue;
+        for (int y = minimumY; y <= maximumY; ++y)
+            rowEntries[static_cast<std::size_t>(y)].push_back(
+                RowEntry{&gaussian, minimumX, maximumX});
+    }
+
+    auto rasterizeRow = [&](std::size_t y) {
+        for (const RowEntry& entry : rowEntries[y]) {
+            const Projected& gaussian = *entry.gaussian;
+            for (int x = entry.minimumX; x <= entry.maximumX; ++x) {
                 const float dx = (static_cast<float>(x) + 0.5F) - gaussian.centerX;
                 const float dy = (static_cast<float>(y) + 0.5F) - gaussian.centerY;
                 const float distance = gaussian.inverseA * dx * dx +
@@ -247,7 +264,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                 if (distance > 9.0F)
                     continue;
                 const std::size_t pixel =
-                    static_cast<std::size_t>(y) * camera.width + static_cast<std::size_t>(x);
+                    y * camera.width + static_cast<std::size_t>(x);
                 const float alpha = std::min(0.99F, gaussian.opacity * std::exp(-0.5F * distance));
                 if (alpha < 1.0F / 255.0F || image.color[pixel][3] > 0.999F)
                     continue;
@@ -263,7 +280,33 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                 }
             }
         }
+    };
+
+    const unsigned hardwareThreads = std::max(1U, std::thread::hardware_concurrency());
+    const std::size_t workerCount =
+        std::min<std::size_t>(camera.height, static_cast<std::size_t>(hardwareThreads));
+    // Small oracle images are faster without thread startup; publication-size renders fan out
+    // by rows. Each row preserves the exact globally sorted Gaussian order, so compositing stays
+    // deterministic and numerically equivalent to the scalar reference path.
+    if (workerCount <= 1 || pixelCount < 65'536) {
+        for (std::size_t y = 0; y < camera.height; ++y)
+            rasterizeRow(y);
+    } else {
+        std::atomic<std::size_t> nextRow{0};
+        std::vector<std::jthread> workers;
+        workers.reserve(workerCount);
+        for (std::size_t worker = 0; worker < workerCount; ++worker) {
+            workers.emplace_back([&] {
+                while (true) {
+                    const std::size_t y = nextRow.fetch_add(1, std::memory_order_relaxed);
+                    if (y >= camera.height)
+                        break;
+                    rasterizeRow(y);
+                }
+            });
+        }
     }
+
     for (auto& pixel : image.color) {
         for (std::size_t channel = 0; channel < 3; ++channel)
             pixel[channel] += (1.0F - pixel[3]) * std::clamp(background[channel], 0.0F, 1.0F);
