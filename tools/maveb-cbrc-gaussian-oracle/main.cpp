@@ -693,23 +693,83 @@ int main(int argc, char** argv) try {
     camera.cameraWorldPosition = options->cameraWorldPosition;
     camera.worldToCamera = options->worldToCamera;
 
-    auto oldImage =
-        aether::gaussian::ReferenceRasterizer::render(*before, camera, options->background);
+    std::optional<ReferenceImage> oldImage;
+    std::optional<ReferenceImage> newImage;
+    std::optional<ReferenceImage> repairImage;
+    std::string renderBackend = "cpu";
+
+    const auto renderCpu = [&](const GaussianAsset& asset) -> std::optional<ReferenceImage> {
+        auto rendered =
+            aether::gaussian::ReferenceRasterizer::render(asset, camera, options->background);
+        if (!rendered) {
+            std::cerr << rendered.error().describe() << '\n';
+            return std::nullopt;
+        }
+        return std::move(*rendered);
+    };
+
+    const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+    if (wantsMetal) {
+        std::string metalError;
+        oldImage = renderMetalReference(*before, camera, options->background, metalError);
+        if (oldImage)
+            newImage = renderMetalReference(*after, camera, options->background, metalError);
+        if (newImage)
+            repairImage =
+                renderMetalReference(repairedState, camera, options->background, metalError);
+        if (oldImage && newImage && repairImage) {
+            renderBackend = "metal";
+        } else {
+            oldImage.reset();
+            newImage.reset();
+            repairImage.reset();
+            if (options->backend == "metal") {
+                std::cerr << "Strict Metal oracle failed: " << metalError << '\n';
+                return EXIT_FAILURE;
+            }
+            std::cerr << "Metal oracle unavailable; falling back to CPU reference: "
+                      << metalError << '\n';
+        }
+    }
+#else
+    if (options->backend == "metal") {
+        std::cerr << "Strict Metal oracle requested but this build has no Metal backend\n";
+        return EXIT_FAILURE;
+    }
+#endif
+
     if (!oldImage) {
-        std::cerr << oldImage.error().describe() << '\n';
-        return EXIT_FAILURE;
+        oldImage = renderCpu(*before);
+        newImage = renderCpu(*after);
+        repairImage = renderCpu(repairedState);
+        renderBackend = "cpu";
     }
-    auto newImage =
-        aether::gaussian::ReferenceRasterizer::render(*after, camera, options->background);
-    if (!newImage) {
-        std::cerr << newImage.error().describe() << '\n';
+    if (!oldImage || !newImage || !repairImage)
         return EXIT_FAILURE;
-    }
-    auto repairImage =
-        aether::gaussian::ReferenceRasterizer::render(repairedState, camera, options->background);
-    if (!repairImage) {
-        std::cerr << repairImage.error().describe() << '\n';
-        return EXIT_FAILURE;
+
+    if (options->verifyMetalParity) {
+        if (renderBackend != "metal") {
+            std::cerr << "--verify-metal-parity requires an available Metal backend\n";
+            return EXIT_FAILURE;
+        }
+        auto cpuOld = renderCpu(*before);
+        auto cpuNew = renderCpu(*after);
+        auto cpuRepair = renderCpu(repairedState);
+        if (!cpuOld || !cpuNew || !cpuRepair)
+            return EXIT_FAILURE;
+        std::string parityReason;
+        constexpr double kRgbParityTolerance = 5.0e-4;
+        constexpr double kDepthParityTolerance = 1.0e-4;
+        if (!verifyImageParity(*oldImage, *cpuOld, kRgbParityTolerance,
+                               kDepthParityTolerance, parityReason) ||
+            !verifyImageParity(*newImage, *cpuNew, kRgbParityTolerance,
+                               kDepthParityTolerance, parityReason) ||
+            !verifyImageParity(*repairImage, *cpuRepair, kRgbParityTolerance,
+                               kDepthParityTolerance, parityReason)) {
+            std::cerr << parityReason << '\n';
+            return EXIT_FAILURE;
+        }
     }
 
     const double colorCap = sceneColorCap(*before, *after);
@@ -898,6 +958,7 @@ int main(int argc, char** argv) try {
               << "\"schemaVersion\":1,"
               << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
               << "\"method\":\"CBRC\","
+              << "\"renderBackend\":\"" << renderBackend << "\","
               << "\"totalGaussians\":" << before->gaussians.size() << ','
               << "\"changedGaussians\":" << changed->size() << ',' << "\"changedFraction\":"
               << static_cast<double>(changed->size()) /
