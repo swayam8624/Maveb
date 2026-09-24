@@ -44,7 +44,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
 
     def test_defensive_not_cadence_is_reduced(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
-        standalone_not = len(re.findall(r"\\bnot\\b", text, flags=re.IGNORECASE))
+        standalone_not = len(re.findall(r"\bnot\b", text, flags=re.IGNORECASE))
         self.assertLessEqual(standalone_not, 40)
 
 
