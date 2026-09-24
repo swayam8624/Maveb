@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
         const auto cpuFrameStart = std::chrono::steady_clock::now();
         MTL::CommandBuffer* commandBuffer = queue->commandBuffer();
         auto encoded =
-            (*pipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get());
+            (*pipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get(), frame % 3);
         if (!commandBuffer || !encoded) {
             pool->release();
             return fail(encoded ? "Unable to allocate benchmark command buffer"
