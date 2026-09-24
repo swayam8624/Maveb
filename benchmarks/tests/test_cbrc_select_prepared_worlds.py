@@ -41,7 +41,7 @@ class PreparedWorldSelectionTests(unittest.TestCase):
                         "datasetId": "arkitscenes",
                         "sceneId": "b",
                         "status": "ready",
-                        "world": str(second),
+                        "world": "b.aetherworld",
                         "preparationPath": "rgb-colmap-fallback",
                     },
                     {
