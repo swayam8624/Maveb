@@ -18,10 +18,13 @@ RESULTS_DIR="$OUT/campaign"
 VISUAL_DIR="$OUT/visual-quality"
 STATS_DIR="$OUT/statistics"
 CACHE_DIR="$OUT/.stage-cache"
+WORLD_MANIFEST="$WORLD_MANIFEST"
 
 REUSE="${MAVEB_BROAD_REUSE:-1}"
 ADOPT_EXISTING="${MAVEB_BROAD_ADOPT_EXISTING:-0}"
 ALLOW_PARTIAL="${MAVEB_BROAD_ALLOW_PARTIAL:-0}"
+REUSE_PREPARED_WORLDS="${MAVEB_BROAD_REUSE_PREPARED_WORLDS:-0}"
+PREPARED_WORLD_CANDIDATES="${MAVEB_BROAD_PREPARED_WORLD_CANDIDATES:-}"
 MAX_IMAGES="${MAVEB_BROAD_MAX_IMAGES:-120}"
 CASES_PER_SCENE="${MAVEB_BROAD_CASES_PER_SCENE:-15}"
 BOOTSTRAP_ITERATIONS="${MAVEB_BROAD_BOOTSTRAP_ITERATIONS:-5000}"
@@ -141,7 +144,7 @@ PY
 }
 
 validate_worlds() {
-  "$PYTHON" - "$WORLDS_DIR/BROAD_WORLDS.json" <<'PY'
+  "$PYTHON" - "$WORLD_MANIFEST" <<'PY'
 import json,sys
 from pathlib import Path
 p=Path(sys.argv[1])
@@ -227,6 +230,7 @@ echo "Datasets         : $DATASETS_CSV"
 echo "Reuse            : $REUSE"
 echo "Adopt existing   : $ADOPT_EXISTING"
 echo "Allow partial    : $ALLOW_PARTIAL"
+echo "Reuse old worlds : $REUSE_PREPARED_WORLDS"
 echo "Cases / scene    : $CASES_PER_SCENE"
 echo "Bootstrap iters  : $BOOTSTRAP_ITERATIONS"
 echo "Scene workers    : $SCENE_WORKERS"
@@ -260,10 +264,39 @@ SELECT_ARGS=(--input "$RAW_IMPORT" --output "$EFFECTIVE_IMPORT")
 if [[ "$ALLOW_PARTIAL" == "1" ]]; then
   SELECT_ARGS+=(--allow-partial)
 fi
-EFFECTIVE_DATASETS="$("$PYTHON" "$SELECT_IMPORT" "${SELECT_ARGS[@]}")"
 
-if [[ "$ALLOW_PARTIAL" == "1" ]]; then
-  ACTIVE_IMPORT="$EFFECTIVE_IMPORT"
+SELECT_STATUS=0
+if EFFECTIVE_DATASETS="$("$PYTHON" "$SELECT_IMPORT" "${SELECT_ARGS[@]}")"; then
+  if [[ "$ALLOW_PARTIAL" == "1" ]]; then
+    ACTIVE_IMPORT="$EFFECTIVE_IMPORT"
+  fi
+else
+  SELECT_STATUS=$?
+fi
+
+REUSED_PREPARED_WORLDS=0
+if (( SELECT_STATUS != 0 )); then
+  if [[ "$ALLOW_PARTIAL" == "1" && "$REUSE_PREPARED_WORLDS" == "1" ]]; then
+    WORLD_SELECTOR="$ROOT/benchmarks/scripts/cbrc_select_prepared_worlds.py"
+    WORLD_ARGS=()
+    IFS=':' read -r -a WORLD_CANDIDATES <<< "$PREPARED_WORLD_CANDIDATES"
+    for candidate in "${WORLD_CANDIDATES[@]}"; do
+      [[ -n "$candidate" ]] || continue
+      WORLD_ARGS+=(--candidate "$candidate")
+    done
+    if (( ${#WORLD_ARGS[@]} == 0 )); then
+      echo "Prepared-world reuse was enabled but no candidate manifests were configured." >&2
+      exit "$SELECT_STATUS"
+    fi
+    if EFFECTIVE_DATASETS="$("$PYTHON" "$WORLD_SELECTOR" "${WORLD_ARGS[@]}" --output "$WORLD_MANIFEST")"; then
+      REUSED_PREPARED_WORLDS=1
+      echo "  ↳ raw dataset roots unavailable; using development-only prepared-world reuse"
+    else
+      exit "$SELECT_STATUS"
+    fi
+  else
+    exit "$SELECT_STATUS"
+  fi
 fi
 
 DATASETS_CSV="$EFFECTIVE_DATASETS"
@@ -302,7 +335,11 @@ fi
 STEP3_KEY="$("$PYTHON" "$CACHE_KEY" "${STEP3_KEY_ARGS[@]}")"
 
 step 3 "Preparing normalized persistent worlds"
-if [[ "${MAVEB_BROAD_FORCE_STEP3:-0}" != "1" ]] && cache_hit step3 "$STEP3_KEY" && validate_worlds; then
+if [[ "$REUSED_PREPARED_WORLDS" == "1" ]]; then
+  validate_worlds
+  cache_complete step3 "$STEP3_KEY"
+  cache_banner "Step 3 reused — development campaign adopted existing prepared worlds"
+elif [[ "${MAVEB_BROAD_FORCE_STEP3:-0}" != "1" ]] && cache_hit step3 "$STEP3_KEY" && validate_worlds; then
   cache_banner "Step 3 reused — normalized worlds already match inputs/toolchain"
 elif [[ "${MAVEB_BROAD_FORCE_STEP3:-0}" != "1" && "$ADOPT_EXISTING" == "1" ]] && validate_worlds >/dev/null 2>&1; then
   validate_worlds
@@ -351,7 +388,7 @@ else
   cache_complete step4 "$STEP4_KEY"
 fi
 
-STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v3-lazy-inputs   --file "$WORLDS_DIR/BROAD_WORLDS.json"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_migrate_broad_gate_policy.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
+STEP5_KEY="$("$PYTHON" "$CACHE_KEY"   --label step5-broad-freeze-v3-lazy-inputs   --file "$WORLD_MANIFEST"   --file "$CAL_DIR/work-cost-model.json"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_broad_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_migrate_broad_gate_policy.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "datasets=$DATASETS_CSV"   --value "cases_per_scene=$CASES_PER_SCENE")"
 
 step 5 "Freezing cross-dataset cases before reading outcomes"
 if [[ "$ADOPT_EXISTING" == "1" && -f "$FREEZE_DIR/broad-campaign.json" && -f "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json" ]]; then
@@ -369,7 +406,7 @@ elif [[ "${MAVEB_BROAD_FORCE_STEP5:-0}" != "1" && "$ADOPT_EXISTING" == "1" ]] &&
 else
   rm -rf "$FREEZE_DIR"
   mkdir -p "$FREEZE_DIR"
-  "$PYTHON" benchmarks/scripts/cbrc_freeze_broad_campaign.py     --worlds "$WORLDS_DIR/BROAD_WORLDS.json"     --output-dir "$FREEZE_DIR"     --cases-per-scene "$CASES_PER_SCENE"     --work-cost-model "$CAL_DIR/work-cost-model.json"     "${DATASET_ARGS[@]}"
+  "$PYTHON" benchmarks/scripts/cbrc_freeze_broad_campaign.py     --worlds "$WORLD_MANIFEST"     --output-dir "$FREEZE_DIR"     --cases-per-scene "$CASES_PER_SCENE"     --work-cost-model "$CAL_DIR/work-cost-model.json"     "${DATASET_ARGS[@]}"
   validate_freeze
   cache_complete step5 "$STEP5_KEY"
 fi
@@ -537,7 +574,7 @@ cat <<EOF
 BROAD MAVEB CAMPAIGN COMPLETE
 
 Import manifest    : $IMPORT_DIR/BROAD_IMPORT.json
-Prepared worlds    : $WORLDS_DIR/BROAD_WORLDS.json
+Prepared worlds    : $WORLD_MANIFEST
 Frozen campaign    : $FREEZE_DIR/broad-campaign.json
 Campaign rows      : $RESULTS_DIR/campaign-rows.jsonl
 Visual fidelity    : $VISUAL_DIR/CBRC_VISUAL_QUALITY.json
