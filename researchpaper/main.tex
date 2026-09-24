@@ -414,6 +414,8 @@ Several comparisons are neutral. Empirical ordering followed by analytic re-cert
 % After executing build/reviewer-stress-v2, insert only frozen non-zero-residual
 % and tolerance-crossover results whose audit gates pass. Do not retune epsilon
 % or select cases post hoc.
+\IfFileExists{generated/reviewer_v2_results.tex}{\input{generated/reviewer_v2_results.tex}}{}
+
 \section{Discussion}
 \subsection{What the evidence establishes}
 The broad campaign supports three claims within the frozen revision domain. First, the fail-closed decision rule survives independent replay without an observed certificate violation in 1,275 cases. Second, the same contract produces both local repair and full fallback across four datasets, two representation classes, four edit families, and a deliberately widening coupling envelope. Third, locality is meaningful in the calibrated work model: the median selected ratio is 0.474 of \FULL{}, while high and adversarial cases increasingly give up locality and return the full baseline.
