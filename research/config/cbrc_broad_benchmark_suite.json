@@ -85,7 +85,11 @@
         "cfg_args"
       ],
       "redistribute": false,
-      "scientificRole": "Canonical trained photorealistic 3DGS evaluation across all 13 standard GraphDECO scenes."
+      "scientificRole": "Canonical trained photorealistic 3DGS evaluation across all 13 standard GraphDECO scenes.",
+      "dataSubdirs": [
+        "graphdeco-pretrained/models",
+        "graphdeco-pretrained"
+      ]
     },
     {
       "id": "3rscan",
@@ -110,7 +114,11 @@
         "sequence.zip"
       ],
       "redistribute": false,
-      "scientificRole": "Natural longitudinal scene changes. The adapter freezes reference/rescan transforms and changed-object metadata before outcomes."
+      "scientificRole": "Natural longitudinal scene changes. The adapter freezes reference/rescan transforms and changed-object metadata before outcomes.",
+      "dataSubdirs": [
+        "3RScan",
+        "3rscan"
+      ]
     },
     {
       "id": "scannetpp",
@@ -135,7 +143,12 @@
       ],
       "requiresAccessToken": true,
       "redistribute": false,
-      "scientificRole": "High-fidelity laser-aligned DSLR/iPhone capture. Tests scene/sensor generalization without dataset-specific CBRC retuning."
+      "scientificRole": "High-fidelity laser-aligned DSLR/iPhone capture. Tests scene/sensor generalization without dataset-specific CBRC retuning.",
+      "dataSubdirs": [
+        "ScanNetpp",
+        "ScanNet++",
+        "scannetpp"
+      ]
     },
     {
       "id": "arkitscenes",
@@ -156,7 +169,11 @@
         "lowres_wide_intrinsics"
       ],
       "redistribute": false,
-      "scientificRole": "Commodity mobile RGB-D/LiDAR generalization using the existing deterministic ARKitScenes adapter."
+      "scientificRole": "Commodity mobile RGB-D/LiDAR generalization using the existing deterministic ARKitScenes adapter.",
+      "dataSubdirs": [
+        "ARKitScenes",
+        "arkitscenes"
+      ]
     },
     {
       "id": "bonn-rgbd-dynamic",
@@ -180,7 +197,12 @@
         "cy": 237.756098
       },
       "redistribute": false,
-      "scientificRole": "Dynamic/failure-envelope benchmark. A high FULL fallback rate is a valid outcome."
+      "scientificRole": "Dynamic/failure-envelope benchmark. A high FULL fallback rate is a valid outcome.",
+      "dataSubdirs": [
+        "BonnRGBD",
+        "BonnRGBD-Dynamic",
+        "bonn-rgbd-dynamic"
+      ]
     },
     {
       "id": "existing-public-v2",
