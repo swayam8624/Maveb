@@ -227,12 +227,17 @@ def main() -> int:
             "atLeastThreeDatasets": len(dataset_groups) >= 3,
             "allDatasetsHaveCases": all(group["cases"] > 0 for group in dataset_groups.values()),
             "zeroObservedCertificateViolations": overall["certificateViolations"] == 0,
+        },
+        "crossDatasetObservations": {
             "bothLocalAndFallbackObserved": (
                 overall["localCases"] > 0 and overall["fullFallbackCases"] > 0
             ),
+            "fallbackObservationPolicy": "observed-outcome-not-required",
         },
     }
-    result["crossDatasetGates"]["pass"] = all(result["crossDatasetGates"].values())
+    result["crossDatasetGates"]["pass"] = all(
+        result["crossDatasetGates"].values()
+    )
     write_json(output / "CROSS_DATASET_STATISTICS.json", result)
 
     with (output / "dataset-summary.csv").open("w", newline="", encoding="utf-8") as stream:
@@ -272,6 +277,7 @@ def main() -> int:
         f"- Datasets: **{len(dataset_groups)}**",
         f"- Observed certificate violations: **{overall['certificateViolations']}**",
         f"- LOCAL / FULL: **{overall['localCases']} / {overall['fullFallbackCases']}**",
+        "- FULL-fallback observation policy: **observed outcome, not required for acceptance**",
         "",
         "| Dataset | Cases | Scenes | LOCAL rate | Violations | Median work/FULL | 95% bootstrap CI |",
         "|---|---:|---:|---:|---:|---:|---:|",
