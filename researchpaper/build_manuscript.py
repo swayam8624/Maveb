@@ -52,6 +52,8 @@ def export_word(build):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     source = (ROOT / 'main.tex').read_text()
+    expected_figure_count = len(re.findall(r'\\begin\{figure\*?\}', source))
+    expected_table_count = len(re.findall(r'\\begin\{table\*?\}', source))
     abstract = re.search(r'\\begin\{abstract\}(.*?)\\end\{abstract\}', source, re.S)[1]
     source = source.replace(r'\maketitle', r'\maketitle' + '\n' +
                             r'\noindent swayam.singal@gmail.com' + '\n\n' +
@@ -163,11 +165,18 @@ r_q(C)=\begin{cases}
             ratio = Inches(7.1) / shape.width
             shape.height = int(shape.height * ratio)
             shape.width = Inches(7.1)
-    widths = [[1.0, 3.8, 2.3], [1.5, .65, .8, .65, 1.0, 2.5],
-              [3.1, 2.0, 2.0], [5.1, 2.0], [4.6, 2.5],
-              [1.85, .6, .65, 1.0, 3.0]]
-    assert len(doc.tables) == 6, f'Expected six editable tables, got {len(doc.tables)}'
-    assert len(doc.inline_shapes) == 3, 'Word export must include all three figures'
+    widths = [
+        [1.0, 3.8, 2.3],
+        [1.5, .65, .8, .65, 1.0, 2.5],
+        [2.2, .75, .75, .75, 2.65],
+        [2.2, .75, .75, .75, 2.65],
+    ]
+    assert len(doc.tables) == expected_table_count == len(widths), (
+        f'Expected {expected_table_count} editable tables, got {len(doc.tables)}'
+    )
+    assert len(doc.inline_shapes) == expected_figure_count, (
+        f'Expected {expected_figure_count} figures, got {len(doc.inline_shapes)}'
+    )
     for table, sizes in zip(doc.tables, widths):
         table.autofit = False
         if 'Table Grid' in style_map:
@@ -212,11 +221,16 @@ r_q(C)=\begin{cases}
             para.paragraph_format.keep_with_next = kind == 'Table Caption'
         if para.style.name == 'Captioned Figure':
             para.paragraph_format.keep_with_next = True
-    assert caption_counts == {'Image Caption': 3, 'Table Caption': 6}
+    assert caption_counts == {
+        'Image Caption': expected_figure_count,
+        'Table Caption': expected_table_count,
+    }
 
     # Keep equation math editable while rendering numbers cleanly across Word/LibreOffice.
     equation_paragraphs = [p for p in doc.paragraphs if 'oMathPara' in p._p.xml]
-    assert len(equation_paragraphs) == equation_count == 16
+    assert len(equation_paragraphs) == equation_count, (
+        f'Expected {equation_count} editable equations, got {len(equation_paragraphs)}'
+    )
     for number, para in enumerate(equation_paragraphs, 1):
         eq_table = doc.add_table(rows=1, cols=2)
         eq_table.autofit = False
