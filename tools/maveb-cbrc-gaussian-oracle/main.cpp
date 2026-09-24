@@ -3,6 +3,12 @@
 #include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 #include <aether/world_gaussian/GaussianRenderCertificate.hpp>
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+#include <aether/metal/GaussianPipeline.hpp>
+#include <aether/metal/MetalPtr.hpp>
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -27,6 +33,7 @@ namespace {
 using aether::gaussian::Gaussian;
 using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
+using aether::gaussian::ReferenceImage;
 using Pixel = std::array<float, 4>;
 using Pixels = std::vector<Pixel>;
 using Path = std::filesystem::path;
@@ -44,7 +51,9 @@ struct Options final {
     std::string inputFormat{"ply"};
     std::string spatialOutputPath;
     std::string visualOutputDir;
+    std::string backend{"auto"};
     bool detectChanged{};
+    bool verifyMetalParity{};
     std::size_t width{320};
     std::size_t height{180};
     float focalX{260.0F};
@@ -113,6 +122,8 @@ template <std::size_t N>
 
 [[nodiscard]] std::optional<Options> parseOptions(int argc, char** argv) {
     Options options;
+    if (const char* backend = std::getenv("MAVEB_ORACLE_BACKEND"); backend && *backend)
+        options.backend = backend;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
         const auto requireValue = [&](std::string_view name) -> std::optional<std::string_view> {
@@ -138,6 +149,13 @@ template <std::size_t N>
             if (!value || (*value != "ply" && *value != "aether-bin"))
                 return std::nullopt;
             options.inputFormat = *value;
+        } else if (arg == "--backend") {
+            auto value = requireValue(arg);
+            if (!value || (*value != "auto" && *value != "cpu" && *value != "metal"))
+                return std::nullopt;
+            options.backend = *value;
+        } else if (arg == "--verify-metal-parity") {
+            options.verifyMetalParity = true;
         } else if (arg == "--changed") {
             auto value = requireValue(arg);
             if (!value)
@@ -218,6 +236,8 @@ template <std::size_t N>
             std::cout << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
                          "(--changed 1,4,9 | --detect-changed) [camera options]\n"
                       << "  --input-format ply|aether-bin (default: ply)\n"
+                      << "  --backend auto|cpu|metal (default: auto; env MAVEB_ORACLE_BACKEND)\n"
+                      << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
                       << "  --detect-changed compares stable source-order before/after records\n"
                       << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
                       << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
@@ -241,7 +261,8 @@ template <std::size_t N>
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
-        options.farPlane <= options.nearPlane)
+        options.farPlane <= options.nearPlane ||
+        (options.backend != "auto" && options.backend != "cpu" && options.backend != "metal"))
         return std::nullopt;
     return options;
 }
