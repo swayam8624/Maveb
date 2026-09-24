@@ -74,6 +74,7 @@ struct Options final {
     };
     double epsilon{0.01};
     double repairOmitFraction{};
+    double repairResidualScale{};
 };
 
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
@@ -505,7 +506,8 @@ template <std::size_t N>
                 options.height = *parsed;
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--repair-omit-fraction" || arg == "--background-r" ||
+                   arg == "--repair-omit-fraction" || arg == "--repair-residual-scale" ||
+                   arg == "--background-r" ||
                    arg == "--background-g" || arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
@@ -529,6 +531,8 @@ template <std::size_t N>
                 options.epsilon = *parsed;
             else if (arg == "--repair-omit-fraction")
                 options.repairOmitFraction = *parsed;
+            else if (arg == "--repair-residual-scale")
+                options.repairResidualScale = *parsed;
             else if (arg == "--background-r")
                 options.background[0] = static_cast<float>(*parsed);
             else if (arg == "--background-g")
@@ -553,7 +557,10 @@ template <std::size_t N>
                 << "  --background-r F --background-g F --background-b F\n"
                 << "  --epsilon F\n"
                 << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
-                   "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
+                   "Gaussians stale and certifies that omitted subset (reviewer probe)\n"
+                << "  --repair-residual-scale F leaves a graded fraction of every changed "
+                   "Gaussian update unapplied (0=exact repair, 1=fully stale) and certifies "
+                   "the resulting residual independently\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -565,6 +572,8 @@ template <std::size_t N>
     if (options.beforePath.empty() || options.afterPath.empty() ||
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
+        options.repairResidualScale < 0.0 || options.repairResidualScale > 1.0 ||
+        (options.repairOmitFraction > 0.0 && options.repairResidualScale > 0.0) ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
         options.farPlane <= options.nearPlane ||
         (options.backend != "auto" && options.backend != "cpu" && options.backend != "metal"))
@@ -629,6 +638,45 @@ template <std::size_t N>
            a.opacityLogit == b.opacityLogit && a.dc == b.dc && a.rest == b.rest &&
            a.restCount == b.restCount;
 }
+
+[[nodiscard]] Gaussian gradedRepairGaussian(const Gaussian& before, const Gaussian& after,
+                                            double residualScale) {
+    const float r = static_cast<float>(std::clamp(residualScale, 0.0, 1.0));
+    const float applied = 1.0F - r;
+    Gaussian repaired = after;
+    for (std::size_t i = 0; i < repaired.position.size(); ++i)
+        repaired.position[i] = applied * after.position[i] + r * before.position[i];
+    for (std::size_t i = 0; i < repaired.logScale.size(); ++i)
+        repaired.logScale[i] = applied * after.logScale[i] + r * before.logScale[i];
+    repaired.opacityLogit = applied * after.opacityLogit + r * before.opacityLogit;
+    for (std::size_t i = 0; i < repaired.dc.size(); ++i)
+        repaired.dc[i] = applied * after.dc[i] + r * before.dc[i];
+    for (std::size_t i = 0; i < repaired.rest.size(); ++i)
+        repaired.rest[i] = applied * after.rest[i] + r * before.rest[i];
+    repaired.restCount = after.restCount;
+
+    std::array<float, 4> beforeRotation = before.rotation;
+    double dot{};
+    for (std::size_t i = 0; i < beforeRotation.size(); ++i)
+        dot += static_cast<double>(after.rotation[i]) * beforeRotation[i];
+    if (dot < 0.0) {
+        for (float& value : beforeRotation)
+            value = -value;
+    }
+    double norm2{};
+    for (std::size_t i = 0; i < repaired.rotation.size(); ++i) {
+        repaired.rotation[i] = applied * after.rotation[i] + r * beforeRotation[i];
+        norm2 += static_cast<double>(repaired.rotation[i]) * repaired.rotation[i];
+    }
+    const double norm = std::sqrt(norm2);
+    if (norm > 1.0e-12) {
+        for (float& value : repaired.rotation)
+            value = static_cast<float>(value / norm);
+    } else {
+        repaired.rotation = after.rotation;
+    }
+    return repaired;
+
 
 [[nodiscard]] double sceneColorCap(const GaussianAsset& before, const GaussianAsset& after) {
     double cap = 1.0; // reference background is clamped to [0,1].
@@ -784,14 +832,14 @@ int main(int argc, char** argv) try {
             static_cast<std::size_t>(std::count(isOmitted.begin(), isOmitted.end(), true));
     }
 
-    GaussianAsset omittedBefore;
-    GaussianAsset omittedAfter;
-    omittedBefore.name = "before-omitted";
-    omittedAfter.name = "after-omitted";
-    omittedBefore.sphericalHarmonicDegree = before->sphericalHarmonicDegree;
-    omittedAfter.sphericalHarmonicDegree = after->sphericalHarmonicDegree;
-    omittedBefore.gaussians.reserve(omittedCount);
-    omittedAfter.gaussians.reserve(omittedCount);
+    GaussianAsset residualBefore;
+    GaussianAsset residualAfter;
+    residualBefore.name = "repair-residual-before";
+    residualAfter.name = "repair-residual-after";
+    residualBefore.sphericalHarmonicDegree = before->sphericalHarmonicDegree;
+    residualAfter.sphericalHarmonicDegree = after->sphericalHarmonicDegree;
+    residualBefore.gaussians.reserve(changed->size());
+    residualAfter.gaussians.reserve(changed->size());
 
     GaussianAsset repairedState = *after;
     repairedState.name = "selected-partial-repair";
@@ -799,9 +847,18 @@ int main(int argc, char** argv) try {
         for (const std::size_t index : *changed) {
             if (!isOmitted[index])
                 continue;
-            omittedBefore.gaussians.push_back(before->gaussians[index]);
-            omittedAfter.gaussians.push_back(after->gaussians[index]);
+            residualBefore.gaussians.push_back(before->gaussians[index]);
+            residualAfter.gaussians.push_back(after->gaussians[index]);
             repairedState.gaussians[index] = before->gaussians[index];
+        }
+    } else if (options->repairResidualScale > 0.0) {
+        for (const std::size_t index : *changed) {
+            const Gaussian repaired =
+                gradedRepairGaussian(before->gaussians[index], after->gaussians[index],
+                                     options->repairResidualScale);
+            residualBefore.gaussians.push_back(repaired);
+            residualAfter.gaussians.push_back(after->gaussians[index]);
+            repairedState.gaussians[index] = repaired;
         }
     }
 
@@ -938,9 +995,9 @@ int main(int argc, char** argv) try {
     }
 
     std::vector<double> repairBounds(oldImage->color.size(), 0.0);
-    if (omittedCount > 0) {
+    if (!residualBefore.gaussians.empty()) {
         auto repairCertificate = aether::world_gaussian::certifyGaussianImageRevision(
-            omittedBefore, omittedAfter, camera, colorCap);
+            residualBefore, residualAfter, camera, colorCap);
         if (!repairCertificate) {
             std::cerr << repairCertificate.error().describe() << '\n';
             return EXIT_FAILURE;
@@ -1064,8 +1121,9 @@ int main(int argc, char** argv) try {
             const double bound = certificate->rgbLInfBounds[pixel];
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
-            const double supportValue = options->repairOmitFraction > 0.0 ? residualBound : bound;
-            const double supportMaximum = options->repairOmitFraction > 0.0
+            const bool partialRepair = options->repairOmitFraction > 0.0 || options->repairResidualScale > 0.0;
+            const double supportValue = partialRepair ? residualBound : bound;
+            const double supportMaximum = partialRepair
                                               ? std::max(maximumRepairResidualBound, 1.0e-12)
                                               : maximumBound;
             supportHeat[pixel] = heatColor(supportValue, supportMaximum);
@@ -1129,10 +1187,14 @@ int main(int argc, char** argv) try {
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
               << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
-              << (options->repairOmitFraction > 0.0 ? "certified-omitted-gaussians-v1"
-                                                    : "exact-changed-support-v1")
+              << (options->repairOmitFraction > 0.0
+                      ? "certified-omitted-gaussians-v1"
+                      : (options->repairResidualScale > 0.0
+                             ? "certified-graded-residual-v1"
+                             : "exact-changed-support-v1"))
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
+              << "\"repairResidualScaleRequested\":" << options->repairResidualScale << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
               << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
               << "\"certificateViolationPixels\":" << certificateViolations << ','
