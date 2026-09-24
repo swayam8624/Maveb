@@ -1044,6 +1044,24 @@ The public v2 run writes `build/public-real-v2/visual-quality/CBRC_VISUAL_QUALIT
 <pre><code class="language-bash">chmod +x bootstrap_and_run.sh
 ./bootstrap_and_run.sh</code></pre>
 
+## Final reviewer-v2 + submission package
+
+The remaining non-zero-residual reviewer protocol is frozen separately from the
+1,275-case broad campaign. Resume it and build the final state-aware manuscript
+and submission bundle with:
+
+```bash
+bash finalize_maveb_submission.sh
+```
+
+The finalizer is fail-closed. It never retunes or filters reviewer-v2 cases. If
+any reviewer-readiness gate remains open, it writes
+`build/submission-final/SUBMISSION_STATUS.json` with
+`submissionReady=false` and exits non-zero without producing a
+submission-ready bundle. When every gate passes, it rebuilds the PDF,
+supplement, and editable DOCX with consistent reviewer-v2 wording and writes
+`build/submission-final/MAVEB_submission_bundle.zip`.
+
 ## Complete paper-grade execution
 
 <pre><code class="language-bash">./run_paper_grade_research.sh</code></pre>
