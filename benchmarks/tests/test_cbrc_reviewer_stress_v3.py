@@ -140,6 +140,8 @@ class ReviewerStressV3RunnerTests(unittest.TestCase):
         text = (ROOT / "run_reviewer_stress_v3.sh").read_text(encoding="utf-8")
         self.assertIn("graded residual ladder", text)
         self.assertIn("cbrc_reviewer_evidence_v3.py", text)
+        self.assertIn("MAVEB_REVIEWER_V3_RESULTS_DIR", text)
+        self.assertNotIn("MAVEB_REVIEWER_RESULTS_DIR", text)
         self.assertNotIn("cbrc_reviewer_manuscript_block.py", text)
         self.assertNotIn("reviewer_v2_results.tex", text)
 
