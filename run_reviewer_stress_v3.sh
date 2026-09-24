@@ -22,7 +22,7 @@ elif [[ -f "$ROOT/build/broad-benchmark-paper/worlds/BROAD_WORLDS.json" ]]; then
 else
   SOURCE_ROOT="$ROOT/build/broad-benchmark-smoke"
 fi
-OUT="${MAVEB_REVIEWER_RESULTS_DIR:-$ROOT/build/reviewer-stress-v3}"
+OUT="${MAVEB_REVIEWER_V3_RESULTS_DIR:-$ROOT/build/reviewer-stress-v3}"
 SCENES_PER_DATASET="${MAVEB_REVIEWER_SCENES_PER_DATASET:-1}"
 REUSE="${MAVEB_REVIEWER_REUSE:-1}"
 
