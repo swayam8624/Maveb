@@ -169,6 +169,81 @@ void testProjectedCertificateSupportsTranslatedCamera() {
     }
 }
 
+void testOpacityDeltaCertificateBoundsReferenceAndTightensSmallResidual() {
+    aether::gaussian::GaussianAsset unchanged;
+    unchanged.gaussians.push_back(primitive(0.0F, 4.0F, {0.2F, 0.4F, 0.8F}, 2.0F));
+
+    aether::gaussian::GaussianAsset beforeChanged;
+    beforeChanged.gaussians.push_back(primitive(0.0F, 3.0F, {1.0F, 0.2F, 0.1F}, 1.5005F));
+
+    aether::gaussian::GaussianAsset afterChanged;
+    afterChanged.gaussians.push_back(primitive(0.0F, 3.0F, {1.0F, 0.2F, 0.1F}, 1.5F));
+
+    aether::gaussian::GaussianAsset beforeFull = unchanged;
+    beforeFull.gaussians.insert(beforeFull.gaussians.end(), beforeChanged.gaussians.begin(),
+                                beforeChanged.gaussians.end());
+    aether::gaussian::GaussianAsset afterFull = unchanged;
+    afterFull.gaussians.insert(afterFull.gaussians.end(), afterChanged.gaussians.begin(),
+                               afterChanged.gaussians.end());
+
+    const auto c = camera();
+    const std::array<float, 3> background{0.1F, 0.1F, 0.1F};
+    auto beforeImage = aether::gaussian::ReferenceRasterizer::render(beforeFull, c, background);
+    auto afterImage = aether::gaussian::ReferenceRasterizer::render(afterFull, c, background);
+    expect(beforeImage && afterImage, "opacity-delta reference images must render");
+    if (!beforeImage || !afterImage)
+        return;
+
+    const double cap = sceneColorCap(beforeChanged, afterChanged, unchanged);
+    auto coarse =
+        aether::world_gaussian::certifyGaussianImageRevision(beforeChanged, afterChanged, c, cap);
+    auto tight = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+        beforeChanged, afterChanged, c, cap);
+    expect(coarse.has_value(), "coarse opacity certificate must succeed");
+    expect(tight.has_value(), "opacity-delta certificate must succeed");
+    if (!coarse || !tight)
+        return;
+
+    expect(tight->maximumRgbLInfBound < coarse->maximumRgbLInfBound,
+           "small opacity residual should tighten the coarse opacity-envelope bound");
+
+    bool sawCertifiedChange = false;
+    for (std::size_t pixel = 0; pixel < beforeImage->color.size(); ++pixel) {
+        double actual{};
+        for (std::size_t channel = 0; channel < 3; ++channel) {
+            actual =
+                std::max(actual,
+                         std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
+                                  static_cast<double>(afterImage->color[pixel][channel])));
+        }
+        const double bound = tight->rgbLInfBounds[pixel];
+        sawCertifiedChange = sawCertifiedChange || bound > 0.0;
+        if (actual > bound + 2.0e-6) {
+            expect(false, "opacity-only reference difference exceeded delta certificate");
+            return;
+        }
+    }
+    expect(sawCertifiedChange, "non-identical opacity states need non-zero certified support");
+}
+
+void testOpacityDeltaCertificateIsZeroForIdenticalStatesAndRejectsGeometryChange() {
+    aether::gaussian::GaussianAsset beforeChanged;
+    beforeChanged.gaussians.push_back(primitive(0.0F, 3.0F, {0.8F, 0.3F, 0.1F}, 1.5F));
+    aether::gaussian::GaussianAsset afterChanged = beforeChanged;
+
+    auto zero = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+        beforeChanged, afterChanged, camera(), 1.5);
+    expect(zero.has_value(), "identical opacity-only states must certify");
+    if (zero)
+        expect(zero->maximumRgbLInfBound == 0.0,
+               "identical opacity-only states must have zero delta bound");
+
+    afterChanged.gaussians.front().position[0] += 0.01F;
+    auto invalid = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+        beforeChanged, afterChanged, camera(), 1.5);
+    expect(!invalid.has_value(), "opacity-only certificate must fail closed on geometry change");
+}
+
 void testEmptyEditedSetsGiveZeroImageBound() {
     aether::gaussian::GaussianAsset empty;
     auto certificate =
@@ -185,6 +260,8 @@ int main() noexcept {
     try {
         testProjectedCertificateBoundsExactReferenceDifference();
         testProjectedCertificateSupportsTranslatedCamera();
+        testOpacityDeltaCertificateBoundsReferenceAndTightensSmallResidual();
+        testOpacityDeltaCertificateIsZeroForIdenticalStatesAndRejectsGeometryChange();
         testEmptyEditedSetsGiveZeroImageBound();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: unexpected exception: " << error.what() << '\n';

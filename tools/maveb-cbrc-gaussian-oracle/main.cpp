@@ -638,6 +638,21 @@ template <std::size_t N>
            a.restCount == b.restCount;
 }
 
+[[nodiscard]] bool differsOnlyInOpacity(const Gaussian& a, const Gaussian& b) noexcept {
+    return a.position == b.position && a.logScale == b.logScale && a.rotation == b.rotation &&
+           a.dc == b.dc && a.rest == b.rest && a.restCount == b.restCount;
+}
+
+[[nodiscard]] bool opacityOnlyRevision(const GaussianAsset& before,
+                                       const GaussianAsset& after) noexcept {
+    if (before.gaussians.size() != after.gaussians.size())
+        return false;
+    for (std::size_t index = 0; index < before.gaussians.size(); ++index)
+        if (!differsOnlyInOpacity(before.gaussians[index], after.gaussians[index]))
+            return false;
+    return true;
+}
+
 [[nodiscard]] Gaussian gradedRepairGaussian(const Gaussian& before, const Gaussian& after,
                                             double residualScale) {
     const float r = static_cast<float>(std::clamp(residualScale, 0.0, 1.0));
@@ -993,9 +1008,18 @@ int main(int argc, char** argv) try {
     }
 
     std::vector<double> repairBounds(oldImage->color.size(), 0.0);
+    std::string repairCertificateMode{"exact-zero-v1"};
     if (!residualBefore.gaussians.empty()) {
-        auto repairCertificate = aether::world_gaussian::certifyGaussianImageRevision(
-            residualBefore, residualAfter, camera, colorCap);
+        const bool canUseOpacityDelta =
+            opacityOnlyRevision(residualBefore, residualAfter);
+        auto repairCertificate =
+            canUseOpacityDelta
+                ? aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+                      residualBefore, residualAfter, camera, colorCap)
+                : aether::world_gaussian::certifyGaussianImageRevision(
+                      residualBefore, residualAfter, camera, colorCap);
+        repairCertificateMode =
+            canUseOpacityDelta ? "opacity-delta-lipschitz-v1" : "opacity-envelope-union-v1";
         if (!repairCertificate) {
             std::cerr << repairCertificate.error().describe() << '\n';
             return EXIT_FAILURE;
@@ -1190,6 +1214,7 @@ int main(int argc, char** argv) try {
                       : (options->repairResidualScale > 0.0 ? "certified-graded-residual-v1"
                                                             : "exact-changed-support-v1"))
               << "\","
+              << "\"repairCertificateMode\":\"" << repairCertificateMode << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairResidualScaleRequested\":" << options->repairResidualScale << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
