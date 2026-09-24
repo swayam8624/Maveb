@@ -132,6 +132,7 @@ def execution_signature(
         "oracleSha256": sha256(oracle),
         "revisionToolSha256": None if revision_tool is None else sha256(revision_tool),
         "gitSha": git_sha,
+        "oracleBackend": os.environ.get("MAVEB_ORACLE_BACKEND", "cpu"),
         "freezeProvenanceSha256": (
             None if freeze_provenance is None else sha256(freeze_provenance)
         ),
