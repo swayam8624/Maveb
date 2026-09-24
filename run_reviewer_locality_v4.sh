@@ -150,7 +150,7 @@ echo "  If interrupted, rerun this script; completed matching cases are reused."
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
 "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
-AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics.py")"
+AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py")"
 
 step 4 "Analyze locality, bound terms, and FULL-to-LOCAL crossovers"
 if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]    && [[ -f "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" ]]    && [[ -f "$ANALYSIS/CASE_DECISION_TRACE.json" ]]; then
@@ -159,7 +159,7 @@ else
   rm -rf "$ANALYSIS"
   mkdir -p "$ANALYSIS"
   "$PYTHON" research/analysis/cbrc_reviewer_evidence_v3.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --output-dir "$ANALYSIS"
-  "$PYTHON" research/analysis/cbrc_reviewer_fallback_diagnostics.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" >/dev/null
+  "$PYTHON" research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" >/dev/null
   "$PYTHON" research/analysis/cbrc_trace_case.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/CASE_DECISION_TRACE.json" >/dev/null
   cache_done audit "$AUDIT_KEY"
 fi
