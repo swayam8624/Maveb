@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parents[2]
 COLMAP_SEEDER = ROOT / "benchmarks/scripts/cbrc_seed_colmap_world.py"
 NATIVE_PROXY = ROOT / "benchmarks/scripts/cbrc_native_proxy.py"
 
+import cbrc_augment_prepared_worlds as prepared_augment
+
 
 def load(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -973,6 +975,63 @@ def main(argv: list[str] | None = None) -> int:
             "dataset-specific CBRC threshold or result gate is changed."
         ),
     }
+    reuse_prepared = os.environ.get(
+        "MAVEB_BROAD_REUSE_PREPARED_WORLDS", "0"
+    ).lower() in {"1", "true", "yes", "on"}
+    candidate_text = os.environ.get("MAVEB_BROAD_PREPARED_WORLD_CANDIDATES", "")
+    try:
+        target_worlds = max(
+            2, int(os.environ.get("MAVEB_BROAD_FAST_WORLD_TARGET", "4"))
+        )
+    except ValueError:
+        target_worlds = 4
+
+    if (
+        reuse_prepared
+        and manifest["readyWorlds"] < target_worlds
+        and manifest["blockedWorlds"] == 0
+        and manifest["failedWorlds"] == 0
+        and candidate_text
+    ):
+        candidate_payloads: list[tuple[dict[str, Any], Path]] = []
+        for value in candidate_text.split(os.pathsep):
+            if not value:
+                continue
+            candidate = Path(value).expanduser().resolve()
+            if not candidate.is_file():
+                continue
+            try:
+                candidate_payloads.append((load(candidate), candidate))
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+        if candidate_payloads:
+            bounded, datasets = prepared_augment.build_bounded_set(
+                base_payload=manifest,
+                base_source=output / "BROAD_WORLDS.json",
+                candidates=candidate_payloads,
+                target_worlds=target_worlds,
+                minimum_worlds=2,
+            )
+            if bounded["readyWorlds"] > manifest["readyWorlds"]:
+                manifest["records"] = bounded["records"]
+                manifest["readyWorlds"] = bounded["readyWorlds"]
+                manifest["nativePreparedWorlds"] = bounded["nativePreparedWorlds"]
+                manifest["rgbFallbackWorlds"] = bounded["rgbFallbackWorlds"]
+                manifest["developmentOnly"] = True
+                manifest["datasets"] = datasets
+                manifest["developmentAugmentation"] = {
+                    "targetWorlds": target_worlds,
+                    "freshReadyWorlds": bounded["freshReadyWorlds"],
+                    "reusedHistoricalWorlds": bounded["reusedHistoricalWorlds"],
+                }
+                print(
+                    "  ↳ augmented fast world set to "
+                    f"{bounded['readyWorlds']} worlds "
+                    f"({bounded['freshReadyWorlds']} fresh, "
+                    f"{bounded['reusedHistoricalWorlds']} historical)",
+                    flush=True,
+                )
+
     write(output / "BROAD_WORLDS.json", manifest)
     checkpoint()
 
