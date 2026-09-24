@@ -86,12 +86,12 @@ echo
 echo
 echo "Protocol:"
 echo "  - deterministic real-world selection"
-echo "  - 2 fixed edit-severity profiles"
+echo "  - 4 frozen locality profiles: smallest entity, ~1%, ~3%, broad ~12%"
 echo "  - translation / rotation / scale / opacity"
-echo "  - epsilon ladder: 0.25,0.5,1,2,4,8,16,32 / 255"
-echo "  - graded residual ladder: exact, 1/1024, 1/256, 1/64"
-echo "  - each graded residual receives an independent conservative display-space certificate"
-echo "  - within each stress key, scene/edit/severity/residual scale stay fixed; only epsilon changes"
+echo "  - epsilon ladder: 1,4,16,32 / 255"
+echo "  - graded residual ladder: exact, 1/1024"
+echo "  - entity-level edits only; smallest-entity is not mislabeled as one Gaussian"
+echo "  - within each stress key, scene/edit/profile/residual stay fixed; only epsilon changes"
 echo
 
 step 1 "Validate broad real-world prerequisites and build tools"
@@ -150,15 +150,17 @@ echo "  If interrupted, rerun this script; completed matching cases are reused."
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
 "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
-AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py")"
+AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics.py")"
 
 step 4 "Analyze locality, bound terms, and FULL-to-LOCAL crossovers"
-if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]; then
+if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]    && [[ -f "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" ]]    && [[ -f "$ANALYSIS/CASE_DECISION_TRACE.json" ]]; then
   echo "  [██████████████████████████████] 100.00% | CACHE | reviewer audit reused"
 else
   rm -rf "$ANALYSIS"
   mkdir -p "$ANALYSIS"
   "$PYTHON" research/analysis/cbrc_reviewer_evidence_v3.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --output-dir "$ANALYSIS"
+  "$PYTHON" research/analysis/cbrc_reviewer_fallback_diagnostics.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" >/dev/null
+  "$PYTHON" research/analysis/cbrc_trace_case.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/CASE_DECISION_TRACE.json" >/dev/null
   cache_done audit "$AUDIT_KEY"
 fi
 
@@ -238,7 +240,9 @@ Artifacts:
   Campaign     : $FREEZE/reviewer-stress-campaign.json
   Rows         : $CAMPAIGN/campaign-rows.jsonl
   Audit        : $ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json
-  Audit MD     : $ANALYSIS/REVIEWER_EVIDENCE_AUDIT.md\n  Case trace   : $ANALYSIS/CASE_DECISION_TRACE.json
+  Audit MD     : $ANALYSIS/REVIEWER_EVIDENCE_AUDIT.md
+  Fallbacks    : $ANALYSIS/FALLBACK_DIAGNOSTICS.json
+  Case trace   : $ANALYSIS/CASE_DECISION_TRACE.json
   Real scenes  : $VISUALS/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
   Crossover    : $VISUALS/F_REVIEWER_TOLERANCE_CROSSOVER.png
   Visual index : $VISUALS/REVIEWER_VISUALS.json
