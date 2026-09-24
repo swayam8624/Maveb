@@ -218,6 +218,7 @@ if(AETHER_BUILD_TESTS)
                 --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
                 --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
                 --detect-changed
+                --backend cpu
                 --width 64 --height 64
                 --focal-x 70 --focal-y 70
                 --center-x 32 --center-y 32
