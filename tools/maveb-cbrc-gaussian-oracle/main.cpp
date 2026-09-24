@@ -658,36 +658,48 @@ template <std::size_t N>
     const float r = static_cast<float>(std::clamp(residualScale, 0.0, 1.0));
     const float applied = 1.0F - r;
     Gaussian repaired = after;
+
+    // Preserve unchanged attributes bit-for-bit. Apart from avoiding needless
+    // floating drift, this matters for proof-specific residual certificates:
+    // an opacity-only physical edit must remain opacity-only after residual
+    // construction instead of acquiring numerical geometry/SH differences.
     for (std::size_t i = 0; i < repaired.position.size(); ++i)
-        repaired.position[i] = applied * after.position[i] + r * before.position[i];
+        if (before.position[i] != after.position[i])
+            repaired.position[i] = applied * after.position[i] + r * before.position[i];
     for (std::size_t i = 0; i < repaired.logScale.size(); ++i)
-        repaired.logScale[i] = applied * after.logScale[i] + r * before.logScale[i];
-    repaired.opacityLogit = applied * after.opacityLogit + r * before.opacityLogit;
+        if (before.logScale[i] != after.logScale[i])
+            repaired.logScale[i] = applied * after.logScale[i] + r * before.logScale[i];
+    if (before.opacityLogit != after.opacityLogit)
+        repaired.opacityLogit = applied * after.opacityLogit + r * before.opacityLogit;
     for (std::size_t i = 0; i < repaired.dc.size(); ++i)
-        repaired.dc[i] = applied * after.dc[i] + r * before.dc[i];
+        if (before.dc[i] != after.dc[i])
+            repaired.dc[i] = applied * after.dc[i] + r * before.dc[i];
     for (std::size_t i = 0; i < repaired.rest.size(); ++i)
-        repaired.rest[i] = applied * after.rest[i] + r * before.rest[i];
+        if (before.rest[i] != after.rest[i])
+            repaired.rest[i] = applied * after.rest[i] + r * before.rest[i];
     repaired.restCount = after.restCount;
 
-    std::array<float, 4> beforeRotation = before.rotation;
-    double dot{};
-    for (std::size_t i = 0; i < beforeRotation.size(); ++i)
-        dot += static_cast<double>(after.rotation[i]) * beforeRotation[i];
-    if (dot < 0.0) {
-        for (float& value : beforeRotation)
-            value = -value;
-    }
-    double norm2{};
-    for (std::size_t i = 0; i < repaired.rotation.size(); ++i) {
-        repaired.rotation[i] = applied * after.rotation[i] + r * beforeRotation[i];
-        norm2 += static_cast<double>(repaired.rotation[i]) * repaired.rotation[i];
-    }
-    const double norm = std::sqrt(norm2);
-    if (norm > 1.0e-12) {
-        for (float& value : repaired.rotation)
-            value = static_cast<float>(value / norm);
-    } else {
-        repaired.rotation = after.rotation;
+    if (before.rotation != after.rotation) {
+        std::array<float, 4> beforeRotation = before.rotation;
+        double dot{};
+        for (std::size_t i = 0; i < beforeRotation.size(); ++i)
+            dot += static_cast<double>(after.rotation[i]) * beforeRotation[i];
+        if (dot < 0.0) {
+            for (float& value : beforeRotation)
+                value = -value;
+        }
+        double norm2{};
+        for (std::size_t i = 0; i < repaired.rotation.size(); ++i) {
+            repaired.rotation[i] = applied * after.rotation[i] + r * beforeRotation[i];
+            norm2 += static_cast<double>(repaired.rotation[i]) * repaired.rotation[i];
+        }
+        const double norm = std::sqrt(norm2);
+        if (norm > 1.0e-12) {
+            for (float& value : repaired.rotation)
+                value = static_cast<float>(value / norm);
+        } else {
+            repaired.rotation = after.rotation;
+        }
     }
     return repaired;
 }
