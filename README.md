@@ -686,11 +686,17 @@ All committed visual files, including canonical packaging aliases, live under [r
 
 # Frozen evidence
 
-Canonical evidence:
+Current paper-grade evidence:
 
-- [Machine-readable evidence manifest](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json)
-- [Human-readable evidence freeze](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
-- [Strict claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
+- [Machine-readable 2026-09-24 evidence summary](research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.json)
+- [Human-readable 2026-09-24 evidence summary](research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.md)
+- [Current strict claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-24.md)
+
+Historical 2026-09-21 evidence remains preserved for provenance:
+
+- [Historical machine-readable evidence manifest](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.json)
+- [Historical human-readable evidence freeze](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
+- [Historical strict claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
 
 ## Paper-grade cross-dataset campaign
 
