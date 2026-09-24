@@ -125,8 +125,15 @@ def build_oracle_command(binary: Path, manifest: dict[str, Any]) -> list[str]:
     if visual_output_dir:
         command.extend(["--visual-output-dir", str(visual_output_dir)])
     repair_omit_fraction = float(manifest.get("repair_omit_fraction", 0.0))
+    repair_residual_budget = float(manifest.get("repair_residual_budget", 0.0))
+    if repair_omit_fraction > 0.0 and repair_residual_budget > 0.0:
+        raise ValueError(
+            "repair_omit_fraction and repair_residual_budget are mutually exclusive"
+        )
     if repair_omit_fraction > 0.0:
         command.extend(["--repair-omit-fraction", str(repair_omit_fraction)])
+    if repair_residual_budget > 0.0:
+        command.extend(["--repair-residual-budget", str(repair_residual_budget)])
 
     command.extend([
         "--width", str(int(camera["width"])),
@@ -338,6 +345,18 @@ def finalize_row(
             "repairMode": str(oracle.get("repairMode", "exact-changed-support-v1")),
             "repairOmitFractionRequested": float(
                 oracle.get("repairOmitFractionRequested", 0.0)
+            ),
+            "repairResidualBudgetFraction": float(
+                manifest.get("repair_residual_budget_fraction", 0.0)
+            ),
+            "repairResidualRemainingSlack": float(
+                manifest.get("repair_residual_remaining_slack", 0.0)
+            ),
+            "repairResidualBudgetRequested": float(
+                oracle.get("repairResidualBudgetRequested", 0.0)
+            ),
+            "repairResidualBudget": float(
+                oracle.get("repairResidualBudget", 0.0)
             ),
             "repairOmittedGaussians": int(oracle.get("repairOmittedGaussians", 0)),
             "repairAppliedChangedGaussians": int(

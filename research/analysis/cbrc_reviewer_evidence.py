@@ -72,6 +72,18 @@ def classify_row(
     repair_omit_fraction = float(
         diagnostics.get("repairOmitFractionRequested", 0.0)
     )
+    repair_budget_fraction = float(
+        diagnostics.get("repairResidualBudgetFraction", 0.0)
+    )
+    repair_remaining_slack = float(
+        diagnostics.get("repairResidualRemainingSlack", 0.0)
+    )
+    repair_budget_requested = float(
+        diagnostics.get("repairResidualBudgetRequested", 0.0)
+    )
+    repair_budget = float(
+        diagnostics.get("repairResidualBudget", 0.0)
+    )
     repair_omitted_gaussians = int(
         diagnostics.get("repairOmittedGaussians", 0)
     )
@@ -164,6 +176,10 @@ def classify_row(
         ),
         "repairMode": repair_mode,
         "repairOmitFraction": repair_omit_fraction,
+        "repairResidualBudgetFraction": repair_budget_fraction,
+        "repairResidualRemainingSlack": repair_remaining_slack,
+        "repairResidualBudgetRequested": repair_budget_requested,
+        "repairResidualBudget": repair_budget,
         "repairOmittedGaussians": repair_omitted_gaussians,
         "repairAppliedChangedGaussians": repair_applied_gaussians,
         "repairCertificateViolationPixels": repair_certificate_violations,
@@ -306,7 +322,11 @@ def analyze(
     partial_mode_records = [
         record
         for record in records
-        if record["repairMode"] == "certified-omitted-gaussians-v1"
+        if record["repairMode"]
+        in {
+            "certified-omitted-gaussians-v1",
+            "certified-budgeted-omitted-gaussians-v2",
+        }
         and record["repairOmittedGaussians"] > 0
     ]
 
@@ -425,6 +445,10 @@ def write_csv(records: list[dict[str, Any]], path: Path) -> None:
         "affectedPixelFraction",
         "repairMode",
         "repairOmitFraction",
+        "repairResidualBudgetFraction",
+        "repairResidualRemainingSlack",
+        "repairResidualBudgetRequested",
+        "repairResidualBudget",
         "repairOmittedGaussians",
         "repairAppliedChangedGaussians",
         "repairCertificateViolationPixels",
