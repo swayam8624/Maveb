@@ -346,6 +346,18 @@ def finalize_row(
             "repairOmitFractionRequested": float(
                 oracle.get("repairOmitFractionRequested", 0.0)
             ),
+            "repairResidualBudgetFraction": float(
+                manifest.get("repair_residual_budget_fraction", 0.0)
+            ),
+            "repairResidualRemainingSlack": float(
+                manifest.get("repair_residual_remaining_slack", 0.0)
+            ),
+            "repairResidualBudgetRequested": float(
+                oracle.get("repairResidualBudgetRequested", 0.0)
+            ),
+            "repairResidualBudget": float(
+                oracle.get("repairResidualBudget", 0.0)
+            ),
             "repairOmittedGaussians": int(oracle.get("repairOmittedGaussians", 0)),
             "repairAppliedChangedGaussians": int(
                 oracle.get("repairAppliedChangedGaussians", oracle.get("changedGaussians", 0))
