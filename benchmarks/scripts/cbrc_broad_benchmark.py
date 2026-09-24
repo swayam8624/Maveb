@@ -48,6 +48,15 @@ def configured_root(dataset: dict[str, Any]) -> Path | None:
         value = os.environ.get(env_name)
         if value:
             return Path(os.path.expanduser(os.path.expandvars(value))).resolve()
+
+    data_value = os.environ.get("MAVEB_DATA")
+    if data_value:
+        data_root = Path(os.path.expanduser(os.path.expandvars(data_value))).resolve()
+        for relative in dataset.get("dataSubdirs", []):
+            candidate = (data_root / str(relative)).resolve()
+            if candidate.is_dir():
+                return candidate
+
     if dataset["id"] == "existing-public-v2":
         return Path(
             os.environ.get(
