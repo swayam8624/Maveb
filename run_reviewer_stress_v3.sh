@@ -89,9 +89,9 @@ echo "  - deterministic real-world selection"
 echo "  - 2 fixed edit-severity profiles"
 echo "  - translation / rotation / scale / opacity"
 echo "  - epsilon ladder: 0.25,0.5,1,2,4,8,16,32 / 255"
-echo "  - fixed deterministic omitted-Gaussian fraction: 1% medium / 5% strong"
-echo "  - omitted subset receives an independent conservative display-space certificate"
-echo "  - within each stress key, epsilon is the ONLY changed variable"
+echo "  - graded residual ladder: exact, 1/1024, 1/256, 1/64"
+echo "  - each graded residual receives an independent conservative display-space certificate"
+echo "  - within each stress key, scene/edit/severity/residual scale stay fixed; only epsilon changes"
 echo
 
 step 1 "Validate broad real-world prerequisites and build tools"
@@ -162,8 +162,8 @@ else
   cache_done audit "$AUDIT_KEY"
 fi
 
-ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v2-partial-repair --file "$CAMPAIGN/campaign-rows.jsonl")"
-VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v2-partial-repair --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
+ROWS_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-rows-v3-graded-residual --file "$CAMPAIGN/campaign-rows.jsonl")"
+VISUAL_KEY="$("$PYTHON" "$CACHE_KEY" --label reviewer-visual-package-v3-graded-residual --file "$IMPORT" --file "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" --file "$ROOT/research/analysis/cbrc_reviewer_visuals.py" --value "campaign_rows_sha=$ROWS_KEY")"
 
 if ! "$PYTHON" - <<'PY'
 try:
@@ -244,14 +244,13 @@ Artifacts:
   Real scenes  : $VISUALS/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
   Crossover    : $VISUALS/F_REVIEWER_TOLERANCE_CROSSOVER.png
   Visual index : $VISUALS/REVIEWER_VISUALS.json
-  Paper block   : $ROOT/researchpaper/generated/reviewer_v2_results.tex
-  Paper status  : $ROOT/researchpaper/generated/reviewer_v2_status.md
+  v3 evidence is intentionally not connected to manuscript state yet.
 
 Resume:
-  bash run_reviewer_stress_campaign.sh
+  bash run_reviewer_stress_v3.sh
 
-Force a fresh reviewer run:
-  MAVEB_REVIEWER_REUSE=0 bash run_reviewer_stress_campaign.sh
+Force a fresh v3 reviewer run:
+  MAVEB_REVIEWER_REUSE=0 bash run_reviewer_stress_v3.sh
 
 Scientific rule:
   An OPEN reviewer-evidence gate is reported, not hidden by post-hoc case
