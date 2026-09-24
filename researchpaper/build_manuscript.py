@@ -41,6 +41,43 @@ def compile_tex(source, build, bibliography=False):
         raise RuntimeError('Typesetting validation failed:\n' + '\n'.join(failures))
 
 
+def expand_reviewer_v2_for_word(source):
+    state = ROOT / 'generated/reviewer_v2_state.tex'
+    results = ROOT / 'generated/reviewer_v2_results.tex'
+    ready = state.is_file() and r'\reviewervtworeadytrue' in state.read_text()
+
+    pattern = re.compile(
+        r'\\ifreviewervtwoready(.*?)\\else(.*?)\\fi',
+        re.S,
+    )
+    while pattern.search(source):
+        source = pattern.sub(
+            lambda match: match.group(1) if ready else match.group(2),
+            source,
+        )
+
+    state_block = re.compile(
+        r'\\IfFileExists\{generated/reviewer_v2_state\.tex\}\{%'
+        r'.*?\\input\{generated/reviewer_v2_state\.tex\}%'
+        r'.*?\}\{%'
+        r'.*?\\newif\\ifreviewervtwoready'
+        r'.*?\\reviewervtworeadyfalse'
+        r'.*?\}',
+        re.S,
+    )
+    source = state_block.sub('', source)
+
+    results_marker = (
+        r'\IfFileExists{generated/reviewer_v2_results.tex}'
+        r'{\input{generated/reviewer_v2_results.tex}}{}'
+    )
+    if ready and results.is_file():
+        source = source.replace(results_marker, results.read_text())
+    else:
+        source = source.replace(results_marker, '')
+    return source
+
+
 def export_word(build):
     # Pandoc does not parse tabularx or TikZ. Convert only the export input;
     # the authoritative ACM LaTeX source remains unchanged.
@@ -52,6 +89,7 @@ def export_word(build):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     source = (ROOT / 'main.tex').read_text()
+    source = expand_reviewer_v2_for_word(source)
     expected_figure_count = len(re.findall(r'\\begin\{figure\*?\}', source))
     expected_table_count = len(re.findall(r'\\begin\{table\*?\}', source))
     abstract = re.search(r'\\begin\{abstract\}(.*?)\\end\{abstract\}', source, re.S)[1]
