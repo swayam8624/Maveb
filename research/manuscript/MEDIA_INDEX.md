@@ -104,4 +104,3 @@ After `bash run_reviewer_stress_campaign.sh`, the fail-closed bridge writes:
 - `researchpaper/figures/reviewer_v2_crossover.png` — copied only when a frozen tolerance crossover figure exists and all readiness gates pass.
 
 `researchpaper/main.tex` conditionally includes the generated reviewer-v2 block. This prevents an OPEN reviewer experiment from silently becoming a manuscript claim.
-
