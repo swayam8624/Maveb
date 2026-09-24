@@ -508,10 +508,8 @@ template <std::size_t N>
                 options.height = *parsed;
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--repair-omit-fraction" ||
-                   arg == "--repair-residual-budget" ||
-                   arg == "--background-r" || arg == "--background-g" ||
-                   arg == "--background-b") {
+                   arg == "--repair-omit-fraction" || arg == "--repair-residual-budget" ||
+                   arg == "--background-r" || arg == "--background-g" || arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -824,19 +822,16 @@ int main(int argc, char** argv) try {
         omittedCount =
             static_cast<std::size_t>(std::count(isOmitted.begin(), isOmitted.end(), true));
     } else if (options->repairResidualBudget > 0.0 && changed->size() >= 2) {
-        repairResidualBudget =
-            std::max(0.0, options->repairResidualBudget - kOracleNumericalSlack);
+        repairResidualBudget = std::max(0.0, options->repairResidualBudget - kOracleNumericalSlack);
 
         omissionOrder = *changed;
-        std::sort(omissionOrder.begin(), omissionOrder.end(),
-                  [](std::size_t lhs, std::size_t rhs) {
-                      const auto lhsRank = stableOmissionRank(lhs);
-                      const auto rhsRank = stableOmissionRank(rhs);
-                      return lhsRank == rhsRank ? lhs < rhs : lhsRank < rhsRank;
-                  });
+        std::sort(omissionOrder.begin(), omissionOrder.end(), [](std::size_t lhs, std::size_t rhs) {
+            const auto lhsRank = stableOmissionRank(lhs);
+            const auto rhsRank = stableOmissionRank(rhs);
+            return lhsRank == rhsRank ? lhs < rhs : lhsRank < rhsRank;
+        });
 
-        const auto certifiedPrefixBound =
-            [&](std::size_t count) -> aether::Result<double> {
+        const auto certifiedPrefixBound = [&](std::size_t count) -> aether::Result<double> {
             GaussianAsset candidateBefore;
             GaussianAsset candidateAfter;
             candidateBefore.sphericalHarmonicDegree = before->sphericalHarmonicDegree;
@@ -848,9 +843,8 @@ int main(int argc, char** argv) try {
                 candidateBefore.gaussians.push_back(before->gaussians[index]);
                 candidateAfter.gaussians.push_back(after->gaussians[index]);
             }
-            auto candidateCertificate =
-                aether::world_gaussian::certifyGaussianImageRevision(
-                    candidateBefore, candidateAfter, camera, colorCap);
+            auto candidateCertificate = aether::world_gaussian::certifyGaussianImageRevision(
+                candidateBefore, candidateAfter, camera, colorCap);
             if (!candidateCertificate)
                 return std::unexpected(candidateCertificate.error());
             return candidateCertificate->maximumRgbLInfBound;
@@ -1141,12 +1135,10 @@ int main(int argc, char** argv) try {
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
             const bool approximateRepair =
-                options->repairOmitFraction > 0.0 ||
-                options->repairResidualBudget > 0.0;
+                options->repairOmitFraction > 0.0 || options->repairResidualBudget > 0.0;
             const double supportValue = approximateRepair ? residualBound : bound;
             const double supportMaximum =
-                approximateRepair ? std::max(maximumRepairResidualBound, 1.0e-12)
-                                  : maximumBound;
+                approximateRepair ? std::max(maximumRepairResidualBound, 1.0e-12) : maximumBound;
             supportHeat[pixel] = heatColor(supportValue, supportMaximum);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
@@ -1210,9 +1202,8 @@ int main(int argc, char** argv) try {
               << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
               << (options->repairResidualBudget > 0.0
                       ? "certified-budgeted-omitted-gaussians-v2"
-                      : (options->repairOmitFraction > 0.0
-                             ? "certified-omitted-gaussians-v1"
-                             : "exact-changed-support-v1"))
+                      : (options->repairOmitFraction > 0.0 ? "certified-omitted-gaussians-v1"
+                                                          : "exact-changed-support-v1"))
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairResidualBudgetRequested\":" << options->repairResidualBudget << ','
