@@ -1178,6 +1178,12 @@ int main(int argc, char** argv) try {
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
 
+    std::string_view repairMode = "exact-changed-support-v1";
+    if (options->repairResidualBudget > 0.0)
+        repairMode = "certified-budgeted-omitted-gaussians-v2";
+    else if (options->repairOmitFraction > 0.0)
+        repairMode = "certified-omitted-gaussians-v1";
+
     std::cout << std::setprecision(17) << "{"
               << "\"schemaVersion\":1,"
               << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
@@ -1199,11 +1205,7 @@ int main(int argc, char** argv) try {
               << "\"repair_qois\":{\"rgb_linf\":{\"epsilon\":" << options->epsilon << ','
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
-              << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
-              << (options->repairResidualBudget > 0.0
-                      ? "certified-budgeted-omitted-gaussians-v2"
-                      : (options->repairOmitFraction > 0.0 ? "certified-omitted-gaussians-v1"
-                                                          : "exact-changed-support-v1"))
+              << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\"" << repairMode
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairResidualBudgetRequested\":" << options->repairResidualBudget << ','
