@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+
 PYTHON="${MAVEB_PYTHON:-$ROOT/.venv-maveb/bin/python}"
 if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
@@ -29,8 +35,8 @@ ANALYSIS="$OUT/analysis"
 VISUALS="$OUT/visuals"
 CACHE="$OUT/.stage-cache"
 
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 CACHE_KEY="$ROOT/benchmarks/scripts/cbrc_cache_key.py"
 STORAGE_DOCTOR="$ROOT/benchmarks/scripts/cbrc_storage_doctor.py"
 export MAVEB_REQUIRE_COW="${MAVEB_REQUIRE_COW:-1}"
@@ -108,8 +114,8 @@ print(
 )
 PY
 
-cmake --preset ci
-cmake --build --preset ci   --target maveb-cbrc-revision maveb-cbrc-gaussian-oracle   --parallel
+cmake --preset "$BUILD_PRESET"
+cmake --build --preset "$BUILD_PRESET"   --target maveb-cbrc-revision maveb-cbrc-gaussian-oracle   --parallel
 
 if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GIB"; then
   echo "Insufficient free disk for reviewer stress execution." >&2
@@ -141,7 +147,8 @@ step 3 "Execute oracle-checked reviewer stress cases"
 echo "  This step is resumable case-by-case."
 echo "  If interrupted, rerun this script; completed matching cases are reused."
 
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --workers "$CASE_WORKERS"
 
 AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v2-partial-repair   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence.py")"
 
