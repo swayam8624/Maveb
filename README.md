@@ -1068,7 +1068,12 @@ Useful performance controls:
 export MAVEB_BROAD_CASE_WORKERS=4
 export MAVEB_BROAD_BUILD_PRESET=research
 export MAVEB_ORACLE_BACKEND=auto        # auto | cpu | metal
+export MAVEB_ORACLE_CPU_THREADS=2       # optional; otherwise divided across case workers
 </code></pre>
+
+Validate the optimized build, CPU oracle, and (on macOS) Metal-vs-CPU parity with:
+
+<pre><code class="language-bash">bash verify_maveb_performance_path.sh</code></pre>
 
 Before or after a campaign, inspect storage without deleting anything:
 
