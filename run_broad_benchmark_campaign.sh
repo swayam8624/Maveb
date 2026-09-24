@@ -29,6 +29,7 @@ CASE_WORKERS="${MAVEB_BROAD_CASE_WORKERS:-4}"
 BUILD_PRESET="${MAVEB_BROAD_BUILD_PRESET:-research}"
 BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
 export MAVEB_PROGRESS="${MAVEB_PROGRESS:-1}"
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS_DIR/.oracle-cache}"
 if [[ -z "${MAVEB_ORACLE_BACKEND:-}" ]]; then
   if [[ "$(uname -s)" == "Darwin" ]]; then
     export MAVEB_ORACLE_BACKEND="auto"
@@ -232,6 +233,7 @@ echo "Scene workers    : $SCENE_WORKERS"
 echo "Case workers     : $CASE_WORKERS"
 echo "Build preset     : $BUILD_PRESET"
 echo "Oracle backend   : $MAVEB_ORACLE_BACKEND"
+echo "Oracle cache     : $MAVEB_ORACLE_CACHE_DIR"
 echo "Require COW      : $MAVEB_REQUIRE_COW"
 echo "Min free disk    : $MIN_FREE_GIB GiB"
 echo
@@ -525,6 +527,7 @@ Reuse controls:
   MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
   MAVEB_BROAD_BUILD_PRESET=research optimized Release research binaries
   MAVEB_ORACLE_BACKEND=auto      Metal on macOS with deterministic CPU fallback
+  MAVEB_ORACLE_CACHE_DIR=...      shared immutable render cache for Step-6 workers
 
 Scientific boundary:
   * cache hits require deterministic fingerprints of the relevant inputs, tools, scripts, and parameters;
