@@ -74,7 +74,7 @@ struct Options final {
     };
     double epsilon{0.01};
     double repairOmitFraction{};
-    double repairResidualBudgetFraction{};
+    double repairResidualBudget{};
 };
 
 constexpr double kOracleNumericalSlack = 2.0e-6;
@@ -509,7 +509,7 @@ template <std::size_t N>
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
                    arg == "--repair-omit-fraction" ||
-                   arg == "--repair-residual-budget-fraction" ||
+                   arg == "--repair-residual-budget" ||
                    arg == "--background-r" || arg == "--background-g" ||
                    arg == "--background-b") {
             auto value = requireValue(arg);
@@ -534,8 +534,8 @@ template <std::size_t N>
                 options.epsilon = *parsed;
             else if (arg == "--repair-omit-fraction")
                 options.repairOmitFraction = *parsed;
-            else if (arg == "--repair-residual-budget-fraction")
-                options.repairResidualBudgetFraction = *parsed;
+            else if (arg == "--repair-residual-budget")
+                options.repairResidualBudget = *parsed;
             else if (arg == "--background-r")
                 options.background[0] = static_cast<float>(*parsed);
             else if (arg == "--background-g")
@@ -561,9 +561,9 @@ template <std::size_t N>
                 << "  --epsilon F\n"
                 << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
                    "Gaussians stale and certifies that omitted subset (reviewer-v2 probe)\n"
-                << "  --repair-residual-budget-fraction F deterministically omits the largest "
-                   "nested Gaussian subset whose conservative residual certificate fits "
-                   "F*epsilon (reviewer-v3 probe)\n";
+                << "  --repair-residual-budget F deterministically omits the largest nested "
+                   "Gaussian subset whose conservative residual certificate fits absolute "
+                   "RGB L-infinity budget F (reviewer-v3 probe)\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -575,9 +575,8 @@ template <std::size_t N>
     if (options.beforePath.empty() || options.afterPath.empty() ||
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
-        options.repairResidualBudgetFraction < 0.0 ||
-        options.repairResidualBudgetFraction > 1.0 ||
-        (options.repairOmitFraction > 0.0 && options.repairResidualBudgetFraction > 0.0) ||
+        options.repairResidualBudget < 0.0 ||
+        (options.repairOmitFraction > 0.0 && options.repairResidualBudget > 0.0) ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
         options.farPlane <= options.nearPlane ||
         (options.backend != "auto" && options.backend != "cpu" && options.backend != "metal"))
@@ -824,10 +823,9 @@ int main(int argc, char** argv) try {
         }
         omittedCount =
             static_cast<std::size_t>(std::count(isOmitted.begin(), isOmitted.end(), true));
-    } else if (options->repairResidualBudgetFraction > 0.0 && changed->size() >= 2) {
+    } else if (options->repairResidualBudget > 0.0 && changed->size() >= 2) {
         repairResidualBudget =
-            std::max(0.0, options->epsilon * options->repairResidualBudgetFraction -
-                              kOracleNumericalSlack);
+            std::max(0.0, options->repairResidualBudget - kOracleNumericalSlack);
 
         omissionOrder = *changed;
         std::sort(omissionOrder.begin(), omissionOrder.end(),
@@ -1144,7 +1142,7 @@ int main(int argc, char** argv) try {
             selectedRepairPixels[pixel] = repairImage->color[pixel];
             const bool approximateRepair =
                 options->repairOmitFraction > 0.0 ||
-                options->repairResidualBudgetFraction > 0.0;
+                options->repairResidualBudget > 0.0;
             const double supportValue = approximateRepair ? residualBound : bound;
             const double supportMaximum =
                 approximateRepair ? std::max(maximumRepairResidualBound, 1.0e-12)
@@ -1210,15 +1208,14 @@ int main(int argc, char** argv) try {
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
               << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
-              << (options->repairResidualBudgetFraction > 0.0
+              << (options->repairResidualBudget > 0.0
                       ? "certified-budgeted-omitted-gaussians-v2"
                       : (options->repairOmitFraction > 0.0
                              ? "certified-omitted-gaussians-v1"
                              : "exact-changed-support-v1"))
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
-              << "\"repairResidualBudgetFractionRequested\":"
-              << options->repairResidualBudgetFraction << ','
+              << "\"repairResidualBudgetRequested\":" << options->repairResidualBudget << ','
               << "\"repairResidualBudget\":" << repairResidualBudget << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
               << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
