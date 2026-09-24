@@ -1060,7 +1060,7 @@ For normal development, use the fast iteration runner instead of launching the f
 
 The fast runner uses 32 source images per scene, 3 cases per scene, 300 bootstrap iterations, the optimized Release research build, parallel scene preparation, parallel independent cases, and the same deterministic reuse rules. It writes to `build/broad-benchmark-fast` so it cannot overwrite the publication-scale evidence root. It is a regression/iteration mode, not a substitute for the final paper campaign.
 
-The full broad runner now builds the research tools with the optimized `research` preset rather than the Debug-derived CI preset. On macOS, the Gaussian full-reference oracle selects the Metal compute path when available and falls back to the deterministic multicore CPU reference if Metal cannot initialize. Immutable before/after renders are cached inside the Step-6 result root and are invalidated with that stage whenever the oracle/toolchain fingerprint changes.
+The full broad runner now builds the research tools with the optimized `research` preset rather than the Debug-derived CI preset. The publication-scale broad runner keeps the deterministic multicore CPU oracle as its default. The fast iteration runner defaults to the Metal `auto` backend on macOS and falls back to CPU if Metal cannot initialize. After the dedicated CPU/Metal parity gate is validated, `MAVEB_ORACLE_BACKEND=auto` or `metal` can be used explicitly for larger campaigns. Immutable before/after renders are cached inside the Step-6 result root and are invalidated with that stage whenever the oracle/toolchain fingerprint changes.
 
 Useful performance controls:
 
