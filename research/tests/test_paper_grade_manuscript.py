@@ -27,6 +27,39 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertIn("0.4744733", text)
         self.assertIn("translation, rotation, uniform-scale, and opacity", text)
 
+    def test_abstract_is_impact_led_not_a_results_dump(self):
+        text = MANUSCRIPT.read_text(encoding="utf-8")
+        match = re.search(
+            r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
+            text,
+            flags=re.S,
+        )
+        self.assertIsNotNone(match)
+        abstract = match.group(1)
+        words = re.findall(r"[A-Za-z][A-Za-z-]*", abstract)
+        self.assertLessEqual(len(words), 260)
+
+        for detailed_metric in (
+            "935",
+            "340",
+            "73.33",
+            "0.47447",
+            "95\\% CI",
+            "66.67",
+        ):
+            self.assertNotIn(detailed_metric, abstract)
+
+        self.assertIn("AR maps", abstract)
+        self.assertIn("digital twins", abstract)
+        self.assertIn("selective maintenance", abstract)
+
+        for repeated_frame in ("frozen", "campaign", "contract", "evidence"):
+            self.assertLessEqual(
+                abstract.lower().count(repeated_frame),
+                1,
+                repeated_frame,
+            )
+
     def test_legacy_60_case_headline_is_gone(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
         forbidden = (
