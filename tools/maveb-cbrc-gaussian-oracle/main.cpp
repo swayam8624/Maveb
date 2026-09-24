@@ -3,9 +3,16 @@
 #include <aether/gaussian/ReferenceRasterizer.hpp>
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 #include <aether/world_gaussian/GaussianRenderCertificate.hpp>
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+#include <Foundation/Foundation.hpp>
+#include <Metal/Metal.hpp>
+#include <aether/metal/GaussianPipeline.hpp>
+#include <aether/metal/MetalPtr.hpp>
+#endif
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -16,10 +23,12 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <random>
 #include <set>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -27,6 +36,7 @@ namespace {
 using aether::gaussian::Gaussian;
 using aether::gaussian::GaussianAsset;
 using aether::gaussian::ReferenceCamera;
+using aether::gaussian::ReferenceImage;
 using Pixel = std::array<float, 4>;
 using Pixels = std::vector<Pixel>;
 using Path = std::filesystem::path;
@@ -44,7 +54,10 @@ struct Options final {
     std::string inputFormat{"ply"};
     std::string spatialOutputPath;
     std::string visualOutputDir;
+    std::string backend{"cpu"};
+    std::string cacheDir;
     bool detectChanged{};
+    bool verifyMetalParity{};
     std::size_t width{320};
     std::size_t height{180};
     float focalX{260.0F};
@@ -62,6 +75,298 @@ struct Options final {
     double epsilon{0.01};
     double repairOmitFraction{};
 };
+
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+[[nodiscard]] std::uint32_t metalEntryBudget(std::size_t gaussianCount) {
+    constexpr std::uint64_t maximum = 4'194'304;
+    const std::uint64_t requested =
+        gaussianCount > maximum / 64 ? maximum : static_cast<std::uint64_t>(gaussianCount) * 64;
+    return static_cast<std::uint32_t>(std::clamp<std::uint64_t>(requested, 262'144, maximum));
+}
+
+[[nodiscard]] aether::metal::MetalPtr<MTL::Texture> makeMetalTarget(MTL::Device* device,
+                                                                    MTL::PixelFormat format,
+                                                                    std::size_t width,
+                                                                    std::size_t height) {
+    auto descriptor = aether::metal::adopt(MTL::TextureDescriptor::alloc()->init());
+    descriptor->setTextureType(MTL::TextureType2D);
+    descriptor->setPixelFormat(format);
+    descriptor->setWidth(width);
+    descriptor->setHeight(height);
+    descriptor->setStorageMode(MTL::StorageModeShared);
+    descriptor->setUsage(MTL::TextureUsageShaderWrite | MTL::TextureUsageShaderRead);
+    return aether::metal::adopt(device->newTexture(descriptor.get()));
+}
+
+[[nodiscard]] std::optional<ReferenceImage> renderMetalReference(const GaussianAsset& asset,
+                                                                 const ReferenceCamera& camera,
+                                                                 std::array<float, 3> background,
+                                                                 std::string& error) {
+    struct PoolGuard final {
+        NS::AutoreleasePool* pool{NS::AutoreleasePool::alloc()->init()};
+        ~PoolGuard() {
+            if (pool)
+                pool->release();
+        }
+    } poolGuard;
+
+    auto device = aether::metal::adopt(MTL::CreateSystemDefaultDevice());
+    if (!device) {
+        error = "No Metal device is available";
+        return std::nullopt;
+    }
+    NS::Error* libraryError = nullptr;
+    auto library = aether::metal::adopt(device->newLibrary(
+        NS::String::string(AETHER_ORACLE_SHADER_LIBRARY, NS::UTF8StringEncoding), &libraryError));
+    if (!library) {
+        error = libraryError ? libraryError->localizedDescription()->utf8String()
+                             : "Unable to load CBRC oracle metallib";
+        return std::nullopt;
+    }
+    auto pipelineResult = aether::metal::GaussianPipeline::create(
+        device.get(), library.get(), metalEntryBudget(asset.gaussians.size()));
+    if (!pipelineResult) {
+        error = pipelineResult.error().describe();
+        return std::nullopt;
+    }
+    auto pipeline = std::move(*pipelineResult);
+    if (auto loaded = pipeline->load(asset); !loaded) {
+        error = loaded.error().describe();
+        return std::nullopt;
+    }
+
+    auto color =
+        makeMetalTarget(device.get(), MTL::PixelFormatRGBA32Float, camera.width, camera.height);
+    auto depth =
+        makeMetalTarget(device.get(), MTL::PixelFormatR32Float, camera.width, camera.height);
+    auto ids = makeMetalTarget(device.get(), MTL::PixelFormatR32Uint, camera.width, camera.height);
+    auto queue = aether::metal::adopt(device->newCommandQueue());
+    if (!color || !depth || !ids || !queue) {
+        error = "Unable to allocate shared Metal oracle targets";
+        return std::nullopt;
+    }
+
+    AetherGaussianCamera gpuCamera{};
+    gpuCamera.worldToCamera.columns[0] = {camera.worldToCamera[0], camera.worldToCamera[4],
+                                          camera.worldToCamera[8], camera.worldToCamera[12]};
+    gpuCamera.worldToCamera.columns[1] = {camera.worldToCamera[1], camera.worldToCamera[5],
+                                          camera.worldToCamera[9], camera.worldToCamera[13]};
+    gpuCamera.worldToCamera.columns[2] = {camera.worldToCamera[2], camera.worldToCamera[6],
+                                          camera.worldToCamera[10], camera.worldToCamera[14]};
+    gpuCamera.worldToCamera.columns[3] = {camera.worldToCamera[3], camera.worldToCamera[7],
+                                          camera.worldToCamera[11], camera.worldToCamera[15]};
+    gpuCamera.focalCenter = {camera.focalX, camera.focalY, camera.centerX, camera.centerY};
+    gpuCamera.depthViewport = {camera.nearPlane, camera.farPlane, static_cast<float>(camera.width),
+                               static_cast<float>(camera.height)};
+    gpuCamera.cameraWorldPosition = {camera.cameraWorldPosition[0], camera.cameraWorldPosition[1],
+                                     camera.cameraWorldPosition[2], 1.0F};
+
+    MTL::CommandBuffer* commandBuffer = queue->commandBuffer();
+    if (!commandBuffer) {
+        error = "Unable to allocate Metal oracle command buffer";
+        return std::nullopt;
+    }
+    if (auto encoded =
+            pipeline->encode(commandBuffer, gpuCamera, color.get(), depth.get(), ids.get(), 0);
+        !encoded) {
+        error = encoded.error().describe();
+        return std::nullopt;
+    }
+    commandBuffer->commit();
+    commandBuffer->waitUntilCompleted();
+    if (commandBuffer->status() == MTL::CommandBufferStatusError) {
+        error = "Metal oracle command buffer failed";
+        return std::nullopt;
+    }
+    if (pipeline->statistics().overflowedEntries != 0) {
+        error = "Metal oracle tile-entry budget overflowed";
+        return std::nullopt;
+    }
+
+    ReferenceImage image;
+    image.width = camera.width;
+    image.height = camera.height;
+    const std::size_t pixelCount = camera.width * camera.height;
+    image.color.resize(pixelCount);
+    image.depth.resize(pixelCount);
+    image.ids.resize(pixelCount);
+    const MTL::Region region = MTL::Region::Make2D(0, 0, camera.width, camera.height);
+    color->getBytes(image.color.data(), camera.width * sizeof(Pixel), region, 0);
+    depth->getBytes(image.depth.data(), camera.width * sizeof(float), region, 0);
+    ids->getBytes(image.ids.data(), camera.width * sizeof(std::uint32_t), region, 0);
+    for (auto& pixel : image.color) {
+        for (std::size_t channel = 0; channel < 3; ++channel)
+            pixel[channel] += (1.0F - pixel[3]) * std::clamp(background[channel], 0.0F, 1.0F);
+    }
+    return image;
+}
+#endif
+
+[[nodiscard]] bool verifyImageParity(const ReferenceImage& accelerated,
+                                     const ReferenceImage& reference, double rgbTolerance,
+                                     double depthTolerance, std::string& reason) {
+    if (accelerated.width != reference.width || accelerated.height != reference.height ||
+        accelerated.color.size() != reference.color.size() ||
+        accelerated.depth.size() != reference.depth.size() ||
+        accelerated.ids.size() != reference.ids.size()) {
+        reason = "Metal/CPU image extent mismatch";
+        return false;
+    }
+    double maximumRgb{};
+    double maximumDepth{};
+    std::size_t idMismatches{};
+    for (std::size_t pixel = 0; pixel < reference.color.size(); ++pixel) {
+        for (std::size_t channel = 0; channel < 4; ++channel) {
+            maximumRgb = std::max(maximumRgb,
+                                  std::abs(static_cast<double>(accelerated.color[pixel][channel]) -
+                                           static_cast<double>(reference.color[pixel][channel])));
+        }
+        const float acceleratedDepth = accelerated.depth[pixel];
+        const float referenceDepth = reference.depth[pixel];
+        if (std::isfinite(acceleratedDepth) || std::isfinite(referenceDepth)) {
+            if (!(std::isfinite(acceleratedDepth) && std::isfinite(referenceDepth))) {
+                maximumDepth = std::numeric_limits<double>::infinity();
+            } else {
+                maximumDepth =
+                    std::max(maximumDepth, std::abs(static_cast<double>(acceleratedDepth) -
+                                                    static_cast<double>(referenceDepth)));
+            }
+        }
+        idMismatches += static_cast<std::size_t>(accelerated.ids[pixel] != reference.ids[pixel]);
+    }
+    if (maximumRgb > rgbTolerance || maximumDepth > depthTolerance || idMismatches != 0) {
+        std::ostringstream stream;
+        stream << "Metal/CPU oracle parity failed: max RGB=" << maximumRgb
+               << ", max depth=" << maximumDepth << ", ID mismatches=" << idMismatches;
+        reason = stream.str();
+        return false;
+    }
+    return true;
+}
+
+void fnvUpdate(std::uint64_t& hash, const void* data, std::size_t bytes) {
+    const auto* input = static_cast<const unsigned char*>(data);
+    for (std::size_t index = 0; index < bytes; ++index) {
+        hash ^= static_cast<std::uint64_t>(input[index]);
+        hash *= 1099511628211ULL;
+    }
+}
+
+[[nodiscard]] std::optional<std::string> renderCacheKey(const Path& source,
+                                                        const ReferenceCamera& camera,
+                                                        std::array<float, 3> background,
+                                                        std::string_view backend) {
+    std::ifstream stream(source, std::ios::binary);
+    if (!stream)
+        return std::nullopt;
+    std::uint64_t hash = 1469598103934665603ULL;
+    std::array<char, 1 << 16> buffer{};
+    while (stream) {
+        stream.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+        const auto read = stream.gcount();
+        if (read > 0)
+            fnvUpdate(hash, buffer.data(), static_cast<std::size_t>(read));
+    }
+    fnvUpdate(hash, &camera.width, sizeof(camera.width));
+    fnvUpdate(hash, &camera.height, sizeof(camera.height));
+    fnvUpdate(hash, &camera.focalX, sizeof(camera.focalX));
+    fnvUpdate(hash, &camera.focalY, sizeof(camera.focalY));
+    fnvUpdate(hash, &camera.centerX, sizeof(camera.centerX));
+    fnvUpdate(hash, &camera.centerY, sizeof(camera.centerY));
+    fnvUpdate(hash, &camera.nearPlane, sizeof(camera.nearPlane));
+    fnvUpdate(hash, &camera.farPlane, sizeof(camera.farPlane));
+    fnvUpdate(hash, camera.cameraWorldPosition.data(),
+              camera.cameraWorldPosition.size() * sizeof(float));
+    fnvUpdate(hash, camera.worldToCamera.data(), camera.worldToCamera.size() * sizeof(float));
+    fnvUpdate(hash, background.data(), background.size() * sizeof(float));
+    fnvUpdate(hash, backend.data(), backend.size());
+    constexpr std::string_view schema = "maveb-oracle-render-cache-v1";
+    fnvUpdate(hash, schema.data(), schema.size());
+    std::ostringstream key;
+    key << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return key.str();
+}
+
+[[nodiscard]] std::optional<ReferenceImage> loadRenderCache(const Path& root,
+                                                            std::string_view key) {
+    if (root.empty())
+        return std::nullopt;
+    const Path path = root / (std::string(key) + ".bin");
+    std::ifstream stream(path, std::ios::binary);
+    if (!stream)
+        return std::nullopt;
+    std::array<char, 8> magic{};
+    stream.read(magic.data(), static_cast<std::streamsize>(magic.size()));
+    const std::array<char, 8> expected{'M', 'V', 'O', 'R', 'C', '1', '\0', '\0'};
+    if (!stream || magic != expected)
+        return std::nullopt;
+    std::uint64_t width{}, height{}, count{};
+    stream.read(reinterpret_cast<char*>(&width), sizeof(width));
+    stream.read(reinterpret_cast<char*>(&height), sizeof(height));
+    stream.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (!stream || width == 0 || height == 0 || count != width * height || count > 268'435'456ULL)
+        return std::nullopt;
+    ReferenceImage image;
+    image.width = static_cast<std::size_t>(width);
+    image.height = static_cast<std::size_t>(height);
+    image.color.resize(static_cast<std::size_t>(count));
+    image.depth.resize(static_cast<std::size_t>(count));
+    image.ids.resize(static_cast<std::size_t>(count));
+    stream.read(reinterpret_cast<char*>(image.color.data()),
+                static_cast<std::streamsize>(image.color.size() * sizeof(Pixel)));
+    stream.read(reinterpret_cast<char*>(image.depth.data()),
+                static_cast<std::streamsize>(image.depth.size() * sizeof(float)));
+    stream.read(reinterpret_cast<char*>(image.ids.data()),
+                static_cast<std::streamsize>(image.ids.size() * sizeof(std::uint32_t)));
+    if (!stream)
+        return std::nullopt;
+    return image;
+}
+
+void storeRenderCache(const Path& root, std::string_view key, const ReferenceImage& image) {
+    if (root.empty())
+        return;
+    std::error_code error;
+    std::filesystem::create_directories(root, error);
+    if (error)
+        return;
+    const Path destination = root / (std::string(key) + ".bin");
+    if (std::filesystem::is_regular_file(destination))
+        return;
+    std::random_device random;
+    const auto clockNonce =
+        static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
+    const std::uint64_t nonce = (clockNonce << 16U) ^ static_cast<std::uint64_t>(random());
+    const Path temporary = root / (std::string(key) + ".tmp." + std::to_string(nonce));
+    std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+    if (!stream)
+        return;
+    const std::array<char, 8> magic{'M', 'V', 'O', 'R', 'C', '1', '\0', '\0'};
+    const std::uint64_t width = image.width;
+    const std::uint64_t height = image.height;
+    const std::uint64_t count = image.color.size();
+    stream.write(magic.data(), static_cast<std::streamsize>(magic.size()));
+    stream.write(reinterpret_cast<const char*>(&width), sizeof(width));
+    stream.write(reinterpret_cast<const char*>(&height), sizeof(height));
+    stream.write(reinterpret_cast<const char*>(&count), sizeof(count));
+    stream.write(reinterpret_cast<const char*>(image.color.data()),
+                 static_cast<std::streamsize>(image.color.size() * sizeof(Pixel)));
+    stream.write(reinterpret_cast<const char*>(image.depth.data()),
+                 static_cast<std::streamsize>(image.depth.size() * sizeof(float)));
+    stream.write(reinterpret_cast<const char*>(image.ids.data()),
+                 static_cast<std::streamsize>(image.ids.size() * sizeof(std::uint32_t)));
+    stream.close();
+    if (!stream) {
+        std::filesystem::remove(temporary, error);
+        return;
+    }
+    std::filesystem::rename(temporary, destination, error);
+    if (error) {
+        if (std::filesystem::is_regular_file(destination))
+            error.clear();
+        std::filesystem::remove(temporary, error);
+    }
+}
 
 [[nodiscard]] std::optional<double> parseDouble(std::string_view text) {
     try {
@@ -113,6 +418,10 @@ template <std::size_t N>
 
 [[nodiscard]] std::optional<Options> parseOptions(int argc, char** argv) {
     Options options;
+    if (const char* backend = std::getenv("MAVEB_ORACLE_BACKEND"); backend && *backend)
+        options.backend = backend;
+    if (const char* cache = std::getenv("MAVEB_ORACLE_CACHE_DIR"); cache && *cache)
+        options.cacheDir = cache;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
         const auto requireValue = [&](std::string_view name) -> std::optional<std::string_view> {
@@ -138,6 +447,18 @@ template <std::size_t N>
             if (!value || (*value != "ply" && *value != "aether-bin"))
                 return std::nullopt;
             options.inputFormat = *value;
+        } else if (arg == "--cache-dir") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            options.cacheDir = *value;
+        } else if (arg == "--backend") {
+            auto value = requireValue(arg);
+            if (!value || (*value != "auto" && *value != "cpu" && *value != "metal"))
+                return std::nullopt;
+            options.backend = *value;
+        } else if (arg == "--verify-metal-parity") {
+            options.verifyMetalParity = true;
         } else if (arg == "--changed") {
             auto value = requireValue(arg);
             if (!value)
@@ -215,20 +536,24 @@ template <std::size_t N>
             else
                 options.background[2] = static_cast<float>(*parsed);
         } else if (arg == "--help") {
-            std::cout << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
-                         "(--changed 1,4,9 | --detect-changed) [camera options]\n"
-                      << "  --input-format ply|aether-bin (default: ply)\n"
-                      << "  --detect-changed compares stable source-order before/after records\n"
-                      << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
-                      << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
-                      << "  --width N --height N --focal-x F --focal-y F\n"
-                      << "  --center-x F --center-y F --near F --far F\n"
-                      << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
-                      << "  --camera-world-position x,y,z\n"
-                      << "  --background-r F --background-g F --background-b F\n"
-                      << "  --epsilon F\n"
-                      << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
-                         "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
+            std::cout
+                << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
+                   "(--changed 1,4,9 | --detect-changed) [camera options]\n"
+                << "  --input-format ply|aether-bin (default: ply)\n"
+                << "  --backend auto|cpu|metal (default: cpu; env MAVEB_ORACLE_BACKEND)\n"
+                << "  --cache-dir DIR caches immutable before/after renders across cases\n"
+                << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
+                << "  --detect-changed compares stable source-order before/after records\n"
+                << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
+                << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
+                << "  --width N --height N --focal-x F --focal-y F\n"
+                << "  --center-x F --center-y F --near F --far F\n"
+                << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
+                << "  --camera-world-position x,y,z\n"
+                << "  --background-r F --background-g F --background-b F\n"
+                << "  --epsilon F\n"
+                << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
+                   "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -241,7 +566,8 @@ template <std::size_t N>
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
-        options.farPlane <= options.nearPlane)
+        options.farPlane <= options.nearPlane ||
+        (options.backend != "auto" && options.backend != "cpu" && options.backend != "metal"))
         return std::nullopt;
     return options;
 }
@@ -491,23 +817,112 @@ int main(int argc, char** argv) try {
     camera.cameraWorldPosition = options->cameraWorldPosition;
     camera.worldToCamera = options->worldToCamera;
 
-    auto oldImage =
-        aether::gaussian::ReferenceRasterizer::render(*before, camera, options->background);
+    std::optional<ReferenceImage> oldImage;
+    std::optional<ReferenceImage> newImage;
+    std::optional<ReferenceImage> repairImage;
+    std::string renderBackend = "cpu";
+
+    const Path renderCacheRoot = options->cacheDir.empty() ? Path{} : Path(options->cacheDir);
+    const auto cacheKey = [&](const Path& source,
+                              std::string_view backend) -> std::optional<std::string> {
+        if (renderCacheRoot.empty() || source.empty())
+            return std::nullopt;
+        const std::string cacheDomain = std::string(backend) + ":" + options->inputFormat;
+        return renderCacheKey(source, camera, options->background, cacheDomain);
+    };
+    const auto renderCpu = [&](const GaussianAsset& asset,
+                               const Path& source = Path{}) -> std::optional<ReferenceImage> {
+        const auto key = cacheKey(source, "cpu");
+        if (key) {
+            if (auto cached = loadRenderCache(renderCacheRoot, *key))
+                return cached;
+        }
+        auto rendered =
+            aether::gaussian::ReferenceRasterizer::render(asset, camera, options->background);
+        if (!rendered) {
+            std::cerr << rendered.error().describe() << '\n';
+            return std::nullopt;
+        }
+        ReferenceImage image = std::move(*rendered);
+        if (key)
+            storeRenderCache(renderCacheRoot, *key, image);
+        return image;
+    };
+
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+    const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
+    if (wantsMetal) {
+        std::string metalError;
+        const auto renderMetalCached = [&](const GaussianAsset& asset,
+                                           const Path& source =
+                                               Path{}) -> std::optional<ReferenceImage> {
+            const auto key = cacheKey(source, "metal");
+            if (key) {
+                if (auto cached = loadRenderCache(renderCacheRoot, *key))
+                    return cached;
+            }
+            auto rendered = renderMetalReference(asset, camera, options->background, metalError);
+            if (rendered && key)
+                storeRenderCache(renderCacheRoot, *key, *rendered);
+            return rendered;
+        };
+        oldImage = renderMetalCached(*before, Path(options->beforePath));
+        if (oldImage)
+            newImage = renderMetalCached(*after, Path(options->afterPath));
+        if (newImage)
+            repairImage = renderMetalCached(repairedState);
+        if (oldImage && newImage && repairImage) {
+            renderBackend = "metal";
+        } else {
+            oldImage.reset();
+            newImage.reset();
+            repairImage.reset();
+            if (options->backend == "metal") {
+                std::cerr << "Strict Metal oracle failed: " << metalError << '\n';
+                return EXIT_FAILURE;
+            }
+            std::cerr << "Metal oracle unavailable; falling back to CPU reference: " << metalError
+                      << '\n';
+        }
+    }
+#else
+    if (options->backend == "metal") {
+        std::cerr << "Strict Metal oracle requested but this build has no Metal backend\n";
+        return EXIT_FAILURE;
+    }
+#endif
+
     if (!oldImage) {
-        std::cerr << oldImage.error().describe() << '\n';
-        return EXIT_FAILURE;
+        oldImage = renderCpu(*before, Path(options->beforePath));
+        newImage = renderCpu(*after, Path(options->afterPath));
+        repairImage = renderCpu(repairedState);
+        renderBackend = "cpu";
     }
-    auto newImage =
-        aether::gaussian::ReferenceRasterizer::render(*after, camera, options->background);
-    if (!newImage) {
-        std::cerr << newImage.error().describe() << '\n';
+    if (!oldImage || !newImage || !repairImage)
         return EXIT_FAILURE;
-    }
-    auto repairImage =
-        aether::gaussian::ReferenceRasterizer::render(repairedState, camera, options->background);
-    if (!repairImage) {
-        std::cerr << repairImage.error().describe() << '\n';
-        return EXIT_FAILURE;
+
+    if (options->verifyMetalParity) {
+        if (renderBackend != "metal") {
+            std::cerr << "--verify-metal-parity requires an available Metal backend\n";
+            return EXIT_FAILURE;
+        }
+        auto cpuOld = renderCpu(*before, Path(options->beforePath));
+        auto cpuNew = renderCpu(*after, Path(options->afterPath));
+        auto cpuRepair = renderCpu(repairedState);
+        if (!cpuOld || !cpuNew || !cpuRepair)
+            return EXIT_FAILURE;
+        std::string parityReason;
+        constexpr double kRgbParityTolerance = 5.0e-4;
+        constexpr double kDepthParityTolerance = 1.0e-4;
+        if (!verifyImageParity(*oldImage, *cpuOld, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason) ||
+            !verifyImageParity(*newImage, *cpuNew, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason) ||
+            !verifyImageParity(*repairImage, *cpuRepair, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason)) {
+            std::cerr << parityReason << '\n';
+            return EXIT_FAILURE;
+        }
     }
 
     const double colorCap = sceneColorCap(*before, *after);
@@ -696,6 +1111,7 @@ int main(int argc, char** argv) try {
               << "\"schemaVersion\":1,"
               << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
               << "\"method\":\"CBRC\","
+              << "\"renderBackend\":\"" << renderBackend << "\","
               << "\"totalGaussians\":" << before->gaussians.size() << ','
               << "\"changedGaussians\":" << changed->size() << ',' << "\"changedFraction\":"
               << static_cast<double>(changed->size()) /

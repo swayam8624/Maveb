@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+
 PYTHON="${MAVEB_PYTHON:-$ROOT/.venv-maveb/bin/python}"
 if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
@@ -20,10 +26,10 @@ VIS="$OUT/siggraph-visuals"
 VISUAL_QUALITY="$OUT/visual-quality"
 MANIFEST="$ROOT/research/config/cbrc_public_real_sources.json"
 
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
-WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
-LOCALITY_BENCH="$ROOT/build/ci/tools/maveb-gaussian-locality-bench/maveb-gaussian-locality-bench"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+WORK_BENCH="$BUILD_ROOT/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
+LOCALITY_BENCH="$BUILD_ROOT/tools/maveb-gaussian-locality-bench/maveb-gaussian-locality-bench"
 
 mkdir -p "$SOURCE" "$WORLDS" "$CAL" "$SPARSE" "$FROZEN" "$RESULTS" "$VIS" "$VISUAL_QUALITY"
 
@@ -63,8 +69,8 @@ while IFS=$'\t' read -r SCENE MODEL; do
 done < "$OUT/scenes.tsv"
 
 echo "==> [3/11] Building production/oracle/calibration/sparse-index tools"
-cmake --preset ci
-cmake --build --preset ci --target   maveb-cbrc-revision   maveb-cbrc-gaussian-oracle   maveb-cbrc-work-bench   maveb-gaussian-locality-bench   --parallel
+cmake --preset "$BUILD_PRESET"
+cmake --build --preset "$BUILD_PRESET" --target   maveb-cbrc-revision   maveb-cbrc-gaussian-oracle   maveb-cbrc-work-bench   maveb-gaussian-locality-bench   --parallel
 
 echo "==> [4/11] Freezing hardware work calibration"
 CAL_ID="public-v2-$(uname -m)-$(git rev-parse --short=12 HEAD)"
@@ -83,7 +89,8 @@ echo "==> [7/11] Running CBRC + FULL/EXACT/heuristics + ablations + parity"
 rm -rf "$RESULTS"
 mkdir -p "$RESULTS"
 set +e
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign-v2.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS/.oracle-cache}"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign-v2.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"   --workers "$CASE_WORKERS"
 CAMPAIGN_STATUS=$?
 set -e
 

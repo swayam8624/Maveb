@@ -15,6 +15,7 @@ option(AETHER_BUILD_EXAMPLES "Build archived tutorial examples" OFF)
 option(AETHER_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(AETHER_ENABLE_ASAN "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(AETHER_REQUIRE_METAL_TOOLCHAIN "Fail configuration when metal/metallib are unavailable" OFF)
+option(AETHER_ENABLE_GPU_VALIDATION_TESTS "Enable tests that require a working physical Metal GPU" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AetherWarnings)
@@ -43,6 +44,13 @@ add_subdirectory(engine/hybrid)
 add_subdirectory(engine/world_adapters)
 add_subdirectory(engine/world_gaussian)
 
+if(AETHER_BUILD_STUDIO OR AETHER_BUILD_BENCHMARK OR (APPLE AND AETHER_BUILD_TESTS))
+    if(NOT APPLE)
+        message(FATAL_ERROR "AETHER Metal applications require macOS")
+    endif()
+    add_subdirectory(engine/metal)
+endif()
+
 if(AETHER_BUILD_TOOLS)
     if(APPLE)
         enable_language(Swift)
@@ -69,13 +77,6 @@ if(AETHER_BUILD_TOOLS)
         add_subdirectory(tools/aether-keyframes)
         add_subdirectory(tools/maveb-photogrammetry)
     endif()
-endif()
-
-if(AETHER_BUILD_STUDIO OR AETHER_BUILD_BENCHMARK OR (APPLE AND AETHER_BUILD_TESTS))
-    if(NOT APPLE)
-        message(FATAL_ERROR "AETHER Metal applications require macOS")
-    endif()
-    add_subdirectory(engine/metal)
 endif()
 
 if(AETHER_BUILD_BENCHMARK)
@@ -217,11 +218,27 @@ if(AETHER_BUILD_TESTS)
                 --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
                 --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
                 --detect-changed
+                --backend cpu
                 --width 64 --height 64
                 --focal-x 70 --focal-y 70
                 --center-x 32 --center-y 32
                 --epsilon 1.0
         )
+        if(APPLE AND TARGET MavebCBRCOracleShaders AND AETHER_ENABLE_GPU_VALIDATION_TESTS)
+            add_test(
+                NAME MavebCBRCGaussianOracleMetalParity
+                COMMAND maveb-cbrc-gaussian-oracle
+                    --before ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-before.ply
+                    --after ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/cbrc-gaussian-after.ply
+                    --detect-changed
+                    --backend metal
+                    --verify-metal-parity
+                    --width 64 --height 64
+                    --focal-x 70 --focal-y 70
+                    --center-x 32 --center-y 32
+                    --epsilon 1.0
+            )
+        endif()
     endif()
 
 

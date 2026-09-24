@@ -77,6 +77,9 @@ command -v ninja >/dev/null 2>&1 || { echo "ninja is required" >&2; exit 2; }
 command -v "$PYTHON" >/dev/null 2>&1 || { echo "Python interpreter not found: $PYTHON" >&2; exit 2; }
 
 RESULTS_DIR="${MAVEB_RESULTS_DIR:-$ROOT/build/research-final}"
+RESEARCH_BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+RESEARCH_BUILD_ROOT="$ROOT/build/$RESEARCH_BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
 mkdir -p "$RESULTS_DIR"
 
 echo "============================================================"
@@ -156,12 +159,21 @@ if [[ -n "${MAVEB_CAMPAIGN:-}" ]]; then
     exit 3
   fi
 
+  echo "Building optimized research binaries for the external real campaign."
+  cmake --preset "$RESEARCH_BUILD_PRESET"
+  cmake --build --preset "$RESEARCH_BUILD_PRESET" --target \
+    maveb-cbrc-revision maveb-cbrc-gaussian-oracle --parallel
+  export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+  export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+  export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS_DIR/real-campaign/.oracle-cache}"
+
   "$PYTHON" benchmarks/scripts/cbrc_campaign.py \
     --campaign "$MAVEB_CAMPAIGN" \
-    --oracle build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle \
-    --revision-tool build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision \
+    --oracle "$RESEARCH_BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle" \
+    --revision-tool "$RESEARCH_BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision" \
     --git-sha "$(git rev-parse HEAD)" \
-    --output-dir "$RESULTS_DIR/real-campaign"
+    --output-dir "$RESULTS_DIR/real-campaign" \
+    --workers "$CASE_WORKERS"
 
   echo "Real campaign completed. Inspect campaign-gates.json before interpreting performance."
 else

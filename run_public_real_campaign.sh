@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+
 PYTHON="${MAVEB_PYTHON:-$ROOT/.venv-maveb/bin/python}"
 if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
@@ -15,8 +21,8 @@ WORLDS="$OUT/worlds"
 FROZEN="$OUT/frozen-inputs"
 RESULTS="$OUT/campaign"
 MANIFEST="$ROOT/research/config/cbrc_public_real_sources.json"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 
 mkdir -p "$SOURCE" "$WORLDS" "$FROZEN" "$RESULTS"
 
@@ -54,8 +60,8 @@ done
 
 echo "==> [3/6] Building independent production/oracle tools"
 if [[ ! -x "$ORACLE" || ! -x "$REVISION" ]]; then
-  cmake --preset ci
-  cmake --build --preset ci --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     --parallel
+  cmake --preset "$BUILD_PRESET"
+  cmake --build --preset "$BUILD_PRESET" --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     --parallel
 fi
 
 echo "==> [4/6] Freezing public real revision campaign before results"
@@ -75,7 +81,8 @@ fi
 
 echo "==> [5/6] Running CBRC, independent oracle, baselines, ablations and parity"
 set +e
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS/.oracle-cache}"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FROZEN/campaign.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$RESULTS"   --workers "$CASE_WORKERS"
 CAMPAIGN_STATUS=$?
 set -e
 

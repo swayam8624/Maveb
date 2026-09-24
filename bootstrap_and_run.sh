@@ -244,7 +244,7 @@ fi
 .venv-maveb/bin/python -m pip install --disable-pip-version-check --upgrade pip
 .venv-maveb/bin/python -m pip install --disable-pip-version-check numpy pillow scipy
 
-chmod +x run_all.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_paper_grade_research.sh
+chmod +x run_all.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_broad_benchmark_campaign.sh run_broad_benchmark_fast.sh run_reviewer_stress_campaign.sh run_paper_grade_research.sh run_final_maveb_review_pass.sh cleanup_maveb_storage.sh show_paper_visuals.sh
 export MAVEB_PYTHON="$ROOT/.venv-maveb/bin/python"
 
 echo "==> Starting complete MAVEB verification"

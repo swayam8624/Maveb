@@ -96,7 +96,8 @@ std::optional<double> parsePositiveDouble(std::string_view value) {
 std::optional<Options> parseOptions(int argc, char** argv, int& exitCode) {
     Options options;
     for (int index = 1; index < argc; ++index)
-        if (std::string_view(argv[index]) == "--json") options.json = true;
+        if (std::string_view(argv[index]) == "--json")
+            options.json = true;
     for (int index = 1; index < argc; ++index) {
         const std::string_view argument(argv[index]);
         if (argument == "--help" || argument == "-h") {
@@ -314,8 +315,8 @@ int main(int argc, char** argv) {
                                       keyframe->transform.translation.z, 1.0F};
         const auto cpuFrameStart = std::chrono::steady_clock::now();
         MTL::CommandBuffer* commandBuffer = queue->commandBuffer();
-        auto encoded =
-            (*pipeline)->encode(commandBuffer, camera, color.get(), depth.get(), ids.get());
+        auto encoded = (*pipeline)->encode(commandBuffer, camera, color.get(), depth.get(),
+                                           ids.get(), frame % 3);
         if (!commandBuffer || !encoded) {
             pool->release();
             return fail(encoded ? "Unable to allocate benchmark command buffer"
@@ -362,12 +363,11 @@ int main(int argc, char** argv) {
         std::ceil(static_cast<double>(gpuMilliseconds.size()) * 0.95) - 1.0);
     const double p95 = gpuMilliseconds[std::min(p95Index, gpuMilliseconds.size() - 1)];
     const double cpuMedian = cpuFrameMilliseconds[cpuFrameMilliseconds.size() / 2];
-    const double cpuP95 =
-        cpuFrameMilliseconds[std::min(p95Index, cpuFrameMilliseconds.size() - 1)];
-    const bool p95BudgetPassed = !options->maximumP95Milliseconds ||
-                                 p95 <= *options->maximumP95Milliseconds;
-    const bool memoryBudgetPassed = !options->maximumAllocatedBytes ||
-                                    peakAllocatedBytes <= *options->maximumAllocatedBytes;
+    const double cpuP95 = cpuFrameMilliseconds[std::min(p95Index, cpuFrameMilliseconds.size() - 1)];
+    const bool p95BudgetPassed =
+        !options->maximumP95Milliseconds || p95 <= *options->maximumP95Milliseconds;
+    const bool memoryBudgetPassed =
+        !options->maximumAllocatedBytes || peakAllocatedBytes <= *options->maximumAllocatedBytes;
     const bool budgetsPassed = p95BudgetPassed && memoryBudgetPassed;
     const std::string deviceName = device->name() ? device->name()->utf8String() : "Unknown GPU";
     if (options->json) {
@@ -378,8 +378,7 @@ int main(int argc, char** argv) {
                   << ",\"frames\":" << options->frames
                   << ",\"warmupFrames\":" << options->warmupFrames << ",\"gpuMedianMs\":" << median
                   << ",\"gpuP95Ms\":" << p95 << ",\"cpuFrameMedianMs\":" << cpuMedian
-                  << ",\"cpuFrameP95Ms\":" << cpuP95
-                  << ",\"gaussians\":" << asset->gaussians.size()
+                  << ",\"cpuFrameP95Ms\":" << cpuP95 << ",\"gaussians\":" << asset->gaussians.size()
                   << ",\"peakVisibleGaussians\":" << peakStatistics.visibleGaussians
                   << ",\"peakTileEntries\":" << peakStatistics.tileEntries
                   << ",\"peakOverflowedEntries\":" << peakStatistics.overflowedEntries
@@ -387,8 +386,7 @@ int main(int argc, char** argv) {
                   << ",\"peakMetalAllocatedBytes\":" << peakAllocatedBytes
                   << ",\"budgets\":{\"passed\":" << (budgetsPassed ? "true" : "false")
                   << ",\"p95Passed\":" << (p95BudgetPassed ? "true" : "false")
-                  << ",\"memoryPassed\":" << (memoryBudgetPassed ? "true" : "false")
-                  << "}}\n";
+                  << ",\"memoryPassed\":" << (memoryBudgetPassed ? "true" : "false") << "}}\n";
     } else {
         std::cout << "AETHER benchmark on " << deviceName << '\n'
                   << options->width << 'x' << options->height << ", " << options->frames

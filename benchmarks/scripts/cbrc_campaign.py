@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import subprocess
@@ -131,6 +132,7 @@ def execution_signature(
         "oracleSha256": sha256(oracle),
         "revisionToolSha256": None if revision_tool is None else sha256(revision_tool),
         "gitSha": git_sha,
+        "oracleBackend": os.environ.get("MAVEB_ORACLE_BACKEND", "cpu"),
         "freezeProvenanceSha256": (
             None if freeze_provenance is None else sha256(freeze_provenance)
         ),
@@ -491,6 +493,119 @@ def gate_rows(rows: list[dict[str, Any]], campaign: dict[str, Any]) -> dict[str,
     }
 
 
+
+def finalize_completed_cases(
+    campaign: dict[str, Any],
+    *,
+    root: Path,
+) -> int:
+    """Aggregate independently executed case directories into the canonical campaign outputs."""
+    all_rows: list[dict[str, Any]] = []
+    all_baselines: list[dict[str, Any]] = []
+    parity_results: list[dict[str, Any]] = []
+    timing_results: list[dict[str, Any]] = []
+    spatial_for_figure: Path | None = None
+
+    for case in campaign["cases"]:
+        case_id = str(case["id"])
+        case_dir = root / "cases" / case_id
+        required = (
+            case_dir / "replay-manifest.json",
+            case_dir / "revision-row.json",
+            case_dir / "baselines.json",
+            case_dir / "CASE_COMPLETE.json",
+        )
+        missing = [str(path) for path in required if not path.is_file()]
+        if missing:
+            raise RuntimeError(
+                f"cannot finalize campaign; case {case_id} is incomplete: {missing}"
+            )
+
+        manifest_payload = json.loads((case_dir / "replay-manifest.json").read_text())
+        baseline_result = json.loads((case_dir / "baselines.json").read_text())
+        row = json.loads((case_dir / "revision-row.json").read_text())
+        marker = json.loads((case_dir / "CASE_COMPLETE.json").read_text())
+
+        baseline_result["case_id"] = case_id
+        baseline_result["scene_id"] = str(case["scene_id"])
+        baseline_result["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
+        row["case_id"] = case_id
+        row["coupling_regime"] = str(case.get("coupling_regime", "unknown"))
+        row["edit_class"] = str(case.get("edit_class", row.get("edit_class", "gaussian")))
+        for key in ("dataset_id", "source_scene_id", "representation", "edit_family"):
+            if key in case:
+                baseline_result[key] = case[key]
+                row[key] = case[key]
+
+        parity = verify_native_python_planner_parity(manifest_payload, baseline_result)
+        parity["case_id"] = case_id
+        timing = marker.get("timing")
+        if not isinstance(timing, dict):
+            raise RuntimeError(f"case {case_id} is missing timing evidence")
+
+        all_baselines.append(baseline_result)
+        parity_results.append(parity)
+        all_rows.append(row)
+        timing_results.append(dict(timing))
+        spatial = case_dir / "spatial-evidence.csv"
+        if spatial_for_figure is None and spatial.is_file():
+            spatial_for_figure = spatial
+
+    rows_path = root / "campaign-rows.jsonl"
+    rows_path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_rows)
+    )
+    timings_path = root / "campaign-timings.jsonl"
+    timings_path.write_text(
+        "".join(json.dumps(item, sort_keys=True) + "\n" for item in timing_results)
+    )
+    baselines_path = root / "campaign-baselines.jsonl"
+    baselines_path.write_text(
+        "".join(json.dumps(item, sort_keys=True) + "\n" for item in all_baselines)
+    )
+    write_json(root / "baseline-summary.json", baseline_summary(all_baselines))
+    write_json(root / "planner-parity.json", parity_results)
+
+    gates = gate_rows(all_rows, campaign)
+    gates["gates"]["nativePythonPlannerParity"] = all(
+        item["pass"] for item in parity_results
+    )
+    gates["pass"] = all(gates["gates"].values())
+    write_json(root / "campaign-gates.json", gates)
+
+    evaluator = Path(__file__).resolve().with_name("cbrc_evaluate.py")
+    evaluation = root / "campaign-evaluation.json"
+    run(
+        [
+            sys.executable,
+            str(evaluator),
+            "--input", str(rows_path),
+            "--output", str(evaluation),
+        ],
+        label="campaign evaluation",
+    )
+
+    analysis = (
+        Path(__file__).resolve().parents[2]
+        / "research"
+        / "analysis"
+        / "cbrc_paper_artifacts.py"
+    )
+    analysis_dir = root / "paper-artifacts"
+    command = [
+        sys.executable,
+        str(analysis),
+        "--rows", str(rows_path),
+        "--baselines", str(baselines_path),
+        "--output-dir", str(analysis_dir),
+    ]
+    if spatial_for_figure is not None:
+        command.extend(["--spatial", str(spatial_for_figure)])
+    run(command, label="paper artifact synthesis")
+    print(json.dumps(gates, indent=2, sort_keys=True))
+    return 0 if gates["pass"] else 5
+
+
 def main() -> int:
     global PROGRESS_ENABLED
 
@@ -500,6 +615,16 @@ def main() -> int:
     parser.add_argument("--git-sha", required=True)
     parser.add_argument("--revision-tool", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=int(os.environ.get("MAVEB_CASE_WORKERS", "1")),
+        help="Execute independent campaign cases concurrently. The broad runner defaults this to 4.",
+    )
+    parser.add_argument(
+        "--worker-case",
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -532,6 +657,12 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+    if args.workers < 1:
+        raise SystemExit("--workers must be >= 1")
+    # Child case workers inherit the parent's total concurrency so the CPU reference
+    # rasterizer divides host threads instead of oversubscribing every core per case.
+    if args.worker_case is None:
+        os.environ["MAVEB_CASE_WORKERS"] = str(args.workers)
     PROGRESS_ENABLED = not args.no_progress
 
     campaign_path = args.campaign.resolve()
@@ -541,6 +672,17 @@ def main() -> int:
         args.freeze_provenance.resolve() if args.freeze_provenance else None
     )
     campaign = load_campaign(campaign_path)
+    if args.worker_case is not None:
+        selected_cases = [case for case in campaign["cases"] if str(case["id"]) == args.worker_case]
+        if len(selected_cases) != 1:
+            raise SystemExit(f"--worker-case did not resolve exactly one case: {args.worker_case}")
+        campaign = dict(campaign)
+        campaign["cases"] = selected_cases
+        campaign["minimum_revisions"] = 1
+        campaign["minimum_scenes"] = 1
+        campaign["require_local_case"] = False
+        campaign["require_full_fallback"] = False
+        campaign["require_high_coupling"] = False
     root = args.output_dir.resolve()
     root.mkdir(parents=True, exist_ok=True)
 
@@ -551,7 +693,7 @@ def main() -> int:
         git_sha=args.git_sha,
         freeze_provenance=freeze_provenance,
     )
-    state_path = root / "CAMPAIGN_RESUME_STATE.json"
+    state_path = root / ("CAMPAIGN_RESUME_STATE.json" if args.worker_case is None else f".worker-state-{args.worker_case}.json")
     if args.resume and state_path.is_file():
         previous_state = json.loads(state_path.read_text())
         if previous_state.get("executionSignature") != signature:
@@ -606,6 +748,80 @@ def main() -> int:
     total = len(campaign["cases"])
     campaign_started = time.monotonic()
     reused_count = 0
+    execution_metadata_path = root / "campaign-execution.json"
+    if args.worker_case is None:
+        write_json(
+            execution_metadata_path,
+            {
+                "schemaVersion": 1,
+                "artifact": "maveb-cbrc-campaign-execution",
+                "gitSha": args.git_sha,
+                "workers": min(args.workers, total),
+                "parallelCases": bool(args.workers > 1),
+                "oracleBackendRequested": os.environ.get("MAVEB_ORACLE_BACKEND", "cpu"),
+                "oracleCacheDir": os.environ.get("MAVEB_ORACLE_CACHE_DIR"),
+                "campaign": str(campaign_path),
+                "completed": False,
+            },
+        )
+
+    if args.workers > 1 and args.worker_case is None:
+        worker_count = min(args.workers, total)
+        if PROGRESS_ENABLED:
+            print(
+                f"  ↻ executing {total} independent case(s) with {worker_count} worker(s)",
+                flush=True,
+            )
+
+        def worker_command(case: dict[str, Any]) -> list[str]:
+            command = [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                "--campaign", str(campaign_path),
+                "--oracle", str(oracle_path),
+                "--git-sha", args.git_sha,
+                "--output-dir", str(root),
+                "--workers", "1",
+                "--worker-case", str(case["id"]),
+                "--resume",
+                "--no-progress",
+            ]
+            if revision_tool is not None:
+                command.extend(["--revision-tool", str(revision_tool)])
+            if freeze_provenance is not None:
+                command.extend(["--freeze-provenance", str(freeze_provenance)])
+            if args.adopt_existing:
+                command.append("--adopt-existing")
+            if args.keep_case_inputs:
+                command.append("--keep-case-inputs")
+            return command
+
+        completed = 0
+        with ThreadPoolExecutor(max_workers=worker_count, thread_name_prefix="maveb-case") as pool:
+            futures = {
+                pool.submit(run, worker_command(case), label=f"case worker {case['id']}"): case
+                for case in campaign["cases"]
+            }
+            for future in as_completed(futures):
+                case = futures[future]
+                future.result()
+                completed += 1
+                progress_bar(
+                    completed,
+                    total,
+                    label=(
+                        f"{case.get('dataset_id', 'dataset')}/"
+                        f"{case.get('source_scene_id', case.get('scene_id', 'scene'))} "
+                        f"{case.get('edit_family', case.get('edit_class', 'edit'))}"
+                    ),
+                    started=campaign_started,
+                )
+        status = finalize_completed_cases(campaign, root=root)
+        metadata = json.loads(execution_metadata_path.read_text())
+        metadata["campaignWallMs"] = (time.monotonic() - campaign_started) * 1000.0
+        metadata["completed"] = True
+        write_json(execution_metadata_path, metadata)
+        return status
 
     for index, case in enumerate(campaign["cases"], start=1):
         case_id = str(case["id"])
@@ -870,6 +1086,9 @@ def main() -> int:
             reused=reused_count,
         )
 
+    if args.worker_case is not None:
+        return 0
+
     rows_path = root / "campaign-rows.jsonl"
     rows_path.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_rows)
@@ -925,6 +1144,11 @@ def main() -> int:
     run(command, label="paper artifact synthesis")
 
     print(json.dumps(gates, indent=2, sort_keys=True))
+    if args.worker_case is None:
+        metadata = json.loads(execution_metadata_path.read_text())
+        metadata["campaignWallMs"] = (time.monotonic() - campaign_started) * 1000.0
+        metadata["completed"] = True
+        write_json(execution_metadata_path, metadata)
     return 0 if gates["pass"] else 5
 
 

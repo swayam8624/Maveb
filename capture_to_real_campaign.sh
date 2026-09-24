@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -48,8 +51,8 @@ CAPTURE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 OUT="${MAVEB_CAPTURE_OUT:-$ROOT/build/real-capture-bootstrap}"
 PROXY="$OUT/real-proxy.ply"
 WORLD="$OUT/real-seeded.aetherworld"
-FUSE="$ROOT/build/ci/tools/aether-fuse/aether-fuse"
-SEED="$ROOT/build/ci/tools/maveb-seed-world/maveb-seed-world"
+FUSE="$BUILD_ROOT/tools/aether-fuse/aether-fuse"
+SEED="$BUILD_ROOT/tools/maveb-seed-world/maveb-seed-world"
 
 VOXEL="${MAVEB_CAPTURE_VOXEL:-0.01}"
 TRUNCATION="${MAVEB_CAPTURE_TRUNCATION:-0.04}"
@@ -70,8 +73,8 @@ echo "Git SHA : $(git rev-parse HEAD)"
 echo
 
 echo "==> [1/5] Building real-capture tools"
-cmake --preset ci
-cmake --build --preset ci --target aether-fuse maveb-seed-world   maveb-cbrc-revision maveb-cbrc-gaussian-oracle --parallel
+cmake --preset "$BUILD_PRESET"
+cmake --build --preset "$BUILD_PRESET" --target aether-fuse maveb-seed-world   maveb-cbrc-revision maveb-cbrc-gaussian-oracle --parallel
 
 echo "==> [2/5] Validating and fusing real LiDAR capture"
 "$FUSE" "$CAPTURE"   --output "$PROXY"   --auto-bounds   --voxel "$VOXEL"   --truncation "$TRUNCATION"   --max-axis "$MAX_AXIS"   --sample-stride "$SAMPLE_STRIDE"   --padding "$PADDING"   --json | tee "$OUT/fusion.json"

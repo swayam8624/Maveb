@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/cbrc_campaign.py"
 spec = importlib.util.spec_from_file_location("cbrc_campaign", SCRIPT)
@@ -166,6 +167,37 @@ class CBRCCampaignTests(unittest.TestCase):
             )
             self.assertFalse(Path(str(destination) + ".gaussians.r2.bin").exists())
             self.assertFalse(Path(str(destination) + ".ownership.r2.bin").exists())
+
+    def test_execution_signature_changes_with_oracle_backend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            campaign = root / "campaign.json"
+            oracle = root / "oracle"
+            revision = root / "revision"
+            freeze = root / "freeze.json"
+            campaign.write_text('{"cases":[{"id":"x"}]}\n')
+            oracle.write_bytes(b"oracle")
+            revision.write_bytes(b"revision")
+            freeze.write_text("{}\n")
+
+            with mock.patch.dict("os.environ", {"MAVEB_ORACLE_BACKEND": "cpu"}):
+                cpu = mod.execution_signature(
+                    campaign_path=campaign,
+                    oracle=oracle,
+                    revision_tool=revision,
+                    git_sha="abc",
+                    freeze_provenance=freeze,
+                )
+            with mock.patch.dict("os.environ", {"MAVEB_ORACLE_BACKEND": "metal"}):
+                metal = mod.execution_signature(
+                    campaign_path=campaign,
+                    oracle=oracle,
+                    revision_tool=revision,
+                    git_sha="abc",
+                    freeze_provenance=freeze,
+                )
+
+            self.assertNotEqual(cpu, metal)
 
     def test_reusable_case_can_adopt_matching_pre_marker_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
