@@ -129,9 +129,13 @@ def select_import(
     filtered_payload["developmentPreparedWorldCandidates"] = (
         development_candidate_fingerprints()
     )
-    filtered_payload["developmentPreparedWorldTarget"] = int(
-        os.environ.get("MAVEB_BROAD_FAST_WORLD_TARGET", "4")
-    )
+    try:
+        development_target = max(
+            2, int(os.environ.get("MAVEB_BROAD_FAST_WORLD_TARGET", "4"))
+        )
+    except ValueError:
+        development_target = 4
+    filtered_payload["developmentPreparedWorldTarget"] = development_target
 
     selected = [str(item["datasetId"]) for item in effective]
     print(
