@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -52,6 +53,7 @@ struct Options final {
     std::string spatialOutputPath;
     std::string visualOutputDir;
     std::string backend{"auto"};
+    std::string cacheDir;
     bool detectChanged{};
     bool verifyMetalParity{};
     std::size_t width{320};
@@ -253,6 +255,129 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     return true;
 }
 
+
+void fnvUpdate(std::uint64_t& hash, const void* data, std::size_t bytes) {
+    const auto* input = static_cast<const unsigned char*>(data);
+    for (std::size_t index = 0; index < bytes; ++index) {
+        hash ^= static_cast<std::uint64_t>(input[index]);
+        hash *= 1099511628211ULL;
+    }
+}
+
+[[nodiscard]] std::optional<std::string>
+renderCacheKey(const Path& source, const ReferenceCamera& camera,
+               std::array<float, 3> background, std::string_view backend) {
+    std::ifstream stream(source, std::ios::binary);
+    if (!stream)
+        return std::nullopt;
+    std::uint64_t hash = 1469598103934665603ULL;
+    std::array<char, 1 << 16> buffer{};
+    while (stream) {
+        stream.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+        const auto read = stream.gcount();
+        if (read > 0)
+            fnvUpdate(hash, buffer.data(), static_cast<std::size_t>(read));
+    }
+    fnvUpdate(hash, &camera.width, sizeof(camera.width));
+    fnvUpdate(hash, &camera.height, sizeof(camera.height));
+    fnvUpdate(hash, &camera.focalX, sizeof(camera.focalX));
+    fnvUpdate(hash, &camera.focalY, sizeof(camera.focalY));
+    fnvUpdate(hash, &camera.centerX, sizeof(camera.centerX));
+    fnvUpdate(hash, &camera.centerY, sizeof(camera.centerY));
+    fnvUpdate(hash, &camera.nearPlane, sizeof(camera.nearPlane));
+    fnvUpdate(hash, &camera.farPlane, sizeof(camera.farPlane));
+    fnvUpdate(hash, camera.cameraWorldPosition.data(),
+              camera.cameraWorldPosition.size() * sizeof(float));
+    fnvUpdate(hash, camera.worldToCamera.data(), camera.worldToCamera.size() * sizeof(float));
+    fnvUpdate(hash, background.data(), background.size() * sizeof(float));
+    fnvUpdate(hash, backend.data(), backend.size());
+    constexpr std::string_view schema = "maveb-oracle-render-cache-v1";
+    fnvUpdate(hash, schema.data(), schema.size());
+    std::ostringstream key;
+    key << std::hex << std::setw(16) << std::setfill('0') << hash;
+    return key.str();
+}
+
+[[nodiscard]] std::optional<ReferenceImage>
+loadRenderCache(const Path& root, std::string_view key) {
+    if (root.empty())
+        return std::nullopt;
+    const Path path = root / (std::string(key) + ".bin");
+    std::ifstream stream(path, std::ios::binary);
+    if (!stream)
+        return std::nullopt;
+    std::array<char, 8> magic{};
+    stream.read(magic.data(), static_cast<std::streamsize>(magic.size()));
+    const std::array<char, 8> expected{'M', 'V', 'O', 'R', 'C', '1', '\0', '\0'};
+    if (!stream || magic != expected)
+        return std::nullopt;
+    std::uint64_t width{}, height{}, count{};
+    stream.read(reinterpret_cast<char*>(&width), sizeof(width));
+    stream.read(reinterpret_cast<char*>(&height), sizeof(height));
+    stream.read(reinterpret_cast<char*>(&count), sizeof(count));
+    if (!stream || width == 0 || height == 0 || count != width * height ||
+        count > 268'435'456ULL)
+        return std::nullopt;
+    ReferenceImage image;
+    image.width = static_cast<std::size_t>(width);
+    image.height = static_cast<std::size_t>(height);
+    image.color.resize(static_cast<std::size_t>(count));
+    image.depth.resize(static_cast<std::size_t>(count));
+    image.ids.resize(static_cast<std::size_t>(count));
+    stream.read(reinterpret_cast<char*>(image.color.data()),
+                static_cast<std::streamsize>(image.color.size() * sizeof(Pixel)));
+    stream.read(reinterpret_cast<char*>(image.depth.data()),
+                static_cast<std::streamsize>(image.depth.size() * sizeof(float)));
+    stream.read(reinterpret_cast<char*>(image.ids.data()),
+                static_cast<std::streamsize>(image.ids.size() * sizeof(std::uint32_t)));
+    if (!stream)
+        return std::nullopt;
+    return image;
+}
+
+void storeRenderCache(const Path& root, std::string_view key, const ReferenceImage& image) {
+    if (root.empty())
+        return;
+    std::error_code error;
+    std::filesystem::create_directories(root, error);
+    if (error)
+        return;
+    const Path destination = root / (std::string(key) + ".bin");
+    if (std::filesystem::is_regular_file(destination))
+        return;
+    const auto nonce = std::chrono::steady_clock::now().time_since_epoch().count();
+    const Path temporary =
+        root / (std::string(key) + ".tmp." + std::to_string(nonce));
+    std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
+    if (!stream)
+        return;
+    const std::array<char, 8> magic{'M', 'V', 'O', 'R', 'C', '1', '\0', '\0'};
+    const std::uint64_t width = image.width;
+    const std::uint64_t height = image.height;
+    const std::uint64_t count = image.color.size();
+    stream.write(magic.data(), static_cast<std::streamsize>(magic.size()));
+    stream.write(reinterpret_cast<const char*>(&width), sizeof(width));
+    stream.write(reinterpret_cast<const char*>(&height), sizeof(height));
+    stream.write(reinterpret_cast<const char*>(&count), sizeof(count));
+    stream.write(reinterpret_cast<const char*>(image.color.data()),
+                 static_cast<std::streamsize>(image.color.size() * sizeof(Pixel)));
+    stream.write(reinterpret_cast<const char*>(image.depth.data()),
+                 static_cast<std::streamsize>(image.depth.size() * sizeof(float)));
+    stream.write(reinterpret_cast<const char*>(image.ids.data()),
+                 static_cast<std::streamsize>(image.ids.size() * sizeof(std::uint32_t)));
+    stream.close();
+    if (!stream) {
+        std::filesystem::remove(temporary, error);
+        return;
+    }
+    std::filesystem::rename(temporary, destination, error);
+    if (error) {
+        if (std::filesystem::is_regular_file(destination))
+            error.clear();
+        std::filesystem::remove(temporary, error);
+    }
+}
+
 [[nodiscard]] std::optional<double> parseDouble(std::string_view text) {
     try {
         std::size_t consumed{};
@@ -305,6 +430,8 @@ template <std::size_t N>
     Options options;
     if (const char* backend = std::getenv("MAVEB_ORACLE_BACKEND"); backend && *backend)
         options.backend = backend;
+    if (const char* cache = std::getenv("MAVEB_ORACLE_CACHE_DIR"); cache && *cache)
+        options.cacheDir = cache;
     for (int i = 1; i < argc; ++i) {
         const std::string_view arg(argv[i]);
         const auto requireValue = [&](std::string_view name) -> std::optional<std::string_view> {
@@ -330,6 +457,11 @@ template <std::size_t N>
             if (!value || (*value != "ply" && *value != "aether-bin"))
                 return std::nullopt;
             options.inputFormat = *value;
+        } else if (arg == "--cache-dir") {
+            auto value = requireValue(arg);
+            if (!value)
+                return std::nullopt;
+            options.cacheDir = *value;
         } else if (arg == "--backend") {
             auto value = requireValue(arg);
             if (!value || (*value != "auto" && *value != "cpu" && *value != "metal"))
@@ -418,6 +550,7 @@ template <std::size_t N>
                          "(--changed 1,4,9 | --detect-changed) [camera options]\n"
                       << "  --input-format ply|aether-bin (default: ply)\n"
                       << "  --backend auto|cpu|metal (default: auto; env MAVEB_ORACLE_BACKEND)\n"
+                      << "  --cache-dir DIR caches immutable before/after renders across cases\n"
                       << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
                       << "  --detect-changed compares stable source-order before/after records\n"
                       << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
