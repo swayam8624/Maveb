@@ -168,6 +168,78 @@ class CBRCCampaignTests(unittest.TestCase):
             self.assertFalse(Path(str(destination) + ".gaussians.r2.bin").exists())
             self.assertFalse(Path(str(destination) + ".ownership.r2.bin").exists())
 
+    def test_safe_resume_invalidation_clears_only_execution_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            frozen = base / "frozen"
+            frozen.mkdir()
+            frozen_marker = frozen / "reviewer-stress-campaign.json"
+            frozen_marker.write_text('{"cases":[{"id":"frozen"}]}\n')
+
+            root = base / "campaign"
+            root.mkdir()
+            state = root / "CAMPAIGN_RESUME_STATE.json"
+            state.write_text(
+                json.dumps({"executionSignature": "old-signature"}) + "\n"
+            )
+            (root / "stale-result.txt").write_text("stale\n")
+
+            new_state, invalidated = mod.ensure_resume_signature(
+                root=root,
+                state_path=state,
+                signature="new-signature",
+                resume=True,
+                invalidate_stale_resume=True,
+                worker_case=None,
+            )
+
+            self.assertTrue(invalidated)
+            self.assertEqual(new_state, root / "CAMPAIGN_RESUME_STATE.json")
+            self.assertTrue(root.is_dir())
+            self.assertFalse((root / "stale-result.txt").exists())
+            self.assertTrue(frozen_marker.is_file())
+
+    def test_resume_mismatch_still_fails_without_explicit_invalidation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "campaign"
+            root.mkdir()
+            state = root / "CAMPAIGN_RESUME_STATE.json"
+            state.write_text(
+                json.dumps({"executionSignature": "old-signature"}) + "\n"
+            )
+
+            with self.assertRaisesRegex(SystemExit, "does not match"):
+                mod.ensure_resume_signature(
+                    root=root,
+                    state_path=state,
+                    signature="new-signature",
+                    resume=True,
+                    invalidate_stale_resume=False,
+                    worker_case=None,
+                )
+
+    def test_worker_never_invalidates_shared_campaign_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "campaign"
+            root.mkdir()
+            state = root / ".worker-state-case-1.json"
+            state.write_text(
+                json.dumps({"executionSignature": "old-signature"}) + "\n"
+            )
+            marker = root / "keep.txt"
+            marker.write_text("keep\n")
+
+            with self.assertRaisesRegex(SystemExit, "does not match"):
+                mod.ensure_resume_signature(
+                    root=root,
+                    state_path=state,
+                    signature="new-signature",
+                    resume=True,
+                    invalidate_stale_resume=True,
+                    worker_case="case-1",
+                )
+            self.assertTrue(marker.is_file())
+
     def test_execution_signature_changes_with_oracle_backend(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
