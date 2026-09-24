@@ -60,14 +60,14 @@ class PaperGradeManuscriptTests(unittest.TestCase):
 
     def test_word_export_resolves_reviewer_state_and_inlines_results(self):
         source = (
-            r"\\IfFileExists{generated/reviewer_v2_state.tex}{%"
-            r"\\input{generated/reviewer_v2_state.tex}%"
-            r"}{%\\newif\\ifreviewervtwoready\\reviewervtworeadyfalse}"
+            r"\IfFileExists{generated/reviewer_v2_state.tex}{%"
+            r"\input{generated/reviewer_v2_state.tex}%"
+            r"}{%\newif\ifreviewervtwoready\reviewervtworeadyfalse}"
             "\n"
-            r"before \\ifreviewervtwoready READY \\else OPEN \\fi after"
+            r"before \ifreviewervtwoready READY \else OPEN \fi after"
             "\n"
-            r"\\IfFileExists{generated/reviewer_v2_results.tex}"
-            r"{\\input{generated/reviewer_v2_results.tex}}{}"
+            r"\IfFileExists{generated/reviewer_v2_results.tex}"
+            r"{\input{generated/reviewer_v2_results.tex}}{}"
         )
         original_root = BUILDER.ROOT
         with tempfile.TemporaryDirectory() as directory:
@@ -75,12 +75,13 @@ class PaperGradeManuscriptTests(unittest.TestCase):
             generated = root / "generated"
             generated.mkdir()
             (generated / "reviewer_v2_state.tex").write_text(
-                r"\\newif\\ifreviewervtwoready\n\\reviewervtworeadytrue\n",
+                "\\newif\\ifreviewervtwoready\n"
+                "\\reviewervtworeadytrue\n",
                 encoding="utf-8",
             )
             (generated / "reviewer_v2_results.tex").write_text(
-                r"\\subsection{Certified non-zero residual stress test}\n"
-                r"\\begin{figure*}[t]x\\end{figure*}\n",
+                "\\subsection{Certified non-zero residual stress test}\n"
+                "\\begin{figure*}[t]x\\end{figure*}\n",
                 encoding="utf-8",
             )
             BUILDER.ROOT = root
@@ -93,7 +94,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertNotIn(" OPEN ", expanded)
         self.assertIn("Certified non-zero residual stress test", expanded)
         self.assertNotIn("reviewer_v2_results.tex", expanded)
-        self.assertNotIn(r"\\ifreviewervtwoready", expanded)
+        self.assertNotIn(r"\ifreviewervtwoready", expanded)
 
     def test_defensive_not_cadence_is_reduced(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
