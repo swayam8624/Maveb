@@ -21,6 +21,7 @@ CACHE_DIR="$OUT/.stage-cache"
 
 REUSE="${MAVEB_BROAD_REUSE:-1}"
 ADOPT_EXISTING="${MAVEB_BROAD_ADOPT_EXISTING:-0}"
+ALLOW_PARTIAL="${MAVEB_BROAD_ALLOW_PARTIAL:-0}"
 MAX_IMAGES="${MAVEB_BROAD_MAX_IMAGES:-120}"
 CASES_PER_SCENE="${MAVEB_BROAD_CASES_PER_SCENE:-15}"
 BOOTSTRAP_ITERATIONS="${MAVEB_BROAD_BOOTSTRAP_ITERATIONS:-5000}"
@@ -225,6 +226,7 @@ echo "Stage cache      : $CACHE_DIR"
 echo "Datasets         : $DATASETS_CSV"
 echo "Reuse            : $REUSE"
 echo "Adopt existing   : $ADOPT_EXISTING"
+echo "Allow partial    : $ALLOW_PARTIAL"
 echo "Cases / scene    : $CASES_PER_SCENE"
 echo "Bootstrap iters  : $BOOTSTRAP_ITERATIONS"
 echo "Scene workers    : $SCENE_WORKERS"
@@ -239,7 +241,128 @@ echo
 echo
 
 step 1 "Validating/importing selected datasets"
-"$PYTHON" benchmarks/scripts/cbrc_broad_benchmark.py import   --output "$IMPORT_DIR/BROAD_IMPORT.json"   "${DATASET_ARGS[@]}"
+RAW_IMPORT="$IMPORT_DIR/BROAD_IMPORT.json"
+EFFECTIVE_IMPORT="$IMPORT_DIR/BROAD_IMPORT_EFFECTIVE.json"
+if "$PYTHON" benchmarks/scripts/cbrc_broad_benchmark.py import \
+    --output "$RAW_IMPORT" "${DATASET_ARGS[@]}"; then
+  IMPORT_STATUS=0
+else
+  IMPORT_STATUS=$?
+fi
+if (( IMPORT_STATUS != 0 && IMPORT_STATUS != 2 )); then
+  echo "Dataset import failed unexpectedly with exit code $IMPORT_STATUS." >&2
+  exit "$IMPORT_STATUS"
+fi
+
+ACTIVE_IMPORT="$RAW_IMPORT"
+EFFECTIVE_DATASETS="$("$PYTHON" - "$RAW_IMPORT" "$EFFECTIVE_IMPORT" "$ALLOW_PARTIAL" <<'PY'
+import copy
+import json
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+destination = Path(sys.argv[2])
+allow_partial = sys.argv[3] == "1"
+payload = json.loads(source.read_text())
+datasets = list(payload.get("datasets", []))
+non_ready = [item for item in datasets if item.get("status") != "ready"]
+
+def describe(item):
+    name = str(item.get("datasetId", "unknown"))
+    status = str(item.get("status", "unknown"))
+    issues = [str(x) for x in item.get("issues", []) if str(x)]
+    blocked_scenes = [
+        str(scene.get("pairId") or scene.get("sceneId") or "unknown")
+        for scene in item.get("scenes", [])
+        if scene.get("status") != "ready"
+    ]
+    details = issues[:2]
+    if blocked_scenes:
+        details.append("blocked scenes: " + ", ".join(blocked_scenes[:4]))
+    suffix = "; ".join(details) if details else "no ready scene set"
+    return f"  - {name}: {status} — {suffix}"
+
+if non_ready and not allow_partial:
+    print("", file=sys.stderr)
+    print("Selected publication dataset set is not fully ready:", file=sys.stderr)
+    for item in non_ready:
+        print(describe(item), file=sys.stderr)
+    print("", file=sys.stderr)
+    print(
+        "Full broad evidence is fail-closed. Fix the dataset roots/assets above, "
+        "or run bash run_broad_benchmark_fast.sh for a development-only ready subset.",
+        file=sys.stderr,
+    )
+    raise SystemExit(2)
+
+if allow_partial:
+    effective = []
+    skipped = []
+    for item in datasets:
+        ready_scenes = [
+            scene for scene in item.get("scenes", [])
+            if scene.get("status") == "ready"
+        ]
+        if not ready_scenes:
+            skipped.append(item)
+            continue
+        filtered = copy.deepcopy(item)
+        filtered["scenes"] = ready_scenes
+        filtered["status"] = "ready"
+        filtered["readyScenes"] = len(ready_scenes)
+        filtered["expectedScenes"] = len(ready_scenes)
+        effective.append(filtered)
+
+    if not effective:
+        print("No ready dataset scenes are available for the fast development campaign.", file=sys.stderr)
+        for item in datasets:
+            print(describe(item), file=sys.stderr)
+        raise SystemExit(2)
+
+    filtered_payload = copy.deepcopy(payload)
+    filtered_payload["artifact"] = "maveb-cbrc-broad-benchmark-import-development-subset"
+    filtered_payload["developmentOnly"] = True
+    filtered_payload["sourceImport"] = str(source.resolve())
+    filtered_payload["datasets"] = effective
+    filtered_payload["readyDatasets"] = len(effective)
+    filtered_payload["partialDatasets"] = 0
+    filtered_payload["blockedDatasets"] = 0
+    destination.write_text(
+        json.dumps(filtered_payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"  ✓ development subset: {len(effective)} dataset(s), "
+        f"{sum(len(item.get('scenes', [])) for item in effective)} ready scene(s)",
+        file=sys.stderr,
+    )
+    if skipped:
+        print("  ↳ skipped datasets with no ready scenes: " +
+              ", ".join(str(item.get("datasetId", "unknown")) for item in skipped),
+              file=sys.stderr)
+    print(",".join(str(item["datasetId"]) for item in effective))
+else:
+    print(
+        f"  ✓ publication dataset gate: {len(datasets)} selected dataset(s) fully ready",
+        file=sys.stderr,
+    )
+    print(",".join(str(item["datasetId"]) for item in datasets))
+PY
+)"
+
+if [[ "$ALLOW_PARTIAL" == "1" ]]; then
+  ACTIVE_IMPORT="$EFFECTIVE_IMPORT"
+fi
+
+DATASETS_CSV="$EFFECTIVE_DATASETS"
+IFS=',' read -r -a DATASETS <<< "$DATASETS_CSV"
+DATASET_ARGS=()
+for dataset in "${DATASETS[@]}"; do
+  [[ -n "$dataset" ]] || continue
+  DATASET_ARGS+=(--dataset "$dataset")
+done
+echo "Effective datasets : $DATASETS_CSV"
 
 step 2 "Building CBRC research tools"
 cmake --preset "$BUILD_PRESET"
@@ -247,7 +370,7 @@ cmake --build --preset "$BUILD_PRESET"   --target     maveb-cbrc-revision     ma
 
 STEP3_KEY_ARGS=(
   --label step3-world-preparation-v2
-  --file "$IMPORT_DIR/BROAD_IMPORT.json"
+  --file "$ACTIVE_IMPORT"
   --file "$ROOT/benchmarks/scripts/cbrc_prepare_broad_worlds.py"
   --file "$ROOT/benchmarks/scripts/cbrc_native_proxy.py"
   --file "$ROOT/benchmarks/scripts/cbrc_seed_colmap_world.py"
@@ -282,7 +405,7 @@ else
     echo "  ↻ matching interrupted Step-3 checkpoint found; resuming prepared scenes"
   fi
   cache_begin step3 "$STEP3_KEY"
-  "$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py     --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"     --output-dir "$WORLDS_DIR"     --trained-seeder "$TRAINED_SEED"     --native-seeder "$NATIVE_SEED"     "${PREP_TOOL_ARGS[@]}"     "${DATASET_ARGS[@]}"     --max-images "$MAX_IMAGES"     --workers "$SCENE_WORKERS"     --resume     --summary-only
+  "$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py     --import-manifest "$ACTIVE_IMPORT"     --output-dir "$WORLDS_DIR"     --trained-seeder "$TRAINED_SEED"     --native-seeder "$NATIVE_SEED"     "${PREP_TOOL_ARGS[@]}"     "${DATASET_ARGS[@]}"     --max-images "$MAX_IMAGES"     --workers "$SCENE_WORKERS"     --resume     --summary-only
   validate_worlds
   cache_complete step3 "$STEP3_KEY"
 fi
@@ -522,6 +645,7 @@ Reuse controls:
   MAVEB_BROAD_FORCE_STEP7=1      rerun visual fidelity
   MAVEB_BROAD_FORCE_STEP8=1      rerun statistics
   MAVEB_BROAD_ADOPT_EXISTING=1   one-time migration of validated pre-cache artifacts
+  MAVEB_BROAD_ALLOW_PARTIAL=1    development only: run ready scenes and skip unavailable datasets
   MAVEB_BROAD_SCENE_WORKERS=3     concurrent world-preparation scenes
   MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
   MAVEB_ORACLE_CPU_THREADS=N       optional per-oracle CPU thread override
