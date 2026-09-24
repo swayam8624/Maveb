@@ -7,7 +7,7 @@ target_link_libraries(maveb-cbrc-gaussian-oracle PRIVATE
 )
 target_compile_features(maveb-cbrc-gaussian-oracle PRIVATE cxx_std_23)
 
-if(APPLE)
+if(APPLE AND TARGET Aether::Metal)
     include(CompileMetal)
     target_link_libraries(maveb-cbrc-gaussian-oracle PRIVATE Aether::Metal)
     target_compile_options(maveb-cbrc-gaussian-oracle PRIVATE -fblocks)
@@ -16,6 +16,7 @@ if(APPLE)
     if(TARGET MavebCBRCOracleShaders)
         add_dependencies(maveb-cbrc-gaussian-oracle MavebCBRCOracleShaders)
         target_compile_definitions(maveb-cbrc-gaussian-oracle PRIVATE
+            AETHER_ORACLE_METAL_ENABLED=1
             AETHER_ORACLE_SHADER_LIBRARY="${MavebCBRCOracleShaders_OUTPUT}")
     endif()
 endif()
