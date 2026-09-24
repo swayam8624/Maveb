@@ -130,11 +130,16 @@ def bundle(
     work_cost_model: Path | None = None,
     native_planner_certificate: Path | None = None,
     repair_omit_fraction: float = 0.0,
+    repair_residual_scale: float = 0.0,
 ) -> dict:
     if epsilon < 0:
         raise ValueError("epsilon must be non-negative")
     if not 0.0 <= repair_omit_fraction < 1.0:
         raise ValueError("repair_omit_fraction must be in [0,1)")
+    if not 0.0 <= repair_residual_scale <= 1.0:
+        raise ValueError("repair_residual_scale must be in [0,1]")
+    if repair_omit_fraction > 0.0 and repair_residual_scale > 0.0:
+        raise ValueError("repair_omit_fraction and repair_residual_scale are mutually exclusive")
     for path in (translation, certificate, oracle):
         if not path.exists():
             raise FileNotFoundError(path)
@@ -167,6 +172,9 @@ def bundle(
     if repair_omit_fraction > 0.0:
         manifest_payload["repair_omit_fraction"] = float(repair_omit_fraction)
         manifest_payload["repair_mode"] = "certified-omitted-gaussians-v1"
+    elif repair_residual_scale > 0.0:
+        manifest_payload["repair_residual_scale"] = float(repair_residual_scale)
+        manifest_payload["repair_mode"] = "certified-graded-residual-v1"
     if native_planner_certificate is not None:
         validate_native_planner_certificate(
             native_planner_certificate, manifest_payload
@@ -236,6 +244,7 @@ def bundle(
         "gitSha": git_sha,
         "epsilon": epsilon,
         "repairOmitFraction": repair_omit_fraction,
+        "repairResidualScale": repair_residual_scale,
         "oracle": str(oracle),
         "oracleSha256": sha256(oracle),
         "artifacts": {
@@ -260,6 +269,7 @@ def main() -> int:
     parser.add_argument("--work-cost-model", type=Path)
     parser.add_argument("--native-planner-certificate", type=Path)
     parser.add_argument("--repair-omit-fraction", type=float, default=0.0)
+    parser.add_argument("--repair-residual-scale", type=float, default=0.0)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     result = bundle(
@@ -273,6 +283,7 @@ def main() -> int:
         work_cost_model=args.work_cost_model,
         native_planner_certificate=args.native_planner_certificate,
         repair_omit_fraction=args.repair_omit_fraction,
+        repair_residual_scale=args.repair_residual_scale,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
