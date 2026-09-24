@@ -29,6 +29,13 @@ CASE_WORKERS="${MAVEB_BROAD_CASE_WORKERS:-4}"
 BUILD_PRESET="${MAVEB_BROAD_BUILD_PRESET:-research}"
 BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
 export MAVEB_PROGRESS="${MAVEB_PROGRESS:-1}"
+if [[ -z "${MAVEB_ORACLE_BACKEND:-}" ]]; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    export MAVEB_ORACLE_BACKEND="auto"
+  else
+    export MAVEB_ORACLE_BACKEND="cpu"
+  fi
+fi
 
 DATASETS_CSV="${MAVEB_BROAD_DATASETS:-graphdeco-pretrained-3dgs,3rscan,scannetpp,arkitscenes,bonn-rgbd-dynamic}"
 IFS=',' read -r -a DATASETS <<< "$DATASETS_CSV"
@@ -224,6 +231,7 @@ echo "Bootstrap iters  : $BOOTSTRAP_ITERATIONS"
 echo "Scene workers    : $SCENE_WORKERS"
 echo "Case workers     : $CASE_WORKERS"
 echo "Build preset     : $BUILD_PRESET"
+echo "Oracle backend   : $MAVEB_ORACLE_BACKEND"
 echo "Require COW      : $MAVEB_REQUIRE_COW"
 echo "Min free disk    : $MIN_FREE_GIB GiB"
 echo
@@ -516,6 +524,7 @@ Reuse controls:
   MAVEB_BROAD_SCENE_WORKERS=3     concurrent world-preparation scenes
   MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
   MAVEB_BROAD_BUILD_PRESET=research optimized Release research binaries
+  MAVEB_ORACLE_BACKEND=auto      Metal on macOS with deterministic CPU fallback
 
 Scientific boundary:
   * cache hits require deterministic fingerprints of the relevant inputs, tools, scripts, and parameters;
