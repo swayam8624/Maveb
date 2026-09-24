@@ -198,6 +198,7 @@ required=[
     root/"campaign-gates.json",
     root/"campaign-evaluation.json",
     root/"planner-parity.json",
+    root/"campaign-execution.json",
 ]
 if not all(p.is_file() for p in required):
     raise SystemExit(1)
@@ -455,6 +456,7 @@ files=[
     root/"campaign/campaign-evaluation.json",
     root/"campaign/campaign-baselines.jsonl",
     root/"campaign/planner-parity.json",
+    root/"campaign/campaign-execution.json",
     root/"visual-quality/CBRC_VISUAL_QUALITY.json",
     root/"statistics/CROSS_DATASET_STATISTICS.json",
 ]
