@@ -156,6 +156,38 @@ def execution_signature(
     return digest.hexdigest()
 
 
+def ensure_resume_signature(
+    *,
+    root: Path,
+    state_path: Path,
+    signature: str,
+    resume: bool,
+    invalidate_stale_resume: bool,
+    worker_case: str | None,
+) -> tuple[Path, bool]:
+    if not resume or not state_path.is_file():
+        return state_path, False
+
+    previous_state = json.loads(state_path.read_text())
+    if previous_state.get("executionSignature") == signature:
+        return state_path, False
+
+    if invalidate_stale_resume and worker_case is None:
+        print(
+            "  ↻ stale campaign resume signature detected; "
+            "invalidating execution outputs and restarting the same frozen cases",
+            flush=True,
+        )
+        shutil.rmtree(root)
+        root.mkdir(parents=True, exist_ok=True)
+        return root / "CAMPAIGN_RESUME_STATE.json", True
+
+    raise SystemExit(
+        "existing Step-6 resume state does not match this campaign/toolchain; "
+        "clear the campaign directory or run through a wrapper that can invalidate safely"
+    )
+
+
 def frozen_inputs_by_case(path: Path | None) -> dict[str, dict[str, Any]]:
     if path is None:
         return {}
@@ -704,23 +736,14 @@ def main() -> int:
         freeze_provenance=freeze_provenance,
     )
     state_path = root / ("CAMPAIGN_RESUME_STATE.json" if args.worker_case is None else f".worker-state-{args.worker_case}.json")
-    if args.resume and state_path.is_file():
-        previous_state = json.loads(state_path.read_text())
-        if previous_state.get("executionSignature") != signature:
-            if args.invalidate_stale_resume and args.worker_case is None:
-                print(
-                    "  ↻ stale campaign resume signature detected; "
-                    "invalidating execution outputs and restarting the same frozen cases",
-                    flush=True,
-                )
-                shutil.rmtree(root)
-                root.mkdir(parents=True, exist_ok=True)
-                state_path = root / "CAMPAIGN_RESUME_STATE.json"
-            else:
-                raise SystemExit(
-                    "existing Step-6 resume state does not match this campaign/toolchain; "
-                    "clear the campaign directory or run through a wrapper that can invalidate safely"
-                )
+    state_path, _ = ensure_resume_signature(
+        root=root,
+        state_path=state_path,
+        signature=signature,
+        resume=args.resume,
+        invalidate_stale_resume=args.invalidate_stale_resume,
+        worker_case=args.worker_case,
+    )
     write_json(
         state_path,
         {
