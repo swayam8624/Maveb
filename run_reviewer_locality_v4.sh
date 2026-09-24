@@ -25,6 +25,7 @@ fi
 OUT="${MAVEB_REVIEWER_V4_RESULTS_DIR:-$ROOT/build/reviewer-locality-v4}"
 SCENES_PER_DATASET="${MAVEB_REVIEWER_SCENES_PER_DATASET:-1}"
 REUSE="${MAVEB_REVIEWER_REUSE:-1}"
+ANALYSIS_ONLY="${MAVEB_REVIEWER_ANALYSIS_ONLY:-0}"
 
 WORLDS="$SOURCE_ROOT/worlds/BROAD_WORLDS.json"
 CALIBRATION="$SOURCE_ROOT/calibration/work-cost-model.json"
@@ -79,6 +80,7 @@ echo "Prepared-world root: $SOURCE_ROOT"
 echo "Output             : $OUT"
 echo "Scenes / dataset   : $SCENES_PER_DATASET"
 echo "Reuse              : $REUSE"
+echo "Analysis only      : $ANALYSIS_ONLY"
 echo "Require COW        : $MAVEB_REQUIRE_COW"
 echo "Min free disk      : $MIN_FREE_GIB GiB"
 echo
@@ -94,6 +96,23 @@ echo "  - entity-level edits only; smallest-entity is not mislabeled as one Gaus
 echo "  - within each stress key, scene/edit/profile/residual stay fixed; only epsilon changes"
 echo
 
+if [[ "$ANALYSIS_ONLY" == "1" ]]; then
+  echo
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "▶ [1-3/5] Analysis-only mode: reuse frozen v4 execution"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  for required in \
+    "$FREEZE/reviewer-stress-campaign.json" \
+    "$FREEZE/REVIEWER_STRESS_FREEZE.json" \
+    "$CAMPAIGN/campaign-rows.jsonl"; do
+    if [[ ! -f "$required" ]]; then
+      echo "Analysis-only prerequisite missing: $required" >&2
+      echo "Run the full campaign once without MAVEB_REVIEWER_ANALYSIS_ONLY." >&2
+      exit 5
+    fi
+  done
+  echo "  ✓ reusing existing frozen campaign and completed case rows"
+else
 step 1 "Validate broad real-world prerequisites and build tools"
 "$PYTHON" - "$WORLDS" <<'PY'
 import json,sys
@@ -150,10 +169,12 @@ echo "  If interrupted, rerun this script; completed matching cases are reused."
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
 "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
-AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py")"
+fi
+
+AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py"   --file "$ROOT/research/analysis/cbrc_v4_postmortem.py")"
 
 step 4 "Analyze locality, bound terms, and FULL-to-LOCAL crossovers"
-if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]    && [[ -f "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" ]]    && [[ -f "$ANALYSIS/CASE_DECISION_TRACE.json" ]]; then
+if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]    && [[ -f "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" ]]    && [[ -f "$ANALYSIS/CASE_DECISION_TRACE.json" ]]    && [[ -f "$ANALYSIS/V4_LOCALITY_POSTMORTEM.json" ]]; then
   echo "  [██████████████████████████████] 100.00% | CACHE | reviewer audit reused"
 else
   rm -rf "$ANALYSIS"
@@ -161,6 +182,7 @@ else
   "$PYTHON" research/analysis/cbrc_reviewer_evidence_v3.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --output-dir "$ANALYSIS"
   "$PYTHON" research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/FALLBACK_DIAGNOSTICS.json" >/dev/null
   "$PYTHON" research/analysis/cbrc_trace_case.py     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output "$ANALYSIS/CASE_DECISION_TRACE.json" >/dev/null
+  "$PYTHON" research/analysis/cbrc_v4_postmortem.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --campaign-dir "$CAMPAIGN"     --output-dir "$ANALYSIS"
   cache_done audit "$AUDIT_KEY"
 fi
 
@@ -243,12 +265,17 @@ Artifacts:
   Audit MD     : $ANALYSIS/REVIEWER_EVIDENCE_AUDIT.md
   Fallbacks    : $ANALYSIS/FALLBACK_DIAGNOSTICS.json
   Case trace   : $ANALYSIS/CASE_DECISION_TRACE.json
+  Postmortem   : $ANALYSIS/V4_LOCALITY_POSTMORTEM.json
+  Postmortem MD: $ANALYSIS/V4_LOCALITY_POSTMORTEM.md
   Real scenes  : $VISUALS/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
   Crossover    : $VISUALS/F_REVIEWER_TOLERANCE_CROSSOVER.png
   Visual index : $VISUALS/REVIEWER_VISUALS.json
   v4 locality evidence is intentionally not connected to manuscript state yet.
 
-Resume:
+Re-analyze the existing frozen 512 cases only:
+  MAVEB_REVIEWER_ANALYSIS_ONLY=1 bash run_reviewer_locality_v4.sh
+
+Resume/full execution:
   bash run_reviewer_locality_v4.sh
 
 Force a fresh v4 locality run:
