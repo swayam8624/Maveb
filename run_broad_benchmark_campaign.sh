@@ -18,7 +18,7 @@ RESULTS_DIR="$OUT/campaign"
 VISUAL_DIR="$OUT/visual-quality"
 STATS_DIR="$OUT/statistics"
 CACHE_DIR="$OUT/.stage-cache"
-WORLD_MANIFEST="$WORLD_MANIFEST"
+WORLD_MANIFEST="$WORLDS_DIR/BROAD_WORLDS.json"
 
 REUSE="${MAVEB_BROAD_REUSE:-1}"
 ADOPT_EXISTING="${MAVEB_BROAD_ADOPT_EXISTING:-0}"
@@ -323,6 +323,9 @@ STEP3_KEY_ARGS=(
   --value "datasets=$DATASETS_CSV"
   --value "max_images=$MAX_IMAGES"
 )
+if [[ "$REUSED_PREPARED_WORLDS" == "1" ]]; then
+  STEP3_KEY_ARGS+=(--file "$WORLD_MANIFEST" --value "prepared_world_reuse=1")
+fi
 PREP_TOOL_ARGS=()
 if [[ -n "$COLMAP_BIN" && -x "$COLMAP_BIN" ]]; then
   STEP3_KEY_ARGS+=(--file "$COLMAP_BIN")
