@@ -3,9 +3,12 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <charconv>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <numeric>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -283,8 +286,26 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
     };
 
     const unsigned hardwareThreads = std::max(1U, std::thread::hardware_concurrency());
+    unsigned threadBudget = hardwareThreads;
+    auto parsePositiveEnvironment = [](const char* name) -> std::optional<unsigned> {
+        const char* value = std::getenv(name);
+        if (!value || !*value)
+            return std::nullopt;
+        unsigned parsed{};
+        const char* end = value + std::char_traits<char>::length(value);
+        const auto result = std::from_chars(value, end, parsed);
+        if (result.ec != std::errc{} || result.ptr != end || parsed == 0)
+            return std::nullopt;
+        return parsed;
+    };
+    if (const auto explicitThreads = parsePositiveEnvironment("MAVEB_ORACLE_CPU_THREADS")) {
+        threadBudget = *explicitThreads;
+    } else if (const auto concurrentCases =
+                   parsePositiveEnvironment("MAVEB_CASE_WORKERS")) {
+        threadBudget = std::max(1U, hardwareThreads / *concurrentCases);
+    }
     const std::size_t workerCount =
-        std::min<std::size_t>(camera.height, static_cast<std::size_t>(hardwareThreads));
+        std::min<std::size_t>(camera.height, static_cast<std::size_t>(threadBudget));
     // Small oracle images are faster without thread startup; publication-size renders fan out
     // by rows. Each row preserves the exact globally sorted Gaussian order, so compositing stays
     // deterministic and numerically equivalent to the scalar reference path.
