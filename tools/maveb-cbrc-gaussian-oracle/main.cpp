@@ -507,8 +507,8 @@ template <std::size_t N>
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
                    arg == "--repair-omit-fraction" || arg == "--repair-residual-scale" ||
-                   arg == "--background-r" ||
-                   arg == "--background-g" || arg == "--background-b") {
+                   arg == "--background-r" || arg == "--background-g" ||
+                   arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -853,9 +853,8 @@ int main(int argc, char** argv) try {
         }
     } else if (options->repairResidualScale > 0.0) {
         for (const std::size_t index : *changed) {
-            const Gaussian repaired =
-                gradedRepairGaussian(before->gaussians[index], after->gaussians[index],
-                                     options->repairResidualScale);
+            const Gaussian repaired = gradedRepairGaussian(
+                before->gaussians[index], after->gaussians[index], options->repairResidualScale);
             residualBefore.gaussians.push_back(repaired);
             residualAfter.gaussians.push_back(after->gaussians[index]);
             repairedState.gaussians[index] = repaired;
@@ -1121,11 +1120,11 @@ int main(int argc, char** argv) try {
             const double bound = certificate->rgbLInfBounds[pixel];
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
-            const bool partialRepair = options->repairOmitFraction > 0.0 || options->repairResidualScale > 0.0;
+            const bool partialRepair =
+                options->repairOmitFraction > 0.0 || options->repairResidualScale > 0.0;
             const double supportValue = partialRepair ? residualBound : bound;
-            const double supportMaximum = partialRepair
-                                              ? std::max(maximumRepairResidualBound, 1.0e-12)
-                                              : maximumBound;
+            const double supportMaximum =
+                partialRepair ? std::max(maximumRepairResidualBound, 1.0e-12) : maximumBound;
             supportHeat[pixel] = heatColor(supportValue, supportMaximum);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
@@ -1189,9 +1188,8 @@ int main(int argc, char** argv) try {
               << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
               << (options->repairOmitFraction > 0.0
                       ? "certified-omitted-gaussians-v1"
-                      : (options->repairResidualScale > 0.0
-                             ? "certified-graded-residual-v1"
-                             : "exact-changed-support-v1"))
+                      : (options->repairResidualScale > 0.0 ? "certified-graded-residual-v1"
+                                                            : "exact-changed-support-v1"))
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairResidualScaleRequested\":" << options->repairResidualScale << ','
