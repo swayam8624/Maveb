@@ -1059,7 +1059,9 @@ any reviewer-readiness gate remains open, it writes
 `build/submission-final/SUBMISSION_STATUS.json` with
 `submissionReady=false` and exits non-zero without producing a
 submission-ready bundle. When every gate passes, it rebuilds the PDF,
-supplement, and editable DOCX with consistent reviewer-v2 wording and writes
+supplement, and editable DOCX with consistent reviewer-v2 wording, writes a
+`build/submission-final/FINAL_EVIDENCE_SUMMARY.json` that binds the immutable
+broad evidence to the separate frozen reviewer audit, and emits
 `build/submission-final/MAVEB_submission_bundle.zip`.
 
 ## Complete paper-grade execution
