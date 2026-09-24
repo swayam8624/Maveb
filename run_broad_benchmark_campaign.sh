@@ -24,6 +24,10 @@ ADOPT_EXISTING="${MAVEB_BROAD_ADOPT_EXISTING:-0}"
 MAX_IMAGES="${MAVEB_BROAD_MAX_IMAGES:-120}"
 CASES_PER_SCENE="${MAVEB_BROAD_CASES_PER_SCENE:-15}"
 BOOTSTRAP_ITERATIONS="${MAVEB_BROAD_BOOTSTRAP_ITERATIONS:-5000}"
+SCENE_WORKERS="${MAVEB_BROAD_SCENE_WORKERS:-3}"
+CASE_WORKERS="${MAVEB_BROAD_CASE_WORKERS:-4}"
+BUILD_PRESET="${MAVEB_BROAD_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
 export MAVEB_PROGRESS="${MAVEB_PROGRESS:-1}"
 
 DATASETS_CSV="${MAVEB_BROAD_DATASETS:-graphdeco-pretrained-3dgs,3rscan,scannetpp,arkitscenes,bonn-rgbd-dynamic}"
@@ -46,11 +50,11 @@ if [[ "$ADOPT_EXISTING" == "1" && -f "$ADOPTION_SENTINEL" ]]; then
   ADOPT_EXISTING=0
 fi
 
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
-WORK_BENCH="$ROOT/build/ci/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
-TRAINED_SEED="$ROOT/build/ci/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
-NATIVE_SEED="$ROOT/build/ci/tools/maveb-seed-world/maveb-seed-world"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+WORK_BENCH="$BUILD_ROOT/tools/maveb-cbrc-work-bench/maveb-cbrc-work-bench"
+TRAINED_SEED="$BUILD_ROOT/tools/maveb-seed-trained-3dgs-world/maveb-seed-trained-3dgs-world"
+NATIVE_SEED="$BUILD_ROOT/tools/maveb-seed-world/maveb-seed-world"
 CACHE_KEY="$ROOT/benchmarks/scripts/cbrc_cache_key.py"
 STORAGE_DOCTOR="$ROOT/benchmarks/scripts/cbrc_storage_doctor.py"
 export MAVEB_REQUIRE_COW="${MAVEB_REQUIRE_COW:-1}"
@@ -217,6 +221,9 @@ echo "Reuse            : $REUSE"
 echo "Adopt existing   : $ADOPT_EXISTING"
 echo "Cases / scene    : $CASES_PER_SCENE"
 echo "Bootstrap iters  : $BOOTSTRAP_ITERATIONS"
+echo "Scene workers    : $SCENE_WORKERS"
+echo "Case workers     : $CASE_WORKERS"
+echo "Build preset     : $BUILD_PRESET"
 echo "Require COW      : $MAVEB_REQUIRE_COW"
 echo "Min free disk    : $MIN_FREE_GIB GiB"
 echo
@@ -227,8 +234,8 @@ step 1 "Validating/importing selected datasets"
 "$PYTHON" benchmarks/scripts/cbrc_broad_benchmark.py import   --output "$IMPORT_DIR/BROAD_IMPORT.json"   "${DATASET_ARGS[@]}"
 
 step 2 "Building CBRC research tools"
-cmake --preset ci
-cmake --build --preset ci   --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     maveb-cbrc-work-bench     maveb-seed-trained-3dgs-world     maveb-seed-world   --parallel
+cmake --preset "$BUILD_PRESET"
+cmake --build --preset "$BUILD_PRESET"   --target     maveb-cbrc-revision     maveb-cbrc-gaussian-oracle     maveb-cbrc-work-bench     maveb-seed-trained-3dgs-world     maveb-seed-world   --parallel
 
 STEP3_KEY_ARGS=(
   --label step3-world-preparation-v2
@@ -267,7 +274,7 @@ else
     echo "  ↻ matching interrupted Step-3 checkpoint found; resuming prepared scenes"
   fi
   cache_begin step3 "$STEP3_KEY"
-  "$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py     --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"     --output-dir "$WORLDS_DIR"     --trained-seeder "$TRAINED_SEED"     --native-seeder "$NATIVE_SEED"     "${PREP_TOOL_ARGS[@]}"     "${DATASET_ARGS[@]}"     --max-images "$MAX_IMAGES"     --resume     --summary-only
+  "$PYTHON" benchmarks/scripts/cbrc_prepare_broad_worlds.py     --import-manifest "$IMPORT_DIR/BROAD_IMPORT.json"     --output-dir "$WORLDS_DIR"     --trained-seeder "$TRAINED_SEED"     --native-seeder "$NATIVE_SEED"     "${PREP_TOOL_ARGS[@]}"     "${DATASET_ARGS[@]}"     --max-images "$MAX_IMAGES"     --workers "$SCENE_WORKERS"     --resume     --summary-only
   validate_worlds
   cache_complete step3 "$STEP3_KEY"
 fi
@@ -380,6 +387,7 @@ else
       --revision-tool "$REVISION" \
       --git-sha "$EVIDENCE_SHA" \
       --output-dir "$RESULTS_DIR" \
+      --workers "$CASE_WORKERS" \
       --resume \
       --adopt-existing
   else
@@ -390,6 +398,7 @@ else
       --revision-tool "$REVISION" \
       --git-sha "$EVIDENCE_SHA" \
       --output-dir "$RESULTS_DIR" \
+      --workers "$CASE_WORKERS" \
       --resume
   fi
   validate_step6
@@ -504,6 +513,9 @@ Reuse controls:
   MAVEB_BROAD_FORCE_STEP7=1      rerun visual fidelity
   MAVEB_BROAD_FORCE_STEP8=1      rerun statistics
   MAVEB_BROAD_ADOPT_EXISTING=1   one-time migration of validated pre-cache artifacts
+  MAVEB_BROAD_SCENE_WORKERS=3     concurrent world-preparation scenes
+  MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
+  MAVEB_BROAD_BUILD_PRESET=research optimized Release research binaries
 
 Scientific boundary:
   * cache hits require deterministic fingerprints of the relevant inputs, tools, scripts, and parameters;
