@@ -645,7 +645,8 @@ template <std::size_t N>
 
 [[nodiscard]] bool opacityOnlyRevision(const GaussianAsset& before,
                                        const GaussianAsset& after) noexcept {
-    if (before.gaussians.size() != after.gaussians.size())
+    if (before.sphericalHarmonicDegree != after.sphericalHarmonicDegree ||
+        before.gaussians.size() != after.gaussians.size())
         return false;
     for (std::size_t index = 0; index < before.gaussians.size(); ++index)
         if (!differsOnlyInOpacity(before.gaussians[index], after.gaussians[index]))
