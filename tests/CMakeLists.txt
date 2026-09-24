@@ -75,6 +75,12 @@ if(TARGET maveb-cbrc-gaussian-oracle AND Python3_Interpreter_FOUND)
             $<TARGET_FILE:maveb-cbrc-gaussian-oracle>
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-before.ply"
             "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-after-two-changes.ply")
+    add_test(NAME MavebCbrcGaussianBudgetedPartialRepair
+        COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/assert-cbrc-budgeted-partial-repair.py"
+            $<TARGET_FILE:maveb-cbrc-gaussian-oracle>
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-before.ply"
+            "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/cbrc-gaussian-after-two-changes.ply")
 endif()
 
 if(TARGET AetherCapture)
