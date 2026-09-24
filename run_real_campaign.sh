@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+BUILD_PRESET="${MAVEB_RESEARCH_BUILD_PRESET:-research}"
+BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
+CASE_WORKERS="${MAVEB_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
+export MAVEB_ORACLE_BACKEND="${MAVEB_ORACLE_BACKEND:-cpu}"
+
 PYTHON="${MAVEB_PYTHON:-$ROOT/.venv-maveb/bin/python}"
 if [[ ! -x "$PYTHON" ]]; then
   PYTHON="${MAVEB_PYTHON:-python3}"
@@ -12,16 +18,16 @@ fi
 OUT="${MAVEB_REAL_RESULTS_DIR:-$ROOT/build/research-real}"
 PREP="$OUT/frozen-inputs"
 CAMPAIGN="$PREP/campaign.json"
-ORACLE="$ROOT/build/ci/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
-REVISION="$ROOT/build/ci/tools/maveb-cbrc-revision/maveb-cbrc-revision"
+ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
+REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 
 mkdir -p "$OUT"
 
 for tool in "$ORACLE" "$REVISION"; do
   if [[ ! -x "$tool" ]]; then
     echo "==> Building required native CBRC tools"
-    cmake --preset ci
-    cmake --build --preset ci --parallel
+    cmake --preset "$BUILD_PRESET"
+    cmake --build --preset "$BUILD_PRESET" --parallel
     break
   fi
 done
@@ -60,7 +66,8 @@ echo "==> [1/4] Discovering and freezing real before-states"
 
 echo "==> [2/4] Running independent real campaign"
 set +e
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$CAMPAIGN"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$OUT/campaign"
+export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$OUT/campaign/.oracle-cache}"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$CAMPAIGN"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$(git rev-parse HEAD)"   --output-dir "$OUT/campaign"   --workers "$CASE_WORKERS"
 CAMPAIGN_STATUS=$?
 set -e
 
