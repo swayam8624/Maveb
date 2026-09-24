@@ -5,10 +5,11 @@ v2 deliberately omitted whole changed Gaussians and established that this coarse
 stress was too severe: every frozen case remained certificate-safe but replay
 selected FULL after the omitted-repair residual was added.
 
-v3 is a separate, pre-specified protocol. It preserves the same physical edit
-families/severities while replacing the integer whole-Gaussian omission knob
-with a continuous residual-amplitude ladder. Each residual level is frozen
-before v3 outcomes are inspected and is replayed over the same epsilon ladder.
+v4 is a separate, pre-specified locality diagnostic. It changes the selected
+entity-size target across four frozen support profiles while preserving the
+same edit families and fixed epsilon/residual ladders. The revision tool is
+entity-level, so the smallest profile means the smallest available owned entity;
+the protocol does not mislabel it as a single-Gaussian edit.
 """
 
 from __future__ import annotations
@@ -100,11 +101,11 @@ def build(
     residual_scales: tuple[float, ...] = RESIDUAL_SCALES,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if not residual_scales or residual_scales[0] != 0.0:
-        raise ValueError("v3 residual ladder must start with exact repair scale 0")
+        raise ValueError("v4 residual ladder must start with exact repair scale 0")
     if any(scale < 0.0 or scale > 1.0 for scale in residual_scales):
-        raise ValueError("v3 residual scales must lie in [0,1]")
+        raise ValueError("v4 residual scales must lie in [0,1]")
     if len(set(residual_scales)) != len(residual_scales):
-        raise ValueError("v3 residual scales must be unique")
+        raise ValueError("v4 residual scales must be unique")
 
     records = v2.select_records(
         list(prepared_worlds.get("records", [])),
