@@ -123,7 +123,7 @@ if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GI
   exit 3
 fi
 
-FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v2-partial-repair   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress_v3.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
+FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-stress-freeze-v3-graded-residual   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_stress_v3.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
 
 step 2 "Freeze reviewer tolerance-crossover matrix"
 if cache_hit freeze "$FREEZE_KEY"    && [[ -f "$FREEZE/reviewer-stress-campaign.json" ]]    && [[ -f "$FREEZE/REVIEWER_STRESS_FREEZE.json" ]]; then
@@ -150,7 +150,7 @@ echo "  If interrupted, rerun this script; completed matching cases are reused."
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
 "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
-AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v2-partial-repair   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence.py")"
+AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v3-graded-residual   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py")"
 
 step 4 "Analyze non-zero certified residuals and FULL-to-LOCAL crossovers"
 if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" ]]; then
@@ -158,7 +158,7 @@ if cache_hit audit "$AUDIT_KEY"    && [[ -f "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.j
 else
   rm -rf "$ANALYSIS"
   mkdir -p "$ANALYSIS"
-  "$PYTHON" research/analysis/cbrc_reviewer_evidence.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --output-dir "$ANALYSIS"
+  "$PYTHON" research/analysis/cbrc_reviewer_evidence_v3.py     --campaign "$FREEZE/reviewer-stress-campaign.json"     --rows "$CAMPAIGN/campaign-rows.jsonl"     --output-dir "$ANALYSIS"
   cache_done audit "$AUDIT_KEY"
 fi
 
