@@ -9,6 +9,7 @@
 #include <limits>
 #include <numeric>
 #include <optional>
+#include <string>
 #include <thread>
 #include <vector>
 
