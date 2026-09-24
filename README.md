@@ -692,55 +692,57 @@ Canonical evidence:
 - [Human-readable evidence freeze](research/results/CBRC_CANONICAL_EVIDENCE_2026-09-21.md)
 - [Strict claim ledger](research/results/CBRC_CLAIM_LEDGER_2026-09-21.md)
 
-## Public RGB/SfM campaign
+## Paper-grade cross-dataset campaign
+
+The completed paper-grade freeze is the primary evaluation artifact.
 
 | Measurement | Frozen result |
 |---|---:|
-| Revision cases | 60 |
-| Public scenes | 4 |
-| Certified-local selections | 44 |
-| Automatic FULL fallbacks | 16 |
+| Revision cases | 1,275 |
+| Prepared scenes | 85 |
+| Datasets / representation groups | 4 |
+| Certified-local selections | 935 |
+| Automatic FULL fallbacks | 340 |
 | Observed certificate violations | 0 |
-| Native/Python output-cone planner parity | 60 / 60 |
-| Source edits above protected RGB tolerance before repair | 56 / 60 |
-| Median calibrated four-domain work / FULL | 0.36953 |
-| Calibrated work reduction factor | 2.706x |
-| Maximum measured selected support-replay residual | 0.0 |
-| Maximum selected certified bound | $2\times10^{-6}$ |
-| Sparse-discovery median inspected fraction | 0.01 |
-| Sparse-discovery minimum inspected fraction | 0.001 |
-| LOCAL selected renders matching FULL-after at 8-bit RGB | 44 / 44 |
-| Median before-to-FULL changed-pixel fraction | 1.74% |
-| Views with at least one changed pixel | 57 / 60 |
+| LOCAL rate | 73.33% |
+| LOCAL-rate 95% CI | 70.84--75.69% |
+| Median calibrated work / FULL | 0.47447 |
+| Bootstrap 95% CI | 0.46657--0.47885 |
+| Median calibrated work reduction | 52.55% |
+| Selected renders exactly matching FULL-after | 1,275 / 1,275 |
 
-The 2.706x value is a reduction in calibrated four-domain work under the frozen millisecond model. It is not a paired end-to-end wall-clock speedup.
+Dataset coverage:
 
-The public RGB/SfM path uses canonical scene-scale normalization. Its Gaussian field is seeded from real SfM points and is not described as trained photorealistic 3DGS. The rendered-fidelity audit compares each selected benchmark-view render against the independent FULL-after render of the same representation and camera; it is repair-fidelity evidence, not a photorealistic reconstruction score against source photographs.
+| Dataset / representation | Scenes | Cases | LOCAL | FULL | Median work / FULL |
+|---|---:|---:|---:|---:|---:|
+| 3RScan | 40 | 600 | 440 | 160 | 0.34063 |
+| ARKitScenes | 20 | 300 | 220 | 80 | 0.48322 |
+| Bonn RGB-D Dynamic | 12 | 180 | 132 | 48 | 0.47548 |
+| Trained GraphDECO 3DGS | 13 | 195 | 143 | 52 | 0.51911 |
 
-## Trained-3DGS validation
+Edit-family coverage:
 
-| Measurement | Frozen result |
-|---|---:|
-| Revision cases | 5 |
-| Trained public scenes | 1 |
-| Certified-local selections | 4 |
-| Automatic FULL fallbacks | 1 |
-| Observed certificate violations | 0 |
-| Median native temporal/output work / FULL | 0.03495 |
-| Native work reduction factor | 28.614x |
-| Median Gaussian inspection ratio | 0.9999972 |
-| Maximum measured selected support-replay residual | 0.0 |
-| Maximum selected certified bound | $2\times10^{-6}$ |
-| LOCAL trained-3DGS renders matching FULL-after | 4 / 4 |
-| Median before-to-FULL changed-pixel fraction | 2.23% |
+| Edit family | Cases | LOCAL | FULL | Median work / FULL |
+|---|---:|---:|---:|---:|
+| Opacity | 255 | 255 | 0 | 0.45749 |
+| Rotation | 340 | 255 | 85 | 0.45257 |
+| Translation | 340 | 255 | 85 | 0.47471 |
+| Uniform scale | 340 | 170 | 170 | 0.77045 |
 
-The 28.614x value is lower native temporal/output work under that campaign definition. It is not wall-clock speedup.
+The frozen coupling envelope is intentionally non-trivial: low and medium cases are fully local, high coupling yields 170 LOCAL / 85 FULL, and adversarial coupling yields 85 LOCAL / 255 FULL.
 
-The pinned source PLY SHA-256 is:
+The 0.47447 headline is a calibrated heterogeneous-work ratio, not a paired wall-clock speedup. The visual audit measures revision fidelity against the independent FULL-after render of the same evaluated representation and camera. All 1,275 selected outputs are byte-identical to FULL-after on those views, which strongly supports the selection/fallback implementation but leaves certified non-zero residuals as a separate reviewer-v2 question.
 
-<pre>f03e4979ac27345da1422d960d604b98db9541bdb3586d135d64bb4d9bde8eb3</pre>
+The paper-grade completion manifest is written to:
 
-The representation preserves spherical-harmonic coefficients, opacity, anisotropic scale, and rotation. Persistent spatial ownership is deterministic rather than semantic segmentation.
+<pre>build/broad-benchmark-paper/BROAD_CAMPAIGN_COMPLETE.json</pre>
+
+The corresponding visual-fidelity and statistical artifacts are:
+
+<pre>
+build/broad-benchmark-paper/visual-quality/CBRC_VISUAL_QUALITY.json
+build/broad-benchmark-paper/statistics/CROSS_DATASET_STATISTICS.json
+</pre>
 
 ## Sparse discovery
 
@@ -1081,7 +1083,7 @@ The generated audit reports, rather than forces, whether the run contains:
 - non-zero LOCAL evidence across multiple datasets;
 - dynamic captured-scene examples with resolvable source RGB context.
 
-An unmet reviewer-evidence target remains OPEN. Cases are not deleted or retuned after outcomes are observed.
+An unmet reviewer-evidence target remains OPEN. Cases are not deleted or retuned after outcomes are observed. The runner now generates a fail-closed manuscript bridge: OPEN evidence produces comments/status only, while a fully ready frozen run emits the LaTeX subsection and copies the frozen figures into the manuscript tree.
 
 Primary generated artifacts:
 
@@ -1095,6 +1097,10 @@ build/reviewer-stress-v2/
 +-- visuals/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
 +-- visuals/F_REVIEWER_TOLERANCE_CROSSOVER.png
 +-- visuals/REVIEWER_VISUALS.json
+
+researchpaper/generated/
++-- reviewer_v2_results.tex   # compiled claims only when every readiness gate passes
++-- reviewer_v2_status.md     # always records PASS/OPEN gate state
 </pre>
 
 ## Open generated visuals
