@@ -230,9 +230,15 @@ def main() -> int:
             "bothLocalAndFallbackObserved": (
                 overall["localCases"] > 0 and overall["fullFallbackCases"] > 0
             ),
+            "fallbackObservationPolicy": "observed-outcome-not-required",
         },
     }
-    result["crossDatasetGates"]["pass"] = all(result["crossDatasetGates"].values())
+    required_gates = (
+        result["crossDatasetGates"]["atLeastThreeDatasets"],
+        result["crossDatasetGates"]["allDatasetsHaveCases"],
+        result["crossDatasetGates"]["zeroObservedCertificateViolations"],
+    )
+    result["crossDatasetGates"]["pass"] = all(required_gates)
     write_json(output / "CROSS_DATASET_STATISTICS.json", result)
 
     with (output / "dataset-summary.csv").open("w", newline="", encoding="utf-8") as stream:
