@@ -315,7 +315,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
             rasterizeRow(y);
     } else {
         std::atomic<std::size_t> nextRow{0};
-        std::vector<std::jthread> workers;
+        std::vector<std::thread> workers;
         workers.reserve(workerCount);
         for (std::size_t worker = 0; worker < workerCount; ++worker) {
             workers.emplace_back([&] {
@@ -327,6 +327,8 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                 }
             });
         }
+        for (auto& worker : workers)
+            worker.join();
     }
 
     for (auto& pixel : image.color) {
