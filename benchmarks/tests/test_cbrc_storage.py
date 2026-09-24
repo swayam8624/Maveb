@@ -32,6 +32,7 @@ class ShellSyntaxTests(unittest.TestCase):
         for relative in (
             "run_broad_benchmark_campaign.sh",
             "run_reviewer_stress_campaign.sh",
+            "run_final_maveb_review_pass.sh",
             "cleanup_maveb_storage.sh",
         ):
             result = subprocess.run(
