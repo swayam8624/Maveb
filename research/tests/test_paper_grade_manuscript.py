@@ -120,6 +120,28 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertNotIn("reviewer_v2_results.tex", expanded)
         self.assertNotIn(r"\ifreviewervtwoready", expanded)
 
+    def test_actual_manuscript_expands_to_open_state_without_generated_files(self):
+        source = MANUSCRIPT.read_text(encoding="utf-8")
+        original_root = BUILDER.ROOT
+        with tempfile.TemporaryDirectory() as directory:
+            BUILDER.ROOT = Path(directory)
+            try:
+                expanded = BUILDER.expand_reviewer_v2_for_word(source)
+            finally:
+                BUILDER.ROOT = original_root
+
+        self.assertNotIn(r"\ifreviewervtwoready", expanded)
+        self.assertNotIn("generated/reviewer_v2_state.tex", expanded)
+        self.assertNotIn("generated/reviewer_v2_results.tex", expanded)
+        self.assertIn(
+            "Certificate tightness under an acceptable non-zero residual remains",
+            expanded,
+        )
+        self.assertIn(
+            "Useful certified approximation with non-zero residual remains",
+            expanded,
+        )
+
     def test_defensive_not_cadence_is_reduced(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
         standalone_not = len(re.findall(r"\bnot\b", text, flags=re.IGNORECASE))
