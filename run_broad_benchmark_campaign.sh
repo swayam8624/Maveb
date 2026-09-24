@@ -339,7 +339,7 @@ else
   cache_complete step5 "$STEP5_KEY"
 fi
 
-STEP6_CASE_KEY="$("$PYTHON" "$CACHE_KEY"   --label step6-case-computation-v3-compacted   --file "$FREEZE_DIR/broad-campaign.json"   --file "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json"   --file "$ORACLE"   --file "$REVISION"   --file "$ROOT/benchmarks/scripts/cbrc_evidence_bundle.py"   --file "$ROOT/benchmarks/scripts/cbrc_bind_live_revision.py"   --file "$ROOT/benchmarks/scripts/cbrc_replay.py"   --file "$ROOT/benchmarks/scripts/cbrc_evaluate.py"   --file "$ROOT/research/experiments/cbrc_baseline_suite.py"   --file "$ROOT/research/cbrc/core.py"   --file "$ROOT/research/cbrc/edges.py"   --file "$ROOT/benchmarks/scripts/cbrc_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "require_cow=$MAVEB_REQUIRE_COW")"
+STEP6_CASE_KEY="$("$PYTHON" "$CACHE_KEY"   --label step6-case-computation-v3-compacted   --file "$FREEZE_DIR/broad-campaign.json"   --file "$FREEZE_DIR/BROAD_CAMPAIGN_FREEZE.json"   --file "$ORACLE"   --file "$REVISION"   --file "$ROOT/benchmarks/scripts/cbrc_evidence_bundle.py"   --file "$ROOT/benchmarks/scripts/cbrc_bind_live_revision.py"   --file "$ROOT/benchmarks/scripts/cbrc_replay.py"   --file "$ROOT/benchmarks/scripts/cbrc_evaluate.py"   --file "$ROOT/research/experiments/cbrc_baseline_suite.py"   --file "$ROOT/research/cbrc/core.py"   --file "$ROOT/research/cbrc/edges.py"   --file "$ROOT/benchmarks/scripts/cbrc_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "require_cow=$MAVEB_REQUIRE_COW"   --value "oracle_backend=$MAVEB_ORACLE_BACKEND")"
 
 CASE_KEY_FILE="$CACHE_DIR/step6.case-key"
 EVIDENCE_SHA_FILE="$CACHE_DIR/step6.evidence-sha"
