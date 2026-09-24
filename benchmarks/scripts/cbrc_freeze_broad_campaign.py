@@ -119,6 +119,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     manifest = load(args.worlds.resolve())
     selected = set(args.dataset)
+    if manifest.get("developmentOnly") and manifest.get("developmentAugmentation"):
+        selected = set()
     records = [
         record
         for record in manifest.get("records", [])

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,6 +15,36 @@ from typing import Any
 
 def load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def development_candidate_fingerprints() -> list[dict[str, Any]]:
+    enabled = os.environ.get("MAVEB_BROAD_REUSE_PREPARED_WORLDS", "0").lower()
+    if enabled not in {"1", "true", "yes", "on"}:
+        return []
+    raw = os.environ.get("MAVEB_BROAD_PREPARED_WORLD_CANDIDATES", "")
+    fingerprints: list[dict[str, Any]] = []
+    for value in raw.split(os.pathsep):
+        if not value:
+            continue
+        path = Path(value).expanduser().resolve()
+        if not path.is_file():
+            continue
+        fingerprints.append(
+            {
+                "path": str(path),
+                "bytes": path.stat().st_size,
+                "sha256": sha256(path),
+            }
+        )
+    return fingerprints
 
 
 def describe(item: dict[str, Any]) -> str:
@@ -94,6 +126,16 @@ def select_import(
     filtered_payload["readyDatasets"] = len(effective)
     filtered_payload["partialDatasets"] = 0
     filtered_payload["blockedDatasets"] = 0
+    filtered_payload["developmentPreparedWorldCandidates"] = (
+        development_candidate_fingerprints()
+    )
+    try:
+        development_target = max(
+            2, int(os.environ.get("MAVEB_BROAD_FAST_WORLD_TARGET", "4"))
+        )
+    except ValueError:
+        development_target = 4
+    filtered_payload["developmentPreparedWorldTarget"] = development_target
 
     selected = [str(item["datasetId"]) for item in effective]
     print(
