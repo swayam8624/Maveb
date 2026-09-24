@@ -226,6 +226,60 @@ void testOpacityDeltaCertificateBoundsReferenceAndTightensSmallResidual() {
     expect(sawCertifiedChange, "non-identical opacity states need non-zero certified support");
 }
 
+void testOpacityDeltaCertificateBoundsOverlappingSplats() {
+    aether::gaussian::GaussianAsset unchanged;
+    unchanged.gaussians.push_back(primitive(0.18F, 3.35F, {0.1F, 0.7F, 0.3F}, 0.8F));
+
+    aether::gaussian::GaussianAsset beforeChanged;
+    beforeChanged.gaussians.push_back(primitive(-0.08F, 2.8F, {0.9F, 0.1F, 0.1F}, 2.8F));
+    beforeChanged.gaussians.push_back(primitive(0.02F, 3.0F, {0.1F, 0.8F, 0.2F}, 1.4F));
+    beforeChanged.gaussians.push_back(primitive(0.10F, 3.2F, {0.2F, 0.3F, 0.9F}, -0.2F));
+
+    aether::gaussian::GaussianAsset afterChanged = beforeChanged;
+    afterChanged.gaussians[0].opacityLogit = 2.6F;
+    afterChanged.gaussians[1].opacityLogit = 1.55F;
+    afterChanged.gaussians[2].opacityLogit = 0.05F;
+
+    aether::gaussian::GaussianAsset beforeFull = unchanged;
+    beforeFull.gaussians.insert(beforeFull.gaussians.end(), beforeChanged.gaussians.begin(),
+                                beforeChanged.gaussians.end());
+    aether::gaussian::GaussianAsset afterFull = unchanged;
+    afterFull.gaussians.insert(afterFull.gaussians.end(), afterChanged.gaussians.begin(),
+                               afterChanged.gaussians.end());
+
+    const auto c = camera();
+    const std::array<float, 3> background{0.05F, 0.12F, 0.2F};
+    auto beforeImage = aether::gaussian::ReferenceRasterizer::render(beforeFull, c, background);
+    auto afterImage = aether::gaussian::ReferenceRasterizer::render(afterFull, c, background);
+    expect(beforeImage && afterImage, "overlapping opacity references must render");
+    if (!beforeImage || !afterImage)
+        return;
+
+    const double cap = sceneColorCap(beforeChanged, afterChanged, unchanged);
+    auto certificate = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+        beforeChanged, afterChanged, c, cap);
+    expect(certificate.has_value(), "overlapping opacity-delta certificate must succeed");
+    if (!certificate)
+        return;
+
+    bool sawActualChange = false;
+    for (std::size_t pixel = 0; pixel < beforeImage->color.size(); ++pixel) {
+        double actual{};
+        for (std::size_t channel = 0; channel < 3; ++channel) {
+            actual =
+                std::max(actual,
+                         std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
+                                  static_cast<double>(afterImage->color[pixel][channel])));
+        }
+        sawActualChange = sawActualChange || actual > 0.0;
+        if (actual > certificate->rgbLInfBounds[pixel] + 2.0e-6) {
+            expect(false, "overlapping opacity difference exceeded delta certificate");
+            return;
+        }
+    }
+    expect(sawActualChange, "overlapping opacity test must exercise a visible change");
+}
+
 void testOpacityDeltaCertificateIsZeroForIdenticalStatesAndRejectsGeometryChange() {
     aether::gaussian::GaussianAsset beforeChanged;
     beforeChanged.gaussians.push_back(primitive(0.0F, 3.0F, {0.8F, 0.3F, 0.1F}, 1.5F));
@@ -242,6 +296,13 @@ void testOpacityDeltaCertificateIsZeroForIdenticalStatesAndRejectsGeometryChange
     auto invalid = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
         beforeChanged, afterChanged, camera(), 1.5);
     expect(!invalid.has_value(), "opacity-only certificate must fail closed on geometry change");
+
+    afterChanged = beforeChanged;
+    afterChanged.sphericalHarmonicDegree = beforeChanged.sphericalHarmonicDegree + 1;
+    auto degreeInvalid = aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
+        beforeChanged, afterChanged, camera(), 1.5);
+    expect(!degreeInvalid.has_value(),
+           "opacity-only certificate must fail closed on SH-degree change");
 }
 
 void testEmptyEditedSetsGiveZeroImageBound() {
@@ -261,6 +322,7 @@ int main() noexcept {
         testProjectedCertificateBoundsExactReferenceDifference();
         testProjectedCertificateSupportsTranslatedCamera();
         testOpacityDeltaCertificateBoundsReferenceAndTightensSmallResidual();
+        testOpacityDeltaCertificateBoundsOverlappingSplats();
         testOpacityDeltaCertificateIsZeroForIdenticalStatesAndRejectsGeometryChange();
         testEmptyEditedSetsGiveZeroImageBound();
     } catch (const std::exception& error) {
