@@ -124,6 +124,26 @@ class ReviewerStressV3FreezeTests(unittest.TestCase):
             )
 
 
+class ReviewerStressV3RunnerTests(unittest.TestCase):
+    def test_runner_shell_syntax(self):
+        import subprocess
+
+        result = subprocess.run(
+            ["bash", "-n", str(ROOT / "run_reviewer_stress_v3.sh")],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_runner_keeps_v3_isolated_from_v2_manuscript_state(self):
+        text = (ROOT / "run_reviewer_stress_v3.sh").read_text(encoding="utf-8")
+        self.assertIn("graded residual ladder", text)
+        self.assertIn("cbrc_reviewer_evidence_v3.py", text)
+        self.assertNotIn("cbrc_reviewer_manuscript_block.py", text)
+        self.assertNotIn("reviewer_v2_results.tex", text)
+
+
 class ReviewerEvidenceV3Tests(unittest.TestCase):
     def test_graded_residual_counts_as_certified_partial_repair(self):
         campaign = {
