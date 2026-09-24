@@ -744,6 +744,22 @@ def main() -> int:
     total = len(campaign["cases"])
     campaign_started = time.monotonic()
     reused_count = 0
+    execution_metadata_path = root / "campaign-execution.json"
+    if args.worker_case is None:
+        write_json(
+            execution_metadata_path,
+            {
+                "schemaVersion": 1,
+                "artifact": "maveb-cbrc-campaign-execution",
+                "gitSha": args.git_sha,
+                "workers": min(args.workers, total),
+                "parallelCases": bool(args.workers > 1),
+                "oracleBackendRequested": os.environ.get("MAVEB_ORACLE_BACKEND", "cpu"),
+                "oracleCacheDir": os.environ.get("MAVEB_ORACLE_CACHE_DIR"),
+                "campaign": str(campaign_path),
+                "completed": False,
+            },
+        )
 
     if args.workers > 1 and args.worker_case is None:
         worker_count = min(args.workers, total)
@@ -796,7 +812,12 @@ def main() -> int:
                     ),
                     started=campaign_started,
                 )
-        return finalize_completed_cases(campaign, root=root)
+        status = finalize_completed_cases(campaign, root=root)
+        metadata = json.loads(execution_metadata_path.read_text())
+        metadata["campaignWallMs"] = (time.monotonic() - campaign_started) * 1000.0
+        metadata["completed"] = True
+        write_json(execution_metadata_path, metadata)
+        return status
 
     for index, case in enumerate(campaign["cases"], start=1):
         case_id = str(case["id"])
@@ -1119,6 +1140,11 @@ def main() -> int:
     run(command, label="paper artifact synthesis")
 
     print(json.dumps(gates, indent=2, sort_keys=True))
+    if args.worker_case is None:
+        metadata = json.loads(execution_metadata_path.read_text())
+        metadata["campaignWallMs"] = (time.monotonic() - campaign_started) * 1000.0
+        metadata["completed"] = True
+        write_json(execution_metadata_path, metadata)
     return 0 if gates["pass"] else 5
 
 
