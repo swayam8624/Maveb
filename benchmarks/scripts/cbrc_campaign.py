@@ -550,9 +550,6 @@ def finalize_completed_cases(
         if spatial_for_figure is None and spatial.is_file():
             spatial_for_figure = spatial
 
-    if args.worker_case is not None:
-        return 0
-
     rows_path = root / "campaign-rows.jsonl"
     rows_path.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_rows)
@@ -1062,6 +1059,9 @@ def main() -> int:
             started=campaign_started,
             reused=reused_count,
         )
+
+    if args.worker_case is not None:
+        return 0
 
     rows_path = root / "campaign-rows.jsonl"
     rows_path.write_text(
