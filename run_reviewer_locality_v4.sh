@@ -25,6 +25,7 @@ fi
 OUT="${MAVEB_REVIEWER_V4_RESULTS_DIR:-$ROOT/build/reviewer-locality-v4}"
 SCENES_PER_DATASET="${MAVEB_REVIEWER_SCENES_PER_DATASET:-1}"
 REUSE="${MAVEB_REVIEWER_REUSE:-1}"
+ANALYSIS_ONLY="${MAVEB_REVIEWER_ANALYSIS_ONLY:-0}"
 
 WORLDS="$SOURCE_ROOT/worlds/BROAD_WORLDS.json"
 CALIBRATION="$SOURCE_ROOT/calibration/work-cost-model.json"
@@ -79,6 +80,7 @@ echo "Prepared-world root: $SOURCE_ROOT"
 echo "Output             : $OUT"
 echo "Scenes / dataset   : $SCENES_PER_DATASET"
 echo "Reuse              : $REUSE"
+echo "Analysis only      : $ANALYSIS_ONLY"
 echo "Require COW        : $MAVEB_REQUIRE_COW"
 echo "Min free disk      : $MIN_FREE_GIB GiB"
 echo
@@ -94,61 +96,81 @@ echo "  - entity-level edits only; smallest-entity is not mislabeled as one Gaus
 echo "  - within each stress key, scene/edit/profile/residual stay fixed; only epsilon changes"
 echo
 
-step 1 "Validate broad real-world prerequisites and build tools"
-"$PYTHON" - "$WORLDS" <<'PY'
-import json,sys
-from pathlib import Path
-p=Path(sys.argv[1])
-m=json.loads(p.read_text())
-if m.get("failedWorlds") or m.get("blockedWorlds"):
-    raise SystemExit(
-        f"broad worlds are not clean: ready={m.get('readyWorlds')} "
-        f"failed={m.get('failedWorlds')} blocked={m.get('blockedWorlds')}"
-    )
-if int(m.get("readyWorlds",0)) < 2:
-    raise SystemExit("at least two prepared worlds are required")
-print(
-    f"  ✓ broad worlds: {m['readyWorlds']} ready, "
-    f"{m.get('nativePreparedWorlds',0)} native, "
-    f"{m.get('rgbFallbackWorlds',0)} RGB fallback"
-)
-PY
-
-cmake --preset "$BUILD_PRESET"
-cmake --build --preset "$BUILD_PRESET"   --target maveb-cbrc-revision maveb-cbrc-gaussian-oracle   --parallel
-
-if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GIB"; then
-  echo "Insufficient free disk for reviewer stress execution." >&2
-  echo "Run: \"$PYTHON\" \"$STORAGE_DOCTOR\" --repo \"$ROOT\" --cleanup-safe --minimum-free-gib 0" >&2
-  exit 3
-fi
-
-FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-freeze-v4   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_locality_v4.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
-
-step 2 "Freeze reviewer tolerance-crossover matrix"
-if cache_hit freeze "$FREEZE_KEY"    && [[ -f "$FREEZE/reviewer-stress-campaign.json" ]]    && [[ -f "$FREEZE/REVIEWER_STRESS_FREEZE.json" ]]; then
-  echo "  [██████████████████████████████] 100.00% | CACHE | reviewer matrix reused"
+if [[ "$ANALYSIS_ONLY" == "1" ]]; then
+  echo
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "▶ [1-3/5] Analysis-only mode: reuse frozen v4 execution"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  for required in \
+    "$FREEZE/reviewer-stress-campaign.json" \
+    "$FREEZE/REVIEWER_STRESS_FREEZE.json" \
+    "$CAMPAIGN/campaign-rows.jsonl"; do
+    if [[ ! -f "$required" ]]; then
+      echo "Analysis-only prerequisite missing: $required" >&2
+      echo "Run the full campaign once without MAVEB_REVIEWER_ANALYSIS_ONLY." >&2
+      exit 5
+    fi
+  done
+  echo "  ✓ reusing existing frozen campaign and completed 512-case rows"
 else
-  rm -rf "$FREEZE"
-  mkdir -p "$FREEZE"
-  "$PYTHON" benchmarks/scripts/cbrc_freeze_reviewer_locality_v4.py     --worlds "$WORLDS"     --output-dir "$FREEZE"     --scenes-per-dataset "$SCENES_PER_DATASET"     --work-cost-model "$CALIBRATION"
-  cache_done freeze "$FREEZE_KEY"
+  step 1 "Validate broad real-world prerequisites and build tools"
+  "$PYTHON" - "$WORLDS" <<'PY'
+  import json,sys
+  from pathlib import Path
+  p=Path(sys.argv[1])
+  m=json.loads(p.read_text())
+  if m.get("failedWorlds") or m.get("blockedWorlds"):
+      raise SystemExit(
+          f"broad worlds are not clean: ready={m.get('readyWorlds')} "
+          f"failed={m.get('failedWorlds')} blocked={m.get('blockedWorlds')}"
+      )
+  if int(m.get("readyWorlds",0)) < 2:
+      raise SystemExit("at least two prepared worlds are required")
+  print(
+      f"  ✓ broad worlds: {m['readyWorlds']} ready, "
+      f"{m.get('nativePreparedWorlds',0)} native, "
+      f"{m.get('rgbFallbackWorlds',0)} RGB fallback"
+  )
+  PY
+  
+  cmake --preset "$BUILD_PRESET"
+  cmake --build --preset "$BUILD_PRESET"   --target maveb-cbrc-revision maveb-cbrc-gaussian-oracle   --parallel
+  
+  if ! "$PYTHON" "$STORAGE_DOCTOR" --repo "$ROOT" --minimum-free-gib "$MIN_FREE_GIB"; then
+    echo "Insufficient free disk for reviewer stress execution." >&2
+    echo "Run: \"$PYTHON\" \"$STORAGE_DOCTOR\" --repo \"$ROOT\" --cleanup-safe --minimum-free-gib 0" >&2
+    exit 3
+  fi
+  
+  FREEZE_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-freeze-v4   --file "$WORLDS"   --file "$CALIBRATION"   --file "$ROOT/benchmarks/scripts/cbrc_freeze_reviewer_locality_v4.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_campaign_v2.py"   --file "$ROOT/benchmarks/scripts/cbrc_prepare_real_campaign.py"   --file "$ROOT/benchmarks/scripts/cbrc_storage.py"   --value "scenes_per_dataset=$SCENES_PER_DATASET")"
+  
+  step 2 "Freeze reviewer tolerance-crossover matrix"
+  if cache_hit freeze "$FREEZE_KEY"    && [[ -f "$FREEZE/reviewer-stress-campaign.json" ]]    && [[ -f "$FREEZE/REVIEWER_STRESS_FREEZE.json" ]]; then
+    echo "  [██████████████████████████████] 100.00% | CACHE | reviewer matrix reused"
+  else
+    rm -rf "$FREEZE"
+    mkdir -p "$FREEZE"
+    "$PYTHON" benchmarks/scripts/cbrc_freeze_reviewer_locality_v4.py     --worlds "$WORLDS"     --output-dir "$FREEZE"     --scenes-per-dataset "$SCENES_PER_DATASET"     --work-cost-model "$CALIBRATION"
+    cache_done freeze "$FREEZE_KEY"
+  fi
+  
+  CASE_COUNT="$("$PYTHON" - "$FREEZE/reviewer-stress-campaign.json" <<'PY'
+  import json,sys
+  from pathlib import Path
+  print(len(json.loads(Path(sys.argv[1]).read_text())["cases"]))
+  PY
+  )"
+  echo "  Frozen cases: $CASE_COUNT"
+  
+  step 3 "Execute oracle-checked reviewer stress cases"
+  echo "  This step is resumable case-by-case."
+  echo "  If interrupted, rerun this script; completed matching cases are reused."
+  
+  export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
+  "$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
+  
+  
 fi
-
-CASE_COUNT="$("$PYTHON" - "$FREEZE/reviewer-stress-campaign.json" <<'PY'
-import json,sys
-from pathlib import Path
-print(len(json.loads(Path(sys.argv[1]).read_text())["cases"]))
-PY
-)"
-echo "  Frozen cases: $CASE_COUNT"
-
-step 3 "Execute oracle-checked reviewer stress cases"
-echo "  This step is resumable case-by-case."
-echo "  If interrupted, rerun this script; completed matching cases are reused."
-
-export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
 AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-locality-audit-v4   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence_v3.py"   --file "$ROOT/research/analysis/cbrc_trace_case.py"   --file "$ROOT/research/analysis/cbrc_reviewer_fallback_diagnostics_v4.py"   --file "$ROOT/research/analysis/cbrc_v4_postmortem.py")"
 
@@ -251,7 +273,10 @@ Artifacts:
   Visual index : $VISUALS/REVIEWER_VISUALS.json
   v4 locality evidence is intentionally not connected to manuscript state yet.
 
-Resume:
+Re-analyze the existing frozen 512 cases only:
+  MAVEB_REVIEWER_ANALYSIS_ONLY=1 bash run_reviewer_locality_v4.sh
+
+Resume/full execution:
   bash run_reviewer_locality_v4.sh
 
 Force a fresh v4 locality run:
