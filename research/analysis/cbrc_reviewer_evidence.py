@@ -322,7 +322,11 @@ def analyze(
     partial_mode_records = [
         record
         for record in records
-        if record["repairMode"] == "certified-omitted-gaussians-v1"
+        if record["repairMode"]
+        in {
+            "certified-omitted-gaussians-v1",
+            "certified-budgeted-omitted-gaussians-v2",
+        }
         and record["repairOmittedGaussians"] > 0
     ]
 
