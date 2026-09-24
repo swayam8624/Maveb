@@ -72,6 +72,187 @@ struct Options final {
     double repairOmitFraction{};
 };
 
+
+#if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+[[nodiscard]] std::uint32_t metalEntryBudget(std::size_t gaussianCount) {
+    constexpr std::uint64_t maximum = 4'194'304;
+    const std::uint64_t requested =
+        gaussianCount > maximum / 64 ? maximum : static_cast<std::uint64_t>(gaussianCount) * 64;
+    return static_cast<std::uint32_t>(
+        std::clamp<std::uint64_t>(requested, 262'144, maximum));
+}
+
+[[nodiscard]] aether::metal::MetalPtr<MTL::Texture>
+makeMetalTarget(MTL::Device* device, MTL::PixelFormat format, std::size_t width,
+                std::size_t height) {
+    auto descriptor = aether::metal::adopt(MTL::TextureDescriptor::alloc()->init());
+    descriptor->setTextureType(MTL::TextureType2D);
+    descriptor->setPixelFormat(format);
+    descriptor->setWidth(width);
+    descriptor->setHeight(height);
+    descriptor->setStorageMode(MTL::StorageModeShared);
+    descriptor->setUsage(MTL::TextureUsageShaderWrite | MTL::TextureUsageShaderRead);
+    return aether::metal::adopt(device->newTexture(descriptor.get()));
+}
+
+[[nodiscard]] std::optional<ReferenceImage>
+renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
+                     std::array<float, 3> background, std::string& error) {
+    struct PoolGuard final {
+        NS::AutoreleasePool* pool{NS::AutoreleasePool::alloc()->init()};
+        ~PoolGuard() {
+            if (pool)
+                pool->release();
+        }
+    } poolGuard;
+
+    auto device = aether::metal::adopt(MTL::CreateSystemDefaultDevice());
+    if (!device) {
+        error = "No Metal device is available";
+        return std::nullopt;
+    }
+    NS::Error* libraryError = nullptr;
+    auto library = aether::metal::adopt(device->newLibrary(
+        NS::String::string(AETHER_ORACLE_SHADER_LIBRARY, NS::UTF8StringEncoding),
+        &libraryError));
+    if (!library) {
+        error = libraryError ? libraryError->localizedDescription()->utf8String()
+                             : "Unable to load CBRC oracle metallib";
+        return std::nullopt;
+    }
+    auto pipelineResult = aether::metal::GaussianPipeline::create(
+        device.get(), library.get(), metalEntryBudget(asset.gaussians.size()));
+    if (!pipelineResult) {
+        error = pipelineResult.error().describe();
+        return std::nullopt;
+    }
+    auto pipeline = std::move(*pipelineResult);
+    if (auto loaded = pipeline->load(asset); !loaded) {
+        error = loaded.error().describe();
+        return std::nullopt;
+    }
+
+    auto color = makeMetalTarget(device.get(), MTL::PixelFormatRGBA32Float, camera.width,
+                                 camera.height);
+    auto depth = makeMetalTarget(device.get(), MTL::PixelFormatR32Float, camera.width,
+                                 camera.height);
+    auto ids = makeMetalTarget(device.get(), MTL::PixelFormatR32Uint, camera.width,
+                               camera.height);
+    auto queue = aether::metal::adopt(device->newCommandQueue());
+    if (!color || !depth || !ids || !queue) {
+        error = "Unable to allocate shared Metal oracle targets";
+        return std::nullopt;
+    }
+
+    AetherGaussianCamera gpuCamera{};
+    gpuCamera.worldToCamera.columns[0] = {
+        camera.worldToCamera[0], camera.worldToCamera[4],
+        camera.worldToCamera[8], camera.worldToCamera[12]};
+    gpuCamera.worldToCamera.columns[1] = {
+        camera.worldToCamera[1], camera.worldToCamera[5],
+        camera.worldToCamera[9], camera.worldToCamera[13]};
+    gpuCamera.worldToCamera.columns[2] = {
+        camera.worldToCamera[2], camera.worldToCamera[6],
+        camera.worldToCamera[10], camera.worldToCamera[14]};
+    gpuCamera.worldToCamera.columns[3] = {
+        camera.worldToCamera[3], camera.worldToCamera[7],
+        camera.worldToCamera[11], camera.worldToCamera[15]};
+    gpuCamera.focalCenter = {camera.focalX, camera.focalY, camera.centerX, camera.centerY};
+    gpuCamera.depthViewport = {camera.nearPlane, camera.farPlane,
+                               static_cast<float>(camera.width),
+                               static_cast<float>(camera.height)};
+    gpuCamera.cameraWorldPosition = {
+        camera.cameraWorldPosition[0], camera.cameraWorldPosition[1],
+        camera.cameraWorldPosition[2], 1.0F};
+
+    MTL::CommandBuffer* commandBuffer = queue->commandBuffer();
+    if (!commandBuffer) {
+        error = "Unable to allocate Metal oracle command buffer";
+        return std::nullopt;
+    }
+    if (auto encoded = pipeline->encode(commandBuffer, gpuCamera, color.get(), depth.get(),
+                                        ids.get(), 0);
+        !encoded) {
+        error = encoded.error().describe();
+        return std::nullopt;
+    }
+    commandBuffer->commit();
+    commandBuffer->waitUntilCompleted();
+    if (commandBuffer->status() == MTL::CommandBufferStatusError) {
+        error = "Metal oracle command buffer failed";
+        return std::nullopt;
+    }
+    if (pipeline->statistics().overflowedEntries != 0) {
+        error = "Metal oracle tile-entry budget overflowed";
+        return std::nullopt;
+    }
+
+    ReferenceImage image;
+    image.width = camera.width;
+    image.height = camera.height;
+    const std::size_t pixelCount = camera.width * camera.height;
+    image.color.resize(pixelCount);
+    image.depth.resize(pixelCount);
+    image.ids.resize(pixelCount);
+    const MTL::Region region = MTL::Region::Make2D(0, 0, camera.width, camera.height);
+    color->getBytes(image.color.data(), camera.width * sizeof(Pixel), region, 0);
+    depth->getBytes(image.depth.data(), camera.width * sizeof(float), region, 0);
+    ids->getBytes(image.ids.data(), camera.width * sizeof(std::uint32_t), region, 0);
+    for (auto& pixel : image.color) {
+        for (std::size_t channel = 0; channel < 3; ++channel)
+            pixel[channel] +=
+                (1.0F - pixel[3]) * std::clamp(background[channel], 0.0F, 1.0F);
+    }
+    return image;
+}
+#endif
+
+[[nodiscard]] bool verifyImageParity(const ReferenceImage& accelerated,
+                                     const ReferenceImage& reference,
+                                     double rgbTolerance, double depthTolerance,
+                                     std::string& reason) {
+    if (accelerated.width != reference.width || accelerated.height != reference.height ||
+        accelerated.color.size() != reference.color.size() ||
+        accelerated.depth.size() != reference.depth.size() ||
+        accelerated.ids.size() != reference.ids.size()) {
+        reason = "Metal/CPU image extent mismatch";
+        return false;
+    }
+    double maximumRgb{};
+    double maximumDepth{};
+    std::size_t idMismatches{};
+    for (std::size_t pixel = 0; pixel < reference.color.size(); ++pixel) {
+        for (std::size_t channel = 0; channel < 4; ++channel) {
+            maximumRgb = std::max(
+                maximumRgb,
+                std::abs(static_cast<double>(accelerated.color[pixel][channel]) -
+                         static_cast<double>(reference.color[pixel][channel])));
+        }
+        const float acceleratedDepth = accelerated.depth[pixel];
+        const float referenceDepth = reference.depth[pixel];
+        if (std::isfinite(acceleratedDepth) || std::isfinite(referenceDepth)) {
+            if (!(std::isfinite(acceleratedDepth) && std::isfinite(referenceDepth))) {
+                maximumDepth = std::numeric_limits<double>::infinity();
+            } else {
+                maximumDepth = std::max(
+                    maximumDepth,
+                    std::abs(static_cast<double>(acceleratedDepth) -
+                             static_cast<double>(referenceDepth)));
+            }
+        }
+        idMismatches += static_cast<std::size_t>(
+            accelerated.ids[pixel] != reference.ids[pixel]);
+    }
+    if (maximumRgb > rgbTolerance || maximumDepth > depthTolerance || idMismatches != 0) {
+        std::ostringstream stream;
+        stream << "Metal/CPU oracle parity failed: max RGB=" << maximumRgb
+               << ", max depth=" << maximumDepth << ", ID mismatches=" << idMismatches;
+        reason = stream.str();
+        return false;
+    }
+    return true;
+}
+
 [[nodiscard]] std::optional<double> parseDouble(std::string_view text) {
     try {
         std::size_t consumed{};
