@@ -1184,41 +1184,38 @@ int main(int argc, char** argv) try {
     else if (options->repairOmitFraction > 0.0)
         repairMode = "certified-omitted-gaussians-v1";
 
-    std::cout << std::setprecision(17) << "{"
-              << "\"schemaVersion\":1,"
-              << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
-              << "\"method\":\"CBRC\","
-              << "\"renderBackend\":\"" << renderBackend << "\","
-              << "\"totalGaussians\":" << before->gaussians.size() << ','
-              << "\"changedGaussians\":" << changed->size() << ',' << "\"changedFraction\":"
-              << static_cast<double>(changed->size()) /
-                     static_cast<double>(before->gaussians.size())
-              << ',' << "\"affectedPixels\":" << affectedPixels << ','
-              << "\"affectedPixelFraction\":" << affectedFraction << ','
-              << "\"spatialEvidenceWritten\":"
-              << (!options->spatialOutputPath.empty() ? "true" : "false") << ','
-              << "\"visualEvidenceWritten\":"
-              << (!options->visualOutputDir.empty() ? "true" : "false") << ','
-              << "\"colorUpperBound\":" << colorCap << ',' << "\"qois\":{\"rgb_linf\":{"
-              << "\"epsilon\":" << options->epsilon << ',' << "\"certified_bound\":" << maximumBound
-              << ',' << "\"measured_full_reference_error\":" << maximumActual << "}},"
-              << "\"repair_qois\":{\"rgb_linf\":{\"epsilon\":" << options->epsilon << ','
-              << "\"certified_bound\":" << repairResidualBound << ','
-              << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
-              << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\"" << repairMode
-              << "\","
-              << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
-              << "\"repairResidualBudgetRequested\":" << options->repairResidualBudget << ','
-              << "\"repairResidualBudget\":" << repairResidualBudget << ','
-              << "\"repairOmittedGaussians\":" << omittedCount << ','
-              << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
-              << "\"certificateViolationPixels\":" << certificateViolations << ','
-              << "\"repairCertificateViolationPixels\":" << repairCertificateViolations << ','
-              << "\"toleranceViolationPixels\":" << toleranceViolations << ','
-              << "\"certified\":" << (certified ? "true" : "false") << ','
-              << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << ','
-              << "\"repairWithinTolerance\":" << (repairWithinTolerance ? "true" : "false")
-              << "}\n";
+    std::cout
+        << std::setprecision(17) << "{"
+        << "\"schemaVersion\":1,"
+        << "\"experiment\":\"cbrc-gaussian-full-reference-oracle-v1\","
+        << "\"method\":\"CBRC\","
+        << "\"renderBackend\":\"" << renderBackend << "\","
+        << "\"totalGaussians\":" << before->gaussians.size() << ','
+        << "\"changedGaussians\":" << changed->size() << ',' << "\"changedFraction\":"
+        << static_cast<double>(changed->size()) / static_cast<double>(before->gaussians.size())
+        << ',' << "\"affectedPixels\":" << affectedPixels << ','
+        << "\"affectedPixelFraction\":" << affectedFraction << ','
+        << "\"spatialEvidenceWritten\":" << (!options->spatialOutputPath.empty() ? "true" : "false")
+        << ','
+        << "\"visualEvidenceWritten\":" << (!options->visualOutputDir.empty() ? "true" : "false")
+        << ',' << "\"colorUpperBound\":" << colorCap << ',' << "\"qois\":{\"rgb_linf\":{"
+        << "\"epsilon\":" << options->epsilon << ',' << "\"certified_bound\":" << maximumBound
+        << ',' << "\"measured_full_reference_error\":" << maximumActual << "}},"
+        << "\"repair_qois\":{\"rgb_linf\":{\"epsilon\":" << options->epsilon << ','
+        << "\"certified_bound\":" << repairResidualBound << ','
+        << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
+        << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\"" << repairMode << "\","
+        << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
+        << "\"repairResidualBudgetRequested\":" << options->repairResidualBudget << ','
+        << "\"repairResidualBudget\":" << repairResidualBudget << ','
+        << "\"repairOmittedGaussians\":" << omittedCount << ','
+        << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
+        << "\"certificateViolationPixels\":" << certificateViolations << ','
+        << "\"repairCertificateViolationPixels\":" << repairCertificateViolations << ','
+        << "\"toleranceViolationPixels\":" << toleranceViolations << ','
+        << "\"certified\":" << (certified ? "true" : "false") << ','
+        << "\"withinTolerance\":" << (withinTolerance ? "true" : "false") << ','
+        << "\"repairWithinTolerance\":" << (repairWithinTolerance ? "true" : "false") << "}\n";
 
     if (!certified)
         return 4;
