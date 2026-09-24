@@ -1054,6 +1054,22 @@ This executes the public v2.1 campaign, frozen hardware work calibration, sparse
 
 The broad and paper-grade runners are designed for workstation-scale storage. Do not delete an entire reusable result root before every rerun: prepared worlds, completed case evidence, and stage fingerprints are intentionally reused.
 
+For normal development, use the fast iteration runner instead of launching the full publication matrix after every code change:
+
+<pre><code class="language-bash">bash run_broad_benchmark_fast.sh</code></pre>
+
+The fast runner uses 32 source images per scene, 3 cases per scene, 300 bootstrap iterations, the optimized Release research build, parallel scene preparation, parallel independent cases, and the same deterministic reuse rules. It writes to `build/broad-benchmark-fast` so it cannot overwrite the publication-scale evidence root. It is a regression/iteration mode, not a substitute for the final paper campaign.
+
+The full broad runner now builds the research tools with the optimized `research` preset rather than the Debug-derived CI preset. On macOS, the Gaussian full-reference oracle selects the Metal compute path when available and falls back to the deterministic multicore CPU reference if Metal cannot initialize. Immutable before/after renders are cached inside the Step-6 result root and are invalidated with that stage whenever the oracle/toolchain fingerprint changes.
+
+Useful performance controls:
+
+<pre><code class="language-bash">export MAVEB_BROAD_SCENE_WORKERS=3
+export MAVEB_BROAD_CASE_WORKERS=4
+export MAVEB_BROAD_BUILD_PRESET=research
+export MAVEB_ORACLE_BACKEND=auto        # auto | cpu | metal
+</code></pre>
+
 Before or after a campaign, inspect storage without deleting anything:
 
 <pre><code class="language-bash">bash cleanup_maveb_storage.sh</code></pre>
