@@ -182,6 +182,15 @@ class ReviewerStressFreezeTests(unittest.TestCase):
 
 
 class ReviewerStressRunnerTests(unittest.TestCase):
+    def test_submission_finalizer_shell_syntax(self):
+        result = subprocess.run(
+            ["bash", "-n", str(ROOT / "finalize_maveb_submission.sh")],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_runner_shell_syntax(self):
         result = subprocess.run(
             ["bash", "-n", str(ROOT / "run_reviewer_stress_campaign.sh")],
