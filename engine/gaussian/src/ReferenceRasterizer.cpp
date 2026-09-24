@@ -232,12 +232,17 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
     }
     std::ranges::stable_sort(projected, {}, &Projected::depth);
 
-    struct RowEntry final {
+    constexpr std::size_t kRowBandHeight = 16;
+    struct BandEntry final {
         const Projected* gaussian{};
         int minimumX{};
         int maximumX{};
+        int minimumY{};
+        int maximumY{};
     };
-    std::vector<std::vector<RowEntry>> rowEntries(camera.height);
+    const std::size_t bandCount =
+        (camera.height + kRowBandHeight - 1) / kRowBandHeight;
+    std::vector<std::vector<BandEntry>> bands(bandCount);
     for (const Projected& gaussian : projected) {
         const int minimumX =
             std::max(0, static_cast<int>(std::floor(gaussian.centerX - gaussian.radius)));
@@ -251,36 +256,52 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                      static_cast<int>(std::ceil(gaussian.centerY + gaussian.radius)));
         if (minimumX > maximumX || minimumY > maximumY)
             continue;
-        for (int y = minimumY; y <= maximumY; ++y)
-            rowEntries[static_cast<std::size_t>(y)].push_back(
-                RowEntry{&gaussian, minimumX, maximumX});
+        const std::size_t firstBand =
+            static_cast<std::size_t>(minimumY) / kRowBandHeight;
+        const std::size_t lastBand =
+            static_cast<std::size_t>(maximumY) / kRowBandHeight;
+        for (std::size_t band = firstBand; band <= lastBand; ++band) {
+            bands[band].push_back(
+                BandEntry{&gaussian, minimumX, maximumX, minimumY, maximumY});
+        }
     }
 
-    auto rasterizeRow = [&](std::size_t y) {
-        for (const RowEntry& entry : rowEntries[y]) {
+    auto rasterizeBand = [&](std::size_t band) {
+        const int bandMinimumY = static_cast<int>(band * kRowBandHeight);
+        const int bandMaximumY =
+            std::min(static_cast<int>(camera.height) - 1,
+                     bandMinimumY + static_cast<int>(kRowBandHeight) - 1);
+        for (const BandEntry& entry : bands[band]) {
             const Projected& gaussian = *entry.gaussian;
-            for (int x = entry.minimumX; x <= entry.maximumX; ++x) {
-                const float dx = (static_cast<float>(x) + 0.5F) - gaussian.centerX;
-                const float dy = (static_cast<float>(y) + 0.5F) - gaussian.centerY;
-                const float distance = gaussian.inverseA * dx * dx +
-                                       2.0F * gaussian.inverseB * dx * dy +
-                                       gaussian.inverseC * dy * dy;
-                if (distance > 9.0F)
-                    continue;
-                const std::size_t pixel =
-                    y * camera.width + static_cast<std::size_t>(x);
-                const float alpha = std::min(0.99F, gaussian.opacity * std::exp(-0.5F * distance));
-                if (alpha < 1.0F / 255.0F || image.color[pixel][3] > 0.999F)
-                    continue;
-                const float contribution = (1.0F - image.color[pixel][3]) * alpha;
-                for (std::size_t channel = 0; channel < 3; ++channel)
-                    image.color[pixel][channel] += contribution * gaussian.color[channel];
-                image.color[pixel][3] += contribution;
-                if (image.depth[pixel] == std::numeric_limits<float>::infinity())
-                    image.depth[pixel] = gaussian.depth;
-                if (contribution > dominant[pixel]) {
-                    dominant[pixel] = contribution;
-                    image.ids[pixel] = static_cast<std::uint32_t>(gaussian.sourceIndex + 1);
+            const int minimumY = std::max(entry.minimumY, bandMinimumY);
+            const int maximumY = std::min(entry.maximumY, bandMaximumY);
+            for (int y = minimumY; y <= maximumY; ++y) {
+                for (int x = entry.minimumX; x <= entry.maximumX; ++x) {
+                    const float dx = (static_cast<float>(x) + 0.5F) - gaussian.centerX;
+                    const float dy = (static_cast<float>(y) + 0.5F) - gaussian.centerY;
+                    const float distance = gaussian.inverseA * dx * dx +
+                                           2.0F * gaussian.inverseB * dx * dy +
+                                           gaussian.inverseC * dy * dy;
+                    if (distance > 9.0F)
+                        continue;
+                    const std::size_t pixel =
+                        static_cast<std::size_t>(y) * camera.width +
+                        static_cast<std::size_t>(x);
+                    const float alpha =
+                        std::min(0.99F, gaussian.opacity * std::exp(-0.5F * distance));
+                    if (alpha < 1.0F / 255.0F || image.color[pixel][3] > 0.999F)
+                        continue;
+                    const float contribution = (1.0F - image.color[pixel][3]) * alpha;
+                    for (std::size_t channel = 0; channel < 3; ++channel)
+                        image.color[pixel][channel] += contribution * gaussian.color[channel];
+                    image.color[pixel][3] += contribution;
+                    if (image.depth[pixel] == std::numeric_limits<float>::infinity())
+                        image.depth[pixel] = gaussian.depth;
+                    if (contribution > dominant[pixel]) {
+                        dominant[pixel] = contribution;
+                        image.ids[pixel] =
+                            static_cast<std::uint32_t>(gaussian.sourceIndex + 1);
+                    }
                 }
             }
         }
@@ -306,24 +327,25 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
         threadBudget = std::max(1U, hardwareThreads / *concurrentCases);
     }
     const std::size_t workerCount =
-        std::min<std::size_t>(camera.height, static_cast<std::size_t>(threadBudget));
-    // Small oracle images are faster without thread startup; publication-size renders fan out
-    // by rows. Each row preserves the exact globally sorted Gaussian order, so compositing stays
-    // deterministic and numerically equivalent to the scalar reference path.
+        std::min<std::size_t>(bandCount, static_cast<std::size_t>(threadBudget));
+    // Small oracle images are faster without thread startup. Larger renders fan out by
+    // independent horizontal bands. Every pixel still sees Gaussians in the original global
+    // stable depth order, so compositing is deterministic and numerically equivalent.
     if (workerCount <= 1 || pixelCount < 65'536) {
-        for (std::size_t y = 0; y < camera.height; ++y)
-            rasterizeRow(y);
+        for (std::size_t band = 0; band < bandCount; ++band)
+            rasterizeBand(band);
     } else {
-        std::atomic<std::size_t> nextRow{0};
+        std::atomic<std::size_t> nextBand{0};
         std::vector<std::thread> workers;
         workers.reserve(workerCount);
         for (std::size_t worker = 0; worker < workerCount; ++worker) {
             workers.emplace_back([&] {
                 while (true) {
-                    const std::size_t y = nextRow.fetch_add(1, std::memory_order_relaxed);
-                    if (y >= camera.height)
+                    const std::size_t band =
+                        nextBand.fetch_add(1, std::memory_order_relaxed);
+                    if (band >= bandCount)
                         break;
-                    rasterizeRow(y);
+                    rasterizeBand(band);
                 }
             });
         }
