@@ -507,8 +507,7 @@ template <std::size_t N>
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
                    arg == "--repair-omit-fraction" || arg == "--repair-residual-scale" ||
-                   arg == "--background-r" || arg == "--background-g" ||
-                   arg == "--background-b") {
+                   arg == "--background-r" || arg == "--background-g" || arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
