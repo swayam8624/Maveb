@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure app and offline shaders
-        run: cmake --preset debug -DAETHER_REQUIRE_METAL_TOOLCHAIN=ON
+        run: cmake --preset debug -DAETHER_REQUIRE_METAL_TOOLCHAIN=ON -DAETHER_ENABLE_GPU_VALIDATION_TESTS=ON
       - name: Build
         run: cmake --build --preset debug --parallel
       - name: Test
