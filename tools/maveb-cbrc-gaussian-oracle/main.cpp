@@ -866,8 +866,8 @@ int main(int argc, char** argv) try {
         return image;
     };
 
-    const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
+    const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
     if (wantsMetal) {
         std::string metalError;
         const auto renderMetalCached =
