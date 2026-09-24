@@ -277,6 +277,7 @@ def main() -> int:
         f"- Datasets: **{len(dataset_groups)}**",
         f"- Observed certificate violations: **{overall['certificateViolations']}**",
         f"- LOCAL / FULL: **{overall['localCases']} / {overall['fullFallbackCases']}**",
+        "- FULL-fallback observation policy: **observed outcome, not required for acceptance**",
         "",
         "| Dataset | Cases | Scenes | LOCAL rate | Violations | Median work/FULL | 95% bootstrap CI |",
         "|---|---:|---:|---:|---:|---:|---:|",
