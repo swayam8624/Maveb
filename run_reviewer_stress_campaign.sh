@@ -148,7 +148,7 @@ echo "  This step is resumable case-by-case."
 echo "  If interrupted, rerun this script; completed matching cases are reused."
 
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --workers "$CASE_WORKERS"
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
 
 AUDIT_KEY="$("$PYTHON" "$CACHE_KEY"   --label reviewer-evidence-audit-v2-partial-repair   --file "$FREEZE/reviewer-stress-campaign.json"   --file "$CAMPAIGN/campaign-rows.jsonl"   --file "$ROOT/research/analysis/cbrc_reviewer_evidence.py")"
 

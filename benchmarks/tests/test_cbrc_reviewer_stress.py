@@ -191,6 +191,10 @@ class ReviewerStressRunnerTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_runner_uses_safe_resume_invalidation(self):
+        text = (ROOT / "run_reviewer_stress_campaign.sh").read_text()
+        self.assertIn("--invalidate-stale-resume", text)
+
     def test_runner_shell_syntax(self):
         result = subprocess.run(
             ["bash", "-n", str(ROOT / "run_reviewer_stress_campaign.sh")],

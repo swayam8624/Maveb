@@ -7,6 +7,7 @@ import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
+import shutil
 import subprocess
 import sys
 import statistics
@@ -153,6 +154,38 @@ def execution_signature(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     )
     return digest.hexdigest()
+
+
+def ensure_resume_signature(
+    *,
+    root: Path,
+    state_path: Path,
+    signature: str,
+    resume: bool,
+    invalidate_stale_resume: bool,
+    worker_case: str | None,
+) -> tuple[Path, bool]:
+    if not resume or not state_path.is_file():
+        return state_path, False
+
+    previous_state = json.loads(state_path.read_text())
+    if previous_state.get("executionSignature") == signature:
+        return state_path, False
+
+    if invalidate_stale_resume and worker_case is None:
+        print(
+            "  ↻ stale campaign resume signature detected; "
+            "invalidating execution outputs and restarting the same frozen cases",
+            flush=True,
+        )
+        shutil.rmtree(root)
+        root.mkdir(parents=True, exist_ok=True)
+        return root / "CAMPAIGN_RESUME_STATE.json", True
+
+    raise SystemExit(
+        "existing Step-6 resume state does not match this campaign/toolchain; "
+        "clear the campaign directory or run through a wrapper that can invalidate safely"
+    )
 
 
 def frozen_inputs_by_case(path: Path | None) -> dict[str, dict[str, Any]]:
@@ -631,6 +664,15 @@ def main() -> int:
         help="Reuse cases with matching CASE_COMPLETE markers and restore incomplete frozen inputs.",
     )
     parser.add_argument(
+        "--invalidate-stale-resume",
+        action="store_true",
+        help=(
+            "When the top-level resume signature is stale, delete only the campaign "
+            "execution output directory and restart the same frozen campaign. "
+            "Ignored for worker processes."
+        ),
+    )
+    parser.add_argument(
         "--freeze-provenance",
         type=Path,
         help="BROAD_CAMPAIGN_FREEZE.json used to restore pristine per-case inputs on resume.",
@@ -694,13 +736,14 @@ def main() -> int:
         freeze_provenance=freeze_provenance,
     )
     state_path = root / ("CAMPAIGN_RESUME_STATE.json" if args.worker_case is None else f".worker-state-{args.worker_case}.json")
-    if args.resume and state_path.is_file():
-        previous_state = json.loads(state_path.read_text())
-        if previous_state.get("executionSignature") != signature:
-            raise SystemExit(
-                "existing Step-6 resume state does not match this campaign/toolchain; "
-                "clear the campaign directory or run through the broad runner so it can invalidate safely"
-            )
+    state_path, _ = ensure_resume_signature(
+        root=root,
+        state_path=state_path,
+        signature=signature,
+        resume=args.resume,
+        invalidate_stale_resume=args.invalidate_stale_resume,
+        worker_case=args.worker_case,
+    )
     write_json(
         state_path,
         {
@@ -792,6 +835,8 @@ def main() -> int:
                 command.extend(["--freeze-provenance", str(freeze_provenance)])
             if args.adopt_existing:
                 command.append("--adopt-existing")
+            if args.invalidate_stale_resume:
+                command.append("--invalidate-stale-resume")
             if args.keep_case_inputs:
                 command.append("--keep-case-inputs")
             return command
