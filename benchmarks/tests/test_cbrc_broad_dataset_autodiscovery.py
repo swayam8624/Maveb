@@ -60,7 +60,9 @@ class BroadDatasetAutodiscoveryTests(unittest.TestCase):
             alias.mkdir()
             with patch.dict(os.environ, {"MAVEB_DATA": str(root)}, clear=False):
                 os.environ.pop("MAVEB_ARKITSCENES", None)
-                self.assertEqual(MODULE.configured_root(self.dataset()), alias.resolve())
+                discovered = MODULE.configured_root(self.dataset())
+                self.assertIsNotNone(discovered)
+                self.assertTrue(discovered.samefile(alias))
 
     def test_missing_dataset_remains_unconfigured(self):
         with tempfile.TemporaryDirectory() as temp:
