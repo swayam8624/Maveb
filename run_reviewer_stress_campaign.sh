@@ -181,6 +181,15 @@ else
   cache_done visuals "$VISUAL_KEY"
 fi
 
+echo
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "▶ Manuscript bridge: emit reviewer-v2 claims only if every readiness gate passes"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+"$PYTHON" research/analysis/cbrc_reviewer_manuscript_block.py \
+  --audit "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" \
+  --visual-dir "$VISUALS" \
+  --repo-root "$ROOT"
+
 "$PYTHON" - "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" "$VISUALS/REVIEWER_VISUALS.json" <<'PY'
 import json,sys
 from pathlib import Path
@@ -228,6 +237,8 @@ Artifacts:
   Real scenes  : $VISUALS/F_REVIEWER_REAL_SCENE_LOCAL_VS_FULL.png
   Crossover    : $VISUALS/F_REVIEWER_TOLERANCE_CROSSOVER.png
   Visual index : $VISUALS/REVIEWER_VISUALS.json
+  Paper block   : $ROOT/researchpaper/generated/reviewer_v2_results.tex
+  Paper status  : $ROOT/researchpaper/generated/reviewer_v2_status.md
 
 Resume:
   bash run_reviewer_stress_campaign.sh
