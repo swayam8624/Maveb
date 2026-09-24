@@ -74,7 +74,10 @@ struct Options final {
     };
     double epsilon{0.01};
     double repairOmitFraction{};
+    double repairResidualBudgetFraction{};
 };
+
+constexpr double kOracleNumericalSlack = 2.0e-6;
 
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
 [[nodiscard]] std::uint32_t metalEntryBudget(std::size_t gaussianCount) {
@@ -505,8 +508,10 @@ template <std::size_t N>
                 options.height = *parsed;
         } else if (arg == "--focal-x" || arg == "--focal-y" || arg == "--center-x" ||
                    arg == "--center-y" || arg == "--near" || arg == "--far" || arg == "--epsilon" ||
-                   arg == "--repair-omit-fraction" || arg == "--background-r" ||
-                   arg == "--background-g" || arg == "--background-b") {
+                   arg == "--repair-omit-fraction" ||
+                   arg == "--repair-residual-budget-fraction" ||
+                   arg == "--background-r" || arg == "--background-g" ||
+                   arg == "--background-b") {
             auto value = requireValue(arg);
             if (!value)
                 return std::nullopt;
@@ -529,6 +534,8 @@ template <std::size_t N>
                 options.epsilon = *parsed;
             else if (arg == "--repair-omit-fraction")
                 options.repairOmitFraction = *parsed;
+            else if (arg == "--repair-residual-budget-fraction")
+                options.repairResidualBudgetFraction = *parsed;
             else if (arg == "--background-r")
                 options.background[0] = static_cast<float>(*parsed);
             else if (arg == "--background-g")
@@ -553,7 +560,10 @@ template <std::size_t N>
                 << "  --background-r F --background-g F --background-b F\n"
                 << "  --epsilon F\n"
                 << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
-                   "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
+                   "Gaussians stale and certifies that omitted subset (reviewer-v2 probe)\n"
+                << "  --repair-residual-budget-fraction F deterministically omits the largest "
+                   "nested Gaussian subset whose conservative residual certificate fits "
+                   "F*epsilon (reviewer-v3 probe)\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -565,6 +575,9 @@ template <std::size_t N>
     if (options.beforePath.empty() || options.afterPath.empty() ||
         hasExplicitChanged == options.detectChanged || options.epsilon < 0.0 ||
         options.repairOmitFraction < 0.0 || options.repairOmitFraction >= 1.0 ||
+        options.repairResidualBudgetFraction < 0.0 ||
+        options.repairResidualBudgetFraction > 1.0 ||
+        (options.repairOmitFraction > 0.0 && options.repairResidualBudgetFraction > 0.0) ||
         options.focalX <= 0.0F || options.focalY <= 0.0F || options.nearPlane <= 0.0F ||
         options.farPlane <= options.nearPlane ||
         (options.backend != "auto" && options.backend != "cpu" && options.backend != "metal"))
@@ -645,6 +658,14 @@ template <std::size_t N>
     if (!accumulate(before) || !accumulate(after))
         return std::numeric_limits<double>::quiet_NaN();
     return cap;
+}
+
+[[nodiscard]] std::uint64_t stableOmissionRank(std::size_t index) noexcept {
+    // SplitMix64: deterministic, cheap, and independent of scene traversal order.
+    std::uint64_t value = static_cast<std::uint64_t>(index) + 0x9e3779b97f4a7c15ULL;
+    value = (value ^ (value >> 30U)) * 0xbf58476d1ce4e5b9ULL;
+    value = (value ^ (value >> 27U)) * 0x94d049bb133111ebULL;
+    return value ^ (value >> 31U);
 }
 
 [[nodiscard]] unsigned char toByte(double value) {
@@ -768,8 +789,29 @@ int main(int argc, char** argv) try {
         }
     }
 
+    ReferenceCamera camera;
+    camera.width = options->width;
+    camera.height = options->height;
+    camera.focalX = options->focalX;
+    camera.focalY = options->focalY;
+    camera.centerX = options->centerX;
+    camera.centerY = options->centerY;
+    camera.nearPlane = options->nearPlane;
+    camera.farPlane = options->farPlane;
+    camera.cameraWorldPosition = options->cameraWorldPosition;
+    camera.worldToCamera = options->worldToCamera;
+
+    const double colorCap = sceneColorCap(*before, *after);
+    if (!std::isfinite(colorCap)) {
+        std::cerr << "Unable to construct conservative scene color cap\n";
+        return EXIT_FAILURE;
+    }
+
     std::vector<bool> isOmitted(before->gaussians.size(), false);
     std::size_t omittedCount{};
+    double repairResidualBudget{};
+    std::vector<std::size_t> omissionOrder;
+
     if (options->repairOmitFraction > 0.0 && changed->size() >= 2) {
         omittedCount = static_cast<std::size_t>(
             std::floor(options->repairOmitFraction * static_cast<double>(changed->size())));
@@ -782,6 +824,60 @@ int main(int argc, char** argv) try {
         }
         omittedCount =
             static_cast<std::size_t>(std::count(isOmitted.begin(), isOmitted.end(), true));
+    } else if (options->repairResidualBudgetFraction > 0.0 && changed->size() >= 2) {
+        repairResidualBudget =
+            std::max(0.0, options->epsilon * options->repairResidualBudgetFraction -
+                              kOracleNumericalSlack);
+
+        omissionOrder = *changed;
+        std::sort(omissionOrder.begin(), omissionOrder.end(),
+                  [](std::size_t lhs, std::size_t rhs) {
+                      const auto lhsRank = stableOmissionRank(lhs);
+                      const auto rhsRank = stableOmissionRank(rhs);
+                      return lhsRank == rhsRank ? lhs < rhs : lhsRank < rhsRank;
+                  });
+
+        const auto certifiedPrefixBound =
+            [&](std::size_t count) -> aether::Result<double> {
+            GaussianAsset candidateBefore;
+            GaussianAsset candidateAfter;
+            candidateBefore.sphericalHarmonicDegree = before->sphericalHarmonicDegree;
+            candidateAfter.sphericalHarmonicDegree = after->sphericalHarmonicDegree;
+            candidateBefore.gaussians.reserve(count);
+            candidateAfter.gaussians.reserve(count);
+            for (std::size_t k = 0; k < count; ++k) {
+                const std::size_t index = omissionOrder[k];
+                candidateBefore.gaussians.push_back(before->gaussians[index]);
+                candidateAfter.gaussians.push_back(after->gaussians[index]);
+            }
+            auto candidateCertificate =
+                aether::world_gaussian::certifyGaussianImageRevision(
+                    candidateBefore, candidateAfter, camera, colorCap);
+            if (!candidateCertificate)
+                return std::unexpected(candidateCertificate.error());
+            return candidateCertificate->maximumRgbLInfBound;
+        };
+
+        // The opacity-envelope certificate is monotone under adding omitted
+        // Gaussians. Binary search therefore finds the largest deterministic
+        // nested prefix that fits the predeclared residual budget.
+        std::size_t low = 0;
+        std::size_t high = changed->size() - 1; // always apply at least one change
+        while (low < high) {
+            const std::size_t mid = low + (high - low + 1) / 2;
+            auto bound = certifiedPrefixBound(mid);
+            if (!bound) {
+                std::cerr << bound.error().describe() << '\n';
+                return EXIT_FAILURE;
+            }
+            if (*bound <= repairResidualBudget)
+                low = mid;
+            else
+                high = mid - 1;
+        }
+        omittedCount = low;
+        for (std::size_t k = 0; k < omittedCount; ++k)
+            isOmitted[omissionOrder[k]] = true;
     }
 
     GaussianAsset omittedBefore;
@@ -804,18 +900,6 @@ int main(int argc, char** argv) try {
             repairedState.gaussians[index] = before->gaussians[index];
         }
     }
-
-    ReferenceCamera camera;
-    camera.width = options->width;
-    camera.height = options->height;
-    camera.focalX = options->focalX;
-    camera.focalY = options->focalY;
-    camera.centerX = options->centerX;
-    camera.centerY = options->centerY;
-    camera.nearPlane = options->nearPlane;
-    camera.farPlane = options->farPlane;
-    camera.cameraWorldPosition = options->cameraWorldPosition;
-    camera.worldToCamera = options->worldToCamera;
 
     std::optional<ReferenceImage> oldImage;
     std::optional<ReferenceImage> newImage;
@@ -925,11 +1009,6 @@ int main(int argc, char** argv) try {
         }
     }
 
-    const double colorCap = sceneColorCap(*before, *after);
-    if (!std::isfinite(colorCap)) {
-        std::cerr << "Unable to construct conservative scene color cap\n";
-        return EXIT_FAILURE;
-    }
     auto certificate = aether::world_gaussian::certifyGaussianImageRevision(
         beforeChanged, afterChanged, camera, colorCap);
     if (!certificate) {
@@ -952,7 +1031,6 @@ int main(int argc, char** argv) try {
         }
     }
 
-    constexpr double kOracleNumericalSlack = 2.0e-6;
     double maximumActual{};
     double maximumBound{};
     double maximumRepairResidual{};
@@ -1064,10 +1142,13 @@ int main(int argc, char** argv) try {
             const double bound = certificate->rgbLInfBounds[pixel];
             const double residualBound = repairBounds[pixel];
             selectedRepairPixels[pixel] = repairImage->color[pixel];
-            const double supportValue = options->repairOmitFraction > 0.0 ? residualBound : bound;
-            const double supportMaximum = options->repairOmitFraction > 0.0
-                                              ? std::max(maximumRepairResidualBound, 1.0e-12)
-                                              : maximumBound;
+            const bool approximateRepair =
+                options->repairOmitFraction > 0.0 ||
+                options->repairResidualBudgetFraction > 0.0;
+            const double supportValue = approximateRepair ? residualBound : bound;
+            const double supportMaximum =
+                approximateRepair ? std::max(maximumRepairResidualBound, 1.0e-12)
+                                  : maximumBound;
             supportHeat[pixel] = heatColor(supportValue, supportMaximum);
             double actual{};
             for (std::size_t channel = 0; channel < 3; ++channel) {
@@ -1129,10 +1210,16 @@ int main(int argc, char** argv) try {
               << "\"certified_bound\":" << repairResidualBound << ','
               << "\"measured_full_reference_error\":" << maximumRepairResidual << "}},"
               << "\"effectivity\":" << effectivity << ',' << "\"repairMode\":\""
-              << (options->repairOmitFraction > 0.0 ? "certified-omitted-gaussians-v1"
-                                                    : "exact-changed-support-v1")
+              << (options->repairResidualBudgetFraction > 0.0
+                      ? "certified-budgeted-omitted-gaussians-v2"
+                      : (options->repairOmitFraction > 0.0
+                             ? "certified-omitted-gaussians-v1"
+                             : "exact-changed-support-v1"))
               << "\","
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
+              << "\"repairResidualBudgetFractionRequested\":"
+              << options->repairResidualBudgetFraction << ','
+              << "\"repairResidualBudget\":" << repairResidualBudget << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
               << "\"repairAppliedChangedGaussians\":" << (changed->size() - omittedCount) << ','
               << "\"certificateViolationPixels\":" << certificateViolations << ','
