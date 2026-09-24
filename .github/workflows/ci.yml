@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_broad_benchmark_campaign.sh run_broad_benchmark_fast.sh run_paper_grade_research.sh run_reviewer_stress_campaign.sh run_final_maveb_review_pass.sh verify_maveb_performance_path.sh cleanup_maveb_storage.sh show_paper_visuals.sh
+          bash -n run_all.sh bootstrap_and_run.sh run_real_campaign.sh capture_to_real_campaign.sh run_public_real_campaign.sh run_public_real_campaign_v2.sh run_trained_3dgs_campaign.sh run_broad_benchmark_campaign.sh run_broad_benchmark_fast.sh run_paper_grade_research.sh run_reviewer_stress_campaign.sh run_reviewer_stress_v3.sh run_final_maveb_review_pass.sh verify_maveb_performance_path.sh cleanup_maveb_storage.sh show_paper_visuals.sh
           zsh -n tools/build-colmap-macos.zsh
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
@@ -97,9 +97,7 @@ jobs:
           done < <(git diff --diff-filter=ACMR --name-only "$base" HEAD -- \
             '*.c' '*.cc' '*.cpp' '*.cxx' '*.h' '*.hh' '*.hpp' '*.hxx')
           if (( ${#cpp_files[@]} )); then
-            "$(brew --prefix llvm@18)/bin/clang-format" -i "${cpp_files[@]}"
-            git diff --no-ext-diff -- "${cpp_files[@]}"
-            exit 1
+            "$(brew --prefix llvm@18)/bin/clang-format" --dry-run --Werror "${cpp_files[@]}"
           fi
           swift_files=()
           while IFS= read -r file; do
