@@ -175,9 +175,26 @@ def bundle(
         manifest_payload["repair_omit_fraction"] = float(repair_omit_fraction)
         manifest_payload["repair_mode"] = "certified-omitted-gaussians-v1"
     if repair_residual_budget_fraction > 0.0:
+        production = manifest_payload.get("production_certificate", {})
+        planner = (
+            production.get("outputConePlanner", {})
+            if isinstance(production, dict)
+            else {}
+        )
+        resolved_bound = (
+            float(planner.get("resolvedRgbBound", 0.0))
+            if isinstance(planner, dict)
+            else 0.0
+        )
+        remaining_slack = max(0.0, float(epsilon) - resolved_bound)
+        repair_residual_budget = (
+            float(repair_residual_budget_fraction) * remaining_slack
+        )
         manifest_payload["repair_residual_budget_fraction"] = float(
             repair_residual_budget_fraction
         )
+        manifest_payload["repair_residual_budget"] = repair_residual_budget
+        manifest_payload["repair_residual_remaining_slack"] = remaining_slack
         manifest_payload["repair_mode"] = "certified-budgeted-omitted-gaussians-v2"
     if native_planner_certificate is not None:
         validate_native_planner_certificate(
@@ -249,6 +266,12 @@ def bundle(
         "epsilon": epsilon,
         "repairOmitFraction": repair_omit_fraction,
         "repairResidualBudgetFraction": repair_residual_budget_fraction,
+        "repairResidualBudget": float(
+            manifest_payload.get("repair_residual_budget", 0.0)
+        ),
+        "repairResidualRemainingSlack": float(
+            manifest_payload.get("repair_residual_remaining_slack", 0.0)
+        ),
         "oracle": str(oracle),
         "oracleSha256": sha256(oracle),
         "artifacts": {
