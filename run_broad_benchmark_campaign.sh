@@ -516,7 +516,13 @@ step 9 "Writing campaign completion manifest"
 import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]).resolve()
-datasets=sys.argv[2].split(",")
+requested_datasets=[value for value in sys.argv[2].split(",") if value]
+campaign=json.loads((root/"frozen/broad-campaign.json").read_text())
+datasets=sorted({
+    str(case.get("dataset_id"))
+    for case in campaign.get("cases",[])
+    if case.get("dataset_id")
+})
 evidence_git_sha=sys.argv[3]
 runner_git_sha=sys.argv[4]
 files=[
@@ -550,6 +556,7 @@ manifest={
   "evidenceGitSha":evidence_git_sha,
   "runnerGitSha":runner_git_sha,
   "datasets":datasets,
+  "requestedDatasets":requested_datasets,
   "files":[
       {"path":str(p.relative_to(root)),"sha256":sha(p),"bytes":p.stat().st_size}
       for p in files
@@ -563,6 +570,7 @@ print(json.dumps({
     "evidenceGitSha":evidence_git_sha,
     "runnerGitSha":runner_git_sha,
     "datasets":datasets,
+    "requestedDatasets":requested_datasets,
     "files":len(files),
     "completionManifest":str(root/"BROAD_CAMPAIGN_COMPLETE.json"),
 },indent=2,sort_keys=True))
