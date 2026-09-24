@@ -227,18 +227,17 @@ def main() -> int:
             "atLeastThreeDatasets": len(dataset_groups) >= 3,
             "allDatasetsHaveCases": all(group["cases"] > 0 for group in dataset_groups.values()),
             "zeroObservedCertificateViolations": overall["certificateViolations"] == 0,
+        },
+        "crossDatasetObservations": {
             "bothLocalAndFallbackObserved": (
                 overall["localCases"] > 0 and overall["fullFallbackCases"] > 0
             ),
             "fallbackObservationPolicy": "observed-outcome-not-required",
         },
     }
-    required_gates = (
-        result["crossDatasetGates"]["atLeastThreeDatasets"],
-        result["crossDatasetGates"]["allDatasetsHaveCases"],
-        result["crossDatasetGates"]["zeroObservedCertificateViolations"],
+    result["crossDatasetGates"]["pass"] = all(
+        result["crossDatasetGates"].values()
     )
-    result["crossDatasetGates"]["pass"] = all(required_gates)
     write_json(output / "CROSS_DATASET_STATISTICS.json", result)
 
     with (output / "dataset-summary.csv").open("w", newline="", encoding="utf-8") as stream:
