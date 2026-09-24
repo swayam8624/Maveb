@@ -15,6 +15,7 @@ option(AETHER_BUILD_EXAMPLES "Build archived tutorial examples" OFF)
 option(AETHER_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(AETHER_ENABLE_ASAN "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(AETHER_REQUIRE_METAL_TOOLCHAIN "Fail configuration when metal/metallib are unavailable" OFF)
+option(AETHER_ENABLE_GPU_VALIDATION_TESTS "Enable tests that require a working physical Metal GPU" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(AetherWarnings)
@@ -222,7 +223,7 @@ if(AETHER_BUILD_TESTS)
                 --center-x 32 --center-y 32
                 --epsilon 1.0
         )
-        if(APPLE AND TARGET MavebCBRCOracleShaders)
+        if(APPLE AND TARGET MavebCBRCOracleShaders AND AETHER_ENABLE_GPU_VALIDATION_TESTS)
             add_test(
                 NAME MavebCBRCGaussianOracleMetalParity
                 COMMAND maveb-cbrc-gaussian-oracle
