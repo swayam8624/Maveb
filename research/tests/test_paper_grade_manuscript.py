@@ -42,6 +42,13 @@ class PaperGradeManuscriptTests(unittest.TestCase):
             text,
         )
 
+    def test_reviewer_v2_state_controls_all_claim_surfaces(self):
+        text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertIn(r"\IfFileExists{generated/reviewer_v2_state.tex}", text)
+        self.assertGreaterEqual(text.count(r"\ifreviewervtwoready"), 5)
+        self.assertIn("successful cases are reported as a separate stress result", text)
+        self.assertIn("Useful certified approximation with non-zero residual remains", text)
+
     def test_defensive_not_cadence_is_reduced(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
         standalone_not = len(re.findall(r"\bnot\b", text, flags=re.IGNORECASE))
