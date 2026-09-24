@@ -46,16 +46,9 @@ def expand_reviewer_v2_for_word(source):
     results = ROOT / 'generated/reviewer_v2_results.tex'
     ready = state.is_file() and r'\reviewervtworeadytrue' in state.read_text()
 
-    pattern = re.compile(
-        r'\\ifreviewervtwoready(.*?)\\else(.*?)\\fi',
-        re.S,
-    )
-    while pattern.search(source):
-        source = pattern.sub(
-            lambda match: match.group(1) if ready else match.group(2),
-            source,
-        )
-
+    # Remove the fallback declaration before matching conditionals. Otherwise
+    # the "\\newif\\ifreviewervtwoready" declaration itself can look like
+    # the start of a conditional to a simple textual preprocessor.
     state_block = re.compile(
         r'\\IfFileExists\{generated/reviewer_v2_state\.tex\}\{%'
         r'.*?\\input\{generated/reviewer_v2_state\.tex\}%'
@@ -66,6 +59,16 @@ def expand_reviewer_v2_for_word(source):
         re.S,
     )
     source = state_block.sub('', source)
+
+    pattern = re.compile(
+        r'\\ifreviewervtwoready(.*?)\\else(.*?)\\fi',
+        re.S,
+    )
+    while pattern.search(source):
+        source = pattern.sub(
+            lambda match: match.group(1) if ready else match.group(2),
+            source,
+        )
 
     results_marker = (
         r'\IfFileExists{generated/reviewer_v2_results.tex}'
