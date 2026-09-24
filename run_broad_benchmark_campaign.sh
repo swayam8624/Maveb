@@ -32,11 +32,7 @@ BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
 export MAVEB_PROGRESS="${MAVEB_PROGRESS:-1}"
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$RESULTS_DIR/.oracle-cache}"
 if [[ -z "${MAVEB_ORACLE_BACKEND:-}" ]]; then
-  if [[ "$(uname -s)" == "Darwin" ]]; then
-    export MAVEB_ORACLE_BACKEND="auto"
-  else
-    export MAVEB_ORACLE_BACKEND="cpu"
-  fi
+  export MAVEB_ORACLE_BACKEND="cpu"
 fi
 
 DATASETS_CSV="${MAVEB_BROAD_DATASETS:-graphdeco-pretrained-3dgs,3rscan,scannetpp,arkitscenes,bonn-rgbd-dynamic}"
@@ -528,7 +524,7 @@ Reuse controls:
   MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
   MAVEB_ORACLE_CPU_THREADS=N       optional per-oracle CPU thread override
   MAVEB_BROAD_BUILD_PRESET=research optimized Release research binaries
-  MAVEB_ORACLE_BACKEND=auto      Metal on macOS with deterministic CPU fallback
+  MAVEB_ORACLE_BACKEND=cpu       publication default; set auto/metal after GPU parity validation
   MAVEB_ORACLE_CACHE_DIR=...      shared immutable render cache for Step-6 workers
 
 Scientific boundary:
