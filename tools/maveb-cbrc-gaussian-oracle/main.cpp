@@ -831,26 +831,56 @@ int main(int argc, char** argv) try {
     std::optional<ReferenceImage> repairImage;
     std::string renderBackend = "cpu";
 
-    const auto renderCpu = [&](const GaussianAsset& asset) -> std::optional<ReferenceImage> {
+    const Path renderCacheRoot =
+        options->cacheDir.empty() ? Path{} : Path(options->cacheDir);
+    const auto cacheKey = [&](const Path& source,
+                              std::string_view backend) -> std::optional<std::string> {
+        if (renderCacheRoot.empty() || source.empty())
+            return std::nullopt;
+        return renderCacheKey(source, camera, options->background, backend);
+    };
+    const auto renderCpu = [&](const GaussianAsset& asset,
+                               const Path& source = Path{}) -> std::optional<ReferenceImage> {
+        const auto key = cacheKey(source, "cpu");
+        if (key) {
+            if (auto cached = loadRenderCache(renderCacheRoot, *key))
+                return cached;
+        }
         auto rendered =
             aether::gaussian::ReferenceRasterizer::render(asset, camera, options->background);
         if (!rendered) {
             std::cerr << rendered.error().describe() << '\n';
             return std::nullopt;
         }
-        return std::move(*rendered);
+        ReferenceImage image = std::move(*rendered);
+        if (key)
+            storeRenderCache(renderCacheRoot, *key, image);
+        return image;
     };
 
     const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
     if (wantsMetal) {
         std::string metalError;
-        oldImage = renderMetalReference(*before, camera, options->background, metalError);
+        const auto renderMetalCached =
+            [&](const GaussianAsset& asset,
+                const Path& source = Path{}) -> std::optional<ReferenceImage> {
+                const auto key = cacheKey(source, "metal");
+                if (key) {
+                    if (auto cached = loadRenderCache(renderCacheRoot, *key))
+                        return cached;
+                }
+                auto rendered =
+                    renderMetalReference(asset, camera, options->background, metalError);
+                if (rendered && key)
+                    storeRenderCache(renderCacheRoot, *key, *rendered);
+                return rendered;
+            };
+        oldImage = renderMetalCached(*before, Path(options->beforePath));
         if (oldImage)
-            newImage = renderMetalReference(*after, camera, options->background, metalError);
+            newImage = renderMetalCached(*after, Path(options->afterPath));
         if (newImage)
-            repairImage =
-                renderMetalReference(repairedState, camera, options->background, metalError);
+            repairImage = renderMetalCached(repairedState);
         if (oldImage && newImage && repairImage) {
             renderBackend = "metal";
         } else {
@@ -873,8 +903,8 @@ int main(int argc, char** argv) try {
 #endif
 
     if (!oldImage) {
-        oldImage = renderCpu(*before);
-        newImage = renderCpu(*after);
+        oldImage = renderCpu(*before, Path(options->beforePath));
+        newImage = renderCpu(*after, Path(options->afterPath));
         repairImage = renderCpu(repairedState);
         renderBackend = "cpu";
     }
@@ -886,8 +916,8 @@ int main(int argc, char** argv) try {
             std::cerr << "--verify-metal-parity requires an available Metal backend\n";
             return EXIT_FAILURE;
         }
-        auto cpuOld = renderCpu(*before);
-        auto cpuNew = renderCpu(*after);
+        auto cpuOld = renderCpu(*before, Path(options->beforePath));
+        auto cpuNew = renderCpu(*after, Path(options->afterPath));
         auto cpuRepair = renderCpu(repairedState);
         if (!cpuOld || !cpuNew || !cpuRepair)
             return EXIT_FAILURE;
