@@ -68,10 +68,11 @@ class CrossDatasetStatisticsGateTests(unittest.TestCase):
         completed, payload = self.run_stats()
         self.assertEqual(completed.returncode, 0, completed.stderr)
         gates = payload["crossDatasetGates"]
+        observations = payload["crossDatasetObservations"]
         self.assertTrue(gates["pass"])
-        self.assertFalse(gates["bothLocalAndFallbackObserved"])
+        self.assertFalse(observations["bothLocalAndFallbackObserved"])
         self.assertEqual(
-            gates["fallbackObservationPolicy"],
+            observations["fallbackObservationPolicy"],
             "observed-outcome-not-required",
         )
 
