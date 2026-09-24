@@ -1060,6 +1060,8 @@ For normal development, use the fast iteration runner instead of launching the f
 
 The fast runner uses 32 source images per scene, 3 cases per scene, 300 bootstrap iterations, the optimized Release research build, parallel scene preparation, parallel independent cases, and the same deterministic reuse rules. It writes to `build/broad-benchmark-fast` so it cannot overwrite the publication-scale evidence root. It is a regression/iteration mode, not a substitute for the final paper campaign.
 
+If one of the requested public datasets is unavailable or only partially downloaded, the fast runner automatically constructs a development-only effective import from the ready scenes and reports what it skipped. The full broad publication runner remains fail-closed: it prints the unavailable dataset/scene reasons and stops rather than silently changing the frozen evidence matrix. Set `MAVEB_BROAD_ALLOW_PARTIAL=0` to make the fast runner strict as well.
+
 The full broad runner now builds the research tools with the optimized `research` preset rather than the Debug-derived CI preset. The publication-scale broad runner keeps the deterministic multicore CPU oracle as its default. The fast iteration runner defaults to the Metal `auto` backend on macOS and falls back to CPU if Metal cannot initialize. After the dedicated CPU/Metal parity gate is validated, `MAVEB_ORACLE_BACKEND=auto` or `metal` can be used explicitly for larger campaigns. Immutable before/after renders are cached inside the Step-6 result root and are invalidated with that stage whenever the oracle/toolchain fingerprint changes.
 
 Useful performance controls:
