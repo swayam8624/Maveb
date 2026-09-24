@@ -659,6 +659,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.workers < 1:
         raise SystemExit("--workers must be >= 1")
+    # Child case workers inherit the parent's total concurrency so the CPU reference
+    # rasterizer divides host threads instead of oversubscribing every core per case.
+    if args.worker_case is None:
+        os.environ["MAVEB_CASE_WORKERS"] = str(args.workers)
     PROGRESS_ENABLED = not args.no_progress
 
     campaign_path = args.campaign.resolve()
