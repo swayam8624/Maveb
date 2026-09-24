@@ -4,10 +4,10 @@
 #include <aether/world_gaussian/GaussianImageRevisionCertificate.hpp>
 #include <aether/world_gaussian/GaussianRenderCertificate.hpp>
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
-#include <aether/metal/GaussianPipeline.hpp>
-#include <aether/metal/MetalPtr.hpp>
 #include <Foundation/Foundation.hpp>
 #include <Metal/Metal.hpp>
+#include <aether/metal/GaussianPipeline.hpp>
+#include <aether/metal/MetalPtr.hpp>
 #endif
 
 #include <algorithm>
@@ -76,19 +76,18 @@ struct Options final {
     double repairOmitFraction{};
 };
 
-
 #if defined(__APPLE__) && defined(AETHER_ORACLE_METAL_ENABLED)
 [[nodiscard]] std::uint32_t metalEntryBudget(std::size_t gaussianCount) {
     constexpr std::uint64_t maximum = 4'194'304;
     const std::uint64_t requested =
         gaussianCount > maximum / 64 ? maximum : static_cast<std::uint64_t>(gaussianCount) * 64;
-    return static_cast<std::uint32_t>(
-        std::clamp<std::uint64_t>(requested, 262'144, maximum));
+    return static_cast<std::uint32_t>(std::clamp<std::uint64_t>(requested, 262'144, maximum));
 }
 
-[[nodiscard]] aether::metal::MetalPtr<MTL::Texture>
-makeMetalTarget(MTL::Device* device, MTL::PixelFormat format, std::size_t width,
-                std::size_t height) {
+[[nodiscard]] aether::metal::MetalPtr<MTL::Texture> makeMetalTarget(MTL::Device* device,
+                                                                    MTL::PixelFormat format,
+                                                                    std::size_t width,
+                                                                    std::size_t height) {
     auto descriptor = aether::metal::adopt(MTL::TextureDescriptor::alloc()->init());
     descriptor->setTextureType(MTL::TextureType2D);
     descriptor->setPixelFormat(format);
@@ -99,9 +98,10 @@ makeMetalTarget(MTL::Device* device, MTL::PixelFormat format, std::size_t width,
     return aether::metal::adopt(device->newTexture(descriptor.get()));
 }
 
-[[nodiscard]] std::optional<ReferenceImage>
-renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
-                     std::array<float, 3> background, std::string& error) {
+[[nodiscard]] std::optional<ReferenceImage> renderMetalReference(const GaussianAsset& asset,
+                                                                 const ReferenceCamera& camera,
+                                                                 std::array<float, 3> background,
+                                                                 std::string& error) {
     struct PoolGuard final {
         NS::AutoreleasePool* pool{NS::AutoreleasePool::alloc()->init()};
         ~PoolGuard() {
@@ -117,8 +117,7 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     }
     NS::Error* libraryError = nullptr;
     auto library = aether::metal::adopt(device->newLibrary(
-        NS::String::string(AETHER_ORACLE_SHADER_LIBRARY, NS::UTF8StringEncoding),
-        &libraryError));
+        NS::String::string(AETHER_ORACLE_SHADER_LIBRARY, NS::UTF8StringEncoding), &libraryError));
     if (!library) {
         error = libraryError ? libraryError->localizedDescription()->utf8String()
                              : "Unable to load CBRC oracle metallib";
@@ -136,12 +135,11 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
         return std::nullopt;
     }
 
-    auto color = makeMetalTarget(device.get(), MTL::PixelFormatRGBA32Float, camera.width,
-                                 camera.height);
-    auto depth = makeMetalTarget(device.get(), MTL::PixelFormatR32Float, camera.width,
-                                 camera.height);
-    auto ids = makeMetalTarget(device.get(), MTL::PixelFormatR32Uint, camera.width,
-                               camera.height);
+    auto color =
+        makeMetalTarget(device.get(), MTL::PixelFormatRGBA32Float, camera.width, camera.height);
+    auto depth =
+        makeMetalTarget(device.get(), MTL::PixelFormatR32Float, camera.width, camera.height);
+    auto ids = makeMetalTarget(device.get(), MTL::PixelFormatR32Uint, camera.width, camera.height);
     auto queue = aether::metal::adopt(device->newCommandQueue());
     if (!color || !depth || !ids || !queue) {
         error = "Unable to allocate shared Metal oracle targets";
@@ -149,33 +147,27 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     }
 
     AetherGaussianCamera gpuCamera{};
-    gpuCamera.worldToCamera.columns[0] = {
-        camera.worldToCamera[0], camera.worldToCamera[4],
-        camera.worldToCamera[8], camera.worldToCamera[12]};
-    gpuCamera.worldToCamera.columns[1] = {
-        camera.worldToCamera[1], camera.worldToCamera[5],
-        camera.worldToCamera[9], camera.worldToCamera[13]};
-    gpuCamera.worldToCamera.columns[2] = {
-        camera.worldToCamera[2], camera.worldToCamera[6],
-        camera.worldToCamera[10], camera.worldToCamera[14]};
-    gpuCamera.worldToCamera.columns[3] = {
-        camera.worldToCamera[3], camera.worldToCamera[7],
-        camera.worldToCamera[11], camera.worldToCamera[15]};
+    gpuCamera.worldToCamera.columns[0] = {camera.worldToCamera[0], camera.worldToCamera[4],
+                                          camera.worldToCamera[8], camera.worldToCamera[12]};
+    gpuCamera.worldToCamera.columns[1] = {camera.worldToCamera[1], camera.worldToCamera[5],
+                                          camera.worldToCamera[9], camera.worldToCamera[13]};
+    gpuCamera.worldToCamera.columns[2] = {camera.worldToCamera[2], camera.worldToCamera[6],
+                                          camera.worldToCamera[10], camera.worldToCamera[14]};
+    gpuCamera.worldToCamera.columns[3] = {camera.worldToCamera[3], camera.worldToCamera[7],
+                                          camera.worldToCamera[11], camera.worldToCamera[15]};
     gpuCamera.focalCenter = {camera.focalX, camera.focalY, camera.centerX, camera.centerY};
-    gpuCamera.depthViewport = {camera.nearPlane, camera.farPlane,
-                               static_cast<float>(camera.width),
+    gpuCamera.depthViewport = {camera.nearPlane, camera.farPlane, static_cast<float>(camera.width),
                                static_cast<float>(camera.height)};
-    gpuCamera.cameraWorldPosition = {
-        camera.cameraWorldPosition[0], camera.cameraWorldPosition[1],
-        camera.cameraWorldPosition[2], 1.0F};
+    gpuCamera.cameraWorldPosition = {camera.cameraWorldPosition[0], camera.cameraWorldPosition[1],
+                                     camera.cameraWorldPosition[2], 1.0F};
 
     MTL::CommandBuffer* commandBuffer = queue->commandBuffer();
     if (!commandBuffer) {
         error = "Unable to allocate Metal oracle command buffer";
         return std::nullopt;
     }
-    if (auto encoded = pipeline->encode(commandBuffer, gpuCamera, color.get(), depth.get(),
-                                        ids.get(), 0);
+    if (auto encoded =
+            pipeline->encode(commandBuffer, gpuCamera, color.get(), depth.get(), ids.get(), 0);
         !encoded) {
         error = encoded.error().describe();
         return std::nullopt;
@@ -204,17 +196,15 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     ids->getBytes(image.ids.data(), camera.width * sizeof(std::uint32_t), region, 0);
     for (auto& pixel : image.color) {
         for (std::size_t channel = 0; channel < 3; ++channel)
-            pixel[channel] +=
-                (1.0F - pixel[3]) * std::clamp(background[channel], 0.0F, 1.0F);
+            pixel[channel] += (1.0F - pixel[3]) * std::clamp(background[channel], 0.0F, 1.0F);
     }
     return image;
 }
 #endif
 
 [[nodiscard]] bool verifyImageParity(const ReferenceImage& accelerated,
-                                     const ReferenceImage& reference,
-                                     double rgbTolerance, double depthTolerance,
-                                     std::string& reason) {
+                                     const ReferenceImage& reference, double rgbTolerance,
+                                     double depthTolerance, std::string& reason) {
     if (accelerated.width != reference.width || accelerated.height != reference.height ||
         accelerated.color.size() != reference.color.size() ||
         accelerated.depth.size() != reference.depth.size() ||
@@ -227,10 +217,9 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     std::size_t idMismatches{};
     for (std::size_t pixel = 0; pixel < reference.color.size(); ++pixel) {
         for (std::size_t channel = 0; channel < 4; ++channel) {
-            maximumRgb = std::max(
-                maximumRgb,
-                std::abs(static_cast<double>(accelerated.color[pixel][channel]) -
-                         static_cast<double>(reference.color[pixel][channel])));
+            maximumRgb = std::max(maximumRgb,
+                                  std::abs(static_cast<double>(accelerated.color[pixel][channel]) -
+                                           static_cast<double>(reference.color[pixel][channel])));
         }
         const float acceleratedDepth = accelerated.depth[pixel];
         const float referenceDepth = reference.depth[pixel];
@@ -238,14 +227,12 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
             if (!(std::isfinite(acceleratedDepth) && std::isfinite(referenceDepth))) {
                 maximumDepth = std::numeric_limits<double>::infinity();
             } else {
-                maximumDepth = std::max(
-                    maximumDepth,
-                    std::abs(static_cast<double>(acceleratedDepth) -
-                             static_cast<double>(referenceDepth)));
+                maximumDepth =
+                    std::max(maximumDepth, std::abs(static_cast<double>(acceleratedDepth) -
+                                                    static_cast<double>(referenceDepth)));
             }
         }
-        idMismatches += static_cast<std::size_t>(
-            accelerated.ids[pixel] != reference.ids[pixel]);
+        idMismatches += static_cast<std::size_t>(accelerated.ids[pixel] != reference.ids[pixel]);
     }
     if (maximumRgb > rgbTolerance || maximumDepth > depthTolerance || idMismatches != 0) {
         std::ostringstream stream;
@@ -257,7 +244,6 @@ renderMetalReference(const GaussianAsset& asset, const ReferenceCamera& camera,
     return true;
 }
 
-
 void fnvUpdate(std::uint64_t& hash, const void* data, std::size_t bytes) {
     const auto* input = static_cast<const unsigned char*>(data);
     for (std::size_t index = 0; index < bytes; ++index) {
@@ -266,9 +252,10 @@ void fnvUpdate(std::uint64_t& hash, const void* data, std::size_t bytes) {
     }
 }
 
-[[nodiscard]] std::optional<std::string>
-renderCacheKey(const Path& source, const ReferenceCamera& camera,
-               std::array<float, 3> background, std::string_view backend) {
+[[nodiscard]] std::optional<std::string> renderCacheKey(const Path& source,
+                                                        const ReferenceCamera& camera,
+                                                        std::array<float, 3> background,
+                                                        std::string_view backend) {
     std::ifstream stream(source, std::ios::binary);
     if (!stream)
         return std::nullopt;
@@ -300,8 +287,8 @@ renderCacheKey(const Path& source, const ReferenceCamera& camera,
     return key.str();
 }
 
-[[nodiscard]] std::optional<ReferenceImage>
-loadRenderCache(const Path& root, std::string_view key) {
+[[nodiscard]] std::optional<ReferenceImage> loadRenderCache(const Path& root,
+                                                            std::string_view key) {
     if (root.empty())
         return std::nullopt;
     const Path path = root / (std::string(key) + ".bin");
@@ -317,8 +304,7 @@ loadRenderCache(const Path& root, std::string_view key) {
     stream.read(reinterpret_cast<char*>(&width), sizeof(width));
     stream.read(reinterpret_cast<char*>(&height), sizeof(height));
     stream.read(reinterpret_cast<char*>(&count), sizeof(count));
-    if (!stream || width == 0 || height == 0 || count != width * height ||
-        count > 268'435'456ULL)
+    if (!stream || width == 0 || height == 0 || count != width * height || count > 268'435'456ULL)
         return std::nullopt;
     ReferenceImage image;
     image.width = static_cast<std::size_t>(width);
@@ -350,10 +336,8 @@ void storeRenderCache(const Path& root, std::string_view key, const ReferenceIma
     std::random_device random;
     const auto clockNonce =
         static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
-    const std::uint64_t nonce =
-        (clockNonce << 16U) ^ static_cast<std::uint64_t>(random());
-    const Path temporary =
-        root / (std::string(key) + ".tmp." + std::to_string(nonce));
+    const std::uint64_t nonce = (clockNonce << 16U) ^ static_cast<std::uint64_t>(random());
+    const Path temporary = root / (std::string(key) + ".tmp." + std::to_string(nonce));
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     if (!stream)
         return;
@@ -552,23 +536,24 @@ template <std::size_t N>
             else
                 options.background[2] = static_cast<float>(*parsed);
         } else if (arg == "--help") {
-            std::cout << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
-                         "(--changed 1,4,9 | --detect-changed) [camera options]\n"
-                      << "  --input-format ply|aether-bin (default: ply)\n"
-                      << "  --backend auto|cpu|metal (default: cpu; env MAVEB_ORACLE_BACKEND)\n"
-                      << "  --cache-dir DIR caches immutable before/after renders across cases\n"
-                      << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
-                      << "  --detect-changed compares stable source-order before/after records\n"
-                      << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
-                      << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
-                      << "  --width N --height N --focal-x F --focal-y F\n"
-                      << "  --center-x F --center-y F --near F --far F\n"
-                      << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
-                      << "  --camera-world-position x,y,z\n"
-                      << "  --background-r F --background-g F --background-b F\n"
-                      << "  --epsilon F\n"
-                      << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
-                         "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
+            std::cout
+                << "Usage: maveb-cbrc-gaussian-oracle --before OLD.ply --after NEW.ply "
+                   "(--changed 1,4,9 | --detect-changed) [camera options]\n"
+                << "  --input-format ply|aether-bin (default: ply)\n"
+                << "  --backend auto|cpu|metal (default: cpu; env MAVEB_ORACLE_BACKEND)\n"
+                << "  --cache-dir DIR caches immutable before/after renders across cases\n"
+                << "  --verify-metal-parity compares Metal output with the scalar CPU oracle\n"
+                << "  --detect-changed compares stable source-order before/after records\n"
+                << "  --spatial-output FILE.csv writes per-pixel actual,bound evidence\n"
+                << "  --visual-output-dir DIR writes before/after/repair/heatmap PPMs\n"
+                << "  --width N --height N --focal-x F --focal-y F\n"
+                << "  --center-x F --center-y F --near F --far F\n"
+                << "  --world-to-camera m00,m01,...,m33 (row-major)\n"
+                << "  --camera-world-position x,y,z\n"
+                << "  --background-r F --background-g F --background-b F\n"
+                << "  --epsilon F\n"
+                << "  --repair-omit-fraction F leaves a deterministic fraction of changed "
+                   "Gaussians stale and certifies that omitted subset (reviewer probe)\n";
             std::exit(EXIT_SUCCESS);
         } else {
             std::cerr << "Unknown argument: " << arg << '\n';
@@ -837,14 +822,12 @@ int main(int argc, char** argv) try {
     std::optional<ReferenceImage> repairImage;
     std::string renderBackend = "cpu";
 
-    const Path renderCacheRoot =
-        options->cacheDir.empty() ? Path{} : Path(options->cacheDir);
+    const Path renderCacheRoot = options->cacheDir.empty() ? Path{} : Path(options->cacheDir);
     const auto cacheKey = [&](const Path& source,
                               std::string_view backend) -> std::optional<std::string> {
         if (renderCacheRoot.empty() || source.empty())
             return std::nullopt;
-        const std::string cacheDomain =
-            std::string(backend) + ":" + options->inputFormat;
+        const std::string cacheDomain = std::string(backend) + ":" + options->inputFormat;
         return renderCacheKey(source, camera, options->background, cacheDomain);
     };
     const auto renderCpu = [&](const GaussianAsset& asset,
@@ -870,20 +853,19 @@ int main(int argc, char** argv) try {
     const bool wantsMetal = options->backend == "metal" || options->backend == "auto";
     if (wantsMetal) {
         std::string metalError;
-        const auto renderMetalCached =
-            [&](const GaussianAsset& asset,
-                const Path& source = Path{}) -> std::optional<ReferenceImage> {
-                const auto key = cacheKey(source, "metal");
-                if (key) {
-                    if (auto cached = loadRenderCache(renderCacheRoot, *key))
-                        return cached;
-                }
-                auto rendered =
-                    renderMetalReference(asset, camera, options->background, metalError);
-                if (rendered && key)
-                    storeRenderCache(renderCacheRoot, *key, *rendered);
-                return rendered;
-            };
+        const auto renderMetalCached = [&](const GaussianAsset& asset,
+                                           const Path& source =
+                                               Path{}) -> std::optional<ReferenceImage> {
+            const auto key = cacheKey(source, "metal");
+            if (key) {
+                if (auto cached = loadRenderCache(renderCacheRoot, *key))
+                    return cached;
+            }
+            auto rendered = renderMetalReference(asset, camera, options->background, metalError);
+            if (rendered && key)
+                storeRenderCache(renderCacheRoot, *key, *rendered);
+            return rendered;
+        };
         oldImage = renderMetalCached(*before, Path(options->beforePath));
         if (oldImage)
             newImage = renderMetalCached(*after, Path(options->afterPath));
@@ -899,8 +881,8 @@ int main(int argc, char** argv) try {
                 std::cerr << "Strict Metal oracle failed: " << metalError << '\n';
                 return EXIT_FAILURE;
             }
-            std::cerr << "Metal oracle unavailable; falling back to CPU reference: "
-                      << metalError << '\n';
+            std::cerr << "Metal oracle unavailable; falling back to CPU reference: " << metalError
+                      << '\n';
         }
     }
 #else
@@ -932,12 +914,12 @@ int main(int argc, char** argv) try {
         std::string parityReason;
         constexpr double kRgbParityTolerance = 5.0e-4;
         constexpr double kDepthParityTolerance = 1.0e-4;
-        if (!verifyImageParity(*oldImage, *cpuOld, kRgbParityTolerance,
-                               kDepthParityTolerance, parityReason) ||
-            !verifyImageParity(*newImage, *cpuNew, kRgbParityTolerance,
-                               kDepthParityTolerance, parityReason) ||
-            !verifyImageParity(*repairImage, *cpuRepair, kRgbParityTolerance,
-                               kDepthParityTolerance, parityReason)) {
+        if (!verifyImageParity(*oldImage, *cpuOld, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason) ||
+            !verifyImageParity(*newImage, *cpuNew, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason) ||
+            !verifyImageParity(*repairImage, *cpuRepair, kRgbParityTolerance, kDepthParityTolerance,
+                               parityReason)) {
             std::cerr << parityReason << '\n';
             return EXIT_FAILURE;
         }

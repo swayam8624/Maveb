@@ -240,8 +240,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
         int minimumY{};
         int maximumY{};
     };
-    const std::size_t bandCount =
-        (camera.height + kRowBandHeight - 1) / kRowBandHeight;
+    const std::size_t bandCount = (camera.height + kRowBandHeight - 1) / kRowBandHeight;
     std::vector<std::vector<BandEntry>> bands(bandCount);
     for (const Projected& gaussian : projected) {
         const int minimumX =
@@ -256,21 +255,17 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                      static_cast<int>(std::ceil(gaussian.centerY + gaussian.radius)));
         if (minimumX > maximumX || minimumY > maximumY)
             continue;
-        const std::size_t firstBand =
-            static_cast<std::size_t>(minimumY) / kRowBandHeight;
-        const std::size_t lastBand =
-            static_cast<std::size_t>(maximumY) / kRowBandHeight;
+        const std::size_t firstBand = static_cast<std::size_t>(minimumY) / kRowBandHeight;
+        const std::size_t lastBand = static_cast<std::size_t>(maximumY) / kRowBandHeight;
         for (std::size_t band = firstBand; band <= lastBand; ++band) {
-            bands[band].push_back(
-                BandEntry{&gaussian, minimumX, maximumX, minimumY, maximumY});
+            bands[band].push_back(BandEntry{&gaussian, minimumX, maximumX, minimumY, maximumY});
         }
     }
 
     auto rasterizeBand = [&](std::size_t band) {
         const int bandMinimumY = static_cast<int>(band * kRowBandHeight);
-        const int bandMaximumY =
-            std::min(static_cast<int>(camera.height) - 1,
-                     bandMinimumY + static_cast<int>(kRowBandHeight) - 1);
+        const int bandMaximumY = std::min(static_cast<int>(camera.height) - 1,
+                                          bandMinimumY + static_cast<int>(kRowBandHeight) - 1);
         for (const BandEntry& entry : bands[band]) {
             const Projected& gaussian = *entry.gaussian;
             const int minimumY = std::max(entry.minimumY, bandMinimumY);
@@ -285,8 +280,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                     if (distance > 9.0F)
                         continue;
                     const std::size_t pixel =
-                        static_cast<std::size_t>(y) * camera.width +
-                        static_cast<std::size_t>(x);
+                        static_cast<std::size_t>(y) * camera.width + static_cast<std::size_t>(x);
                     const float alpha =
                         std::min(0.99F, gaussian.opacity * std::exp(-0.5F * distance));
                     if (alpha < 1.0F / 255.0F || image.color[pixel][3] > 0.999F)
@@ -299,8 +293,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
                         image.depth[pixel] = gaussian.depth;
                     if (contribution > dominant[pixel]) {
                         dominant[pixel] = contribution;
-                        image.ids[pixel] =
-                            static_cast<std::uint32_t>(gaussian.sourceIndex + 1);
+                        image.ids[pixel] = static_cast<std::uint32_t>(gaussian.sourceIndex + 1);
                     }
                 }
             }
@@ -322,8 +315,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
     };
     if (const auto explicitThreads = parsePositiveEnvironment("MAVEB_ORACLE_CPU_THREADS")) {
         threadBudget = *explicitThreads;
-    } else if (const auto concurrentCases =
-                   parsePositiveEnvironment("MAVEB_CASE_WORKERS")) {
+    } else if (const auto concurrentCases = parsePositiveEnvironment("MAVEB_CASE_WORKERS")) {
         threadBudget = std::max(1U, hardwareThreads / *concurrentCases);
     }
     const std::size_t workerCount =
@@ -341,8 +333,7 @@ Result<ReferenceImage> ReferenceRasterizer::render(const GaussianAsset& asset,
         for (std::size_t worker = 0; worker < workerCount; ++worker) {
             workers.emplace_back([&] {
                 while (true) {
-                    const std::size_t band =
-                        nextBand.fetch_add(1, std::memory_order_relaxed);
+                    const std::size_t band = nextBand.fetch_add(1, std::memory_order_relaxed);
                     if (band >= bandCount)
                         break;
                     rasterizeBand(band);
