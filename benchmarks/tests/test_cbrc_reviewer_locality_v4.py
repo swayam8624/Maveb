@@ -36,10 +36,24 @@ class ReviewerLocalityV4ProtocolTests(unittest.TestCase):
             names,
             ["smallest-entity", "tiny-local", "local", "broad-control"],
         )
-        fractions = [float(profile["entity_fraction"]) for profile in freeze.SEVERITY_PROFILES]
+        fractions = [
+            float(profile["entity_fraction"])
+            for profile in freeze.SEVERITY_PROFILES
+        ]
         self.assertEqual(fractions, sorted(fractions))
         self.assertLess(fractions[0], 0.001)
         self.assertGreaterEqual(fractions[-1], 0.10)
+        self.assertEqual(
+            {float(profile["delta_fraction"]) for profile in freeze.SEVERITY_PROFILES},
+            {0.06},
+        )
+        self.assertEqual(
+            {float(profile["history_weight"]) for profile in freeze.SEVERITY_PROFILES},
+            {0.90},
+        )
+        self.assertTrue(
+            all(bool(profile["history_stable"]) for profile in freeze.SEVERITY_PROFILES)
+        )
 
     def test_runner_shell_syntax(self):
         result = subprocess.run(
