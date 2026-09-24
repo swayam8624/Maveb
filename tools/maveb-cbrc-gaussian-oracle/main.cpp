@@ -676,7 +676,7 @@ template <std::size_t N>
         repaired.rotation = after.rotation;
     }
     return repaired;
-
+}
 
 [[nodiscard]] double sceneColorCap(const GaussianAsset& before, const GaussianAsset& after) {
     double cap = 1.0; // reference background is clamped to [0,1].
