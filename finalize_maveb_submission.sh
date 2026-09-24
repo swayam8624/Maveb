@@ -145,7 +145,58 @@ if missing:
     raise SystemExit("missing submission artifact(s):\n" + "\n".join(missing))
 
 status = json.loads(status_path.read_text(encoding="utf-8"))
+broad_summary_path = root / "research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.json"
+broad_summary = json.loads(broad_summary_path.read_text(encoding="utf-8"))
+audit = json.loads(audit_path.read_text(encoding="utf-8"))
+
+final_evidence_path = out / "FINAL_EVIDENCE_SUMMARY.json"
+final_evidence = {
+    "schemaVersion": 1,
+    "artifact": "maveb-final-submission-evidence-summary",
+    "submissionGitSha": status["gitSha"],
+    "broadEvidence": {
+        "source": str(broad_summary_path.relative_to(root)),
+        "sha256": sha256(broad_summary_path),
+        "evidenceGitSha": broad_summary.get("evidenceGitSha"),
+        "overall": broad_summary.get("overall"),
+        "byDataset": broad_summary.get("byDataset"),
+        "byEditFamily": broad_summary.get("byEditFamily"),
+        "byCoupling": broad_summary.get("byCoupling"),
+        "interpretationBoundary": broad_summary.get("interpretationBoundary"),
+    },
+    "reviewerV2": {
+        "source": str(audit_path),
+        "sha256": sha256(audit_path),
+        "reviewerEvidenceReady": bool(audit.get("reviewerEvidenceReady", False)),
+        "recordCount": audit.get("recordCount"),
+        "localCases": audit.get("localCases"),
+        "fullFallbackCases": audit.get("fullFallbackCases"),
+        "certifiedPartialRepairCases": audit.get("certifiedPartialRepairCases"),
+        "certifiedNonzeroLocalCases": audit.get("certifiedNonzeroLocalCases"),
+        "nearBoundaryLocalCases": audit.get("nearBoundaryLocalCases"),
+        "toleranceCrossoverGroups": audit.get("toleranceCrossoverGroups"),
+        "nonzeroLocalDatasets": audit.get("nonzeroLocalDatasets"),
+        "certificateViolationCount": audit.get("certificateViolationCount"),
+        "repairCertificateViolationCount": audit.get("repairCertificateViolationCount"),
+        "readinessGates": audit.get("readinessGates"),
+    },
+    "claimBoundary": {
+        "work": "Broad headline work/FULL remains calibrated heterogeneous work, not paired wall-clock speedup.",
+        "broadFidelity": "Broad selected-to-FULL equality remains revision fidelity on audited views.",
+        "reviewerV2": "Reviewer-v2 is a separately frozen partial-repair stress protocol and does not retroactively alter the broad campaign.",
+    },
+}
+final_evidence_path.write_text(
+    json.dumps(final_evidence, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+
 status["submissionReady"] = True
+status["finalEvidenceSummary"] = {
+    "path": str(final_evidence_path),
+    "sha256": sha256(final_evidence_path),
+}
+deliverables.append(final_evidence_path)
 status["deliverables"] = [
     {
         "path": str(path.relative_to(root)) if root in path.parents else str(path),
