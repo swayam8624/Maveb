@@ -16,6 +16,13 @@ spec.loader.exec_module(mod)
 
 
 class ReviewerManuscriptBridgeTests(unittest.TestCase):
+    def test_state_tex_is_fail_closed_and_switchable(self):
+        open_tex = mod.build_state_tex({"reviewerEvidenceReady": False})
+        ready_tex = mod.build_state_tex({"reviewerEvidenceReady": True})
+        self.assertIn(r"\reviewervtworeadyfalse", open_tex)
+        self.assertNotIn(r"\reviewervtworeadytrue", open_tex)
+        self.assertIn(r"\reviewervtworeadytrue", ready_tex)
+
     def test_open_audit_emits_comments_only(self):
         audit = {
             "recordCount": 256,
