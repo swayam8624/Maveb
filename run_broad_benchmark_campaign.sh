@@ -26,6 +26,7 @@ CASES_PER_SCENE="${MAVEB_BROAD_CASES_PER_SCENE:-15}"
 BOOTSTRAP_ITERATIONS="${MAVEB_BROAD_BOOTSTRAP_ITERATIONS:-5000}"
 SCENE_WORKERS="${MAVEB_BROAD_SCENE_WORKERS:-3}"
 CASE_WORKERS="${MAVEB_BROAD_CASE_WORKERS:-4}"
+export MAVEB_CASE_WORKERS="$CASE_WORKERS"
 BUILD_PRESET="${MAVEB_BROAD_BUILD_PRESET:-research}"
 BUILD_ROOT="$ROOT/build/$BUILD_PRESET"
 export MAVEB_PROGRESS="${MAVEB_PROGRESS:-1}"
@@ -525,6 +526,7 @@ Reuse controls:
   MAVEB_BROAD_ADOPT_EXISTING=1   one-time migration of validated pre-cache artifacts
   MAVEB_BROAD_SCENE_WORKERS=3     concurrent world-preparation scenes
   MAVEB_BROAD_CASE_WORKERS=4      concurrent independent CBRC cases
+  MAVEB_ORACLE_CPU_THREADS=N       optional per-oracle CPU thread override
   MAVEB_BROAD_BUILD_PRESET=research optimized Release research binaries
   MAVEB_ORACLE_BACKEND=auto      Metal on macOS with deterministic CPU fallback
   MAVEB_ORACLE_CACHE_DIR=...      shared immutable render cache for Step-6 workers
