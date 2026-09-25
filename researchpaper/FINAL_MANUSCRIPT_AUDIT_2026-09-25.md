@@ -52,12 +52,12 @@ to the same repair decision.
 
 Static source audit after final cleanup:
 
-- 28 unique citation keys used by `main.tex`.
-- 28 bibliography entries in `references.bib`.
+- 31 unique citation keys used by `main.tex`.
+- 31 bibliography entries in `references.bib`.
 - Missing cited keys: 0.
 - Unused bibliography entries: 0.
 
-The three public-pilot-only entries for COLMAP/SfM, Tanks & Temples, and Deep Blending were removed from the current bibliography because they are no longer cited by the final manuscript. Their historical evidence remains in repository history.
+The final manuscript explicitly credits the source lineage of the 13 GraphDECO pretrained scenes: Mip-NeRF 360, Tanks & Temples, and Deep Blending. Tanks & Temples and Deep Blending were therefore restored to the bibliography and Mip-NeRF 360 was added. 3RScan, ARKitScenes, and Bonn RGB-D Dynamic retain the publication references requested by their dataset providers.
 
 Recent related-work records used by the final text were separately checked against CVF or arXiv records, including GaME (CVPR 2026), Consistent Instance Field (CVPR 2026), From Pixels to Primitives (arXiv:2605.07203), and EliGSiR (arXiv:2609.20348).
 
@@ -65,6 +65,8 @@ Recent related-work records used by the final text were separately checked again
 
 Current `main.tex` contains:
 
+- an explicit terminology boundary: MAVEB is the CBRC research system/project, while AETHER is the underlying C++23 persistent captured-world software stack;
+- a dedicated dataset-acknowledgment paragraph naming all benchmark source families and their requested citations;
 - 2 manuscript figures;
 - 6 content tables;
 - 18 numbered displayed equation environments;

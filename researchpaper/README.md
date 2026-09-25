@@ -2,13 +2,13 @@
 
 Title: **Repair What Matters: Criticality-Bounded Revision Cones for Persistent Captured Worlds**
 
-This folder is the editable manuscript package for the current CBRC v1 paper line. The scientific source is `main.tex`; generated PDF/DOCX artifacts are release outputs and must be regenerated whenever the manuscript source changes.
+This folder is the editable manuscript package for the current CBRC v1 paper line. **MAVEB** is the research system/project used to evaluate CBRC; **AETHER** is the underlying C++23 persistent captured-world software stack for reconstruction state, Gaussian rendering, revision execution, GPU publication, temporal state, and provenance/evidence capture. The scientific source is `main.tex`; generated PDF/DOCX artifacts are release outputs and must be regenerated whenever the manuscript source changes.
 
 ## Current scientific state
 
 The paper contains two deliberately separate evidence lines.
 
-- **Broad systems campaign:** 1,275 revisions over 85 scenes spanning 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and 13 pinned trained GraphDECO 3DGS scenes. CBRC selects 935 LOCAL repairs and 340 FULL fallbacks, with zero observed certificate violations and median calibrated selected work/FULL of 0.47447 (bootstrap 95% CI 0.46657–0.47885).
+- **Broad systems campaign:** 1,275 revisions over 85 scenes spanning 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and 13 pinned pretrained GraphDECO 3DGS scenes whose source lineage is Mip-NeRF 360 (9 scenes), Tanks & Temples (Train/Truck), and Deep Blending (Dr Johnson/Playroom). CBRC selects 935 LOCAL repairs and 340 FULL fallbacks, with zero observed certificate violations and median calibrated selected work/FULL of 0.47447 (bootstrap 95% CI 0.46657–0.47885).
 - **Residual-sensitive sequence:** v4 is an immutable negative diagnostic, v5 isolates the opacity-delta certificate with translation as a control, and v6 repeats the unchanged mechanism across 20 scenes (five per dataset family). The v6 scene-level opacity-minus-translation difference is 0.477 with dataset-stratified bootstrap 95% CI [0.432, 0.517]. The accepted residuals remain far from the tolerance boundary, so certificate conservatism is retained as a measured limitation.
 
 The manuscript does not turn calibrated work into a wall-clock speedup claim, does not claim universal safety or global optimality, and distinguishes revision fidelity within an evaluated representation from source-photograph reconstruction quality.
