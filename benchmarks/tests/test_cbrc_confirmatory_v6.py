@@ -94,6 +94,39 @@ class ConfirmatoryV6AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(first["mean"], 0.3)
         self.assertGreater(first["ci95"][0], 0.0)
 
+    def test_stratified_scene_bootstrap_preserves_dataset_composition(self):
+        rows = []
+        for dataset, values in {
+            "a": [0.1, 0.2, 0.3, 0.4, 0.5],
+            "b": [0.2, 0.3, 0.4, 0.5, 0.6],
+        }.items():
+            for index, value in enumerate(values):
+                rows.append(
+                    {
+                        "dataset": dataset,
+                        "scene": f"{dataset}-{index}",
+                        "metric": value,
+                    }
+                )
+        first = breadth.stratified_scene_bootstrap_mean(
+            rows,
+            "metric",
+            replicates=2000,
+            seed=1904,
+        )
+        second = breadth.stratified_scene_bootstrap_mean(
+            rows,
+            "metric",
+            replicates=2000,
+            seed=1904,
+        )
+        self.assertEqual(first, second)
+        self.assertEqual(first["scenes"], 10)
+        self.assertEqual(first["datasets"], 2)
+        self.assertEqual(first["scenesPerDataset"], {"a": 5, "b": 5})
+        self.assertEqual(first["resampling"], "within-dataset-scene-bootstrap")
+        self.assertAlmostEqual(first["mean"], 0.35)
+
     def test_scene_metrics_keep_opacity_and_translation_paired(self):
         records = []
         for dataset, scene in (("a", "s1"), ("b", "s2")):
