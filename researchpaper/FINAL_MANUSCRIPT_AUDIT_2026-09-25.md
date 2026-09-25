@@ -103,4 +103,6 @@ A synchronized release must:
 6. record fresh SHA-256 checksums for PDF, DOCX, and supplement; and
 7. pass rendered visual inspection of every page before publication.
 
+The repository’s 2026-09-24 broad claim ledger has also been marked explicitly: its broad-campaign values remain current, while its pre-v6 conditional reviewer boundary is historical and superseded by this audit.
+
 The generated artifacts and their checksum manifest become release-valid only after those gates pass for the current source state.
