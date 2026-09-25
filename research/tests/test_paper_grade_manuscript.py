@@ -111,7 +111,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "translation control continues to use Eq.~\ref{eq:gaussianbound}",
+            r"translation control continues to use Eq.~\ref{eq:gaussianbound}",
             text,
         )
 
