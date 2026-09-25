@@ -111,7 +111,7 @@ def markdown(packet: dict[str, Any]) -> str:
             "- Mean per-scene non-zero LOCAL-rate advantage "
             f"(opacity certificate minus translation control): **{fmt(c['meanSceneNonzeroLocalRateAdvantage'])}**"
         ),
-        f"- Scene-bootstrap 95% CI: **[{fmt(ci[0])}, {fmt(ci[1])}]**",
+        f"- Dataset-stratified scene-bootstrap 95% CI: **[{fmt(ci[0])}, {fmt(ci[1])}]**",
         (
             "- Scenes with at least one certified non-zero opacity LOCAL case: "
             f"**{c['scenesWithNonzeroOpacityLocal']}**"
