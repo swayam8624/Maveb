@@ -80,6 +80,7 @@ jobs:
             researchpaper/README.md \
             researchpaper/MANUSCRIPT_QA.md \
             researchpaper/REVIEW_RESPONSE_2026-09-21.md \
+            researchpaper/FINAL_MANUSCRIPT_AUDIT_2026-09-25.md \
             researchpaper/CLAIM_METHOD_CITATION_AUDIT_2026-09-22.md \
             researchpaper/FINAL_MANUSCRIPT_SHA256.txt \
             researchpaper/build_manuscript.py \
@@ -90,10 +91,29 @@ jobs:
             researchpaper/MAVEB_manuscript.docx \
             researchpaper/MAVEB_supplement.pdf
 
+      - name: Publish synchronized artifacts on manuscript branches
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/manuscript/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/FINAL_MANUSCRIPT_SHA256.txt
+          if git diff --cached --quiet; then
+            echo "Generated artifacts already match the current source."
+          else
+            git commit -m "paper: regenerate synchronized manuscript artifacts [skip ci]"
+            git push
+          fi
+
       - name: Protected-branch publication note
         run: |
           echo "Generated submission artifacts are uploaded by CI."
-          echo "Repository copies are updated through a reviewed artifact-publication PR."
+          echo "On manuscript/** branches, synchronized generated files are committed to the same reviewed branch."
+          echo "Protected main is updated only by merging the reviewed pull request."
 
       - name: Upload manuscript artifacts
         uses: actions/upload-artifact@v4
