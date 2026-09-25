@@ -23,7 +23,7 @@ struct Projected final {
 };
 
 [[nodiscard]] bool opacityOnlyInvariant(const gaussian::Gaussian& before,
-                                               const gaussian::Gaussian& after) noexcept {
+                                        const gaussian::Gaussian& after) noexcept {
     return before.position == after.position && before.logScale == after.logScale &&
            before.rotation == after.rotation && before.dc == after.dc &&
            before.rest == after.rest && before.restCount == after.restCount;
@@ -238,11 +238,9 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
     return result;
 }
 
-Result<GaussianImageRevisionCertificate>
-certifyGaussianOpacityOnlyImageRevision(const gaussian::GaussianAsset& beforeChanged,
-                                        const gaussian::GaussianAsset& afterChanged,
-                                        const gaussian::ReferenceCamera& camera,
-                                        double colorUpperBound) {
+Result<GaussianImageRevisionCertificate> certifyGaussianOpacityOnlyImageRevision(
+    const gaussian::GaussianAsset& beforeChanged, const gaussian::GaussianAsset& afterChanged,
+    const gaussian::ReferenceCamera& camera, double colorUpperBound) {
     if (!validCamera(camera))
         return fail(ErrorCode::invalidArgument,
                     "Gaussian opacity-delta certificate camera parameters are invalid");
@@ -290,33 +288,28 @@ certifyGaussianOpacityOnlyImageRevision(const gaussian::GaussianAsset& beforeCha
         const double maximumRadius = std::max(beforeProjected->radius, afterProjected->radius);
         const int minimumX =
             std::max(0, static_cast<int>(std::floor(minimumCenterX - maximumRadius)));
-        const int maximumX =
-            std::min(static_cast<int>(camera.width) - 1,
-                     static_cast<int>(std::ceil(maximumCenterX + maximumRadius)));
+        const int maximumX = std::min(
+            static_cast<int>(camera.width) - 1,
+            static_cast<int>(std::ceil(maximumCenterX + maximumRadius)));
         const int minimumY =
             std::max(0, static_cast<int>(std::floor(minimumCenterY - maximumRadius)));
-        const int maximumY =
-            std::min(static_cast<int>(camera.height) - 1,
-                     static_cast<int>(std::ceil(maximumCenterY + maximumRadius)));
+        const int maximumY = std::min(
+            static_cast<int>(camera.height) - 1,
+            static_cast<int>(std::ceil(maximumCenterY + maximumRadius)));
 
         for (int y = minimumY; y <= maximumY; ++y) {
             for (int x = minimumX; x <= maximumX; ++x) {
-                const double beforeDx =
-                    (static_cast<double>(x) + 0.5) - beforeProjected->centerX;
-                const double beforeDy =
-                    (static_cast<double>(y) + 0.5) - beforeProjected->centerY;
-                const double afterDx =
-                    (static_cast<double>(x) + 0.5) - afterProjected->centerX;
-                const double afterDy =
-                    (static_cast<double>(y) + 0.5) - afterProjected->centerY;
+                const double beforeDx = (static_cast<double>(x) + 0.5) - beforeProjected->centerX;
+                const double beforeDy = (static_cast<double>(y) + 0.5) - beforeProjected->centerY;
+                const double afterDx = (static_cast<double>(x) + 0.5) - afterProjected->centerX;
+                const double afterDy = (static_cast<double>(y) + 0.5) - afterProjected->centerY;
                 const double beforeDistance =
                     beforeProjected->inverseA * beforeDx * beforeDx +
                     2.0 * beforeProjected->inverseB * beforeDx * beforeDy +
                     beforeProjected->inverseC * beforeDy * beforeDy;
-                const double afterDistance =
-                    afterProjected->inverseA * afterDx * afterDx +
-                    2.0 * afterProjected->inverseB * afterDx * afterDy +
-                    afterProjected->inverseC * afterDy * afterDy;
+                const double afterDistance = afterProjected->inverseA * afterDx * afterDx +
+                                             2.0 * afterProjected->inverseB * afterDx * afterDy +
+                                             afterProjected->inverseC * afterDy * afterDy;
 
                 auto beforeAlpha =
                     effectiveGaussianRendererAlpha(beforeProjected->opacity, beforeDistance);
@@ -358,8 +351,7 @@ certifyGaussianOpacityOnlyImageRevision(const gaussian::GaussianAsset& beforeCha
             std::min(1.0, alphaVariation[pixel] + kTwoSidedEarlyTerminationTransmittance);
         const double bound = colorUpperBound * normalized;
         if (!std::isfinite(bound))
-            return fail(ErrorCode::resourceExhausted,
-                        "Gaussian opacity-delta RGB bound overflow");
+            return fail(ErrorCode::resourceExhausted, "Gaussian opacity-delta RGB bound overflow");
         result.rgbLInfBounds[pixel] = bound;
         result.maximumRgbLInfBound = std::max(result.maximumRgbLInfBound, bound);
     }
