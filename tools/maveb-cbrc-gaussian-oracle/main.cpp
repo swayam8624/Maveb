@@ -1023,14 +1023,14 @@ int main(int argc, char** argv) try {
     std::vector<double> repairBounds(oldImage->color.size(), 0.0);
     std::string repairCertificateMode{"exact-zero-v1"};
     if (!residualBefore.gaussians.empty()) {
-        const bool canUseOpacityDelta =
-            opacityOnlyRevision(residualBefore, residualAfter);
+        const bool canUseOpacityDelta = opacityOnlyRevision(residualBefore, residualAfter);
         auto repairCertificate =
             canUseOpacityDelta
                 ? aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
                       residualBefore, residualAfter, camera, colorCap)
-                : aether::world_gaussian::certifyGaussianImageRevision(
-                      residualBefore, residualAfter, camera, colorCap);
+                : aether::world_gaussian::certifyGaussianImageRevision(residualBefore,
+                                                                       residualAfter, camera,
+                                                                       colorCap);
         repairCertificateMode =
             canUseOpacityDelta ? "opacity-delta-lipschitz-v1" : "opacity-envelope-union-v1";
         if (!repairCertificate) {
