@@ -288,14 +288,13 @@ Result<GaussianImageRevisionCertificate> certifyGaussianOpacityOnlyImageRevision
         const double maximumRadius = std::max(beforeProjected->radius, afterProjected->radius);
         const int minimumX =
             std::max(0, static_cast<int>(std::floor(minimumCenterX - maximumRadius)));
-        const int maximumX =
-            std::min(static_cast<int>(camera.width) - 1,
-                     static_cast<int>(std::ceil(maximumCenterX + maximumRadius)));
+        const int maximumX = std::min(static_cast<int>(camera.width) - 1,
+                                      static_cast<int>(std::ceil(maximumCenterX + maximumRadius)));
         const int minimumY =
             std::max(0, static_cast<int>(std::floor(minimumCenterY - maximumRadius)));
-        const int maximumY =
-            std::min(static_cast<int>(camera.height) - 1,
-                     static_cast<int>(std::ceil(maximumCenterY + maximumRadius)));
+        const int maximumY = std::min(
+            static_cast<int>(camera.height) - 1,
+            static_cast<int>(std::ceil(maximumCenterY + maximumRadius)));
 
         for (int y = minimumY; y <= maximumY; ++y) {
             for (int x = minimumX; x <= maximumX; ++x) {
