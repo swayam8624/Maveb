@@ -95,6 +95,59 @@ def scene_bootstrap_mean(
     }
 
 
+def stratified_scene_bootstrap_mean(
+    rows: list[dict[str, Any]],
+    value_key: str,
+    *,
+    replicates: int = BOOTSTRAP_REPLICATES,
+    seed: int = BOOTSTRAP_SEED,
+) -> dict[str, Any]:
+    """Bootstrap scenes within each fixed dataset stratum.
+
+    v6 has exactly five scenes from each frozen v5 dataset family. Resampling
+    within dataset preserves that design in every bootstrap replicate and avoids
+    allowing a replicate to be dominated by one dataset family.
+    """
+    grouped: dict[str, list[float]] = defaultdict(list)
+    for row in rows:
+        value = row.get(value_key)
+        if value is None:
+            continue
+        grouped[str(row["dataset"])].append(float(value))
+    if not grouped:
+        return {
+            "scenes": 0,
+            "datasets": 0,
+            "mean": None,
+            "ci95": [None, None],
+        }
+    dataset_sizes = {dataset: len(values) for dataset, values in grouped.items()}
+    if any(size <= 0 for size in dataset_sizes.values()):
+        raise ValueError("stratified scene bootstrap encountered an empty dataset stratum")
+
+    flattened = [value for values in grouped.values() for value in values]
+    rng = random.Random(seed)
+    samples: list[float] = []
+    for _ in range(replicates):
+        draw: list[float] = []
+        for dataset in sorted(grouped):
+            values = grouped[dataset]
+            n = len(values)
+            draw.extend(values[rng.randrange(n)] for _ in range(n))
+        samples.append(sum(draw) / len(draw))
+
+    return {
+        "scenes": len(flattened),
+        "datasets": len(grouped),
+        "scenesPerDataset": dict(sorted(dataset_sizes.items())),
+        "mean": sum(flattened) / len(flattened),
+        "ci95": [percentile(samples, 0.025), percentile(samples, 0.975)],
+        "replicates": replicates,
+        "seed": seed,
+        "resampling": "within-dataset-scene-bootstrap",
+    }
+
+
 def scene_key(record: dict[str, Any]) -> tuple[str, str]:
     return str(record["dataset"]), str(record["sourceSceneId"])
 
@@ -375,9 +428,18 @@ def build(
         if item["maximumOpacityLocalActualToEpsilon"] is not None
     ]
 
-    paired_bootstrap = scene_bootstrap_mean(deltas)
-    opacity_bootstrap = scene_bootstrap_mean(opacity_rates)
-    crossover_bootstrap = scene_bootstrap_mean(crossover_fractions)
+    paired_bootstrap = stratified_scene_bootstrap_mean(
+        scenes,
+        "pairedNonzeroLocalRateDelta",
+    )
+    opacity_bootstrap = stratified_scene_bootstrap_mean(
+        scenes,
+        "opacityNonzeroLocalRate",
+    )
+    crossover_bootstrap = stratified_scene_bootstrap_mean(
+        scenes,
+        "opacityCrossoverFraction",
+    )
 
     required_scene_count = 5 * len(datasets)
     minimum_positive_scenes = math.ceil(0.50 * len(scenes))
@@ -422,18 +484,18 @@ def build(
         },
         "sceneClustered": {
             "opacityNonzeroLocalRate": opacity_bootstrap,
-            "translationNonzeroLocalRate": scene_bootstrap_mean(
-                [
-                    float(item["translationNonzeroLocalRate"])
-                    for item in scenes
-                    if item["translationNonzeroLocalRate"] is not None
-                ]
+            "translationNonzeroLocalRate": stratified_scene_bootstrap_mean(
+                scenes,
+                "translationNonzeroLocalRate",
             ),
             "pairedOpacityMinusTranslationNonzeroLocalRate": paired_bootstrap,
             "opacityCrossoverFraction": crossover_bootstrap,
             "sameOpacityLegacyEnvelopeAblation": {
                 "counterfactualCoverageComplete": counterfactual_complete,
-                "deltaCertificateRescueRate": scene_bootstrap_mean(rescue_rates),
+                "deltaCertificateRescueRate": stratified_scene_bootstrap_mean(
+                    scenes,
+                    "deltaCertificateRescueRate",
+                ),
                 "medianSceneLegacyToDeltaResidualBoundRatio": median(legacy_to_delta),
                 "scenesWithAtLeastOneRescuedCase": len(rescued_scenes),
             },
@@ -463,7 +525,9 @@ def build(
         "scientificBoundary": (
             "The v6 primary evidence is scene-clustered. Repeated epsilon, residual, profile, "
             "and edit-family cases from the same scene are not treated as independent samples. "
-            "The protocol repeats v5 without algorithm or threshold changes."
+            "Confidence intervals resample scenes within each frozen dataset family so every "
+            "bootstrap replicate preserves the 5x4 stratified design. The protocol repeats "
+            "v5 without algorithm or threshold changes."
         ),
         "_baselineSceneRows": baseline_table,
     }
