@@ -40,6 +40,8 @@ REVISION="$BUILD_ROOT/tools/maveb-cbrc-revision/maveb-cbrc-revision"
 ORACLE="$BUILD_ROOT/tools/maveb-cbrc-gaussian-oracle/maveb-cbrc-gaussian-oracle"
 CACHE_KEY="$ROOT/benchmarks/scripts/cbrc_cache_key.py"
 STORAGE_DOCTOR="$ROOT/benchmarks/scripts/cbrc_storage_doctor.py"
+CASE_COMPACTOR="$ROOT/benchmarks/scripts/cbrc_compact_completed_cases.py"
+VISUAL_REGEN="$ROOT/research/analysis/cbrc_regenerate_reviewer_visual_cases.py"
 export MAVEB_REQUIRE_COW="${MAVEB_REQUIRE_COW:-1}"
 MIN_FREE_GIB="${MAVEB_MIN_FREE_GIB:-20}"
 
@@ -54,6 +56,20 @@ for required in "$WORLDS" "$CALIBRATION" "$IMPORT"; do
 done
 
 HEAD_SHA="$(git rev-parse HEAD)"
+EXECUTION_GIT_SHA="$HEAD_SHA"
+RESUME_STATE="$CAMPAIGN/CAMPAIGN_RESUME_STATE.json"
+if [[ "$REUSE" == "1" && -f "$RESUME_STATE" ]]; then
+  PRIOR_GIT_SHA="$("$PYTHON" - "$RESUME_STATE" <<'PY'
+import json,sys
+from pathlib import Path
+payload=json.loads(Path(sys.argv[1]).read_text())
+print(str(payload.get("gitSha","")).strip())
+PY
+)"
+  if [[ -n "$PRIOR_GIT_SHA" ]]; then
+    EXECUTION_GIT_SHA="$PRIOR_GIT_SHA"
+  fi
+fi
 
 step() {
   echo
@@ -75,7 +91,8 @@ cache_done() {
 echo "============================================================"
 echo "MAVEB v6 confirmatory breadth campaign"
 echo "============================================================"
-echo "Git SHA            : $HEAD_SHA"
+echo "Runner Git SHA     : $HEAD_SHA"
+echo "Evidence Git SHA   : $EXECUTION_GIT_SHA"
 echo "Prepared-world root: $SOURCE_ROOT"
 echo "Output             : $OUT"
 echo "Scenes / dataset   : $SCENES_PER_DATASET"
@@ -96,6 +113,14 @@ echo "  - epsilon ladder: 1,2,4,8,16,32 / 255"
 echo "  - residual ladder: exact, 1/4096, 1/1024, 1/256"
 echo "  - primary statistics are scene-clustered; pooled case counts are secondary"
 echo
+
+if [[ "$ANALYSIS_ONLY" != "1" && -d "$CAMPAIGN/cases" ]]; then
+  echo "Compacting already-completed v6 cases before the disk guard..."
+  "$PYTHON" "$CASE_COMPACTOR" \
+    --campaign-dir "$CAMPAIGN" \
+    --execute
+  echo
+fi
 
 if [[ "$ANALYSIS_ONLY" == "1" ]]; then
   echo
@@ -169,7 +194,49 @@ echo "  This step is resumable case-by-case."
 echo "  If interrupted, rerun this script; completed matching cases are reused."
 
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
-"$PYTHON" benchmarks/scripts/cbrc_campaign.py   --campaign "$FREEZE/reviewer-stress-campaign.json"   --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json"   --oracle "$ORACLE"   --revision-tool "$REVISION"   --git-sha "$HEAD_SHA"   --output-dir "$CAMPAIGN"   --resume   --invalidate-stale-resume   --workers "$CASE_WORKERS"
+
+COMPACTOR_STOP="$CAMPAIGN/.case-compactor-stop"
+rm -f "$COMPACTOR_STOP"
+"$PYTHON" "$CASE_COMPACTOR" \
+  --campaign-dir "$CAMPAIGN" \
+  --execute \
+  --watch \
+  --interval-seconds 2 \
+  --stop-file "$COMPACTOR_STOP" &
+COMPACTOR_PID=$!
+
+stop_case_compactor() {
+  touch "$COMPACTOR_STOP"
+  wait "$COMPACTOR_PID" 2>/dev/null || true
+  rm -f "$COMPACTOR_STOP"
+}
+trap stop_case_compactor EXIT INT TERM
+
+set +e
+"$PYTHON" benchmarks/scripts/cbrc_campaign.py \
+  --campaign "$FREEZE/reviewer-stress-campaign.json" \
+  --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json" \
+  --oracle "$ORACLE" \
+  --revision-tool "$REVISION" \
+  --git-sha "$EXECUTION_GIT_SHA" \
+  --output-dir "$CAMPAIGN" \
+  --resume \
+  --invalidate-stale-resume \
+  --workers "$CASE_WORKERS"
+CAMPAIGN_STATUS=$?
+set -e
+
+stop_case_compactor
+trap - EXIT INT TERM
+if [[ "$CAMPAIGN_STATUS" -ne 0 ]]; then
+  exit "$CAMPAIGN_STATUS"
+fi
+
+# One final pass catches cases that completed between the watcher's last poll
+# and campaign finalization.
+"$PYTHON" "$CASE_COMPACTOR" \
+  --campaign-dir "$CAMPAIGN" \
+  --execute
 
 fi
 
@@ -210,7 +277,26 @@ if cache_hit visuals "$VISUAL_KEY"    && [[ -f "$VISUALS/REVIEWER_VISUALS.json" 
 else
   rm -rf "$VISUALS"
   mkdir -p "$VISUALS"
-  "$PYTHON" research/analysis/cbrc_reviewer_visuals.py     --campaign-dir "$CAMPAIGN"     --audit "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json"     --import-manifest "$IMPORT"     --output-dir "$VISUALS"
+  "$PYTHON" "$VISUAL_REGEN" \
+    --campaign "$FREEZE/reviewer-stress-campaign.json" \
+    --campaign-dir "$CAMPAIGN" \
+    --audit "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" \
+    --import-manifest "$IMPORT" \
+    --oracle "$ORACLE" \
+    --revision-tool "$REVISION" \
+    --freeze-provenance "$FREEZE/REVIEWER_STRESS_FREEZE.json" \
+    --git-sha "$EXECUTION_GIT_SHA" \
+    --limit 4
+  "$PYTHON" research/analysis/cbrc_reviewer_visuals.py \
+    --campaign-dir "$CAMPAIGN" \
+    --audit "$ANALYSIS/REVIEWER_EVIDENCE_AUDIT.json" \
+    --import-manifest "$IMPORT" \
+    --output-dir "$VISUALS"
+  # The rendered reviewer figures are now durable; compact the regenerated
+  # per-case PPMs again.
+  "$PYTHON" "$CASE_COMPACTOR" \
+    --campaign-dir "$CAMPAIGN" \
+    --execute
   cache_done visuals "$VISUAL_KEY"
 fi
 
