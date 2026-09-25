@@ -1,4 +1,4 @@
-# MAVEB External-Feedback Response Ledger — 2026-09-24
+# MAVEB External-Feedback Response Ledger — final v6 integration, 2026-09-25
 
 This ledger maps the substantive external feedback received on MAVEB/CBRC to the current repository and manuscript state. It is intentionally conservative: an experiment is marked complete only when the corresponding frozen evidence exists.
 
@@ -64,36 +64,21 @@ Against FULL, CBRC has lower calibrated work in 935 jointly certified cases and 
 ## Juncheng Liu — practical effectiveness / non-zero residual
 
 ### Comment: zero selected residual makes the tolerance contract look trivial
-**Status: still open in the broad campaign; dedicated v2 machinery complete.**
+**Status: resolved by the completed residual-sensitive sequence.**
 
-The paper-grade broad campaign remains exact on the audited views:
-- selected exact-case rate = 1.0;
-- 1,275 / 1,275 selected renders are byte-identical to FULL-after.
+The 1,275-case broad campaign remains exact on the audited views and is still reported that way. The residual-sensitive evidence is kept separate so the paper does not blur exact repair fidelity with tolerance-bearing approximation.
 
-This is preserved as a real limitation rather than reframed as certificate-tightness evidence.
+The final sequence is:
+- **v4 diagnostic:** 512 frozen cases. Every non-zero-residual case falls back to FULL, exposing the magnitude-insensitive certificate as the bottleneck.
+- **v5 mechanism study:** the physical edit matrix is retained while opacity-only residuals use the delta-sensitive image certificate and translation remains on the legacy envelope as a control. This produces 142 certified non-zero LOCAL opacity cases and 29 tolerance-crossover stress keys, while translation produces zero non-zero LOCAL cases.
+- **v6 confirmation:** the unchanged v5 mechanism is repeated over 20 independently selected scenes, five from each of 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and trained GraphDECO 3DGS. All predeclared confirmatory gates pass. Non-zero opacity locality and tolerance crossover occur in 20/20 scenes, and the paired opacity-minus-translation scene-level difference is 0.477 with a dataset-stratified bootstrap 95% interval [0.432, 0.517].
 
-Reviewer-v2 is now a separate frozen experiment that:
-- renders a real hybrid Gaussian repair state;
-- leaves a deterministic predeclared subset of changed Gaussians stale;
-- independently certifies the omitted subset;
-- measures the non-zero hybrid-vs-FULL residual;
-- requires actual <= bound <= epsilon;
-- fails the manuscript-readiness gate on any omitted-subset certificate violation;
-- freezes epsilon sweeps before outcome inspection.
+The manuscript also reports the negative boundary: no accepted v6 case is near the tolerance threshold, and the residual certificate remains conservative.
 
 ### Comment: show a real captured/dynamic scene and LOCAL-vs-FULL visual evidence
-**Status: implementation complete; frozen v2 result still must be executed locally.**
+**Status: complete.**
 
-The reviewer-v2 visual package generates:
-- captured reference/rescan or temporal source context;
-- before state;
-- LOCAL selected repair;
-- FULL result;
-- absolute residual;
-- certified support/bound visualization;
-- fixed-edit tolerance crossover visualization when one exists.
-
-The runner now emits a manuscript LaTeX block only when every reviewer-readiness gate passes. OPEN gates generate comments/status only, so the paper cannot accidentally claim a reviewer-v2 success that the run did not establish.
+The final v6 visual package was generated after the confirmatory audit. Four representative evaluated cases were selected deterministically with source-RGB resolvability first, followed by non-zero LOCAL evidence and dataset diversity. Original source RGB was resolved for the ARKitScenes, Bonn RGB-D Dynamic, and 3RScan examples; the trained GraphDECO case remains renderer-only. The figure caption keeps the scientific boundary explicit: source photographs provide captured-scene context, while MAVEB before/LOCAL/FULL panels are renderer outputs and are not presented as pixel-registered source-image comparisons.
 
 ## Ulf Assarsson — corner cases and prose quality
 
@@ -117,15 +102,14 @@ The 2026-09-24 manuscript pass:
 - rewrites the abstract, Evaluation, Results, Discussion, and Conclusion in direct positive constructions where scientifically equivalent;
 - retains negative wording where it protects a real claim boundary.
 
-## Remaining actions
+## Finalization state
 
-1. Execute reviewer-v2 on the local prepared 85-world source tree.
-2. Preserve the result even if one or more reviewer-readiness gates remain OPEN.
-3. If reviewerEvidenceReady=true, commit the generated:
-   - `researchpaper/generated/reviewer_v2_results.tex`;
-   - `researchpaper/generated/reviewer_v2_status.md`;
-   - reviewer-v2 figures copied into `researchpaper/figures/`.
-4. Compile the manuscript and fix layout only; do not alter frozen evidence to make the story cleaner.
-5. Perform a final claim/citation consistency pass before venue-specific formatting.
+The scientific campaign is complete. The manuscript integrates the broad 1,275-case/85-scene systems evaluation and the frozen v4→v5→v6 residual-sensitive sequence directly; no conditional reviewer-v2 claim path remains.
 
-No additional broad campaign or extra multi-edit campaign is required by the current feedback: those requests are already covered by the completed 1,275-case frozen experiment.
+Final release work is limited to manuscript production and verification:
+1. compile the ACM PDF, editable DOCX, and supplement from the committed source;
+2. reject any layout build with overfull boxes, undefined references, missing glyphs, or broken tables/figures;
+3. keep the v4 negative result, v5 mechanism isolation, v6 scene-level statistics, and certificate-conservatism limitation unchanged during layout fixes;
+4. perform the final claim/citation consistency pass and venue-specific anonymization when needed.
+
+No additional broad campaign or extra multi-edit campaign is required by the current feedback.
