@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 import re
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -40,18 +39,19 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertLessEqual(len(words), 260)
 
         for detailed_metric in (
-            "935",
-            "340",
             "73.33",
             "0.47447",
-            "95\\% CI",
             "66.67",
+            "1168",
+            "122.3",
         ):
             self.assertNotIn(detailed_metric, abstract)
 
         self.assertIn("AR maps", abstract)
         self.assertIn("digital twins", abstract)
         self.assertIn("selective maintenance", abstract)
+        self.assertIn("1,275 revisions over 85 scenes", abstract)
+        self.assertIn("20 independently selected scenes", abstract)
 
         for repeated_frame in ("frozen", "campaign", "contract", "evidence"):
             self.assertLessEqual(
@@ -73,106 +73,46 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         for phrase in forbidden:
             self.assertNotIn(phrase, text)
 
-    def test_reviewer_v2_claims_are_fail_closed(self):
+    def test_final_residual_evidence_is_integrated_unconditionally(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("generated/reviewer_v2", text)
+        self.assertNotIn(r"\\ifreviewervtwoready", text)
+        self.assertIn("The first residual-sensitive freeze, v4, is a negative result.", text)
+        self.assertIn("V5 changes one mechanism.", text)
+        self.assertIn("V6 repeats the same mechanism across 20 independent scenes.", text)
+        self.assertIn("687 certified non-zero local cases", text)
+        self.assertIn("151 tolerance-crossover groups", text)
+        self.assertIn("0.477 [0.432, 0.517]", text)
+
+    def test_v6_scene_level_statistics_do_not_treat_cases_as_independent(self):
+        text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertIn("scene as its primary sampling unit", text)
+        self.assertIn("dataset stratum", text)
+        self.assertIn("3,840 parameter cases are pooled evidence, not 3,840 independent samples", text)
+        self.assertIn("five-scene-per-dataset design", text)
+        self.assertIn("dataset-stratified scene-bootstrap 95\\% interval", text)
+
+    def test_v4_negative_result_is_preserved(self):
+        text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertIn("256 non-zero-residual cases falls back to \\FULL{}", text)
+        self.assertIn("no certified non-zero local cases and no tolerance crossovers", text)
         self.assertIn(
-            "\\IfFileExists{generated/reviewer_v2_results.tex}",
+            "all 256 non-zero fallbacks to the post-repair certified bound exceeding epsilon",
+            text,
+        )
+
+    def test_opacity_delta_certificate_is_defined_and_bounded(self):
+        text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertIn(r"\\label{eq:opacitydelta}", text)
+        self.assertIn("+0.002", text)
+        self.assertIn("two-sided early-termination discrepancy", text)
+        self.assertIn(
+            "V5 and v6 use this refinement for opacity residuals",
             text,
         )
         self.assertIn(
-            "results remain outside the present claims until that campaign is executed",
+            "translation control continues to use Eq.~\\ref{eq:gaussianbound}",
             text,
-        )
-
-    def test_reviewer_v2_state_controls_all_claim_surfaces(self):
-        text = MANUSCRIPT.read_text(encoding="utf-8")
-        self.assertIn(r"\IfFileExists{generated/reviewer_v2_state.tex}", text)
-        self.assertGreaterEqual(text.count(r"\ifreviewervtwoready"), 5)
-        self.assertIn("successful cases are reported as a separate stress result", text)
-        self.assertIn("Useful approximation with a measurable non-zero residual remains", text)
-
-    def test_word_export_resolves_reviewer_state_and_inlines_results(self):
-        source = (
-            r"\IfFileExists{generated/reviewer_v2_state.tex}{%"
-            r"\input{generated/reviewer_v2_state.tex}%"
-            r"}{%\newif\ifreviewervtwoready\reviewervtworeadyfalse}"
-            "\n"
-            r"before \ifreviewervtwoready READY \else OPEN \fi after"
-            "\n"
-            r"\IfFileExists{generated/reviewer_v2_results.tex}"
-            r"{\input{generated/reviewer_v2_results.tex}}{}"
-        )
-        original_root = BUILDER.ROOT
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            generated = root / "generated"
-            generated.mkdir()
-            (generated / "reviewer_v2_state.tex").write_text(
-                "\\newif\\ifreviewervtwoready\n"
-                "\\reviewervtworeadytrue\n",
-                encoding="utf-8",
-            )
-            (generated / "reviewer_v2_results.tex").write_text(
-                "\\subsection{Certified non-zero residual stress test}\n"
-                "\\begin{figure*}[t]x\\end{figure*}\n",
-                encoding="utf-8",
-            )
-            BUILDER.ROOT = root
-            try:
-                expanded = BUILDER.expand_reviewer_v2_for_word(source)
-            finally:
-                BUILDER.ROOT = original_root
-
-        self.assertIn("READY", expanded)
-        self.assertNotIn(" OPEN ", expanded)
-        self.assertIn("Certified non-zero residual stress test", expanded)
-        self.assertNotIn("reviewer_v2_results.tex", expanded)
-        self.assertNotIn(r"\ifreviewervtwoready", expanded)
-
-    def test_word_export_defaults_to_open_without_generated_state(self):
-        source = (
-            r"\IfFileExists{generated/reviewer_v2_state.tex}{%"
-            r"\input{generated/reviewer_v2_state.tex}%"
-            r"}{%\newif\ifreviewervtwoready\reviewervtworeadyfalse}"
-            "\n"
-            r"before \ifreviewervtwoready READY \else OPEN \fi after"
-            "\n"
-            r"\IfFileExists{generated/reviewer_v2_results.tex}"
-            r"{\input{generated/reviewer_v2_results.tex}}{}"
-        )
-        original_root = BUILDER.ROOT
-        with tempfile.TemporaryDirectory() as directory:
-            BUILDER.ROOT = Path(directory)
-            try:
-                expanded = BUILDER.expand_reviewer_v2_for_word(source)
-            finally:
-                BUILDER.ROOT = original_root
-
-        self.assertIn("OPEN", expanded)
-        self.assertNotIn(" READY ", expanded)
-        self.assertNotIn("reviewer_v2_results.tex", expanded)
-        self.assertNotIn(r"\ifreviewervtwoready", expanded)
-
-    def test_actual_manuscript_expands_to_open_state_without_generated_files(self):
-        source = MANUSCRIPT.read_text(encoding="utf-8")
-        original_root = BUILDER.ROOT
-        with tempfile.TemporaryDirectory() as directory:
-            BUILDER.ROOT = Path(directory)
-            try:
-                expanded = BUILDER.expand_reviewer_v2_for_word(source)
-            finally:
-                BUILDER.ROOT = original_root
-
-        self.assertNotIn(r"\ifreviewervtwoready", expanded)
-        self.assertNotIn("generated/reviewer_v2_state.tex", expanded)
-        self.assertNotIn("generated/reviewer_v2_results.tex", expanded)
-        self.assertIn(
-            "targets the remaining question of useful approximation with a measurable non-zero residual",
-            expanded,
-        )
-        self.assertIn(
-            "Useful approximation with a measurable non-zero residual remains",
-            expanded,
         )
 
     def test_defensive_not_cadence_is_reduced(self):
