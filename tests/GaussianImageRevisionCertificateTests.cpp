@@ -211,10 +211,9 @@ void testOpacityDeltaCertificateBoundsReferenceAndTightensSmallResidual() {
     for (std::size_t pixel = 0; pixel < beforeImage->color.size(); ++pixel) {
         double actual{};
         for (std::size_t channel = 0; channel < 3; ++channel) {
-            actual = std::max(
-                actual,
-                std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
-                         static_cast<double>(afterImage->color[pixel][channel])));
+            actual =
+                std::max(actual, std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
+                                         static_cast<double>(afterImage->color[pixel][channel])));
         }
         const double bound = tight->rgbLInfBounds[pixel];
         sawCertifiedChange = sawCertifiedChange || bound > 0.0;
@@ -267,9 +266,8 @@ void testOpacityDeltaCertificateBoundsOverlappingSplats() {
         double actual{};
         for (std::size_t channel = 0; channel < 3; ++channel) {
             actual =
-                std::max(actual,
-                         std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
-                                  static_cast<double>(afterImage->color[pixel][channel])));
+                std::max(actual, std::abs(static_cast<double>(beforeImage->color[pixel][channel]) -
+                                         static_cast<double>(afterImage->color[pixel][channel])));
         }
         sawActualChange = sawActualChange || actual > 0.0;
         if (actual > certificate->rgbLInfBounds[pixel] + 2.0e-6) {
