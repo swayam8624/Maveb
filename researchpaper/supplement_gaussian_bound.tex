@@ -45,3 +45,69 @@ can change. Renderer behavior outside these bounded assumptions is not softened
 into the certificate; it becomes an exact dependency or triggers FULL fallback.
 The image-space certificate is the maximum of the pixel bound over the declared
 protected support.
+
+
+\section*{Opacity-only delta refinement used by v5--v6}
+
+The general finite-edit bound above is deliberately indifferent to edit
+magnitude once the edited support is known. This is safe for geometry, color,
+insertion, deletion, and ordering changes, but it can be unnecessarily loose
+when corresponding Gaussian records differ only in opacity. The confirmatory
+v5--v6 path therefore uses a narrower bound under stronger invariants.
+
+Consider front-to-back compositing at one protected pixel. Let
+$\alpha_i^0,\alpha_i^1\in[0,1]$ be the effective renderer-admitted alpha values
+for paired Gaussian $i$ before and after the revision. Position, projected
+covariance, source-order depth, rotation, and spherical-harmonic color are
+identical for each pair. Denote the accumulated color after processing splats
+$1,\ldots,n$ by $C_n$. Changing one alpha coordinate while holding all other
+coordinates fixed can replace at most the remaining channel range multiplied
+by the alpha change. If every possible emitted/background channel lies in an
+interval of width $C_{\mathrm{color}}$, then
+\[
+  \left\lVert
+  C_n(\ldots,\alpha_i^0,\ldots)
+  -
+  C_n(\ldots,\alpha_i^1,\ldots)
+  \right\rVert_\infty
+  \le
+  C_{\mathrm{color}}
+  \left|\alpha_i^0-\alpha_i^1\right|.
+\]
+Applying this coordinate-wise along a path from the full before alpha vector to
+the full after alpha vector and using the triangle inequality gives
+\[
+  \Delta_p
+  \le
+  C_{\mathrm{color}}
+  \sum_i
+  \left|\alpha_i^0(p)-\alpha_i^1(p)\right|.
+\]
+The renderer used by the independent oracle may stop compositing once
+accumulated alpha exceeds $0.999$. Relative to the corresponding non-terminated
+compositor, either endpoint can then omit at most $0.001$ transmittance. A
+before/after difference therefore needs at most an additional
+$0.002C_{\mathrm{color}}$ allowance. The implemented pixel certificate is
+\[
+  B_p^{\mathrm{opacity}}
+  =
+  C_{\mathrm{color}}
+  \min\!\left(
+    1,\,
+    \sum_i
+    \left|\alpha_i^0(p)-\alpha_i^1(p)\right|
+    +0.002
+  \right)
+\]
+whenever at least one admitted alpha changes at $p$. If the summed alpha
+variation is exactly zero, the implementation returns an exact zero bound
+instead of adding the early-termination allowance globally. This preserves
+zero support outside the affected pixels.
+
+The refinement is intentionally fail-closed. Paired primitive counts and
+spherical-harmonic degree must agree, and every paired Gaussian must be
+identical except for opacity logit. A geometry, covariance, rotation,
+spherical-harmonic, or unexpected visibility change rejects the refinement and
+returns control to the general finite-edit certificate or to full fallback.
+The v5 mechanism experiment and v6 confirmatory breadth experiment use this
+opacity-only path without changing the general translation control.
