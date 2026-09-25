@@ -1028,9 +1028,8 @@ int main(int argc, char** argv) try {
             canUseOpacityDelta
                 ? aether::world_gaussian::certifyGaussianOpacityOnlyImageRevision(
                       residualBefore, residualAfter, camera, colorCap)
-                : aether::world_gaussian::certifyGaussianImageRevision(residualBefore,
-                                                                       residualAfter, camera,
-                                                                       colorCap);
+                : aether::world_gaussian::certifyGaussianImageRevision(
+                      residualBefore, residualAfter, camera, colorCap);
         repairCertificateMode =
             canUseOpacityDelta ? "opacity-delta-lipschitz-v1" : "opacity-envelope-union-v1";
         if (!repairCertificate) {
