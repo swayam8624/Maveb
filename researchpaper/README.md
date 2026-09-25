@@ -50,7 +50,7 @@ Figure 2 uses the original author-supplied PNG bytes without cropping, redrawing
 - Size: 2,499,137 bytes
 - SHA-256: `e8cfa3b68930c9052c7fbe4190eb7841efb428ab1bfe587e03dbea9fac0d1f24`
 
-The image's embedded micro-metrics are illustrative. Its caption distinguishes them from the frozen 60-case headline and qualifies its correctness language by the stated assumptions. All six tables use bounded widths; Table 3's note wraps below the table. Numerical columns remain aligned and text columns wrap.
+The image's embedded micro-metrics are illustrative. Its caption distinguishes them from the base 1,275-case campaign headline and qualifies its correctness language by the stated assumptions. All six tables use bounded widths; Table 3's note wraps below the table. Numerical columns remain aligned and text columns wrap.
 
 ## Graphics benchmark and visual-fidelity audit
 
@@ -75,6 +75,6 @@ python3 researchpaper/build_manuscript.py --build-dir /tmp/maveb-manuscript-buil
 
 The GitHub manuscript workflow uses the same builder. It runs for manuscript changes on `main`, on `manuscript/**` branches, and on pull requests targeting `main`. It verifies the exact Figure 2 SHA-256 before compiling, then validates and uploads the PDF, editable DOCX, supplement, and package as workflow artifacts. CI does not rewrite repository files or push generated commits.
 
-The PDF is the authoritative two-column ACM author manuscript. The DOCX is an editable single-column export; it preserves the manuscript figures, six content tables, seventeen editable equations with stable Word-side numbering, and the exact Figure 2 media bytes. It is not an ACM typesetting substitute. Artifact completion does not imply venue acceptance or any publication-tier outcome.
+The PDF is the authoritative two-column ACM author manuscript. The DOCX is an editable single-column export; it preserves the manuscript figures, six content tables, eighteen editable equations with stable Word-side numbering, and the exact Figure 2 media bytes. It is not an ACM typesetting substitute. Artifact completion does not imply venue acceptance or any publication-tier outcome.
 
 See `MANUSCRIPT_QA.md` for the exact verification gates and scope.
