@@ -28,15 +28,6 @@
 \newcommand{\analytic}{\textsc{Analytic}}
 \newcommand{\empirical}{\textsc{Empirical}}
 
-% Fail-closed reviewer-v2 state. The generated file is emitted only from the
-% frozen reviewer audit; absent state means no reviewer-v2 success claims.
-\IfFileExists{generated/reviewer_v2_state.tex}{%
-  \input{generated/reviewer_v2_state.tex}%
-}{%
-  \newif\ifreviewervtwoready
-  \reviewervtworeadyfalse
-}
-
 \definecolor{mavebblue}{HTML}{D9E8FB}
 \definecolor{mavebgreen}{HTML}{DFF1E1}
 \definecolor{mavebamber}{HTML}{FBECC8}
@@ -59,7 +50,7 @@
 \begin{abstract}
 Persistent captured worlds---AR maps, digital twins, and long-lived reconstructions---continue changing after capture. Geometry, appearance, GPU state, and temporal history become interdependent, so a small physical edit can trigger broad recomputation. Rebuilding everything is safe but wasteful; updating only nearby state is efficient but can preserve stale dependencies. We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system, a fail-closed method for deciding what may remain untouched after change. It combines exact structural closure, conservative finite-change bounds, output tolerances, work-aware selection, automatic \FULL{} fallback, and independent full-after verification. A partial repair proceeds only when the unrecomputed exterior stays within tolerance and the repair costs less than rebuilding.
 
-We evaluate 1,275 revisions across 85 scenes from 3RScan, ARKitScenes, the Bonn RGB-D Dynamic Dataset, and trained GraphDECO 3DGS. Roughly three quarters remain local with no observed certificate violations. Stronger coupling increasingly triggers \FULL{}, median calibrated work is about 47\% of a rebuild, and every selected output matches the independent full-after render on audited views. A separate stress protocol, fixed before outcome inspection, \ifreviewervtwoready also probes useful approximation with measurable non-zero residuals under the same tolerance rule without altering the main evaluation. \else targets the remaining question of useful approximation with a measurable non-zero residual. \fi These results show that long-lived 3D environments need not choose between blanket recomputation and unchecked local updates: selective maintenance can be tied to explicit output error and a reproducible fallback rule. The work metric is calibrated heterogeneous work, not wall-clock speedup.
+The base evaluation contains 1,275 revisions over 85 scenes from 3RScan, ARKitScenes, the Bonn RGB-D Dynamic Dataset, and trained GraphDECO 3DGS. It selects 935 local repairs and 340 full rebuilds with zero observed certificate violations; median calibrated selected work is 0.474 of a rebuild. We then test the harder case in which a local result is allowed to differ measurably from the full-after reference. A frozen diagnostic first showed that the original image certificate rejected every non-zero residual. Replacing that magnitude-insensitive envelope with an opacity-delta Lipschitz certificate produced 142 certified non-zero local cases in a four-scene mechanism study. A separate outcome-blind confirmation repeated the same mechanism over 20 independently selected scenes and 3,840 parameter cases. Non-zero opacity locality appeared in all 20 scenes and all four dataset families, while the translation control produced none. The scene-level opacity-minus-translation non-zero-local-rate difference was 0.477 with a dataset-stratified bootstrap 95\% interval of [0.432, 0.517]. No certificate or repair-certificate violation was observed. The certificate remains conservative: no accepted case approached the tolerance boundary. These results support \method{} as a captured-world revision contract rather than a claim of universal certificate tightness. The work metric is calibrated heterogeneous work, not wall-clock speedup.
 \end{abstract}
 
 \begin{CCSXML}
@@ -109,7 +100,9 @@ E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q,
 \end{equation}
 where $E_q^{\mathrm{full-ref}}$ is the measured residual attributable to the unrepaired exterior under the selected support, evaluated against an independent full-after rendering; $B_q(C)$ is the emitted conservative bound, and $\varepsilon_q$ is the declared tolerance for quantity of interest $q$.
 
-Before examining aggregate outcomes, we fixed the evaluation protocol and claim boundaries. Across 1,275 revisions over 85 scenes, \method{} selects 935 local repairs and 340 rebuilds with zero observed certificate violations. The study covers 3RScan, ARKitScenes, Bonn dynamic RGB-D sequences, and 13 pinned trained 3DGS scenes, with translation, rotation, uniform-scale, and opacity edits. Median calibrated selected work is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885). Mild coupling usually preserves locality; stronger interactions increasingly trigger the fail-closed path. Every selected render matches the independent \FULL{}-after reference on the evaluated views. A separate partial-repair study handles the harder question of useful non-zero residuals within tolerance.
+Before examining aggregate outcomes, we fixed the evaluation protocol and claim boundaries. Across 1,275 revisions over 85 scenes, \method{} selects 935 local repairs and 340 rebuilds with zero observed certificate violations. The study covers 3RScan, ARKitScenes, Bonn dynamic RGB-D sequences, and 13 pinned trained 3DGS scenes, with translation, rotation, uniform-scale, and opacity edits. Median calibrated selected work is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885). Mild coupling usually preserves locality; stronger interactions increasingly trigger the fail-closed path. Every selected render matches the independent \FULL{}-after reference on the evaluated views.
+
+That broad campaign deliberately uses exact selected-to-full agreement, so it does not by itself show that a bounded non-zero residual can remain local. We study that question in a second, frozen line of experiments. The first diagnostic exposes a limitation in the original image certificate; a mechanism study changes only that certificate for opacity residuals and keeps translation as a control; a final confirmatory study repeats the unchanged mechanism on five independently ranked scenes from each of the same four dataset families. This staged design keeps diagnosis, mechanism change, and confirmation separate rather than tuning one campaign until it succeeds.
 
 Operationally, this gives long-lived AR maps, digital twins, and reconstructed environments a middle path between two costly extremes: rebuilding everything after each change or trusting a nearby update without knowing what stale state remains. The system can stop propagation when the output effect is bounded, and it can abandon locality when that justification disappears.
 
@@ -120,7 +113,7 @@ The contributions are:
     \item a fail-closed formulation for revising heterogeneous persistent captured worlds, combining exact dependency closure with conservative finite-change propagation;
     \item output-specific certification for selective repair, including implementation-backed Gaussian display-space and stable temporal bounds, while unsupported dependencies stay exact;
     \item a native work-aware planner with automatic \FULL{} fallback, deterministic record generation, a dense reference implementation, and an independent full-after falsification path; and
-    \item an evaluation across public and trained scene representations that reports the local/rebuild crossover, calibrated work, sparse-discovery behavior, neutral or negative ablations, and measured limitations without relabeling work reduction as speedup.
+    \item a staged evaluation that separates broad system behavior from residual-sensitive mechanism evidence: an immutable negative diagnostic, a controlled certificate change with an unchanged translation comparator, and a 20-scene confirmatory replication with scene-clustered statistics.
 \end{itemize}
 
 \begin{figure*}[t]
