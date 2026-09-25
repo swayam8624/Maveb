@@ -103,7 +103,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
 
     def test_opacity_delta_certificate_is_defined_and_bounded(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
-        self.assertIn(r"\\label{eq:opacitydelta}", text)
+        self.assertIn(r"\label{eq:opacitydelta}", text)
         self.assertIn("+0.002", text)
         self.assertIn("two-sided early-termination discrepancy", text)
         self.assertIn(
@@ -111,7 +111,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "translation control continues to use Eq.~\\ref{eq:gaussianbound}",
+            "translation control continues to use Eq.~\ref{eq:gaussianbound}",
             text,
         )
 
