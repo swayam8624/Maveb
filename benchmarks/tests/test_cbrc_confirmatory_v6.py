@@ -33,6 +33,15 @@ packet = load_module(
 
 class ConfirmatoryV6ProtocolTests(unittest.TestCase):
     def test_v6_keeps_v5_factor_grid_and_expands_only_scene_breadth(self):
+        self.assertEqual(
+            freeze.EXPECTED_DATASETS,
+            (
+                "3rscan",
+                "arkitscenes",
+                "bonn-rgbd-dynamic",
+                "graphdeco-pretrained-3dgs",
+            ),
+        )
         self.assertEqual(freeze.EDIT_FAMILIES, ("opacity", "translation"))
         self.assertEqual(
             freeze.EPSILON_LEVELS_255,
@@ -60,7 +69,10 @@ class ConfirmatoryV6ProtocolTests(unittest.TestCase):
             * len(freeze.EPSILON_LEVELS_255)
         )
         self.assertEqual(per_scene, 192)
-        self.assertEqual(per_scene * 5, 960)
+        self.assertEqual(
+            per_scene * 5 * len(freeze.EXPECTED_DATASETS),
+            3840,
+        )
 
     def test_runner_shell_syntax(self):
         result = subprocess.run(
@@ -101,6 +113,7 @@ class ConfirmatoryV6AnalysisTests(unittest.TestCase):
                         "repairLegacyEnvelopeCounterfactualComputed": True,
                         "repairLegacyEnvelopeBound": 0.05,
                         "workRatioFull": 0.25,
+                        "nearBoundaryLocal": False,
                         "certificateOk": True,
                         "repairCertificateViolationPixels": 0,
                     },
@@ -114,6 +127,7 @@ class ConfirmatoryV6AnalysisTests(unittest.TestCase):
                         "postRepairActualRgbError": 0.002,
                         "postRepairResidualBound": 0.2,
                         "workRatioFull": 1.0,
+                        "nearBoundaryLocal": False,
                         "certificateOk": True,
                         "repairCertificateViolationPixels": 0,
                     },
@@ -161,6 +175,12 @@ class ConfirmatoryV6AnalysisTests(unittest.TestCase):
                     },
                     "medianSceneLegacyToDeltaResidualBoundRatio": 8.0,
                     "scenesWithAtLeastOneRescuedCase": 15,
+                },
+                "certificateTightness": {
+                    "medianOfSceneMedianResidualEffectivity": 3.0,
+                    "medianOfSceneMaximumActualToEpsilon": 0.55,
+                    "maximumSceneMaximumActualToEpsilon": 0.82,
+                    "pooledNearBoundaryLocalCases": 2,
                 },
             },
             "certificateAudit": {"certificateExperimentValid": True},
