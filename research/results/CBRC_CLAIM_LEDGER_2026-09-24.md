@@ -1,5 +1,7 @@
 # CBRC paper claim ledger — 2026-09-24
 
+> **2026-09-25 status note.** The broad 1,275-case campaign values in this ledger remain current. The “Reviewer-v2 boundary” section below records the pre-confirmation state from 2026-09-24 and has been superseded by the completed v4→v5→v6 residual-sensitive evidence integrated into `researchpaper/main.tex` and `researchpaper/FINAL_MANUSCRIPT_AUDIT_2026-09-25.md`. Do not use the older conditional prohibition to describe the final manuscript.
+
 This ledger supersedes the 2026-09-21 headline ledger for the current manuscript. Historical evidence remains preserved in the older files.
 
 ## Supported by the completed paper-grade campaign
