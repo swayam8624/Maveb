@@ -45,4 +45,24 @@ certifyGaussianImageRevision(const gaussian::GaussianAsset& beforeChanged,
                              const gaussian::GaussianAsset& afterChanged,
                              const gaussian::ReferenceCamera& camera, double colorUpperBound);
 
+/// Tighter certificate for a revision in which corresponding Gaussian records
+/// differ only in opacityLogit. Geometry, source-order depth, and SH color are
+/// therefore identical in both states.
+///
+/// For each pixel the full alpha compositor is Lipschitz in each admitted alpha:
+///
+///   ||Delta C(p)||_inf <= colorUpperBound * sum_i |alpha_i^a(p)-alpha_i^b(p)|.
+///
+/// The reference renderer may terminate when accumulated alpha exceeds 0.999.
+/// A two-sided 0.002 transmittance allowance is added only on pixels where an
+/// opacity delta is present, covering that renderer truncation without turning
+/// unaffected pixels into global support.
+///
+/// This routine fails closed when any paired Gaussian differs in position,
+/// covariance/rotation, or SH coefficients. Callers may then use the general
+/// opacity-envelope certificate above.
+[[nodiscard]] Result<GaussianImageRevisionCertificate> certifyGaussianOpacityOnlyImageRevision(
+    const gaussian::GaussianAsset& beforeChanged, const gaussian::GaussianAsset& afterChanged,
+    const gaussian::ReferenceCamera& camera, double colorUpperBound);
+
 } // namespace aether::world_gaussian

@@ -22,6 +22,13 @@ struct Projected final {
     double opacity{};
 };
 
+[[nodiscard]] bool opacityOnlyInvariant(const gaussian::Gaussian& before,
+                                        const gaussian::Gaussian& after) noexcept {
+    return before.position == after.position && before.logScale == after.logScale &&
+           before.rotation == after.rotation && before.dc == after.dc &&
+           before.rest == after.rest && before.restCount == after.restCount;
+}
+
 [[nodiscard]] bool validCamera(const gaussian::ReferenceCamera& camera) noexcept {
     constexpr std::size_t maximumDimension = 16'384;
     constexpr std::size_t maximumPixels = 268'435'456;
@@ -228,6 +235,124 @@ projectGaussianOpacityEnvelope(const gaussian::GaussianAsset& changed,
     result.opacityMass.resize(pixelCount);
     for (std::size_t pixel = 0; pixel < pixelCount; ++pixel)
         result.opacityMass[pixel] = std::clamp(1.0 - transmittance[pixel], 0.0, 1.0);
+    return result;
+}
+
+Result<GaussianImageRevisionCertificate> certifyGaussianOpacityOnlyImageRevision(
+    const gaussian::GaussianAsset& beforeChanged, const gaussian::GaussianAsset& afterChanged,
+    const gaussian::ReferenceCamera& camera, double colorUpperBound) {
+    if (!validCamera(camera))
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian opacity-delta certificate camera parameters are invalid");
+    if (!std::isfinite(colorUpperBound) || colorUpperBound < 0.0)
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian opacity-delta color upper bound must be finite and non-negative");
+    if (beforeChanged.sphericalHarmonicDegree != afterChanged.sphericalHarmonicDegree)
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian opacity-delta certificate requires identical SH degree");
+    if (beforeChanged.gaussians.size() != afterChanged.gaussians.size())
+        return fail(ErrorCode::invalidArgument,
+                    "Gaussian opacity-delta certificate requires paired primitive counts");
+
+    const std::size_t pixelCount = camera.width * camera.height;
+    std::vector<double> alphaVariation(pixelCount, 0.0);
+
+    for (std::size_t index = 0; index < beforeChanged.gaussians.size(); ++index) {
+        const gaussian::Gaussian& beforePrimitive = beforeChanged.gaussians[index];
+        const gaussian::Gaussian& afterPrimitive = afterChanged.gaussians[index];
+        if (!opacityOnlyInvariant(beforePrimitive, afterPrimitive))
+            return fail(ErrorCode::invalidArgument,
+                        "Gaussian opacity-delta certificate requires opacity-only paired changes");
+
+        auto beforeProjected = project(beforePrimitive, camera);
+        auto afterProjected = project(afterPrimitive, camera);
+        if (!beforeProjected || !afterProjected) {
+            const bool beforeOutside =
+                !beforeProjected && beforeProjected.error().code == ErrorCode::notFound;
+            const bool afterOutside =
+                !afterProjected && afterProjected.error().code == ErrorCode::notFound;
+            if (beforeOutside && afterOutside)
+                continue;
+            if (!beforeProjected && !beforeOutside)
+                return std::unexpected(beforeProjected.error());
+            if (!afterProjected && !afterOutside)
+                return std::unexpected(afterProjected.error());
+            return fail(ErrorCode::corruptData,
+                        "Opacity-only Gaussian changed camera visibility unexpectedly");
+        }
+
+        const double minimumCenterX = std::min(beforeProjected->centerX, afterProjected->centerX);
+        const double maximumCenterX = std::max(beforeProjected->centerX, afterProjected->centerX);
+        const double minimumCenterY = std::min(beforeProjected->centerY, afterProjected->centerY);
+        const double maximumCenterY = std::max(beforeProjected->centerY, afterProjected->centerY);
+        const double maximumRadius = std::max(beforeProjected->radius, afterProjected->radius);
+        const int minimumX =
+            std::max(0, static_cast<int>(std::floor(minimumCenterX - maximumRadius)));
+        const int maximumX = std::min(static_cast<int>(camera.width) - 1,
+                                      static_cast<int>(std::ceil(maximumCenterX + maximumRadius)));
+        const int minimumY =
+            std::max(0, static_cast<int>(std::floor(minimumCenterY - maximumRadius)));
+        const int maximumY = std::min(static_cast<int>(camera.height) - 1,
+                                      static_cast<int>(std::ceil(maximumCenterY + maximumRadius)));
+
+        for (int y = minimumY; y <= maximumY; ++y) {
+            for (int x = minimumX; x <= maximumX; ++x) {
+                const double beforeDx = (static_cast<double>(x) + 0.5) - beforeProjected->centerX;
+                const double beforeDy = (static_cast<double>(y) + 0.5) - beforeProjected->centerY;
+                const double afterDx = (static_cast<double>(x) + 0.5) - afterProjected->centerX;
+                const double afterDy = (static_cast<double>(y) + 0.5) - afterProjected->centerY;
+                const double beforeDistance =
+                    beforeProjected->inverseA * beforeDx * beforeDx +
+                    2.0 * beforeProjected->inverseB * beforeDx * beforeDy +
+                    beforeProjected->inverseC * beforeDy * beforeDy;
+                const double afterDistance = afterProjected->inverseA * afterDx * afterDx +
+                                             2.0 * afterProjected->inverseB * afterDx * afterDy +
+                                             afterProjected->inverseC * afterDy * afterDy;
+
+                auto beforeAlpha =
+                    effectiveGaussianRendererAlpha(beforeProjected->opacity, beforeDistance);
+                if (!beforeAlpha)
+                    return std::unexpected(beforeAlpha.error());
+                auto afterAlpha =
+                    effectiveGaussianRendererAlpha(afterProjected->opacity, afterDistance);
+                if (!afterAlpha)
+                    return std::unexpected(afterAlpha.error());
+
+                const double delta = std::abs(*beforeAlpha - *afterAlpha);
+                if (delta == 0.0)
+                    continue;
+                const std::size_t pixel =
+                    static_cast<std::size_t>(y) * camera.width + static_cast<std::size_t>(x);
+                alphaVariation[pixel] += delta;
+                if (!std::isfinite(alphaVariation[pixel]))
+                    return fail(ErrorCode::resourceExhausted,
+                                "Gaussian opacity-delta alpha variation overflow");
+            }
+        }
+    }
+
+    // ReferenceRasterizer early-terminates a pixel after accumulated alpha exceeds
+    // 0.999. Relative to the corresponding full alpha compositor, each endpoint
+    // can therefore omit at most 0.001 of transmittance. The two-sided difference
+    // costs at most 0.002 * colorUpperBound. We add that allowance only where a
+    // changed alpha is actually admitted, preserving exact zero outside support.
+    constexpr double kTwoSidedEarlyTerminationTransmittance = 0.002;
+
+    GaussianImageRevisionCertificate result;
+    result.width = camera.width;
+    result.height = camera.height;
+    result.rgbLInfBounds.resize(pixelCount, 0.0);
+    for (std::size_t pixel = 0; pixel < pixelCount; ++pixel) {
+        if (alphaVariation[pixel] == 0.0)
+            continue;
+        const double normalized =
+            std::min(1.0, alphaVariation[pixel] + kTwoSidedEarlyTerminationTransmittance);
+        const double bound = colorUpperBound * normalized;
+        if (!std::isfinite(bound))
+            return fail(ErrorCode::resourceExhausted, "Gaussian opacity-delta RGB bound overflow");
+        result.rgbLInfBounds[pixel] = bound;
+        result.maximumRgbLInfBound = std::max(result.maximumRgbLInfBound, bound);
+    }
     return result;
 }
 

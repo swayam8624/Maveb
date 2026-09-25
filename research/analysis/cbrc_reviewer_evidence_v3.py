@@ -69,6 +69,9 @@ def classify_row(
     repair_mode = str(
         diagnostics.get("repairMode", "exact-changed-support-v1")
     )
+    repair_certificate_mode = str(
+        diagnostics.get("repairCertificateMode", "opacity-envelope-union-v1")
+    )
     repair_omit_fraction = float(
         diagnostics.get("repairOmitFractionRequested", 0.0)
     )
@@ -83,6 +86,15 @@ def classify_row(
     )
     repair_certificate_violations = int(
         diagnostics.get("repairCertificateViolationPixels", 0)
+    )
+    post_repair_residual_bound = float(
+        diagnostics.get("postRepairResidualBound", 0.0)
+    )
+    post_repair_actual_error = float(
+        diagnostics.get("postRepairActualRgbError", 0.0)
+    )
+    production_resolved_bound = float(
+        diagnostics.get("productionResolvedRgbBound", 0.0)
     )
     matrix = case.get("matrix_tags", {}) if isinstance(case, dict) else {}
 
@@ -166,11 +178,15 @@ def classify_row(
             diagnostics.get("affectedPixelFraction", 0.0)
         ),
         "repairMode": repair_mode,
+        "repairCertificateMode": repair_certificate_mode,
         "repairOmitFraction": repair_omit_fraction,
         "repairResidualScale": repair_residual_scale,
         "repairOmittedGaussians": repair_omitted_gaussians,
         "repairAppliedChangedGaussians": repair_applied_gaussians,
         "repairCertificateViolationPixels": repair_certificate_violations,
+        "postRepairResidualBound": post_repair_residual_bound,
+        "postRepairActualRgbError": post_repair_actual_error,
+        "productionResolvedRgbBound": production_resolved_bound,
         "naturalChangePair": matrix.get(
             "natural_change_pair",
             matrix.get("naturalChangePair"),
@@ -437,6 +453,7 @@ def write_csv(records: list[dict[str, Any]], path: Path) -> None:
         "workRatioFull",
         "affectedPixelFraction",
         "repairMode",
+        "repairCertificateMode",
         "repairOmitFraction",
         "repairResidualScale",
         "repairOmittedGaussians",

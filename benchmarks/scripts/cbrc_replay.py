@@ -341,6 +341,9 @@ def finalize_row(
                 oracle["certificateViolationPixels"]
             ),
             "repairMode": str(oracle.get("repairMode", "exact-changed-support-v1")),
+            "repairCertificateMode": str(
+                oracle.get("repairCertificateMode", "opacity-envelope-union-v1")
+            ),
             "repairOmitFractionRequested": float(
                 oracle.get("repairOmitFractionRequested", 0.0)
             ),
