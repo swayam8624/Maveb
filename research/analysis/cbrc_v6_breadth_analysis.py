@@ -392,26 +392,6 @@ def build(
     )
     positive_datasets = sorted({item["dataset"] for item in opacity_positive_scenes})
 
-    deltas = [
-        float(item["pairedNonzeroLocalRateDelta"])
-        for item in scenes
-        if item["pairedNonzeroLocalRateDelta"] is not None
-    ]
-    opacity_rates = [
-        float(item["opacityNonzeroLocalRate"])
-        for item in scenes
-        if item["opacityNonzeroLocalRate"] is not None
-    ]
-    crossover_fractions = [
-        float(item["opacityCrossoverFraction"])
-        for item in scenes
-        if item["opacityCrossoverFraction"] is not None
-    ]
-    rescue_rates = [
-        float(item["deltaCertificateRescueRate"])
-        for item in scenes
-        if item["deltaCertificateRescueRate"] is not None
-    ]
     legacy_to_delta = [
         float(item["medianLegacyToDeltaResidualBoundRatio"])
         for item in scenes
