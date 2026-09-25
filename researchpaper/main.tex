@@ -440,6 +440,27 @@ v6 confirmation & 20 scenes, 3,840 cases & 687 cases; all 20 scenes and all 4 da
 
 The same-opacity legacy-envelope counterfactual provides a direct mechanism check in v6. Holding the physical opacity edit fixed, the delta-sensitive certificate rescues a mean 0.531 of cases per scene that the legacy envelope would reject (95\% interval [0.512, 0.549]); all 20 scenes contain at least one such rescue. The median scene-level ratio of legacy residual bound to delta-sensitive bound is 122.3. This comparison does not claim that the new certificate is tight. The accepted cases remain far from the tolerance boundary: the largest scene maximum of measured residual divided by epsilon is 0.0812, the median of those scene maxima is 0.0195, and there are no near-boundary local cases. The median scene-level residual effectivity is approximately 1168, so conservatism remains a measured limitation rather than being hidden by the positive locality result.
 
+\begin{table}[t]
+\caption{Scene-level v6 confirmation. Intervals are dataset-stratified scene-bootstrap 95\% intervals over 20 scenes; pooled case totals are not treated as independent samples.}
+\label{tab:v6-scene}
+\centering
+\footnotesize
+\rowcolors{2}{gray!8}{white}
+\begin{tabularx}{\columnwidth}{@{}Y>{\raggedleft\arraybackslash}p{0.25\columnwidth}@{}}
+\toprule
+Metric & Result \\
+\midrule
+Scenes with non-zero opacity \LOCAL{} & 20 / 20 \\
+Scenes with opacity tolerance crossover & 20 / 20 \\
+Opacity non-zero-local rate & 0.477 [0.432, 0.517] \\
+Translation non-zero-local rate & 0.000 [0.000, 0.000] \\
+Same-opacity legacy-envelope rescue rate & 0.531 [0.512, 0.549] \\
+Largest scene maximum of residual / epsilon & 0.0812 \\
+Median scene residual effectivity & 1168.2 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
 \subsection{Baselines and ablations}
 The paired statistics expose both useful separation and neutral mechanisms. Against \FULL{}, all 1,275 cases are jointly certified; \method{} uses lower calibrated work in 935 and ties in 340, with exact two-sided sign-test $p=6.89\times10^{-282}$. Replacing the exterior tail with a global-norm bound produces the same 935-versus-340 separation, showing that the localized tail is the dominant source of work reduction on this matrix.
 
