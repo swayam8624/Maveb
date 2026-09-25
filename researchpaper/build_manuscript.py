@@ -211,6 +211,7 @@ r_q(C)=\begin{cases}
         [1.5, .65, .8, .65, 1.0, 2.5],
         [2.2, .75, .75, .75, 2.65],
         [2.2, .75, .75, .75, 2.65],
+        [3.9, 1.2, 2.0],
     ]
     assert len(doc.tables) == expected_table_count == len(widths), (
         f'Expected {expected_table_count} editable tables, got {len(doc.tables)}'

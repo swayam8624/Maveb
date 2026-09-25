@@ -28,15 +28,6 @@
 \newcommand{\analytic}{\textsc{Analytic}}
 \newcommand{\empirical}{\textsc{Empirical}}
 
-% Fail-closed reviewer-v2 state. The generated file is emitted only from the
-% frozen reviewer audit; absent state means no reviewer-v2 success claims.
-\IfFileExists{generated/reviewer_v2_state.tex}{%
-  \input{generated/reviewer_v2_state.tex}%
-}{%
-  \newif\ifreviewervtwoready
-  \reviewervtworeadyfalse
-}
-
 \definecolor{mavebblue}{HTML}{D9E8FB}
 \definecolor{mavebgreen}{HTML}{DFF1E1}
 \definecolor{mavebamber}{HTML}{FBECC8}
@@ -59,7 +50,7 @@
 \begin{abstract}
 Persistent captured worlds---AR maps, digital twins, and long-lived reconstructions---continue changing after capture. Geometry, appearance, GPU state, and temporal history become interdependent, so a small physical edit can trigger broad recomputation. Rebuilding everything is safe but wasteful; updating only nearby state is efficient but can preserve stale dependencies. We present \emph{Criticality-Bounded Revision Cones} (\method), implemented in \system, a fail-closed method for deciding what may remain untouched after change. It combines exact structural closure, conservative finite-change bounds, output tolerances, work-aware selection, automatic \FULL{} fallback, and independent full-after verification. A partial repair proceeds only when the unrecomputed exterior stays within tolerance and the repair costs less than rebuilding.
 
-We evaluate 1,275 revisions across 85 scenes from 3RScan, ARKitScenes, the Bonn RGB-D Dynamic Dataset, and trained GraphDECO 3DGS. Roughly three quarters remain local with no observed certificate violations. Stronger coupling increasingly triggers \FULL{}, median calibrated work is about 47\% of a rebuild, and every selected output matches the independent full-after render on audited views. A separate stress protocol, fixed before outcome inspection, \ifreviewervtwoready also probes useful approximation with measurable non-zero residuals under the same tolerance rule without altering the main evaluation. \else targets the remaining question of useful approximation with a measurable non-zero residual. \fi These results show that long-lived 3D environments need not choose between blanket recomputation and unchecked local updates: selective maintenance can be tied to explicit output error and a reproducible fallback rule. The work metric is calibrated heterogeneous work, not wall-clock speedup.
+We evaluate 1,275 revisions across 85 scenes from 3RScan, ARKitScenes, the Bonn RGB-D Dynamic Dataset, and trained GraphDECO 3DGS. Roughly three quarters remain local with no observed certificate violations; median calibrated work is 0.474 of a rebuild, and every selected output matches the full-after render. Because the broad evaluation is exact at the audited raster, we separately freeze a 3,840-case partial-repair study over 20 independent scenes. Delta-sensitive opacity certification yields non-zero local repairs and tolerance crossovers in every scene. Its mean per-scene non-zero-local advantage over the translation control is 0.477, with a dataset-stratified bootstrap interval excluding zero. A same-opacity legacy-envelope counterfactual rescues 0.531 of cases, isolating magnitude sensitivity as the mechanism. All predeclared confirmatory gates pass without certificate violations, although the bound remains conservative rather than tight. These results show that long-lived 3D environments can use selective maintenance tied to explicit output error and a reproducible fail-closed rule. The work metric is calibrated heterogeneous work rather than wall-clock speedup.
 \end{abstract}
 
 \begin{CCSXML}
@@ -109,7 +100,9 @@ E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q,
 \end{equation}
 where $E_q^{\mathrm{full-ref}}$ is the measured residual attributable to the unrepaired exterior under the selected support, evaluated against an independent full-after rendering; $B_q(C)$ is the emitted conservative bound, and $\varepsilon_q$ is the declared tolerance for quantity of interest $q$.
 
-Before examining aggregate outcomes, we fixed the evaluation protocol and claim boundaries. Across 1,275 revisions over 85 scenes, \method{} selects 935 local repairs and 340 rebuilds with zero observed certificate violations. The study covers 3RScan, ARKitScenes, Bonn dynamic RGB-D sequences, and 13 pinned trained 3DGS scenes, with translation, rotation, uniform-scale, and opacity edits. Median calibrated selected work is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885). Mild coupling usually preserves locality; stronger interactions increasingly trigger the fail-closed path. Every selected render matches the independent \FULL{}-after reference on the evaluated views. A separate partial-repair study handles the harder question of useful non-zero residuals within tolerance.
+Before examining aggregate outcomes, we fixed the evaluation protocol and claim boundaries. Across 1,275 revisions over 85 scenes, \method{} selects 935 local repairs and 340 rebuilds with zero observed certificate violations. The study covers 3RScan, ARKitScenes, Bonn dynamic RGB-D sequences, and 13 pinned trained 3DGS scenes, with translation, rotation, uniform-scale, and opacity edits. Median calibrated selected work is 0.47447 of \FULL{} (bootstrap 95\% CI 0.46657--0.47885). Mild coupling usually preserves locality; stronger interactions increasingly trigger the fail-closed path. Every selected render matches the independent \FULL{}-after reference on the evaluated views.
+
+That exact broad result leaves a separate question: can a local repair remain valid when a small, measurable residual is intentionally left outside the repair cone? We answer it with a second frozen confirmatory study that repeats the same certificate mechanism over 20 independent scenes, five from each of the same four dataset families. The 3,840-case design treats scene, not parameter sweep, as the primary unit of analysis and preserves the opacity primary edit, translation control, four locality profiles, four residual levels, and six epsilon levels fixed before outcome inspection. The confirmatory study yields certified non-zero opacity-local repairs and tolerance crossovers in all 20 scenes, while the translation control yields no non-zero local repairs.
 
 Operationally, this gives long-lived AR maps, digital twins, and reconstructed environments a middle path between two costly extremes: rebuilding everything after each change or trusting a nearby update without knowing what stale state remains. The system can stop propagation when the output effect is bounded, and it can abandon locality when that justification disappears.
 
@@ -328,6 +321,9 @@ The headline work ratio uses the frozen heterogeneous work model from Eq.~\ref{e
 \paragraph{Statistical reporting.}
 Local and violation rates use Wilson 95\% intervals. Median work ratios use bootstrap 95\% intervals. Paired baseline comparisons count cases in which both policies certify, then report which policy uses less calibrated work, ties, and an exact two-sided sign test when the comparison is informative.
 
+\paragraph{Confirmatory partial-repair protocol.}
+The broad campaign above is excluded from the useful-approximation evidence because its selected outputs are exact at the audited raster. We therefore freeze a separate 20-scene confirmatory protocol: five deterministically ranked ready scenes from each of 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and trained GraphDECO 3DGS. Each scene contributes 192 cases from four locality profiles, two edit families (opacity primary and translation control), four residual levels (exact, $1/4096$, $1/1024$, and $1/256$), and six tolerances ($1,2,4,8,16,32$)/255, for 3,840 cases total. The scene is the primary statistical unit. Confidence intervals use 10,000 bootstrap replicates that resample scenes within each dataset family, preserving the fixed five-by-four design. A same-opacity counterfactual evaluates the legacy magnitude-insensitive envelope on the identical physical edit, isolating the certificate change without altering scene, edit, residual, or tolerance.
+
 \subsection{Baselines and ablations}
 The method-level suite includes \FULL{}, exact-only repair, fixed graph radii, changed-fraction selection, empirical ordering followed by analytic re-certification, and \method{}. Structural ablations remove individual mechanisms while retaining the frozen campaign. We preserve neutral ablations as neutral results. A mechanism can remain important to the contract even when this real matrix does not separate its aggregate work from the full method; deterministic mechanism-isolation tests are retained separately for falsifiability.
 
@@ -363,7 +359,7 @@ Overall & 1275 & 935 & 340 & 0.733 [0.708, 0.757] & 0.474 [0.467, 0.479] \\
 \end{tabularx}
 \end{table*}
 
-The identical 73.33\% local rate across datasets is a consequence of applying the same frozen 15-case coupling template to every scene; it should not be interpreted as evidence that the datasets behave identically. Dataset-dependent work differs substantially: the median ratio is 0.341 on 3RScan and 0.519 on trained 3DGS.
+The identical 73.33\% local rate across datasets is a consequence of applying the same frozen 15-case coupling template to every scene; it should be interpreted only as a consequence of the shared frozen template, rather than as evidence that the datasets behave identically. Dataset-dependent work differs substantially: the median ratio is 0.341 on 3RScan and 0.519 on trained 3DGS.
 
 \subsection{Coupling controls fallback behavior}
 The fail-closed envelope becomes visible when the campaign is grouped by coupling regime. All low and medium cases remain local. High coupling produces 170 local repairs and 85 fallbacks, while adversarial coupling produces 85 local repairs and 255 fallbacks. The pattern is therefore monotonic in this frozen matrix rather than an all-success story.
@@ -410,32 +406,59 @@ Uniform scale & 340 & 170 & 170 & 0.770 \\
 \subsection{Independent selected-render audit}
 The selected render is byte-identical to the independent \FULL{}-after render in all 1,275 cases on the evaluated benchmark views: the selected exact-case rate is 1.0. For fallback cases this equality follows from selecting \FULL{}. For the 935 \LOCAL{} cases it means the executed repair reproduces the full-after raster exactly at 8-bit RGB precision on the audited view.
 
-This result is strong evidence for the selection/fallback implementation, but it is deliberately separated from certificate tightness. Because the measured selected-to-\FULL{} residual is zero throughout this broad campaign, the matrix does not demonstrate a useful case with
+This result is strong evidence for the selection/fallback implementation, but it is deliberately separated from certificate tightness. Because the measured selected-to-\FULL{} residual is zero throughout this broad campaign, the matrix cannot demonstrate a useful case with
 \begin{equation}
 0 < E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q.
 \end{equation}
-A separately frozen reviewer protocol therefore evaluates deterministic partial repair with an independently certified omitted subset. \ifreviewervtwoready Its frozen audit passed the reviewer-evidence gates, and the resulting non-zero-residual evidence is reported separately below. \else Its results remain outside the present claims until that campaign is executed and its audit gates pass. \fi
+A separately frozen confirmatory protocol therefore evaluates deterministic partial repair with an independently certified omitted subset. Its 20-scene audit passes every predeclared gate, and the non-zero-residual evidence is reported separately below rather than folded into the broad campaign.
 
 \subsection{Baselines and ablations}
 The paired statistics expose both useful separation and neutral mechanisms. Against \FULL{}, all 1,275 cases are jointly certified; \method{} uses lower calibrated work in 935 and ties in 340, with exact two-sided sign-test $p=6.89\times10^{-282}$. Replacing the exterior tail with a global-norm bound produces the same 935-versus-340 separation, showing that the localized tail is the dominant source of work reduction on this matrix.
 
 Several comparisons are neutral. Empirical ordering followed by analytic re-certification ties \method{} in all 1,275 jointly certified cases. Five ablations also tie on aggregate work: Gaussian bound, hard/soft distinction, predecessor closure, QoI specialization, and temporal bound. Exact-only and fixed-radius policies certify 340 of 1,275 cases. The changed-fraction policy certifies 537. Removing fallback leaves 340 certified cases. We retain these results because the experiment characterizes the contract instead of forcing every mechanism to separate.
 
-% REVIEWER-V2 INSERTION POINT:
-% After executing build/reviewer-stress-v2, insert only frozen non-zero-residual
-% and tolerance-crossover results whose audit gates pass. Do not retune epsilon
-% or select cases post hoc.
-\IfFileExists{generated/reviewer_v2_results.tex}{\input{generated/reviewer_v2_results.tex}}{}
+\subsection{Confirmatory breadth: useful non-zero residuals}
+\label{sec:v6-confirmatory}
+All 3,840 frozen confirmatory cases complete across 20 independent scenes. The generic audit reports 687 certified non-zero \LOCAL{} cases and 151 tolerance-crossover groups, with non-zero-local evidence present in all four dataset families and no observed certificate or repair-certificate violation. These pooled counts are secondary; the primary analysis remains scene-clustered.
+
+Every one of the 20 scenes contains at least one certified non-zero opacity-local case and at least one opacity tolerance crossover. The mean per-scene opacity non-zero-local rate is 0.4771 with a dataset-stratified bootstrap 95\% CI of [0.4319, 0.5174]. The matched translation control has rate 0 with CI [0, 0], so the paired opacity-minus-translation estimate is also 0.4771 [0.4319, 0.5174]. The mean opacity crossover fraction is 0.6292 [0.6000, 0.6583].
+
+\begin{table*}[t]
+\caption{Frozen 20-scene confirmatory study. Intervals are 95\% dataset-stratified scene-bootstrap intervals with 10,000 replicates. Pooled parameter counts are reported only as secondary evidence because repeated parameter settings within a scene are statistically dependent.}
+\label{tab:v6-confirmatory}
+\centering
+\footnotesize
+\rowcolors{2}{gray!8}{white}
+\begin{tabularx}{\textwidth}{@{}Yrr@{}}
+\toprule
+Metric & Estimate & 95\% CI / coverage \\
+\midrule
+Independent scenes & 20 & 5 per dataset family \\
+Frozen parameter cases & 3,840 & 192 per scene \\
+Opacity non-zero-\LOCAL{} rate & 0.4771 & [0.4319, 0.5174] \\
+Translation non-zero-\LOCAL{} rate & 0.0000 & [0.0000, 0.0000] \\
+Opacity-minus-translation rate difference & 0.4771 & [0.4319, 0.5174] \\
+Opacity crossover fraction & 0.6292 & [0.6000, 0.6583] \\
+Legacy-envelope rescue rate & 0.5306 & [0.5118, 0.5493] \\
+Scenes with non-zero opacity \LOCAL{} & 20/20 & all four datasets \\
+Scenes with opacity crossover & 20/20 & all four datasets \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The same-opacity legacy-envelope counterfactual makes the mechanism comparison sharper. Holding the physical opacity edit fixed, replacing the delta-sensitive certificate with the earlier envelope loses cases that the new certificate safely retains: the mean per-scene rescue rate is 0.5306 [0.5118, 0.5493], every scene contains at least one rescued case, and the median scene-level legacy-to-delta residual-bound ratio is 122.33. This controlled comparison supports the interpretation that the previous failure to preserve non-zero local repairs was certificate conservatism rather than an inherent need for global recomputation.
+
+The confirmatory result supports safety and useful approximation rather than certificate tightness. No \LOCAL{} case falls near the declared tolerance boundary under the frozen near-boundary diagnostic. The median of scene-level median residual effectivity (certified bound divided by measured residual) is 1168.21; the median scene maximum actual-error-to-epsilon ratio is 0.0195, and the maximum over all scenes is 0.0812. The study therefore establishes useful certified approximation and cross-scene generalization, while leaving substantial room for future bound tightening.
 
 \section{Discussion}
 \subsection{What the evidence establishes}
-The broad campaign supports three claims within the frozen revision domain. First, the fail-closed decision rule survives independent replay without an observed certificate violation in 1,275 cases. Second, the same contract produces both local repair and full fallback across four datasets, two representation classes, four edit families, and a deliberately widening coupling envelope. Third, locality is meaningful in the calibrated work model: the median selected ratio is 0.474 of \FULL{}, while high and adversarial cases increasingly give up locality and return the full baseline.
+The broad campaign supports three claims within the frozen revision domain. First, the fail-closed decision rule survives independent replay without an observed certificate violation in 1,275 cases. Second, the same contract produces both local repair and full fallback across four datasets, two representation classes, four edit families, and a deliberately widening coupling envelope. Third, locality is meaningful in the calibrated work model: the median selected ratio is 0.474 of \FULL{}, while high and adversarial cases increasingly give up locality and return the full baseline. The separate confirmatory study adds a fourth claim: when a measurable residual is intentionally retained, the delta-sensitive opacity certificate preserves useful local repair across all 20 independent scenes, and its scene-clustered advantage over the translation control remains positive under a dataset-stratified bootstrap.
 
 The result is best understood as a systems contract rather than as a new dependency algorithm in isolation. Dependency-aware recomputation, self-adjusting computation, norm bounds, and goal-oriented error estimation provide important prior ideas. \method{} specializes them into a persistent captured-world rule that requires exact structural closure, conservative exterior accounting, output-specific tolerances, a frozen work crossover, explicit fallback, immutable evidence, and independent full-after falsification.
 
 \subsection{Limitations}
 \paragraph{Broad correctness and bound tightness are separate evidence.}
-All selected outputs in the paper-grade campaign are exact at the audited 8-bit raster. That makes the implementation easy to falsify and supports the selected-output correctness claim, but the broad campaign alone cannot characterize certificate tightness when a small non-zero residual is acceptable. \ifreviewervtwoready The separately frozen reviewer-v2 protocol targets that regime through deterministic omitted-Gaussian partial repair with its own conservative display-space certificate. Its successful cases are reported as a separate stress result and do not alter the broad campaign, but they remain specific to this partial-repair construction rather than establishing universal bound tightness. \else The frozen reviewer-v2 protocol targets exactly that regime through a deterministic omitted-Gaussian subset with its own conservative display-space certificate. Its outcome will be reported as a separate result rather than folded into this campaign post hoc. \fi
+All selected outputs in the paper-grade campaign are exact at the audited 8-bit raster. The 20-scene confirmatory study directly addresses useful non-zero residuals, but it also shows that the current certificate is conservative: no local case reaches the frozen near-boundary criterion, the median scene-level residual effectivity is 1168.21, and the largest observed actual-error-to-epsilon ratio is 0.0812. These values support safety and useful approximation within the tested domain, not tightness or optimality of the analytic bound. The confirmatory result is also specific to the opacity-only delta-sensitive construction; it does not imply that equally tight finite-change certificates exist for arbitrary geometry changes.
 
 \paragraph{Calibrated work is distinct from runtime.}
 The 0.474 median headline is a frozen four-domain work ratio, not a paired end-to-end speedup. It captures heterogeneous work under a versioned calibration but omits effects such as allocator behavior, synchronization, cache locality, command submission, and pipeline overlap. A runtime claim requires matched \LOCAL{} and \FULL{} execution under the same conditions.
@@ -455,14 +478,14 @@ Uniform-scale and adversarial cases trigger many full rebuilds. Those fallbacks 
 \subsection{Implications}
 The main practical lesson is that locality should be treated as a contract, not as a geometric assumption. A small physical edit is a useful starting cue, but the publishable decision depends on the dependency closure, the output quantity being protected, the tolerated residual, and the cost of carrying the repair through derived state. This framing also makes failure informative. A \FULL{} result identifies a revision for which the current model cannot justify leaving enough of the world untouched.
 
-The broad experiment suggests that this distinction is useful across multiple kinds of real captured-world input. \ifreviewervtwoready Reviewer-v2 probes the next regime directly: selected repairs may differ measurably from the full-after result, yet remain acceptable when the independently measured residual stays below the certified bound and tolerance. This evidence is deliberately separate from the broad campaign and should be interpreted as a stress test of useful approximation, not as a universal guarantee. \else It also exposes the next research question cleanly: once selected repairs stop being exactly equal to the full-after result, can conservative exterior bounds remain tight enough to certify useful approximation? Reviewer-v2 is designed to answer that question without modifying the frozen broad evidence. \fi
+The broad experiment suggests that this distinction is useful across multiple kinds of real captured-world input. The confirmatory study probes the next regime directly: selected repairs may differ measurably from the full-after result yet remain acceptable when the independently measured residual stays below the certified bound and tolerance. Because the same-opacity legacy-envelope counterfactual fails to retain many of those cases, the study also isolates certificate magnitude sensitivity as a practical determinant of locality. This evidence remains separate from the broad campaign and should be interpreted as a controlled test of useful approximation, not as a universal guarantee for arbitrary edits or representations.
 \section{Reproducibility and Artifact Scope}
 The paper-grade completion manifest binds the 1,275 campaign rows, 85 prepared worlds, dataset import manifests, frozen case matrix, work calibration, visual audit, cross-dataset statistics, tool fingerprints, and evidence Git SHA. Cases resume only under matching deterministic fingerprints, and completed mutable case worlds are compacted after evidence is retained. Public datasets remain upstream assets; the repository stores provenance and preparation rules rather than redistributing third-party content.
 
-The repository contains the dense reference certifier, native planner and Gaussian oracle, trained and seeded representation paths, baseline and ablation suites, deterministic statistics and visual-audit generators, reviewer-v2 partial-repair machinery, regression tests, and storage-safe campaign runners. For double-blind review, identifiable repository and author metadata should be replaced with an anonymized frozen supplement that follows the target venue's policy.
+The repository contains the dense reference certifier, native planner and Gaussian oracle, trained and seeded representation paths, baseline and ablation suites, deterministic statistics and visual-audit generators, the frozen 20-scene confirmatory partial-repair machinery, regression tests, and storage-safe campaign runners. The compact final v6 evidence archive retains the frozen protocol, scene metrics, baseline metrics, audit, manuscript-claim packet, case trace, reviewer figures, and compressed campaign rows after heavyweight datasets and per-case render materializations are removed. For double-blind review, identifiable repository and author metadata should be replaced with an anonymized frozen supplement that follows the target venue's policy.
 
 \section{Conclusion}
-Criticality-Bounded Revision Cones give persistent 3D systems a way to avoid unnecessary global rebuilds without treating spatial locality as a safe assumption. A repair proceeds only when structural dependencies are closed, the effect left outside the selected region stays within the declared output tolerance, and the work remains worthwhile; otherwise \system{} rebuilds. Across 1,275 revisions over 85 scenes, this policy produces both selective maintenance and deliberate fallback with zero observed certificate violations, while median calibrated work is 0.474 of \FULL{}. Stronger coupling naturally reduces the opportunity for reuse rather than forcing an unsafe local answer. \ifreviewervtwoready Reviewer-v2 extends that picture to partial repairs with measurable non-zero residual under a separately fixed stress protocol. \else Useful approximation with a measurable non-zero residual remains the next empirical target. \fi For long-lived AR maps, digital twins, and reconstructed environments, the practical consequence is simple: recomputation can be reduced when the system can justify it, and expanded when it cannot.
+Criticality-Bounded Revision Cones give persistent 3D systems a way to avoid unnecessary global rebuilds without treating spatial locality as a safe assumption. A repair proceeds only when structural dependencies are closed, the effect left outside the selected region stays within the declared output tolerance, and the work remains worthwhile; otherwise \system{} rebuilds. Across 1,275 revisions over 85 scenes, this policy produces both selective maintenance and deliberate fallback with zero observed certificate violations, while median calibrated work is 0.474 of \FULL{}. A separately frozen 3,840-case confirmatory study then shows that useful non-zero residuals can remain certified across all 20 independent scenes: the scene-level opacity-control advantage is 0.477 with 95\% CI [0.432, 0.517], and a same-opacity legacy-envelope counterfactual demonstrates that magnitude-sensitive certification is the mechanism enabling those rescues. The remaining limitation is certificate tightness rather than observed safety. For long-lived AR maps, digital twins, and reconstructed environments, the practical consequence is simple: recomputation can be reduced when the system can justify it, and expanded when it cannot.
 
 \section*{Acknowledgments}
 \paragraph{Generative AI use disclosure.}

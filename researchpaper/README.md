@@ -19,7 +19,7 @@ This folder is the editable manuscript package for the current CBRC v1 paper lin
 - `build_manuscript.py`: reproducible manuscript builder and structural QA gate.
 - `MANUSCRIPT_QA.md`: manuscript build/verification record and commands.
 
-The manuscript reuses frozen result imagery from `research/results/visualizations/`.
+The manuscript reuses frozen result imagery from `research/results/visualizations/` and directly integrates the completed v6 confirmatory breadth result. The v6 evidence was frozen before outcome inspection and completed on 20 independent scenes / 3,840 parameter cases; its compact post-cleanup archive is retained locally under `final_evidence/maveb-v6/`.
 
 ## Anonymous review
 
@@ -36,11 +36,11 @@ The visible author version contains Swayam Singal and the requested email addres
 
 The manuscript distinguishes calibrated/native work reduction from wall-clock speedup, reports zero observed violations only within the frozen evaluation domain, describes the greedy cone as certified-feasible rather than globally optimal, and keeps the near-global Gaussian discovery bottleneck explicit.
 
-## Review-driven revision
+## Review-driven revision and final v6 integration
 
-The current manuscript incorporates the 2026-09-21 review pass: quantitative baseline and ablation tables, explicit revision criticality, a formalized Gaussian finite-edit proposition, stronger incremental/error-control related work, exact Figure 2 usage, bounded table layouts, and clean author-visible formatting.
+The current manuscript incorporates the 2026-09-21 review pass and the completed v6 confirmatory breadth campaign. The broad 1,275-case / 85-scene evaluation remains the main work-and-fallback study. A separate frozen 3,840-case experiment over 20 independent scenes establishes useful non-zero-residual locality under the delta-sensitive opacity certificate, with a dataset-stratified scene bootstrap and a same-opacity legacy-envelope counterfactual. The manuscript also reports the main limitation exposed by v6: the certificate is safe but still conservative, with no near-boundary LOCAL cases in the frozen diagnostic.
 
-See `REVIEW_RESPONSE_2026-09-21.md` for the revision ledger and `supplement_gaussian_bound.tex` for the extended Proposition 1 derivation.
+See `REVIEW_RESPONSE_2026-09-21.md` for the earlier revision ledger and `supplement_gaussian_bound.tex` for the extended Proposition 1 derivation.
 
 ## Exact Figure 2 and layout
 
