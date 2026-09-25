@@ -61,10 +61,8 @@ certifyGaussianImageRevision(const gaussian::GaussianAsset& beforeChanged,
 /// This routine fails closed when any paired Gaussian differs in position,
 /// covariance/rotation, or SH coefficients. Callers may then use the general
 /// opacity-envelope certificate above.
-[[nodiscard]] Result<GaussianImageRevisionCertificate>
-certifyGaussianOpacityOnlyImageRevision(const gaussian::GaussianAsset& beforeChanged,
-                                        const gaussian::GaussianAsset& afterChanged,
-                                        const gaussian::ReferenceCamera& camera,
-                                        double colorUpperBound);
+[[nodiscard]] Result<GaussianImageRevisionCertificate> certifyGaussianOpacityOnlyImageRevision(
+    const gaussian::GaussianAsset& beforeChanged, const gaussian::GaussianAsset& afterChanged,
+    const gaussian::ReferenceCamera& camera, double colorUpperBound);
 
 } // namespace aether::world_gaussian
