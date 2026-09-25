@@ -1,5 +1,7 @@
 # MAVEB Claim, Method, Citation, and Evidence Audit — 2026-09-22
 
+> **Historical audit.** This file records the pre-v6 manuscript state and is retained for traceability. It is superseded for the current paper by `FINAL_MANUSCRIPT_AUDIT_2026-09-25.md`. Values below such as the 60-case public pilot and five-case trained check are historical development evidence, not the current manuscript headline.
+
 This audit records the submission-manuscript consistency check performed against the current repository implementation and the frozen public/trained evidence artifacts.
 
 ## Citation integrity
