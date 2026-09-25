@@ -96,6 +96,12 @@ def classify_row(
     production_resolved_bound = float(
         diagnostics.get("productionResolvedRgbBound", 0.0)
     )
+    repair_legacy_envelope_counterfactual = bool(
+        diagnostics.get("repairLegacyEnvelopeCounterfactualComputed", False)
+    )
+    repair_legacy_envelope_bound = float(
+        diagnostics.get("repairLegacyEnvelopeBound", 0.0)
+    )
     matrix = case.get("matrix_tags", {}) if isinstance(case, dict) else {}
 
     certificate_ok = actual <= bound + 1e-12 and bound <= epsilon + 1e-12
@@ -187,6 +193,10 @@ def classify_row(
         "postRepairResidualBound": post_repair_residual_bound,
         "postRepairActualRgbError": post_repair_actual_error,
         "productionResolvedRgbBound": production_resolved_bound,
+        "repairLegacyEnvelopeCounterfactualComputed": (
+            repair_legacy_envelope_counterfactual
+        ),
+        "repairLegacyEnvelopeBound": repair_legacy_envelope_bound,
         "naturalChangePair": matrix.get(
             "natural_change_pair",
             matrix.get("naturalChangePair"),
