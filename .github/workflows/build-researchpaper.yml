@@ -21,9 +21,6 @@ permissions:
 
 jobs:
   build:
-    # A generated-artifact push should not recursively rebuild itself. Pull-request
-    # runs are never suppressed, so the newest PR head still receives fresh checks.
-    if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'paper: regenerate synchronized manuscript artifacts') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
