@@ -19,6 +19,13 @@ import cbrc_storage
 
 GIB = 1024 ** 3
 
+V6_CONFIRMATORY_DATASETS = (
+    "3rscan",
+    "arkitscenes",
+    "bonn-rgbd-dynamic",
+    "graphdeco-pretrained-3dgs",
+)
+
 
 def human(value: int) -> str:
     if value >= GIB:
@@ -83,6 +90,67 @@ def freeze_inputs_recoverable(freeze_dir: Path) -> tuple[bool, str]:
     return True, "all case inputs can be rematerialized from prepared worlds"
 
 
+def smoke_development_tree_recoverable(repo: Path) -> tuple[bool, str]:
+    """Return whether the old broad smoke tree is superseded by paper worlds.
+
+    The smoke campaign is a development cache, not the canonical publication
+    evidence root. It is safe to reclaim only when the canonical paper manifest
+    is present, clean, and contains at least five ready scenes for every dataset
+    used by the frozen v6 confirmatory campaign.
+    """
+    smoke = repo / "build/broad-benchmark-smoke"
+    if not smoke.exists():
+        return False, "smoke development tree is absent"
+
+    manifest = repo / "build/broad-benchmark-paper/worlds/BROAD_WORLDS.json"
+    if not manifest.is_file():
+        return False, "canonical broad-benchmark-paper manifest is missing"
+
+    try:
+        payload = load(manifest)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False, "canonical broad-benchmark-paper manifest is unreadable"
+
+    if payload.get("failedWorlds") or payload.get("blockedWorlds"):
+        return False, "canonical broad-benchmark-paper manifest is not clean"
+
+    counts = {dataset: 0 for dataset in V6_CONFIRMATORY_DATASETS}
+    records = payload.get("records", [])
+    if not isinstance(records, list):
+        return False, "canonical broad-benchmark-paper records are malformed"
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        dataset = str(record.get("datasetId", ""))
+        if dataset not in counts or record.get("status") != "ready":
+            continue
+        world_value = record.get("world")
+        if not world_value:
+            continue
+        world = Path(str(world_value))
+        if not world.is_file():
+            continue
+        counts[dataset] += 1
+
+    incomplete = {
+        dataset: count
+        for dataset, count in counts.items()
+        if count < 5
+    }
+    if incomplete:
+        return (
+            False,
+            "canonical broad-benchmark-paper lacks five ready v6 scenes per dataset: "
+            + json.dumps(incomplete, sort_keys=True),
+        )
+
+    return (
+        True,
+        "superseded development cache; canonical broad-benchmark-paper has "
+        ">=5 ready scenes for every frozen v6 dataset",
+    )
+
+
 def graphdeco_archive_candidate(data_root: Path) -> tuple[Path | None, bool]:
     archive = data_root / "graphdeco-pretrained/models.zip"
     models = data_root / "graphdeco-pretrained/models"
@@ -123,8 +191,10 @@ def main() -> int:
         "--cleanup-safe",
         action="store_true",
         help=(
-            "Delete only recoverable frozen case materializations and the "
-            "GraphDECO zip when its extracted models are present."
+            "Delete only recoverable materializations: frozen case inputs, "
+            "the superseded broad-benchmark-smoke development tree when a clean "
+            "canonical paper manifest proves v6 coverage, and the GraphDECO zip "
+            "when its extracted models are present."
         ),
     )
     parser.add_argument(
@@ -200,12 +270,30 @@ def main() -> int:
     print("SAFE CLEANUP CANDIDATES")
     print("-" * 72)
 
-    for root in (
-        repo / "build/broad-benchmark-smoke/frozen",
+    smoke_root = repo / "build/broad-benchmark-smoke"
+    smoke_safe, smoke_reason = smoke_development_tree_recoverable(repo)
+    if smoke_root.exists():
+        smoke_size = cbrc_storage.allocated_bytes(smoke_root)
+        smoke_state = "SAFE" if smoke_safe else "KEEP"
+        print(
+            f"{smoke_state:<5} {human(smoke_size):>10}  {smoke_root}  "
+            f"({smoke_reason})"
+        )
+        if smoke_safe:
+            candidates.append(
+                ("superseded broad benchmark smoke cache", smoke_root, smoke_reason)
+            )
+
+    frozen_roots = [
         repo / "build/broad-benchmark-paper/frozen",
         repo / "build/reviewer-stress/frozen",
         repo / "build/reviewer-stress-v2/frozen",
-    ):
+    ]
+    # When the whole smoke tree is safe, do not also enqueue its nested inputs.
+    if not smoke_safe:
+        frozen_roots.insert(0, repo / "build/broad-benchmark-smoke/frozen")
+
+    for root in frozen_roots:
         inputs = root / "inputs"
         if not inputs.exists():
             continue
