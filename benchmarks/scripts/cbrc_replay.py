@@ -344,6 +344,12 @@ def finalize_row(
             "repairCertificateMode": str(
                 oracle.get("repairCertificateMode", "opacity-envelope-union-v1")
             ),
+            "repairLegacyEnvelopeCounterfactualComputed": bool(
+                oracle.get("repairLegacyEnvelopeCounterfactualComputed", False)
+            ),
+            "repairLegacyEnvelopeBound": float(
+                oracle.get("repairLegacyEnvelopeBound", 0.0)
+            ),
             "repairOmitFractionRequested": float(
                 oracle.get("repairOmitFractionRequested", 0.0)
             ),

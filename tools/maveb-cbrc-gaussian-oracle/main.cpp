@@ -1021,7 +1021,9 @@ int main(int argc, char** argv) try {
     }
 
     std::vector<double> repairBounds(oldImage->color.size(), 0.0);
+    std::vector<double> legacyRepairBounds(oldImage->color.size(), 0.0);
     std::string repairCertificateMode{"exact-zero-v1"};
+    bool legacyEnvelopeCounterfactualComputed = false;
     if (!residualBefore.gaussians.empty()) {
         const bool canUseOpacityDelta = opacityOnlyRevision(residualBefore, residualAfter);
         auto repairCertificate = [&]() {
@@ -1042,6 +1044,19 @@ int main(int argc, char** argv) try {
             std::cerr << "Partial-repair certificate pixel cardinality mismatch\n";
             return EXIT_FAILURE;
         }
+
+        if (canUseOpacityDelta) {
+            auto legacyCertificate = aether::world_gaussian::certifyGaussianImageRevision(
+                residualBefore, residualAfter, camera, colorCap);
+            if (!legacyCertificate) {
+                std::cerr << legacyCertificate.error().describe() << '\n';
+                return EXIT_FAILURE;
+            }
+            legacyRepairBounds = legacyCertificate->rgbLInfBounds;
+            legacyEnvelopeCounterfactualComputed = true;
+        } else {
+            legacyRepairBounds = repairBounds;
+        }
     }
 
     constexpr double kOracleNumericalSlack = 2.0e-6;
@@ -1049,6 +1064,7 @@ int main(int argc, char** argv) try {
     double maximumBound{};
     double maximumRepairResidual{};
     double maximumRepairResidualBound{};
+    double maximumLegacyRepairResidualBound{};
     std::size_t affectedPixels{};
     std::size_t certificateViolations{};
     std::size_t repairCertificateViolations{};
@@ -1086,6 +1102,8 @@ int main(int argc, char** argv) try {
         maximumBound = std::max(maximumBound, bound);
         maximumRepairResidual = std::max(maximumRepairResidual, repairResidual);
         maximumRepairResidualBound = std::max(maximumRepairResidualBound, repairBound);
+        maximumLegacyRepairResidualBound =
+            std::max(maximumLegacyRepairResidualBound, legacyRepairBounds[pixel]);
         affectedPixels += static_cast<std::size_t>(repairedPixel);
         const bool certificateViolation = actual > bound + kOracleNumericalSlack;
         certificateViolations += static_cast<std::size_t>(certificateViolation);
@@ -1196,6 +1214,8 @@ int main(int argc, char** argv) try {
     const bool withinTolerance = maximumBound <= options->epsilon;
     const bool certified = certificateViolations == 0;
     const double repairResidualBound = maximumRepairResidualBound + kOracleNumericalSlack;
+    const double legacyRepairResidualBound =
+        maximumLegacyRepairResidualBound + kOracleNumericalSlack;
     const bool repairResidualCertified = repairCertificateViolations == 0;
     const bool repairWithinTolerance =
         repairResidualCertified && repairResidualBound <= options->epsilon;
@@ -1228,6 +1248,9 @@ int main(int argc, char** argv) try {
                                                             : "exact-changed-support-v1"))
               << "\","
               << "\"repairCertificateMode\":\"" << repairCertificateMode << "\","
+              << "\"repairLegacyEnvelopeCounterfactualComputed\":"
+              << (legacyEnvelopeCounterfactualComputed ? "true" : "false") << ','
+              << "\"repairLegacyEnvelopeBound\":" << legacyRepairResidualBound << ','
               << "\"repairOmitFractionRequested\":" << options->repairOmitFraction << ','
               << "\"repairResidualScaleRequested\":" << options->repairResidualScale << ','
               << "\"repairOmittedGaussians\":" << omittedCount << ','
