@@ -412,18 +412,38 @@ This result is strong evidence for the selection/fallback implementation, but it
 \begin{equation}
 0 < E_q^{\mathrm{full-ref}} \le B_q(C) \le \varepsilon_q.
 \end{equation}
-A separately frozen reviewer protocol therefore evaluates deterministic partial repair with an independently certified omitted subset. \ifreviewervtwoready Its frozen audit passed the reviewer-evidence gates, and the resulting non-zero-residual evidence is reported separately below. \else Its results remain outside the present claims until that campaign is executed and its audit gates pass. \fi
+The separately frozen residual-sensitive sequence below targets exactly this regime without changing the broad campaign.
+
+\subsection{From diagnostic failure to confirmatory non-zero locality}
+The first residual-sensitive freeze, v4, is a negative result. Across 512 cases, the 256 exact-residual cases remain local, while every one of the 256 non-zero-residual cases falls back to \FULL{}. There are no certified non-zero local cases and no tolerance crossovers. Postmortem analysis attributes all 256 non-zero fallbacks to the post-repair certified bound exceeding epsilon. The outcome is insensitive to the locality profile and to the tested epsilon ladder. This rules out a convenient interpretation in which the test scenes were simply too globally coupled: the bottleneck is the certificate used for the residual.
+
+V5 changes one mechanism. For opacity-only residuals, geometry, covariance, rotation, depth, and spherical-harmonic color remain fixed, while the certificate accumulates the actual change in admitted per-pixel alpha with a conservative transmittance allowance. Translation continues to use the old opacity-envelope certificate. All certificate-routing, monotonicity, selected-output, and repair-certificate validity gates pass. Of 384 opacity cases, 251 select \LOCAL{} and 133 select \FULL{}; 142 are certified non-zero local cases and 29 stress keys cross from full to local as epsilon changes. The 384 translation controls contain 96 exact local cases and 288 full fallbacks, with zero non-zero local cases and zero crossovers. The contrast identifies certificate sensitivity rather than a generic tendency of the stress matrix to produce locality.
+
+V6 repeats the same mechanism across 20 independent scenes. The confirmatory audit passes every predeclared gate, with no selected-certificate or repair-certificate violation. Non-zero opacity locality occurs in all 20 scenes and all four dataset families; opacity crossover also occurs in all 20 scenes. Across scenes, the mean opacity non-zero-local rate is 0.477, with a dataset-stratified scene-bootstrap 95\% interval of [0.432, 0.517]. Translation remains at 0.000 [0.000, 0.000], so the paired opacity-minus-translation difference is numerically the same 0.477 [0.432, 0.517]. The generic audit contains 687 certified non-zero local cases and 151 tolerance-crossover groups.
+
+\begin{table*}[t]
+\caption{Residual-sensitive evidence sequence. Pooled case counts describe frozen parameter grids; v6 inference uses 20 scenes as the primary sampling units, stratified five per dataset. Non-zero \LOCAL{} means a selected local repair with a measured non-zero residual that remains within its certified bound and tolerance.}
+\label{tab:residual-sequence}
+\centering
+\footnotesize
+\rowcolors{2}{gray!8}{white}
+\begin{tabularx}{\textwidth}{@{}p{0.11\textwidth}p{0.23\textwidth}p{0.28\textwidth}Y@{}}
+\toprule
+Stage & Frozen population & Non-zero \LOCAL{} evidence & Main diagnostic / control result \\
+\midrule
+v4 diagnostic & 4 scenes, 512 cases & 0 cases; 0 tolerance crossovers & All 256 non-zero-residual cases fall back because the certified post-repair bound exceeds epsilon. \\
+v5 mechanism & 4 scenes, 768 cases & 142 opacity cases across all 4 datasets; 29 crossover keys & Opacity: 251 \LOCAL{}/133 \FULL{}. Translation control: 0 non-zero \LOCAL{}, 0 crossovers. \\
+v6 confirmation & 20 scenes, 3,840 cases & 687 cases; all 20 scenes and all 4 datasets; 151 crossover groups & Scene-level opacity--translation difference 0.477, 95\% CI [0.432, 0.517]; all frozen gates pass. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The same-opacity legacy-envelope counterfactual provides a direct mechanism check in v6. Holding the physical opacity edit fixed, the delta-sensitive certificate rescues a mean 0.531 of cases per scene that the legacy envelope would reject (95\% interval [0.512, 0.549]); all 20 scenes contain at least one such rescue. The median scene-level ratio of legacy residual bound to delta-sensitive bound is 122.3. This comparison does not claim that the new certificate is tight. The accepted cases remain far from the tolerance boundary: the largest scene maximum of measured residual divided by epsilon is 0.0812, the median of those scene maxima is 0.0195, and there are no near-boundary local cases. The median scene-level residual effectivity is approximately 1168, so conservatism remains a measured limitation rather than being hidden by the positive locality result.
 
 \subsection{Baselines and ablations}
 The paired statistics expose both useful separation and neutral mechanisms. Against \FULL{}, all 1,275 cases are jointly certified; \method{} uses lower calibrated work in 935 and ties in 340, with exact two-sided sign-test $p=6.89\times10^{-282}$. Replacing the exterior tail with a global-norm bound produces the same 935-versus-340 separation, showing that the localized tail is the dominant source of work reduction on this matrix.
 
 Several comparisons are neutral. Empirical ordering followed by analytic re-certification ties \method{} in all 1,275 jointly certified cases. Five ablations also tie on aggregate work: Gaussian bound, hard/soft distinction, predecessor closure, QoI specialization, and temporal bound. Exact-only and fixed-radius policies certify 340 of 1,275 cases. The changed-fraction policy certifies 537. Removing fallback leaves 340 certified cases. We retain these results because the experiment characterizes the contract instead of forcing every mechanism to separate.
-
-% REVIEWER-V2 INSERTION POINT:
-% After executing build/reviewer-stress-v2, insert only frozen non-zero-residual
-% and tolerance-crossover results whose audit gates pass. Do not retune epsilon
-% or select cases post hoc.
-\IfFileExists{generated/reviewer_v2_results.tex}{\input{generated/reviewer_v2_results.tex}}{}
 
 \section{Discussion}
 \subsection{What the evidence establishes}
