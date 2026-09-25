@@ -279,3 +279,14 @@ Scientific rule:
   changes. Scene selection is deterministic and frozen; no failed scene or case may be
   removed, swapped, or retuned after execution begins.
 EOF
+
+if [[ "${MAVEB_FINAL_CLEANUP_AFTER_V6:-0}" == "1" ]]; then
+  echo
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "▶ Final MAVEB cleanup requested"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  "$PYTHON" maintenance/final_cleanup.py \
+    --repo "$ROOT" \
+    --execute \
+    --i-understand-this-deletes-data
+fi
