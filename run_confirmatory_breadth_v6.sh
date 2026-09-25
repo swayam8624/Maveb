@@ -189,11 +189,68 @@ PY
 )"
 echo "  Frozen cases: $CASE_COUNT"
 
+CAMPAIGN_ALREADY_COMPLETE="$("$PYTHON" - "$CAMPAIGN" "$CASE_COUNT" <<'PY'
+import json,sys
+from pathlib import Path
+
+root=Path(sys.argv[1])
+expected=int(sys.argv[2])
+cases=root/"cases"
+
+complete=0
+if cases.is_dir():
+    for case_dir in cases.iterdir():
+        if not case_dir.is_dir():
+            continue
+        required=(
+            case_dir/"CASE_COMPLETE.json",
+            case_dir/"replay-manifest.json",
+            case_dir/"revision-row.json",
+            case_dir/"baselines.json",
+        )
+        if not all(path.is_file() for path in required):
+            continue
+        try:
+            marker=json.loads((case_dir/"CASE_COMPLETE.json").read_text())
+        except Exception:
+            continue
+        if marker.get("caseId") and marker.get("executionSignature"):
+            complete += 1
+
+aggregate_files=(
+    root/"campaign-rows.jsonl",
+    root/"campaign-baselines.jsonl",
+    root/"campaign-timings.jsonl",
+    root/"campaign-gates.json",
+    root/"planner-parity.json",
+    root/"baseline-summary.json",
+    root/"campaign-evaluation.json",
+)
+aggregates_ok=all(path.is_file() for path in aggregate_files)
+
+def line_count(path: Path) -> int:
+    return sum(1 for line in path.read_text().splitlines() if line.strip())
+
+rows_ok=(
+    aggregates_ok
+    and line_count(root/"campaign-rows.jsonl")==expected
+    and line_count(root/"campaign-baselines.jsonl")==expected
+    and line_count(root/"campaign-timings.jsonl")==expected
+)
+print("1" if complete==expected and rows_ok else "0")
+PY
+)"
+
 step 3 "Execute unchanged v5 mechanism across frozen v6 scenes"
 echo "  This step is resumable case-by-case."
 echo "  If interrupted, rerun this script; completed matching cases are reused."
 
 export MAVEB_ORACLE_CACHE_DIR="${MAVEB_ORACLE_CACHE_DIR:-$CAMPAIGN/.oracle-cache}"
+
+if [[ "$CAMPAIGN_ALREADY_COMPLETE" == "1" ]]; then
+  echo "  [██████████████████████████████] 100.00% | COMPLETE | 3840/3840 cases and canonical aggregates already present"
+  echo "  ✓ skipping case execution; continuing directly to v6 audit/post-processing"
+else
 
 COMPACTOR_STOP="$CAMPAIGN/.case-compactor-stop"
 rm -f "$COMPACTOR_STOP"
@@ -237,6 +294,7 @@ fi
 "$PYTHON" "$CASE_COMPACTOR" \
   --campaign-dir "$CAMPAIGN" \
   --execute
+fi
 
 fi
 
