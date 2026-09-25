@@ -598,7 +598,7 @@ def main() -> int:
     else:
         summary["paperFigureReadiness"]["T1"] = False
         summary["paperFigureReadiness"]["T2"] = False
-    if args.spatial and args.spatial.is_file():
+    if args.spatial:
         f7(args.spatial, args.output_dir, rows[0])
         summary["paperFigureReadiness"]["F7"] = True
     (args.output_dir / "summary.json").write_text(
