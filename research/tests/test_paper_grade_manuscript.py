@@ -73,23 +73,30 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         for phrase in forbidden:
             self.assertNotIn(phrase, text)
 
-    def test_reviewer_v2_claims_are_fail_closed(self):
+    def test_final_v6_claims_are_directly_integrated(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
+        self.assertNotIn("generated/reviewer_v2_results.tex", text)
+        self.assertNotIn("generated/reviewer_v2_state.tex", text)
+        self.assertNotIn(r"\ifreviewervtwoready", text)
         self.assertIn(
-            "\\IfFileExists{generated/reviewer_v2_results.tex}",
+            r"\subsection{Confirmatory breadth: useful non-zero residuals}",
             text,
         )
-        self.assertIn(
-            "results remain outside the present claims until that campaign is executed",
-            text,
-        )
+        self.assertIn("All 3,840 frozen confirmatory cases complete", text)
+        self.assertIn("Every one of the 20 scenes", text)
 
-    def test_reviewer_v2_state_controls_all_claim_surfaces(self):
+    def test_v6_claim_surfaces_are_consistent(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
-        self.assertIn(r"\IfFileExists{generated/reviewer_v2_state.tex}", text)
-        self.assertGreaterEqual(text.count(r"\ifreviewervtwoready"), 5)
-        self.assertIn("successful cases are reported as a separate stress result", text)
-        self.assertIn("Useful approximation with a measurable non-zero residual remains", text)
+        abstract = re.search(
+            r"\\begin\{abstract\}(.*?)\\end\{abstract\}",
+            text,
+            flags=re.S,
+        ).group(1)
+        self.assertIn("20 independent scenes", abstract)
+        self.assertIn("0.477", abstract)
+        self.assertIn(r"\label{tab:v6-confirmatory}", text)
+        self.assertIn("median scene-level residual effectivity is 1168.21", text)
+        self.assertIn("A separately frozen 3,840-case confirmatory study", text)
 
     def test_word_export_resolves_reviewer_state_and_inlines_results(self):
         source = (
@@ -153,7 +160,7 @@ class PaperGradeManuscriptTests(unittest.TestCase):
         self.assertNotIn("reviewer_v2_results.tex", expanded)
         self.assertNotIn(r"\ifreviewervtwoready", expanded)
 
-    def test_actual_manuscript_expands_to_open_state_without_generated_files(self):
+    def test_actual_manuscript_needs_no_generated_reviewer_state(self):
         source = MANUSCRIPT.read_text(encoding="utf-8")
         original_root = BUILDER.ROOT
         with tempfile.TemporaryDirectory() as directory:
@@ -163,17 +170,12 @@ class PaperGradeManuscriptTests(unittest.TestCase):
             finally:
                 BUILDER.ROOT = original_root
 
+        self.assertEqual(expanded, source)
         self.assertNotIn(r"\ifreviewervtwoready", expanded)
         self.assertNotIn("generated/reviewer_v2_state.tex", expanded)
         self.assertNotIn("generated/reviewer_v2_results.tex", expanded)
-        self.assertIn(
-            "targets the remaining question of useful approximation with a measurable non-zero residual",
-            expanded,
-        )
-        self.assertIn(
-            "Useful approximation with a measurable non-zero residual remains",
-            expanded,
-        )
+        self.assertIn("All 3,840 frozen confirmatory cases complete", expanded)
+        self.assertIn("The remaining limitation is certificate tightness", expanded)
 
     def test_defensive_not_cadence_is_reduced(self):
         text = MANUSCRIPT.read_text(encoding="utf-8")
