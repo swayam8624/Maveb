@@ -275,6 +275,15 @@ The proposition rests on four conditions. First, compositing is front-to-back, w
 \paragraph{Proof sketch.}
 For a single edited set, front-to-back compositing can alter a channel by no more than the channel range times the opacity mass through which edited support replaces, attenuates, or reveals unchanged radiance. This gives $C_{\mathrm{color}}A_p(E)$. Insertion and deletion are the special cases in which one edited set is empty. For a general before/after edit, we pass through the common unchanged state $U$ and apply the triangle inequality, obtaining $C_{\mathrm{color}}(A_p(E_0)+A_p(E_1))$. The result is then capped by the largest possible channel-range change, $C_{\mathrm{color}}$. The image-level certificate takes the maximum of Eq.~\ref{eq:gaussianbound} over the declared protected pixels. The supplement gives the algebra in more detail.
 
+\paragraph{Opacity-only delta refinement.}
+Equation~\ref{eq:gaussianbound} is intentionally general, but it is insensitive to how small an opacity-only edit is: the before/after opacity masses can remain large even when their difference is tiny. For paired Gaussian records whose position, projected covariance, depth order, rotation, and spherical-harmonic color are unchanged, the implementation uses the compositor's coordinate-wise Lipschitz property in effective alpha. Let $\alpha_i^0(p)$ and $\alpha_i^1(p)$ be the renderer-admitted before/after alpha values. On pixels where at least one admitted alpha changes,
+\begin{equation}
+\Delta_p \le C_{\mathrm{color}}
+\min\!\left(1,\sum_i\left|\alpha_i^0(p)-\alpha_i^1(p)\right|+0.002\right).
+\label{eq:opacitydelta}
+\end{equation}
+The $0.002$ term covers the reference compositor's two-sided early-termination discrepancy: each endpoint may omit at most $0.001$ transmittance after accumulated alpha exceeds $0.999$. The allowance is added only where an opacity delta is actually admitted, so pixels outside changed support retain a zero bound. The routine fails closed if any paired primitive changes geometry, rotation, covariance, spherical-harmonic coefficients, or camera visibility unexpectedly. V5 and v6 use this refinement for opacity residuals; their translation control continues to use Eq.~\ref{eq:gaussianbound}.
+
 \subsection{Stable temporal history}
 For stable temporal validation, let $E_c$ denote current-frame error, $E_h$ retained-history error, $E_n$ neighborhood or clamping error, and $w\in[0,1]$ the history weight. With $E_r=\max(E_h,E_n)$,
 \begin{equation}
