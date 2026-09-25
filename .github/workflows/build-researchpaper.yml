@@ -21,6 +21,9 @@ permissions:
 
 jobs:
   build:
+    # A generated-artifact push should not recursively rebuild itself. Pull-request
+    # runs are never suppressed, so the newest PR head still receives fresh checks.
+    if: ${{ github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'paper: regenerate synchronized manuscript artifacts') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +108,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Generated artifacts already match the current source."
           else
-            git commit -m "paper: regenerate synchronized manuscript artifacts [skip ci]"
+            git commit -m "paper: regenerate synchronized manuscript artifacts"
             git push
           fi
 
