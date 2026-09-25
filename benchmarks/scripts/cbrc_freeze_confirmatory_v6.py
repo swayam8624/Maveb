@@ -32,6 +32,12 @@ import cbrc_freeze_reviewer_stress as v2
 import cbrc_prepare_campaign_v2 as campaign_v2
 import cbrc_prepare_real_campaign as base
 
+EXPECTED_DATASETS = (
+    "3rscan",
+    "arkitscenes",
+    "bonn-rgbd-dynamic",
+    "graphdeco-pretrained-3dgs",
+)
 EDIT_FAMILIES = ("opacity", "translation")
 EPSILON_LEVELS_255 = (1.0, 2.0, 4.0, 8.0, 16.0, 32.0)
 RESIDUAL_SCALES = (0.0, 1.0 / 4096.0, 1.0 / 1024.0, 1.0 / 256.0)
@@ -116,16 +122,29 @@ def build(
         scenes_per_dataset=scenes_per_dataset,
     )
     selected_counts = Counter(str(record["datasetId"]) for record in records)
-    if len(selected_counts) < 2:
-        raise ValueError("confirmatory v6 requires at least two prepared datasets")
+    expected = set(EXPECTED_DATASETS)
+    observed = set(selected_counts)
+    if observed != expected:
+        raise ValueError(
+            "confirmatory v6 must preserve the four v5 dataset families exactly; "
+            + json.dumps(
+                {
+                    "expected": sorted(expected),
+                    "observed": sorted(observed),
+                    "missing": sorted(expected - observed),
+                    "unexpected": sorted(observed - expected),
+                },
+                sort_keys=True,
+            )
+        )
     incomplete = {
-        dataset: count
-        for dataset, count in selected_counts.items()
-        if count != scenes_per_dataset
+        dataset: selected_counts.get(dataset, 0)
+        for dataset in EXPECTED_DATASETS
+        if selected_counts.get(dataset, 0) != scenes_per_dataset
     }
     if incomplete:
         raise ValueError(
-            "confirmatory v6 requires five independent scenes from every selected dataset; "
+            "confirmatory v6 requires exactly five independent scenes from each v5 dataset; "
             + json.dumps(incomplete, sort_keys=True)
         )
 
@@ -308,6 +327,7 @@ def build(
             "confirmationOf": "maveb-cbrc-reviewer-opacity-delta-v5",
             "algorithmChangedFromV5": False,
             "targetScenesPerDataset": 5,
+            "expectedDatasets": list(EXPECTED_DATASETS),
             "primaryUnitOfAnalysis": "scene",
         },
         "datasetCaseCounts": dict(sorted(dataset_counts.items())),
@@ -344,6 +364,7 @@ def build(
         "residualScales": list(residual_scales),
         "severityProfiles": list(SEVERITY_PROFILES),
         "editFamilies": list(EDIT_FAMILIES),
+        "expectedDatasets": list(EXPECTED_DATASETS),
         "certificateExperiment": campaign["certificateExperiment"],
         "caseCount": len(cases),
         "frozen_inputs": frozen_inputs,
