@@ -23,6 +23,9 @@ The builder compiles the ACM author manuscript, compiles the supplement, exports
 6. The exact Figure 2 bytes must be embedded in the DOCX media package.
 7. Generated artifacts are packaged together with the manuscript sources and figure assets.
 8. Release QA includes rendered visual inspection of every manuscript PDF page, every DOCX page, and every supplement PDF page.
+9. Every citation key used by `main.tex` must resolve, and `references.bib` must contain no uncited carry-over entries from retired manuscript states.
+10. `FINAL_MANUSCRIPT_SHA256.txt` must be regenerated in the same build as the PDF, DOCX, and supplement. A binary artifact set older than the current manuscript source is not release-valid even if the older checksums still verify.
+11. The release package must include `FINAL_MANUSCRIPT_AUDIT_2026-09-25.md` as the current claim/evidence audit; the 2026-09-22 audit is historical only.
 
 ## Residual-sensitive evidence state
 
