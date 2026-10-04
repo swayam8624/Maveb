@@ -1,0 +1,54 @@
+{
+  "candidateUniverse": "intersection of official CA-1M data/val.txt and ARKitScenes raw/raw_train_val_splits.csv rows with fold=Validation",
+  "confirmatoryVideos": [
+    {
+      "rankSha256": "02016e7467d65c706fe11f542d770aaf1bbc365260e67a83bdd1a4974c7f72c5",
+      "videoId": "42898811",
+      "visitId": "434650"
+    },
+    {
+      "rankSha256": "043e1eed16b49841edd1a74424070d1e1067c213fe640c05b8c346bbc66094ea",
+      "videoId": "45261121",
+      "visitId": "466628"
+    },
+    {
+      "rankSha256": "04cf787759179d6632dca0d93caaf6490ec3c97e8ee66664c2b72052e6eabbbf",
+      "videoId": "47895341",
+      "visitId": "472297"
+    },
+    {
+      "rankSha256": "083c84953b56a70885826be9be3839621307e911446fb043f8c3ce326af01754",
+      "videoId": "47332915",
+      "visitId": "469249"
+    },
+    {
+      "rankSha256": "09a3b6cb727368798e72cd0553f0aeee2d567e6074c01ea5d79119348e69fa85",
+      "videoId": "47331971",
+      "visitId": "470821"
+    }
+  ],
+  "exposedVideosExcluded": [
+    "42444499",
+    "42444511",
+    "42444574",
+    "45261143",
+    "45261179",
+    "45261615",
+    "45662921",
+    "47115543",
+    "42897538",
+    "45261587",
+    "48018375",
+    "48018737",
+    "48458481"
+  ],
+  "publicMetadata": {
+    "arkitScenesRawSplit": "apple/ARKitScenes raw/raw_train_val_splits.csv",
+    "ca1mVal": "apple/ml-cubifyanything data/val.txt"
+  },
+  "ranking": "ascending SHA256('maveb-u6b-confirmatory-v1:' + videoId) after excluding all previously exposed Maveb uncertainty-study videos",
+  "schemaVersion": 1,
+  "selectionStatus": "frozen-before-confirmatory-asset-acquisition",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "visitConstraint": "all selected visitId values distinct; first five ranked eligible videos with distinct visits"
+}

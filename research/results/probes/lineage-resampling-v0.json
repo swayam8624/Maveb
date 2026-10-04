@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "experiment": "lineage-vs-sequential-nearest-neighbor-v0",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-falsification-probe",
+  "configuration": {
+    "seeds": 30,
+    "revisions": 20,
+    "initialPrimitives": 200,
+    "splitFraction": 0.08,
+    "mergeFraction": 0.05,
+    "pruneFraction": 0.04,
+    "jitter": 0.015,
+    "repeatedNearDuplicateStructure": true
+  },
+  "summary": [
+    {
+      "revision": 1,
+      "primitiveCountMean": 201,
+      "meanGroundTruthAncestors": 1.02487562,
+      "nearestNeighborAncestorRecallMean": 0.98590381,
+      "nearestNeighborExactAncestryRateMean": 0.973466
+    },
+    {
+      "revision": 2,
+      "primitiveCountMean": 202,
+      "meanGroundTruthAncestors": 1.04620462,
+      "nearestNeighborAncestorRecallMean": 0.9739824,
+      "nearestNeighborExactAncestryRateMean": 0.95165017
+    },
+    {
+      "revision": 3,
+      "primitiveCountMean": 203,
+      "meanGroundTruthAncestors": 1.06666667,
+      "nearestNeighborAncestorRecallMean": 0.96226054,
+      "nearestNeighborExactAncestryRateMean": 0.93054187
+    },
+    {
+      "revision": 4,
+      "primitiveCountMean": 204,
+      "meanGroundTruthAncestors": 1.08496732,
+      "nearestNeighborAncestorRecallMean": 0.95073529,
+      "nearestNeighborExactAncestryRateMean": 0.91111111
+    },
+    {
+      "revision": 5,
+      "primitiveCountMean": 205,
+      "meanGroundTruthAncestors": 1.10178862,
+      "nearestNeighborAncestorRecallMean": 0.93901084,
+      "nearestNeighborExactAncestryRateMean": 0.89268293
+    },
+    {
+      "revision": 20,
+      "primitiveCountMean": 239,
+      "meanGroundTruthAncestors": 1.26039052,
+      "nearestNeighborAncestorRecallMean": 0.84536727,
+      "nearestNeighborExactAncestryRateMean": 0.74574616
+    }
+  ],
+  "terminalRevision": {
+    "nearestNeighborAncestorRecallMean": 0.84536727,
+    "nearestNeighborExactAncestryRateMean": 0.74574616,
+    "primitiveCountMean": 239,
+    "meanGroundTruthAncestors": 1.26039052
+  },
+  "decision": "PROMOTE S4 BENCHMARKING: sequential nearest-neighbor ancestry degrades under repeated resampling; explicit lineage is not yet a valid method claim because the synthetic oracle has privileged split/merge metadata.",
+  "next": [
+    "add covariance-aware matching",
+    "add ICP/local rigid alignment",
+    "add optimal-transport/set matching",
+    "add topology descriptors",
+    "evaluate a downstream edit/change task rather than identity alone"
+  ]
+}

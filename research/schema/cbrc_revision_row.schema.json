@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maveb.local/schema/cbrc-revision-row-v1.json",
+  "title": "MAVEB CBRC evaluated revision row",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "scene_id",
+    "revision_id",
+    "git_sha",
+    "method",
+    "execution_mode",
+    "graph_scope",
+    "edit_class",
+    "changed_fraction",
+    "graph_version",
+    "bound_version",
+    "hard_closure_nodes",
+    "repair_cone_nodes",
+    "total_nodes",
+    "fallback_full",
+    "stable",
+    "planner_work",
+    "full_work",
+    "qois",
+    "candidateDiagnostics"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "scene_id": {"type": "string", "minLength": 1},
+    "revision_id": {"type": "string", "minLength": 1},
+    "git_sha": {"type": "string", "minLength": 7},
+    "method": {"const": "CBRC"},
+    "execution_mode": {"type": "string"},
+    "graph_scope": {"type": "string"},
+    "selection_mode": {"type": "string"},
+    "edit_class": {"type": "string"},
+    "coupling_regime": {"type": "string"},
+    "changed_fraction": {"type": "number", "minimum": 0, "maximum": 1},
+    "graph_version": {"type": "string"},
+    "bound_version": {"type": "string"},
+    "hard_closure_nodes": {"type": "integer", "minimum": 0},
+    "repair_cone_nodes": {"type": "integer", "minimum": 0},
+    "total_nodes": {"type": "integer", "minimum": 1},
+    "fallback_full": {"type": "boolean"},
+    "stable": {"type": "boolean"},
+    "planner_work": {"type": "number", "minimum": 0},
+    "full_work": {"type": "number", "exclusiveMinimum": 0},
+    "work_cost_model_version": {"type": "string"},
+    "work_cost_unit": {"type": "string"},
+    "qois": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["epsilon", "certified_bound", "measured_full_reference_error"],
+        "properties": {
+          "epsilon": {"type": "number", "minimum": 0},
+          "certified_bound": {"type": "number", "minimum": 0},
+          "measured_full_reference_error": {"type": "number", "minimum": 0}
+        }
+      }
+    },
+    "work_ledger": {"type": "object"},
+    "spatial_evidence": {"type": "string"},
+    "candidateDiagnostics": {"type": "object"}
+  }
+}

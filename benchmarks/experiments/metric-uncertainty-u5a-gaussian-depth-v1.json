@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u5a-gaussian-depth-v1",
+  "stage": "U5a-exploratory-uncertainty-shaped-gaussian-representation",
+  "status": "frozen-before-u5a-gaussian-outcomes",
+  "frozen": true,
+  "claimType": "exploratory representation study on already-exposed U3b rooms with previously unused deterministic target frames; not confirmatory efficacy evidence",
+  "motivation": "U3/U3b showed that calibrated uncertainty predicts metric sensor error but does not robustly improve TSDF geometry through scalar weighting. U3c showed median scalar-fusion leverage is zero in every room. U4a showed hard uncertainty support gating has topology leverage but over-prunes valid geometry, worsening Chamfer in all five rooms. U5a therefore preserves all sampled observations and moves calibrated uncertainty into the continuous Gaussian covariance of each surface primitive rather than into TSDF averaging or deletion.",
+  "parentEvidence": {
+    "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+    "u3cSummarySha256": "652b2df1ae3811f23252af4469089ab4a2bd56ca12cdbea8e864b3d149505110",
+    "u4aGeometryResultSha256": "e9c12349c08ab6d90f57cc02f61c367ad8a33ed54a38879aba8258684ff0cd49",
+    "u4aEvidenceCommit": "776a77a95d8917fdf477e94c28cbca0ce61fe537",
+    "u1bModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "u3bPreparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3"
+  },
+  "scenes": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "representation": {
+    "name": "uncertainty-shaped Gaussian surfels",
+    "sourceViews": "reuse the exact eight frozen U3b source timestamps per scene",
+    "sourceDepth": "CA-1M onboard ARKit wide/depth in metres",
+    "sourcePose": "CA-1M FARO-registered camera-to-world pose",
+    "sourceConfidence": "exact prepared ARKitScenes uint8 confidence sidecar; shuffled control uses the exact frozen shuffled sidecar only for sigma",
+    "sampling": {
+      "pixelStride": 4,
+      "pixelIndices": "x=0,4,8,... and y=0,4,8,...",
+      "rationale": "bounded deterministic CPU reference workload; each sampled Gaussian represents one 4x4 source-pixel cell"
+    },
+    "center": "back-project the sampled metric depth at its integer source pixel and transform with the frozen camera-to-world pose",
+    "covariancePropagation": {
+      "measurementVariables": "[u_pixels, v_pixels, depth_metres]",
+      "pixelStandardDeviation": "pixelStride / sqrt(12), modeling a uniform source-cell footprint independently in u and v",
+      "depthStandardDeviation": "method-specific frozen sigma",
+      "cameraBackprojection": "p=[(u-cx)z/fx,(v-cy)z/fy,z]",
+      "jacobian": "J = dp/d[u,v,z] evaluated at the sampled observation",
+      "cameraCovariance": "J diag(sigma_u^2,sigma_v^2,sigma_z^2) J^T",
+      "worldCovariance": "R_cameraToWorld cameraCovariance R_cameraToWorld^T",
+      "gaussianEncoding": "symmetric eigendecomposition of worldCovariance; eigenvalues become squared scales and a deterministic right-handed eigenbasis becomes GraphDECO wxyz rotation"
+    },
+    "opacity": {
+      "value": 0.99,
+      "logit": 4.59511985013459,
+      "rationale": "fixed across all methods so only covariance changes; the reference rasterizer's existing alpha cutoff and 3-sigma footprint remain unchanged"
+    },
+    "color": "constant zero-order SH payload; color is not evaluated",
+    "allSampledObservationsPreserved": true,
+    "noTSDFConversion": true,
+    "noOptimization": true
+  },
+  "frozenPredictiveModel": {
+    "a": 0.010634156727771725,
+    "b": 0.004398048551220112,
+    "k": 5.990146384791633,
+    "depthOnlySigma": "a + b*z^2",
+    "calibratedSigma": "(a + b*z^2)*(1+k*(1-c))",
+    "confidenceNormalization": "confidenceU8/255",
+    "sigmaClipping": "none"
+  },
+  "methods": [
+    {
+      "id": "depth-only-covariance",
+      "role": "control",
+      "sigmaZ": "depthOnlySigma"
+    },
+    {
+      "id": "calibrated-covariance",
+      "role": "exploratory candidate",
+      "sigmaZ": "calibratedSigma with intact confidence"
+    },
+    {
+      "id": "shuffled-calibrated-covariance",
+      "role": "association control",
+      "sigmaZ": "calibratedSigma with frozen shuffled confidence while centers remain unchanged"
+    }
+  ],
+  "targetViewSelection": {
+    "purpose": "representation-native metric geometry evaluation on views not used to seed Gaussians",
+    "completeFrameDefinition": "timestamp has CA-1M wide/depth, gt/depth, and gt/RT",
+    "exclude": "all eight frozen U3b source timestamps",
+    "ordering": "ascending timestamp over remaining complete frames",
+    "count": 8,
+    "indexRule": "for i in 0..7 choose floor((2*i+1)*N/16) from N eligible frames; require N>=8 and eight unique indices",
+    "noReplacement": true,
+    "faroTarget": "CA-1M gt/depth at each selected target timestamp",
+    "faroInvalid": "zero/non-finite depth ignored exactly as independent target invalidity",
+    "targetIntrinsicsAndPose": "use the target frame's released CA-1M intrinsics and FARO-registered pose"
+  },
+  "renderer": {
+    "implementation": "Maveb gaussian::ReferenceRasterizer CPU correctness oracle",
+    "depthDefinition": "existing first-contributing Gaussian center depth after front-to-back sort",
+    "background": [0.0, 0.0, 0.0],
+    "noRendererParameterTuning": true
+  },
+  "evaluation": {
+    "unit": "scene; each scene summary aggregates its eight deterministic target views",
+    "perTargetView": [
+      "FARO-valid pixel count",
+      "rendered finite depth count on FARO-valid pixels",
+      "coverage fraction",
+      "absolute depth error mean",
+      "absolute depth error median",
+      "absolute depth error p95",
+      "fraction of FARO-valid pixels rendered within 0.05m",
+      "fraction of FARO-valid pixels rendered within 0.10m"
+    ],
+    "scenePrimaryDescriptiveMetric": "mean across eight target views of fraction of FARO-valid pixels rendered within 0.05m",
+    "secondary": "mean target-view coverage and overlap MAE/median/p95",
+    "candidateVsDepthOnly": "candidate scene primary metric minus depth-only scene primary metric",
+    "shuffledDegradation": "candidate scene primary metric minus shuffled scene primary metric",
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "warning": "all intervals are descriptive because room identities were already exposed by U3b/U3c/U4a"
+  },
+  "mechanismInterpretation": {
+    "promising": "calibrated covariance improves held-out FARO depth correctness in multiple rooms relative to depth-only and shuffled covariance without suppressing observations, motivating a fresh untouched U5b confirmation",
+    "noEffect": "depth-only, calibrated, and shuffled covariance are nearly identical, implying the current rasterized Gaussian footprint has insufficient sensitivity to externally calibrated metric uncertainty",
+    "worseCoverageOrError": "calibrated covariance enlarges uncertain splats in a way that increases foreground leakage/occlusion or hurts metric depth; do not tune sigma clipping on these rooms and do not open U5b for this exact rule",
+    "shuffledNotWorse": "do not attribute any apparent gain to calibrated confidence association"
+  },
+  "confirmatoryBoundary": {
+    "u5aCanEstablishEfficacy": false,
+    "futureU5bRequirement": "only if U5a is mechanistically promising, freeze a new untouched-room set and all representation/evaluation constants before asset exposure",
+    "u3AndU3bRemainNegative": true,
+    "u4aRemainsNegative": true
+  },
+  "literaturePositioning": {
+    "note": "Recent sparse-view Gaussian work increasingly introduces uncertainty, depth, visibility, or Bayesian structure into Gaussian reconstruction. U5a is deliberately narrower: it propagates an externally calibrated consumer-depth error model into explicit Gaussian covariance, preserves every sampled observation, performs no image-driven optimization, and evaluates metric held-out depth against independent FARO targets."
+  }
+}

@@ -1,0 +1,15 @@
+diff --git a/src/fastgltf.cpp b/src/fastgltf.cpp
+index ddddb31..aether01 100644
+--- a/src/fastgltf.cpp
++++ b/src/fastgltf.cpp
+@@ -3629,8 +3629,8 @@ Error Parser::parseNodes(simdjson::dom::array& array, Asset& asset) {
+ 
+         auto weightsError = getJsonArray(nodeObject, "weights", &array);
+         if (weightsError != Error::MissingField) {
+-            if (weightsError != Error::None) {
+-	            node.weights = FASTGLTF_CONSTRUCT_PMR_RESOURCE(decltype(node.weights), resourceAllocator.get(), 0);
++            if (weightsError == Error::None) {
++                node.weights = FASTGLTF_CONSTRUCT_PMR_RESOURCE(decltype(node.weights), resourceAllocator.get(), 0);
+                 node.weights.reserve(array.size());
+                 for (auto weightValue : array) {
+                     double val;

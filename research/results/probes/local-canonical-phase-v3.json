@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "experiment": "local-canonical-phase-v3",
+  "executedAt": "2026-09-20",
+  "executionNote": "Executed in the analysis sandbox using deterministic NumPy/SciPy code. This result is exploratory and must be regenerated from a clean committed standalone implementation before citation.",
+  "environment": {
+    "python": "3.13.5",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "platform": "Linux x86_64"
+  },
+  "configuration": {
+    "seeds": 12,
+    "pointsPerNeighborhood": 80,
+    "gridResolution": 24,
+    "localWindow": "compact radial polynomial",
+    "splitEpsilons": [
+      0.006,
+      0.012,
+      0.02,
+      0.035
+    ],
+    "mergeFractions": [
+      0.1,
+      0.2,
+      0.35
+    ],
+    "momentNullRmsDisplacements": [
+      0.005,
+      0.01,
+      0.02,
+      0.04,
+      0.07
+    ]
+  },
+  "momentNullSummary": {
+    "density": {
+      "splitMedian": 0.007058135065171955,
+      "mergeMedian": 0.03609760178957733,
+      "editMedian": 0.0737725878392621,
+      "editVsSplitAuc": 0.9461805555555556,
+      "editVsMergeAuc": 0.7273148148148149
+    },
+    "phase": {
+      "splitMedian": 0.010494093666522694,
+      "mergeMedian": 0.07871850279183396,
+      "editMedian": 0.15056156273502863,
+      "editVsSplitAuc": 0.95,
+      "editVsMergeAuc": 0.6967592592592593
+    },
+    "amplitude": {
+      "splitMedian": 0.00035187908251475787,
+      "mergeMedian": 0.0009294810149247198,
+      "editMedian": 0.0017061558169681472,
+      "editVsSplitAuc": 0.8239583333333333,
+      "editVsMergeAuc": 0.7046296296296296
+    },
+    "moments": {
+      "splitMedian": 0.00015753521130712828,
+      "mergeMedian": 0.0003233782548145715,
+      "editMedian": 0.0002333755848194397,
+      "editVsSplitAuc": 0.578125,
+      "editVsMergeAuc": 0.4726851851851852
+    },
+    "pairHistogram": {
+      "splitMedian": 0.009638920200055117,
+      "mergeMedian": 0.010303800418982895,
+      "editMedian": 0.013417944609866835,
+      "editVsSplitAuc": 0.6885416666666667,
+      "editVsMergeAuc": 0.6819444444444445
+    }
+  },
+  "additionalLocalDeformationSummary": {
+    "density": {
+      "bendVsSplitAuc": 0.98125,
+      "bendVsMergeAuc": 0.850925925925926,
+      "twistVsSplitAuc": 0.9409722222222222,
+      "twistVsMergeAuc": 0.7627314814814815
+    },
+    "phase": {
+      "bendVsSplitAuc": 0.9826388888888888,
+      "bendVsMergeAuc": 0.7754629629629629,
+      "twistVsSplitAuc": 0.9678819444444444,
+      "twistVsMergeAuc": 0.7390046296296297
+    }
+  },
+  "decision": "DEMOTE PHASE: canonical local phase remains sensitive to geometric deformation but does not outperform normalized spatial-density change under hard merge-resampling. Keep phase only as a possible analytic certificate ingredient, not the primary empirical novelty.",
+  "interpretation": [
+    "The moment-null construction successfully defeats centroid/covariance moments: edit-vs-merge AUC falls to 0.473.",
+    "Canonical phase remains sensitive to these deformations, but normalized density L2 is at least as strong and is simpler.",
+    "Merge-style resampling is the main failure mode for phase stability.",
+    "A phase-centered paper direction is not justified. Future work must derive a property that density distance cannot provide, such as an explicit displacement bound or local shift estimate."
+  ]
+}

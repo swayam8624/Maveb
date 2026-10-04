@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "experiment": "atlas-uv-churn-v0",
+  "executedAt": "2026-09-20",
+  "status": "structural-synthetic-probe",
+  "atlasSize": 8192,
+  "gutterPixels": 4,
+  "headlineCases": [
+    {
+      "triangles": 9999,
+      "edit": "insert one at front",
+      "oldLayout": {
+        "columns": 100,
+        "rows": 100,
+        "cell": 81
+      },
+      "unchangedUvChurnFraction": 1
+    },
+    {
+      "triangles": 9999,
+      "edit": "insert one at middle",
+      "oldLayout": {
+        "columns": 100,
+        "rows": 100,
+        "cell": 81
+      },
+      "unchangedUvChurnFraction": 0.5000500050005
+    },
+    {
+      "triangles": 10000,
+      "edit": "append one",
+      "oldLayout": {
+        "columns": 100,
+        "rows": 100,
+        "cell": 81
+      },
+      "newLayout": {
+        "columns": 101,
+        "rows": 100,
+        "cell": 81
+      },
+      "unchangedUvChurnFraction": 0.99
+    },
+    {
+      "triangles": 10001,
+      "edit": "remove one near tail",
+      "oldLayout": {
+        "columns": 101,
+        "rows": 100,
+        "cell": 81
+      },
+      "newLayout": {
+        "columns": 100,
+        "rows": 100,
+        "cell": 81
+      },
+      "unchangedUvChurnFraction": 0.99
+    }
+  ],
+  "interpretation": [
+    "Ordinal tile assignment makes UV stability depend on triangle ordering, so local insertion/removal can renumber unrelated triangles.",
+    "ceil(sqrt(triangleCount)) creates global layout threshold events where a one-triangle count change alters the column count and tile mapping for almost the entire mesh.",
+    "Therefore a dependency-local reconstruction pipeline cannot reuse unchanged texture atlas state exactly while retaining the current ordinal square-grid layout.",
+    "A stable patch/page atlas addressing scheme is required as infrastructure before texture repair can be considered local."
+  ],
+  "decision": "PROMOTE STABLE TEXTURE ADDRESSING AS A REQUIRED SUBSYSTEM FOR HETEROGENEOUS MINIMAL-WORK REPAIR; DO NOT CLAIM IT AS STANDALONE NOVELTY."
+}

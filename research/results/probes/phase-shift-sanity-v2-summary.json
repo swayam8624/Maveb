@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-shift-sanity-v2",
+  "executedAt": "2026-09-20",
+  "executionNote": "Executed in analysis sandbox with the same deterministic numerical logic committed in research/probes/phase_shift_sanity_v2.py; clean-checkout reproduction remains pending.",
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux x86_64",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "configuration": {
+    "seeds": 20,
+    "points": 72,
+    "grid": 32,
+    "translations": [
+      0.005,
+      0.01,
+      0.02,
+      0.04,
+      0.06,
+      0.08
+    ],
+    "kmax": 8
+  },
+  "record_count": 120,
+  "summary": {
+    "translation_error_median": 4.270065236692055e-12,
+    "translation_error_max": 2.066012243300067e-11,
+    "normalized_amplitude_drift_median": 0.000007951337220306277,
+    "phase_model_rmse_median": 2.5759966084309805e-11,
+    "by_magnitude": {
+      "0.005": {
+        "translation_error_median": 1.2580285893185663e-12,
+        "relative_error_median": 2.516057178133921e-10,
+        "normalized_amplitude_drift_median": 0.000002157128617995189,
+        "phase_model_rmse_median": 7.2209769229704514e-12
+      },
+      "0.01": {
+        "translation_error_median": 2.428298180505672e-12,
+        "relative_error_median": 2.428298180262842e-10,
+        "normalized_amplitude_drift_median": 0.0000041079627008453915,
+        "phase_model_rmse_median": 1.2582495201930994e-11
+      },
+      "0.02": {
+        "translation_error_median": 4.617342888167225e-12,
+        "relative_error_median": 2.308671443968179e-10,
+        "normalized_amplitude_drift_median": 0.000007517319211240296,
+        "phase_model_rmse_median": 2.565516102567008e-11
+      },
+      "0.04": {
+        "translation_error_median": 7.593261291293063e-12,
+        "relative_error_median": 1.8983153227758076e-10,
+        "normalized_amplitude_drift_median": 0.000011956575433079504,
+        "phase_model_rmse_median": 4.295739435412249e-11
+      },
+      "0.06": {
+        "translation_error_median": 6.951175020318463e-12,
+        "relative_error_median": 1.1585291700337685e-10,
+        "normalized_amplitude_drift_median": 0.000013557693651196441,
+        "phase_model_rmse_median": 4.508365210001048e-11
+      },
+      "0.08": {
+        "translation_error_median": 6.008278833467621e-12,
+        "relative_error_median": 7.510348541740647e-11,
+        "normalized_amplitude_drift_median": 0.000010935284398148114,
+        "phase_model_rmse_median": 3.379657327082984e-11
+      }
+    }
+  },
+  "decision": "MATHEMATICAL SANITY PASS: canonical center-field phase recovers restricted global translations; proceed to local-window and resampling attacks.",
+  "interpretation": [
+    "This is a numerical sanity check of the Fourier shift theorem, not novelty.",
+    "Within the low-frequency/no-wrap regime, phase gives an explicit linear displacement relation while normalized amplitude is essentially unchanged.",
+    "This supports deriving local displacement bounds only after a windowed/local formulation is proven stable under split/merge and sampling changes."
+  ]
+}

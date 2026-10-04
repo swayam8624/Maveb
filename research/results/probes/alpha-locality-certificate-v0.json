@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "experiment": "alpha-locality-certificate-v0",
+  "executedAt": "2026-09-20",
+  "executionNote": "Executed in the analysis sandbox with the same deterministic randomized compositing logic committed in research/probes/alpha_locality_certificate_v0.py.",
+  "environment": {
+    "python": "3.13.5",
+    "numpy": "2.3.5",
+    "platform": "Linux x86_64"
+  },
+  "configuration": {
+    "seed": 42,
+    "trials": 100000
+  },
+  "violations": 0,
+  "summary": {
+    "actual_error_median": 0.00128523,
+    "actual_error_p95": 0.08282237,
+    "bound_median": 0.016474,
+    "bound_p95": 0.757017,
+    "tightness_ratio_median": 0.087922,
+    "tightness_ratio_p95": 0.283572,
+    "tightness_ratio_max": 0.88904,
+    "thresholds": {
+      "0.0001": {
+        "count": 474,
+        "maximum_actual_error": 0.00005519321900830654,
+        "median_tightness_ratio": 0.11854749556010788,
+        "p95_tightness_ratio": 0.42229491447497425
+      },
+      "0.001": {
+        "count": 18059,
+        "maximum_actual_error": 0.0006019875199845259,
+        "median_tightness_ratio": 0.0901580173334062,
+        "p95_tightness_ratio": 0.30134648854056906
+      },
+      "0.01": {
+        "count": 44371,
+        "maximum_actual_error": 0.005809613102900624,
+        "median_tightness_ratio": 0.08736850586204044,
+        "p95_tightness_ratio": 0.29097176569643046
+      },
+      "0.05": {
+        "count": 62856,
+        "maximum_actual_error": 0.028031904732227803,
+        "median_tightness_ratio": 0.08733385770152778,
+        "p95_tightness_ratio": 0.28731190703885057
+      },
+      "0.1": {
+        "count": 70826,
+        "maximum_actual_error": 0.0602757939238066,
+        "median_tightness_ratio": 0.08705391375444088,
+        "p95_tightness_ratio": 0.28660319697225883
+      }
+    }
+  },
+  "decision": "SURVIVES CHEAP FALSIFICATION: no randomized compositing violation. Next attack must use MAVEB's exact projected-Gaussian alpha path and real edit masks."
+}

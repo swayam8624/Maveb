@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-residual-heldout-bound-v6",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-analysis-sandbox-probe",
+  "train": {
+    "shapes": [
+      "blob",
+      "ribbon"
+    ],
+    "seeds": "0-9",
+    "cases": 200
+  },
+  "test": {
+    "shapes": [
+      "corner",
+      "disc"
+    ],
+    "seeds": "10-19",
+    "cases": 200
+  },
+  "results": {
+    "0.95": {
+      "alpha": 327.3364375379094,
+      "heldOutCoverage": 0.96,
+      "medianSlack": 0.010154744787076623,
+      "p05Slack": 0.00008829908746331062
+    },
+    "0.975": {
+      "alpha": 396.47556616888266,
+      "heldOutCoverage": 0.98,
+      "medianSlack": 0.01340564428390955,
+      "p05Slack": 0.00012307342395664512
+    },
+    "0.99": {
+      "alpha": 477.0302173917617,
+      "heldOutCoverage": 1,
+      "medianSlack": 0.017059082976494076,
+      "p05Slack": 0.00018853051418987537
+    },
+    "1.0": {
+      "alpha": 677.1072926335386,
+      "heldOutCoverage": 1,
+      "medianSlack": 0.02648639718300109,
+      "p05Slack": 0.00026772355012913635
+    }
+  },
+  "decision": "SURVIVES COVERAGE TEST BUT BOUND IS LOOSE: held-out conservative coverage is achievable in this synthetic split, but the alpha factor is too large to call the bound practically useful without substantial tightening.",
+  "interpretation": [
+    "A 99th-percentile train calibration covered 100% of the held-out corner/disc cases in this split.",
+    "The resulting bound is conservative enough to have large slack, so coverage alone is not sufficient.",
+    "Next work must seek a tighter bound using explicit window leakage/support terms, spectral conditioning, and local amplitude/mode selection rather than a single empirical slope."
+  ]
+}

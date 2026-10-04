@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u6a-opacity-visibility-v1",
+  "stage": "U6a-exploratory-result-evidence",
+  "status": "frozen-first-u6a-exploratory-result",
+  "claimType": "exploratory representation result on already-exposed U5a rooms and target views; not confirmatory efficacy evidence",
+  "sourceCommit": "87e9ae32bc5f43228a8ff1ec8e9f2ee85b1fc32c",
+  "protocolSha256": "4d4cd37a7b58073fa4dda209b2432d599247032cfca42ba562d5502b89398039",
+  "preparationSha256": "c3898a409d7d09d023cd5422ea057c80928381960f4d4d56c11f53326eb07c82",
+  "resultSha256": "2a57d202399f8f763e3e1dde205965fa7f6baba5fa6a1bd13adf5ac80eb2fa9a",
+  "revealLogSha256": "f8e54d9ea4d90a280a719dca2e14ede5aa883d3e0f1eb8b3034dbaf48b6f4a8c",
+  "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+  "u5cAuditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409",
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "executionIntegrity": {
+    "newRenderCount": 80,
+    "reusedBaselineRenderCount": 40,
+    "allNewRenderHashesVerified": true,
+    "baselineReuseVerified": true,
+    "resultNonOverwriteVerified": true,
+    "preparationUnchangedAfterReveal": true
+  },
+  "scenes": {
+    "ca1m-48458481": {
+      "baseline": {
+        "within5cm": 0.12765336329834734,
+        "within10cm": 0.14257679732768924,
+        "coverage": 0.9998164653817521,
+        "maeMetres": 1.228786159125065,
+        "p95Metres": 2.0409326255321503
+      },
+      "candidate": {
+        "within5cm": 0.133728539606268,
+        "within10cm": 0.1491626815325938,
+        "coverage": 0.9974198088634123,
+        "maeMetres": 1.2186499546717353,
+        "p95Metres": 2.039731800556183
+      },
+      "shuffled": {
+        "within5cm": 0.12855936094633916,
+        "within10cm": 0.14294493659690363,
+        "coverage": 0.9997873841922409,
+        "maeMetres": 1.2282854299269108,
+        "p95Metres": 2.0401432663202286
+      },
+      "candidateMinusBaseline": 0.006075176307920649,
+      "candidateMinusShuffled": 0.00516917865992883
+    },
+    "ca1m-48018737": {
+      "baseline": {
+        "within5cm": 0.5099713641468355,
+        "within10cm": 0.5303310154131865,
+        "coverage": 0.5606992801048234,
+        "maeMetres": 0.034847864420404856,
+        "p95Metres": 0.09510257840156555
+      },
+      "candidate": {
+        "within5cm": 0.5110967313607807,
+        "within10cm": 0.5310682203742395,
+        "coverage": 0.5594673273915488,
+        "maeMetres": 0.033672195690364684,
+        "p95Metres": 0.08795810739199321
+      },
+      "shuffled": {
+        "within5cm": 0.5101744167650002,
+        "within10cm": 0.5302798667598523,
+        "coverage": 0.5605757108122192,
+        "maeMetres": 0.03468378541764996,
+        "p95Metres": 0.09470873574415843
+      },
+      "candidateMinusBaseline": 0.0011253672139451831,
+      "candidateMinusShuffled": 0.0009223145957805157
+    },
+    "ca1m-45261587": {
+      "baseline": {
+        "within5cm": 0.30381904159961126,
+        "within10cm": 0.3447340590910253,
+        "coverage": 0.4736584678741101,
+        "maeMetres": 0.1663253930154708,
+        "p95Metres": 0.44621576368808746
+      },
+      "candidate": {
+        "within5cm": 0.30365536246522445,
+        "within10cm": 0.3430789789163518,
+        "coverage": 0.4680774815566029,
+        "maeMetres": 0.16500706457422484,
+        "p95Metres": 0.44470110535621643
+      },
+      "shuffled": {
+        "within5cm": 0.303724548850708,
+        "within10cm": 0.3445536296764101,
+        "coverage": 0.4727448262696732,
+        "maeMetres": 0.1662860089889676,
+        "p95Metres": 0.4458305835723877
+      },
+      "candidateMinusBaseline": -0.00016367913438680715,
+      "candidateMinusShuffled": -0.00006918638548353284
+    },
+    "ca1m-42897538": {
+      "baseline": {
+        "within5cm": 0.2192256015442358,
+        "within10cm": 0.2519355040303896,
+        "coverage": 0.6265416707260815,
+        "maeMetres": 0.6885806545903462,
+        "p95Metres": 1.6937462538480759
+      },
+      "candidate": {
+        "within5cm": 0.2995277168416293,
+        "within10cm": 0.34361816661873507,
+        "coverage": 0.596665387807168,
+        "maeMetres": 0.49207743681141786,
+        "p95Metres": 1.2687582075595856
+      },
+      "shuffled": {
+        "within5cm": 0.21928704539286437,
+        "within10cm": 0.25039180013614015,
+        "coverage": 0.6237003567348206,
+        "maeMetres": 0.6867768880400099,
+        "p95Metres": 1.6398714184761047
+      },
+      "candidateMinusBaseline": 0.08030211529739353,
+      "candidateMinusShuffled": 0.08024067144876496
+    },
+    "ca1m-48018375": {
+      "baseline": {
+        "within5cm": 0.056632437973173425,
+        "within10cm": 0.06498687706917076,
+        "coverage": 0.7700122485033787,
+        "maeMetres": 1.0023789327059154,
+        "p95Metres": 2.166870728135109
+      },
+      "candidate": {
+        "within5cm": 0.0606018393494653,
+        "within10cm": 0.06789134648557486,
+        "coverage": 0.7628907692479763,
+        "maeMetres": 0.9917773922601557,
+        "p95Metres": 2.1447517424821854
+      },
+      "shuffled": {
+        "within5cm": 0.056377928681317614,
+        "within10cm": 0.06471521486279935,
+        "coverage": 0.768968613130442,
+        "maeMetres": 1.0013102870821335,
+        "p95Metres": 2.166077148169279
+      },
+      "candidateMinusBaseline": 0.003969401376291877,
+      "candidateMinusShuffled": 0.004223910668147687
+    }
+  },
+  "crossSceneDescriptive": {
+    "candidateMinusBaseline": {
+      "sceneValues": [0.006075176307920649, 0.0011253672139451831, -0.00016367913438680715, 0.08030211529739353, 0.003969401376291877],
+      "median": 0.003969401376291877,
+      "lower95": -0.00016367913438680715,
+      "upper95": 0.08030211529739353,
+      "candidateBetterSceneCount": 4
+    },
+    "candidateMinusShuffled": {
+      "sceneValues": [0.00516917865992883, 0.0009223145957805157, -0.00006918638548353284, 0.08024067144876496, 0.004223910668147687],
+      "median": 0.004223910668147687,
+      "lower95": -0.00006918638548353284,
+      "upper95": 0.08024067144876496,
+      "candidateBetterSceneCount": 4
+    },
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "interpretation": {
+    "summary": "Uncertainty-modulated opacity is the first downstream intervention in this study to be directionally better than both the fixed-opacity baseline and shuffled-confidence control in four of five exposed rooms.",
+    "heterogeneity": "The median gain is modest and the descriptive interval crosses zero because ca1m-45261587 is slightly negative and ca1m-42897538 contributes a large positive effect.",
+    "mechanism": "The strongest room improves metric correctness while reducing coverage modestly and substantially lowering MAE/p95, consistent with uncertainty-dependent visibility suppressing incorrect frontmost splats rather than simply increasing support.",
+    "confirmatoryDecision": "Mechanistically promising enough to justify a separately frozen untouched U6b confirmatory study. U6a itself cannot establish efficacy."
+  },
+  "claimBoundary": "Exploratory only on already-exposed U5a rooms and targets. Do not tune opacity exponent, floor, clipping, thresholds, scene selection, or evaluation after this result. Any efficacy claim requires an untouched U6b protocol and room set frozen before asset exposure."
+}

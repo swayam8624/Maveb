@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "stage": "U6b-confirmatory-acquisition-plan-freeze",
+  "status": "clean-before-u6b-acquisition",
+  "planSha256": "dbb0e4ccc9214c103cd3ba115f9bbbcbd088922b8293a260100759b3a390c5ed",
+  "planCreatedAtUtc": "2026-08-20T13:47:05.170970+00:00",
+  "splitSha256": "d22366afd77d3407e53d5152d313522d559ee57e9ec995d96102c299dc55f5ff",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "publicMetadataEvidenceSha256": "bc855db7fa6666dcab7997434949fd8d89027d3b9c3fdbda8a30896e80d0742b",
+  "upstreamMetadata": {
+    "arkitScenesRawSplitGitBlobSha": "2b347453aff47f4bb1dc79c71a8ed9e25e2bb5f3",
+    "ca1mValidationListGitBlobSha": "5b155412995a07a1413f1539b0f0eda95d20959c"
+  },
+  "networkAccessPerformedByPlan": false,
+  "datasetMutationPerformedByPlan": false,
+  "localArkitMetadataCsvRequired": false,
+  "canExecuteAcquisition": true,
+  "preexistingVideoIds": [],
+  "confirmatoryVideos": [
+    {
+      "videoId": "42898811",
+      "visitId": "434650",
+      "preexisting": false,
+      "ca1mArchivePresent": false,
+      "ca1mPartialPresent": false,
+      "confidencePngCount": 0,
+      "confidenceZipPresent": false,
+      "lowresDepthPngCount": 0,
+      "lowresDepthZipPresent": false
+    },
+    {
+      "videoId": "45261121",
+      "visitId": "466628",
+      "preexisting": false,
+      "ca1mArchivePresent": false,
+      "ca1mPartialPresent": false,
+      "confidencePngCount": 0,
+      "confidenceZipPresent": false,
+      "lowresDepthPngCount": 0,
+      "lowresDepthZipPresent": false
+    },
+    {
+      "videoId": "47895341",
+      "visitId": "472297",
+      "preexisting": false,
+      "ca1mArchivePresent": false,
+      "ca1mPartialPresent": false,
+      "confidencePngCount": 0,
+      "confidenceZipPresent": false,
+      "lowresDepthPngCount": 0,
+      "lowresDepthZipPresent": false
+    },
+    {
+      "videoId": "47332915",
+      "visitId": "469249",
+      "preexisting": false,
+      "ca1mArchivePresent": false,
+      "ca1mPartialPresent": false,
+      "confidencePngCount": 0,
+      "confidenceZipPresent": false,
+      "lowresDepthPngCount": 0,
+      "lowresDepthZipPresent": false
+    },
+    {
+      "videoId": "47331971",
+      "visitId": "470821",
+      "preexisting": false,
+      "ca1mArchivePresent": false,
+      "ca1mPartialPresent": false,
+      "confidencePngCount": 0,
+      "confidenceZipPresent": false,
+      "lowresDepthPngCount": 0,
+      "lowresDepthZipPresent": false
+    }
+  ],
+  "claimBoundary": "This artifact freezes only the prospective local absence of all five selected U6b confirmatory assets before acquisition. It contains no U6b reconstruction, rendering, FARO metric, or confirmatory outcome. Any later acquisition must bind this exact plan SHA and must not replace or drop selected rooms."
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "experiment": "world-archive-delta-accounting-v0",
+  "executedAt": "2026-09-20",
+  "status": "mechanical-accounting-probe",
+  "model": {
+    "entities": 1000000,
+    "revisions": 200,
+    "entityBytes": 192,
+    "deltaOverheadBytes": 32
+  },
+  "headlineCases": [
+    {
+      "changedFraction": 0.01,
+      "checkpointEvery": 25,
+      "checkpoints": 8,
+      "fullSnapshotEntityUnits": 200000000,
+      "checkpointDeltaEntityUnits": 9920000,
+      "entityUnitRatio": 0.0496,
+      "estimatedFullBytes": 38400000000,
+      "estimatedCheckpointDeltaBytes": 1966080000,
+      "estimatedByteRatio": 0.0512
+    },
+    {
+      "changedFraction": 0.01,
+      "checkpointEvery": 50,
+      "checkpoints": 4,
+      "fullSnapshotEntityUnits": 200000000,
+      "checkpointDeltaEntityUnits": 5960000,
+      "entityUnitRatio": 0.0298,
+      "estimatedFullBytes": 38400000000,
+      "estimatedCheckpointDeltaBytes": 1207040000,
+      "estimatedByteRatio": 0.031433333333333334
+    },
+    {
+      "changedFraction": 0.05,
+      "checkpointEvery": 25,
+      "checkpoints": 8,
+      "fullSnapshotEntityUnits": 200000000,
+      "checkpointDeltaEntityUnits": 17600000,
+      "entityUnitRatio": 0.088,
+      "estimatedFullBytes": 38400000000,
+      "estimatedCheckpointDeltaBytes": 3686400000,
+      "estimatedByteRatio": 0.096
+    }
+  ],
+  "decision": "PROMOTE DELTA/CHECKPOINT STORAGE AS REQUIRED PERSISTENT-WORLD INFRASTRUCTURE. Do not treat the accounting model as measured disk performance or a standalone research contribution.",
+  "next": [
+    "Define an append-only revision journal with checksummed records and periodic full checkpoints.",
+    "Verify exact reconstruction of every revision against current immutable WorldSnapshot semantics.",
+    "Measure real serialized sizes and load/append latency on representative entity counts.",
+    "Only add spatial/time indexing if random historical-region access becomes a measured bottleneck."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u6a-opacity-visibility-v1",
+  "stage": "U6a-render-authorization",
+  "status": "authorized-before-first-u6a-render",
+  "sourcePreparationEvidenceCommit": "ff413197b3e2eacdb1b298dde9a628f4b9a4548f",
+  "protocolSha256": "4d4cd37a7b58073fa4dda209b2432d599247032cfca42ba562d5502b89398039",
+  "preparationSha256": "c3898a409d7d09d023cd5422ea057c80928381960f4d4d56c11f53326eb07c82",
+  "preparationLogSha256": "c47dac6c023340423987ccb38d23363b58485c2033ee8599621d6cca40367365",
+  "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+  "u5cAuditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409",
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "runnerBlobSha": "f8dc1020962fc66fd9fcb1fc77e8b6b82a308e15",
+  "sceneOrder": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "baseline": {
+    "id": "depth-only-fixed-opacity",
+    "source": "reuse exact frozen U5a depth-only-covariance renders",
+    "renderCount": 40,
+    "rerenderAllowed": false
+  },
+  "newMethodOrder": [
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "targetViewsPerScene": 8,
+  "newRenderCount": 80,
+  "evaluation": {
+    "primary": "mean across eight target views of within5cmFractionOfFaroValid",
+    "candidateMinusBaseline": "calibrated-relative-precision-opacity minus depth-only-fixed-opacity",
+    "candidateMinusShuffled": "calibrated-relative-precision-opacity minus shuffled-relative-precision-opacity",
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "nonOverwrite": true,
+  "claimBoundary": "U6a is exploratory on already-exposed rooms and targets. This authorization fixes the exact prepared assets, renderer binary, baseline reuse, method order, render count, and evaluation before the first U6a render. A positive U6a result would require a separately frozen untouched U6b study before any efficacy claim."
+}

@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u5c-occlusion-audit-v1",
+  "stage": "U5c-post-hoc-gaussian-occlusion-mechanism-audit",
+  "status": "frozen-before-u5c-derived-mechanism-statistics",
+  "frozen": true,
+  "claimType": "post-hoc mechanism audit on already-rendered U5a outputs; not confirmatory efficacy evidence",
+  "motivation": "U5a preserved identical primitive counts but calibrated covariance lost to depth-only covariance in all five exposed rooms. Calibrated covariance often increased held-out-view coverage while substantially increasing FARO depth error. Because the CPU reference rasterizer reports the first contributing Gaussian center depth, enlarging uncertain Gaussian footprints may introduce foreground occlusion leakage. U5c tests this mechanism without rerendering or changing any representation parameter.",
+  "parentEvidence": {
+    "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+    "u5aRevealLogSha256": "df78b84491870362b01c9e3635c57fce31715d71752ed4c22b11cb4b619ea37c",
+    "u5aPreparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+    "u5aRendererSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+    "u5aEvidenceCommit": "69e2333ae3a9b035a2f2937995503dbbc8b594e9"
+  },
+  "scenes": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "methods": {
+    "referenceControl": "depth-only-covariance",
+    "candidate": "calibrated-covariance",
+    "associationControl": "shuffled-calibrated-covariance"
+  },
+  "inputs": {
+    "renderedDepth": "reuse the exact 120 immutable U5a float32 depth files whose SHA256 values are recorded in the frozen U5a result",
+    "faroDepth": "reuse the exact 40 held-out FARO float32 target depths and SHA256 values recorded in U5a targets.json",
+    "rerenderingAllowed": false,
+    "newRepresentationParametersAllowed": false,
+    "sigmaRetuningAllowed": false,
+    "newRoomsAllowed": false
+  },
+  "validity": {
+    "evaluationPixels": "FARO depth finite and >0",
+    "renderValid": "rendered depth finite",
+    "correctWithin5cm": "absolute rendered-minus-FARO depth <=0.05m",
+    "foregroundWrong": "rendered depth < FARO depth - 0.05m",
+    "backgroundWrong": "rendered depth > FARO depth + 0.05m",
+    "depthTieToleranceMetres": 1e-6
+  },
+  "pairwiseConvention": {
+    "orientation": "challenger minus reference",
+    "candidateVsDepthOnly": "challenger=calibrated-covariance, reference=depth-only-covariance",
+    "shuffledVsDepthOnly": "challenger=shuffled-calibrated-covariance, reference=depth-only-covariance",
+    "candidateVsShuffled": "challenger=calibrated-covariance, reference=shuffled-calibrated-covariance",
+    "challengerOnly": "challenger finite and reference non-finite on a FARO-valid pixel",
+    "referenceOnly": "reference finite and challenger non-finite on a FARO-valid pixel",
+    "bothFinite": "both renders finite on a FARO-valid pixel",
+    "challengerCloser": "both finite and abs(challenger-FARO)+1e-6 < abs(reference-FARO)",
+    "referenceCloser": "both finite and abs(reference-FARO)+1e-6 < abs(challenger-FARO)",
+    "correctToWrong": "both finite, reference within 0.05m and challenger outside 0.05m",
+    "wrongToCorrect": "both finite, challenger within 0.05m and reference outside 0.05m"
+  },
+  "perTargetMetrics": [
+    "FARO-valid pixel count",
+    "challenger-only coverage fraction of FARO-valid pixels",
+    "reference-only coverage fraction of FARO-valid pixels",
+    "both-finite fraction of FARO-valid pixels",
+    "challenger-only within-5cm fraction of FARO-valid pixels",
+    "challenger-only foreground-wrong fraction of FARO-valid pixels",
+    "challenger-only background-wrong fraction of FARO-valid pixels",
+    "among challenger-only pixels: foreground-wrong share, background-wrong share, within-5cm share",
+    "among both-finite pixels: challenger-closer fraction and reference-closer fraction",
+    "reference-correct challenger-wrong fraction of FARO-valid pixels",
+    "challenger-correct reference-wrong fraction of FARO-valid pixels",
+    "median challenger-minus-reference rendered depth on both-finite pixels",
+    "median challenger-minus-reference absolute FARO error on both-finite pixels"
+  ],
+  "sceneAggregation": {
+    "fractionRule": "arithmetic mean across the same eight frozen target views",
+    "medianShiftRule": "arithmetic mean across defined per-target medians; undefined only if no target view has a defined median",
+    "pooledCounts": "raw pixel counts are summed across the eight target views and reported separately",
+    "sceneIsEvidenceUnit": true
+  },
+  "crossSceneDescriptive": {
+    "primaryMechanismReadout": "median across scenes of candidate-vs-depth-only challenger-only foreground-wrong share among challenger-only pixels",
+    "secondary": [
+      "median candidate-only coverage fraction",
+      "median depth-only-correct candidate-wrong fraction",
+      "median candidate-correct depth-only-wrong fraction",
+      "median both-finite candidate-minus-depth-only absolute error shift",
+      "same foreground-leakage readout for shuffled-vs-depth-only",
+      "candidate-vs-shuffled pairwise mechanism readouts"
+    ],
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "percentileConvention": "nearest-rank on sorted bootstrap values with exact half-index ties resolved to the lower index, matching U3c/U5a",
+    "descriptiveOnly": true
+  },
+  "interpretation": {
+    "supportsOcclusionLeakageMechanism": "calibrated covariance gains coverage mainly through candidate-only pixels that are foreground-wrong, and/or converts many depth-only-correct shared pixels into candidate-wrong pixels; shuffled behavior helps determine whether association placement matters",
+    "coverageButNotForegroundLeakage": "coverage gains are primarily background-wrong or mixed; do not claim foreground occlusion as the dominant mechanism",
+    "sharedPixelErrorDominates": "if most degradation occurs where both methods already render, the failure is not merely added coverage but changed frontmost-splat selection on existing support",
+    "noEffect": "pairwise maps are nearly identical; U5a degradation then comes from a small number of high-impact views rather than a broad occlusion mechanism"
+  },
+  "claimBoundary": "U5c may explain U5a failure but cannot rescue the frozen U5a rule or establish efficacy. No U5b is opened from U5c alone. Any future representation rule must be frozen as a new exploratory study before producing new outcomes."
+}

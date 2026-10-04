@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u3c-conflict-leverage-audit-v1",
+  "stage": "U3c-post-hoc-mechanism-audit",
+  "status": "frozen-before-u3c-mechanism-metrics",
+  "frozen": true,
+  "claimType": "post-hoc mechanism discovery; not confirmatory efficacy evidence",
+  "motivation": "U1b/U2 established predictive metric uncertainty, while U3-v1 and U3b failed to establish robust TSDF geometry improvement. U3c measures whether uncertainty has enough cross-view surface-conflict leverage to move a fused TSDF zero crossing.",
+  "sourceOutcome": {
+    "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+    "u3bStatus": "completed-confirmatory-gate-not-passed",
+    "u3bMedianCandidateVsNaiveRelativeChamferImprovement": -0.0003320066665436959,
+    "u3bCandidateBetterSceneCount": 2
+  },
+  "scenes": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "inputs": {
+    "preparedManifestRole": "relative",
+    "preparedManifestFilename": "scene-manifest-relative.json",
+    "viewsPerScene": 8,
+    "coordinateConvention": "+X right, +Y down, +Z forward; camera-to-world in FARO coordinates",
+    "confidenceEncoding": "uint8 values 0,128,255 interpreted as c/255 exactly as U3b engine execution",
+    "frozenPredictiveModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "frozenU3bPreparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3",
+    "frozenU3bEngineAdapterSha256": "9dfb0ec909e7f7671f196d62e762ce72207b658c073ec867130c806643a8c5b4"
+  },
+  "observationConstruction": {
+    "voxelCentres": "exact prepared dense-TSDF volume voxel centres",
+    "projection": "same nearest-pixel projection and depth admissibility rules as UncertaintyTsdfVolume",
+    "signedDistanceMetres": "observedDepthMetres - voxelCameraZMetres",
+    "normalizedSignedDistance": "clamp(signedDistanceMetres / truncationDistanceMetres, -1, 1)",
+    "minimumContributingViews": 2,
+    "surfaceActiveRule": "at least two admissible observations and min(abs(normalizedSignedDistance_i)) <= 0.25",
+    "rationale": "surface-active is defined from per-view observations rather than an extracted mesh, avoiding selection by either reconstruction method while focusing on voxels near at least one observed surface"
+  },
+  "frozenUncertainty": {
+    "depthNoiseFloorMetres": 0.010634156727771725,
+    "depthNoiseQuadraticMetresPerMetreSquared": 0.004398048551220112,
+    "sensorConfidencePenalty": 5.990146384791633,
+    "predictiveSensorSigma": "(floor + quadratic * depth^2) * (1 + k * (1-c))",
+    "relativeConfidenceWeight": "1 / (1 + k * (1-c))^2"
+  },
+  "perVoxelMetrics": {
+    "viewCount": "number of admissible view observations",
+    "conflictStdNormalized": "population standard deviation of normalized signed-distance observations",
+    "conflictRangeNormalized": "max(normalized signed distance)-min(normalized signed distance)",
+    "confidenceSpread": "max(c)-min(c)",
+    "naiveFusedNormalized": "sum(c_i*d_i)/sum(c_i) when sum(c_i)>0",
+    "relativeFusedNormalized": "sum(wrel_i*d_i)/sum(wrel_i)",
+    "fusionLeverageMetres": "abs(relativeFusedNormalized-naiveFusedNormalized)*truncationDistanceMetres when naive is defined",
+    "fusionLeverageVoxelUnits": "fusionLeverageMetres/voxelSizeMetres",
+    "uncertaintyResidualSpearman": "within-voxel Spearman correlation between predictiveSensorSigma_i and abs(d_i-median(d)); only defined with >=3 observations and nonconstant ranks"
+  },
+  "frozenMechanismCategories": {
+    "highConflict": "conflictRangeNormalized >= 0.25",
+    "mixedConfidence": "confidenceSpread >= 0.5",
+    "categories": [
+      "consensus-homogeneous-confidence",
+      "consensus-mixed-confidence",
+      "conflict-homogeneous-confidence",
+      "conflict-mixed-confidence"
+    ],
+    "keyOpportunityCategory": "conflict-mixed-confidence"
+  },
+  "summaryConventions": {
+    "median": "ordinary median over defined values",
+    "p95": "nearest-rank sample quantile using nearest index with half ties resolved to the lower index",
+    "spearmanRanks": "average ranks for ties; Pearson correlation of ranks; missing observations omitted within each voxel",
+    "undefined": "reported as null and accompanied by a defined-count field where applicable"
+  },
+  "sceneSummaries": {
+    "required": [
+      "surfaceActiveVoxelCount",
+      "fractionConflictMixedConfidence",
+      "medianConflictRangeNormalized",
+      "p95ConflictRangeNormalized",
+      "medianFusionLeverageMetres",
+      "p95FusionLeverageMetres",
+      "fractionFusionLeverageAtLeastQuarterVoxel",
+      "medianUncertaintyResidualSpearman",
+      "fractionPositiveUncertaintyResidualSpearman"
+    ],
+    "quarterVoxelThreshold": 0.25
+  },
+  "crossSceneAnalysis": {
+    "u3bCandidateVsNaiveImprovementValues": {
+      "ca1m-48458481": -0.18118202472731315,
+      "ca1m-48018737": -0.0005759194893888629,
+      "ca1m-45261587": -0.0003320066665436959,
+      "ca1m-42897538": 0.20908232789514566,
+      "ca1m-48018375": 0.016528611507687516
+    },
+    "descriptiveOnly": true,
+    "report": [
+      "Spearman correlation across five scenes between U3b improvement and fractionConflictMixedConfidence",
+      "Spearman correlation across five scenes between U3b improvement and p95FusionLeverageMetres",
+      "Spearman correlation across five scenes between U3b improvement and medianUncertaintyResidualSpearman"
+    ],
+    "warning": "n=5 and outcomes are already exposed; correlations are hypothesis-generating only"
+  },
+  "artifacts": {
+    "summary": "u3c-conflict-leverage-v1/summary.json",
+    "sceneVoxelMetrics": "u3c-conflict-leverage-v1/scenes/<scene>/voxel-mechanism.npz",
+    "sceneSummary": "u3c-conflict-leverage-v1/scenes/<scene>/summary.json",
+    "overwritePolicy": "refuse if summary.json already exists"
+  },
+  "interpretationRules": {
+    "lowOpportunity": "If conflict-mixed-confidence voxels are rare and fusion leverage is usually much less than 0.25 voxel, conclude TSDF weighting has little mechanical opportunity to move geometry in this setup.",
+    "misalignedUncertainty": "If conflict exists but uncertaintyResidualSpearman is near zero or negative, conclude calibrated sensor uncertainty is not aligned with the per-voxel contradictory observations that TSDF fusion must resolve.",
+    "latentOpportunity": "If conflict-mixed-confidence voxels and leverage are substantial but geometry improvement remains heterogeneous, conclude simple weighted averaging is an insufficient decision rule and use U4 to alter representation/support/topology rather than retune scalar weights.",
+    "noEfficacyClaim": "U3c cannot rescue or overturn the negative U3/U3b confirmatory outcomes."
+  }
+}

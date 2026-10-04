@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-20T22:07+05:30",
+  "branches": {
+    "discovery": {
+      "name": "research/maveb-discovery",
+      "base": "main@1d95c8f480fb2868d821fa107215311f1deab17c",
+      "purpose": "literature, probes, metrics, negative results, hypothesis ledger"
+    },
+    "persistentIntegration": {
+      "name": "research/maveb-discovery-persistent",
+      "base": "PR28@f157b2a40e2766bcb02d24ca055073e866140476",
+      "purpose": "production-shaped locality integration experiments"
+    },
+    "ulrLedger": {
+      "name": "research/maveb-ulr-ledger",
+      "base": "research/maveb-discovery-persistent@535d1f13487b98e911bbe3c39f97ca5d6860c543",
+      "purpose": "unit-safe cross-layer Update Locality Ratio instrumentation"
+    },
+    "observability": {
+      "name": "research/maveb-observability",
+      "base": "PR28@f157b2a40e2766bcb02d24ca055073e866140476",
+      "purpose": "partial-observation/negative-evidence correctness semantics"
+    },
+    "stableAtlas": {
+      "name": "research/maveb-stable-atlas",
+      "base": "main@1d95c8f480fb2868d821fa107215311f1deab17c",
+      "purpose": "stable texture addressing correctness oracle; scalable fixed-global design rejected"
+    }
+  },
+  "corpus": {
+    "papers": 52,
+    "repositoryImplementations": 18,
+    "hypotheses": 119,
+    "finalFilter": {
+      "lockedHeadline": 5,
+      "requiredMechanisms": 16,
+      "evaluationOrAblation": 6,
+      "deferredFollowup": 92
+    }
+  },
+  "strongestDirections": [
+    {
+      "id": "S1",
+      "name": "MAVEB-CLOSURE: dependency-certified heterogeneous minimal-work repair",
+      "status": "problem-locked",
+      "evidence": [
+        "exact TSDF-to-mesh locality already exists",
+        "indexed Gaussian selection removes a hidden full scan in controlled probes",
+        "stable/coherent texture paging prototype exists",
+        "versioned per-frame Gaussian publication removes edit-time global frame quiescence",
+        "regional temporal-history invalidation is implemented conservatively",
+        "unit-safe cross-layer locality ledger and evaluator exist"
+      ]
+    }
+  ],
+  "killedOrDemoted": [
+    {
+      "name": "generic local Gaussian update",
+      "status": "killed-headline",
+      "reason": "CL-Splats, GaussianUpdate, GaME, TwinSplat and others"
+    },
+    {
+      "name": "generic bounded-compute continual Gaussian scheduler",
+      "status": "killed-headline",
+      "reason": "EliGSiR"
+    },
+    {
+      "name": "generic primitive-space change detection",
+      "status": "killed-headline",
+      "reason": "GD-DIFF"
+    },
+    {
+      "name": "generic persistent Gaussian/object identity",
+      "status": "killed-headline",
+      "reason": "Consistent Instance Field / long-term semantic Gaussian mapping"
+    },
+    {
+      "name": "fixed/static mesh+Gaussian hybrid",
+      "status": "killed-headline",
+      "reason": "SuGaR, IJCAI 2025 hybrid, GaMeS, semantic-aware hybrids"
+    },
+    {
+      "name": "raw anisotropic opacity-weighted spectral phase",
+      "status": "rejected",
+      "reason": "representation nuisance AUC 0.453"
+    },
+    {
+      "name": "canonical phase as flagship",
+      "status": "demoted",
+      "reason": "known-correspondence rigid geometry solved by much simpler Procrustes/Kabsch baseline"
+    },
+    {
+      "name": "single globally fixed-capacity texture atlas",
+      "status": "rejected-scalable-architecture",
+      "reason": "stable addresses hold, but texel density collapses at large reserved capacity"
+    },
+    {
+      "name": "naive paged stable atlas with whole-page writes",
+      "status": "rejected",
+      "reason": "small scattered edits dirty most large pages despite 100% address survival"
+    }
+  ],
+  "verifiedProbeHighlights": {
+    "phaseRepresentationNuisance": {
+      "decision": "reject raw field phase",
+      "editVsNuisanceAuc": 0.453125
+    },
+    "phaseShiftSanity": {
+      "decision": "mathematical sanity only",
+      "medianTranslationRecoveryError": 4.270065236692055e-12
+    },
+    "gaussianRegionIndex1M1pct": {
+      "fullScanInspections": 1000000,
+      "indexedInspections": 10005,
+      "linuxScanMs": 30.2602,
+      "linuxIndexMs": 1.1121,
+      "indexBuildMs": 212.8212
+    },
+    "gaussianIndexMaintenance1M1pct": {
+      "moved": 10000,
+      "rebuildMs": 210.126,
+      "maintainMs": 5.35305,
+      "equal": true
+    },
+    "indexLayout1M": {
+      "hashRssKiB": 88424,
+      "flatSortedRssKiB": 37160,
+      "hashLookupMs": 0.311805,
+      "flatLookupMs": 2.01335
+    },
+    "temporalInvalidationOpportunity": {
+      "oneDirtyBoxMedianFrameFraction": 0.004876543209876544,
+      "sixteenDirtyBoxesMedianFrameFraction": 0.11643518518518518,
+      "sixtyFourDirtyBoxesMedianFrameFraction": 0.3666820987654321
+    },
+    "indexOverlayNumpyV3": {
+      "evidenceClass": "synthetic NumPy reference only",
+      "gaussians": 1000000,
+      "exactSelectionAgreementAllLevels": true,
+      "changedFractions": [
+        0.01,
+        0.02,
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "decision": "mechanism survives cheap probe; production C++/M2 measurement still required"
+    },
+    "pagedAtlasDirtyGranularityV2": {
+      "evidenceClass": "synthetic dependency-granularity probe",
+      "activeSlots": 250000,
+      "onePercentRandomDirtyPageFraction": {
+        "slots64": 0.4735090862554389,
+        "slots256": 0.9212896622313205,
+        "slots1024": 0.9991836734693876,
+        "slots4096": 0.9967741935483871
+      },
+      "decision": "reject naive whole-page writes; require dependency-coherent allocation or sub-page writes"
+    }
+  },
+  "integrationBranch": {
+    "spatialIndexImplementation": "committed",
+    "indexedSelector": "committed",
+    "exactSelectionUnitTest": "committed",
+    "cpuBuildAndTestsAt535d": "passed",
+    "sanitizerAt535d": "passed",
+    "studioCompileAt535d": "passed",
+    "latestHead": "f6a307ba31b7571efc76362a8866b892b296bd66",
+    "latestCiStatus": "queued after formatting/static-analysis fixes",
+    "claimsAllowed": "structural correctness only until full CI and Apple-silicon measurements pass"
+  },
+  "nextExecutionQueue": [
+    "get research/maveb-s1-locked fully green across CI and AetherStudio compile",
+    "run Apple-silicon end-to-end sparse-change measurements on the locked line",
+    "execute VG-Scene adapter on public/local dataset sequences after license review",
+    "bind every required layer to the S1 work ledger and emit revision certificates",
+    "run the frozen 750-cell synthetic evaluation matrix",
+    "run closest compatible continual-mapping baselines and full rebuild references",
+    "characterize crossover where local repair stops beating full rebuild",
+    "produce only evidence-backed figures from raw committed results"
+  ],
+  "paperReady": false,
+  "lockedIntegrationBranch": "research/maveb-s1-locked",
+  "problemLock": {
+    "locked": true,
+    "name": "MAVEB-CLOSURE",
+    "problem": "Dependency-certified heterogeneous minimal-work repair for persistent captured worlds",
+    "methodIdentity": "Cross-Derived-State Revision Certificate (CDSRC)",
+    "headlineHypotheses": [
+      "H027",
+      "H029",
+      "H030",
+      "H035",
+      "H118"
+    ],
+    "document": "research/state/PROBLEM_LOCK.md",
+    "claimProven": false,
+    "paperReady": false,
+    "priorArtBoundaryNote": "Generic dependency-graph-driven incremental rendering is occupied at least as early as HPG 2013; MAVEB-CLOSURE novelty target is the captured-world heterogeneous closure plus work/equivalence certificate."
+  },
+  "hypothesisFilter": {
+    "date": "2026-09-20",
+    "headline": 5,
+    "requiredMechanisms": 16,
+    "evaluationOrAblation": 6,
+    "deferredFollowup": 92,
+    "document": "research/hypotheses/final_filter_2026-09-20.md"
+  }
+}

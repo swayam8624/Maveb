@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "experiment": "stable-atlas-capacity-v1",
+  "status": "deterministic-analytical-probe",
+  "warning": "This computes atlas-addressing capacity and nominal texel budget only; it is not a rendered-quality benchmark.",
+  "atlasSize": 8192,
+  "gutterPixels": 4,
+  "capacitySweep": [
+    {"capacity":1000,"columns":32,"rows":32,"cellPixels":256,"innerPixels":248,"approxTriangleTexels":30752.0,"validByCurrentContract":true},
+    {"capacity":2500,"columns":50,"rows":50,"cellPixels":163,"innerPixels":155,"approxTriangleTexels":12012.5,"validByCurrentContract":true},
+    {"capacity":5000,"columns":71,"rows":71,"cellPixels":115,"innerPixels":107,"approxTriangleTexels":5724.5,"validByCurrentContract":true},
+    {"capacity":10000,"columns":100,"rows":100,"cellPixels":81,"innerPixels":73,"approxTriangleTexels":2664.5,"validByCurrentContract":true},
+    {"capacity":25000,"columns":159,"rows":158,"cellPixels":51,"innerPixels":43,"approxTriangleTexels":924.5,"validByCurrentContract":true},
+    {"capacity":50000,"columns":224,"rows":224,"cellPixels":36,"innerPixels":28,"approxTriangleTexels":392.0,"validByCurrentContract":true},
+    {"capacity":100000,"columns":317,"rows":316,"cellPixels":25,"innerPixels":17,"approxTriangleTexels":144.5,"validByCurrentContract":true},
+    {"capacity":150000,"columns":388,"rows":387,"cellPixels":21,"innerPixels":13,"approxTriangleTexels":84.5,"validByCurrentContract":true},
+    {"capacity":200000,"columns":448,"rows":447,"cellPixels":18,"innerPixels":10,"approxTriangleTexels":50.0,"validByCurrentContract":true},
+    {"capacity":250000,"columns":500,"rows":500,"cellPixels":16,"innerPixels":8,"approxTriangleTexels":32.0,"validByCurrentContract":true},
+    {"capacity":400000,"columns":633,"rows":632,"cellPixels":12,"innerPixels":4,"approxTriangleTexels":8.0,"validByCurrentContract":true},
+    {"capacity":500000,"columns":708,"rows":707,"cellPixels":11,"innerPixels":3,"approxTriangleTexels":4.5,"validByCurrentContract":true},
+    {"capacity":750000,"columns":867,"rows":866,"cellPixels":9,"innerPixels":1,"approxTriangleTexels":0.5,"validByCurrentContract":false},
+    {"capacity":1000000,"columns":1000,"rows":1000,"cellPixels":8,"innerPixels":0,"approxTriangleTexels":0.0,"validByCurrentContract":false}
+  ],
+  "overprovisioning": [
+    {"activeTriangles":10000,"reservedCapacity":10000,"activeCountInnerPixels":73,"stableCapacityInnerPixels":73,"perTriangleTexelAreaRatioVsActiveCountLayout":1.0},
+    {"activeTriangles":10000,"reservedCapacity":25000,"activeCountInnerPixels":73,"stableCapacityInnerPixels":43,"perTriangleTexelAreaRatioVsActiveCountLayout":0.3469694126477763},
+    {"activeTriangles":10000,"reservedCapacity":100000,"activeCountInnerPixels":73,"stableCapacityInnerPixels":17,"perTriangleTexelAreaRatioVsActiveCountLayout":0.05423156314505536},
+    {"activeTriangles":50000,"reservedCapacity":100000,"activeCountInnerPixels":28,"stableCapacityInnerPixels":17,"perTriangleTexelAreaRatioVsActiveCountLayout":0.36862244897959184},
+    {"activeTriangles":100000,"reservedCapacity":250000,"activeCountInnerPixels":17,"stableCapacityInnerPixels":8,"perTriangleTexelAreaRatioVsActiveCountLayout":0.22145328719723184}
+  ],
+  "decision": "FIXED GLOBAL STABLE ATLAS SURVIVES ONLY AS SMALL/MEDIUM-SCENE INFRASTRUCTURE. For large persistent worlds, stable addressing needs paging/sparse residency/another indirection so capacity growth does not collapse texel resolution globally.",
+  "provenance": {
+    "gitSha": "359cfa5504cd68de6e3e16272a74403a57eaa6af",
+    "sourceBlobSha": "857c8e39fde2fb0764267032ff2f11c1376ef9f7",
+    "sourceSha256": "73d5b257b266cdafe2b46110492ba9125a440532547d305b079b147cb48632a3",
+    "python": "3.13.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "machine": "x86_64",
+    "executedAtUtc": "2026-09-20T14:41:36.413347+00:00"
+  }
+}

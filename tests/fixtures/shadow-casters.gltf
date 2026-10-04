@@ -1,0 +1,31 @@
+{
+  "asset": { "version": "2.0", "generator": "AETHER shadow golden fixture" },
+  "buffers": [{
+    "byteLength": 42,
+    "uri": "data:application/octet-stream;base64,AAAAvwAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAAAAAAD8AAAAAAAABAAIA"
+  }],
+  "bufferViews": [
+    { "buffer": 0, "byteOffset": 0, "byteLength": 36, "target": 34962 },
+    { "buffer": 0, "byteOffset": 36, "byteLength": 6, "target": 34963 }
+  ],
+  "accessors": [
+    { "bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3",
+      "min": [-0.5, -0.5, 0.0], "max": [0.5, 0.5, 0.0] },
+    { "bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR" }
+  ],
+  "materials": [{
+    "name": "Double-sided shadow caster",
+    "doubleSided": true,
+    "pbrMetallicRoughness": { "baseColorFactor": [0.7, 0.7, 0.7, 1.0] }
+  }],
+  "meshes": [{
+    "name": "Shadow Caster",
+    "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 1, "material": 0 }]
+  }],
+  "nodes": [
+    { "name": "Caster Center", "mesh": 0 },
+    { "name": "Caster Offset", "mesh": 0, "translation": [0.75, 0.25, -0.5] }
+  ],
+  "scenes": [{ "nodes": [0, 1] }],
+  "scene": 0
+}

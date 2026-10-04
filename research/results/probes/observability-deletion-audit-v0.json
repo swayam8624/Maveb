@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "experiment": "observability-deletion-audit-v0",
+  "date": "2026-09-20",
+  "source": "PR #28 EntityAssociation.cpp / WorldModel.cpp",
+  "finding": "associateObservations() builds the next snapshot only from current observations. unmatched previous entities contribute to missingPreviousEntities but are not carried into result.snapshot.entities.",
+  "consequence": [
+    "A previous entity outside the current sensor coverage or hidden by occlusion is absent from the next immutable snapshot.",
+    "Reality Diff can therefore classify 'not observed this transaction' as removed.",
+    "On later re-observation after intervening disappearance, stable identity can be lost or require external tracker authority."
+  ],
+  "decision": "Current snapshot ingestion needs explicit observability semantics before persistent-world deletion/reappearance claims are trustworthy.",
+  "requiredDistinction": [
+    "unknown/not observed: preserve prior entity state without treating absence as evidence",
+    "observed present: update/associate entity",
+    "observed absent/contradicted: accumulate evidence toward removal",
+    "authored deletion: explicit immediate removal"
+  ],
+  "noveltyNote": "Occlusion-aware existence confidence and persistent-instance handling already appear in modern long-term Gaussian mapping; this is necessary MAVEB correctness infrastructure, not a standalone novelty claim."
+}

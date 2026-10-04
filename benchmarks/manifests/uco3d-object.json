@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "uco3d-object",
+  "title": "uCO3D object video",
+  "kind": "video",
+  "root": "$MAVEB_DATA/uco3d-small",
+  "videoGlob": "**/rgb_video.mp4",
+  "note": "First sorted uCO3D RGB video is used for the smoke case; pass a custom manifest for a specific sequence."
+}

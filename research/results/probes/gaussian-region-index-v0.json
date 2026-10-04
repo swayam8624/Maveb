@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-region-index-v0",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-linux-falsification-probe",
+  "environment": {
+    "compiler": "g++ -O3 -std=c++20",
+    "platform": "Linux x86_64 analysis sandbox",
+    "note": "These are not Apple-silicon or production MAVEB timings."
+  },
+  "configuration": {
+    "seed": 42,
+    "sceneExtent": "[-25,25]^3",
+    "cellSize": 0.5,
+    "gaussianCounts": [
+      10000,
+      50000,
+      100000,
+      250000,
+      500000,
+      1000000
+    ],
+    "dirtyFractions": [
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.25,
+      0.5
+    ]
+  },
+  "oneMillionGaussianCase": [
+    {
+      "dirtyFraction": 0.01,
+      "occupiedCells": 631955,
+      "dirtyCells": 6320,
+      "selected": 10005,
+      "scanInspections": 1000000,
+      "indexInspections": 10005,
+      "indexBuildMs": 212.8212,
+      "scanMs": 30.2602,
+      "indexMs": 1.1121,
+      "equal": true
+    },
+    {
+      "dirtyFraction": 0.02,
+      "occupiedCells": 631955,
+      "dirtyCells": 12640,
+      "selected": 20050,
+      "scanInspections": 1000000,
+      "indexInspections": 20050,
+      "indexBuildMs": 212.8212,
+      "scanMs": 34.6902,
+      "indexMs": 1.2251,
+      "equal": true
+    },
+    {
+      "dirtyFraction": 0.05,
+      "occupiedCells": 631955,
+      "dirtyCells": 31598,
+      "selected": 49998,
+      "scanInspections": 1000000,
+      "indexInspections": 49998,
+      "indexBuildMs": 212.8212,
+      "scanMs": 41.7242,
+      "indexMs": 3.4168,
+      "equal": true
+    },
+    {
+      "dirtyFraction": 0.1,
+      "occupiedCells": 631955,
+      "dirtyCells": 63196,
+      "selected": 99959,
+      "scanInspections": 1000000,
+      "indexInspections": 99959,
+      "indexBuildMs": 212.8212,
+      "scanMs": 41.7238,
+      "indexMs": 7.5123,
+      "equal": true
+    },
+    {
+      "dirtyFraction": 0.25,
+      "occupiedCells": 631955,
+      "dirtyCells": 157989,
+      "selected": 249947,
+      "scanInspections": 1000000,
+      "indexInspections": 249947,
+      "indexBuildMs": 212.8212,
+      "scanMs": 58.2848,
+      "indexMs": 17.196,
+      "equal": true
+    },
+    {
+      "dirtyFraction": 0.5,
+      "occupiedCells": 631955,
+      "dirtyCells": 315978,
+      "selected": 499837,
+      "scanInspections": 1000000,
+      "indexInspections": 499837,
+      "indexBuildMs": 212.8212,
+      "scanMs": 69.4276,
+      "indexMs": 35.2099,
+      "equal": true
+    }
+  ],
+  "decision": "CONTINUE: exact indexed selection removes the hidden O(N) primitive scan in this synthetic model, but the one-time build is expensive enough that incremental maintenance and memory overhead are now mandatory kill-tests.",
+  "nextKillTests": [
+    "Incremental index maintenance when 0.1%-25% of Gaussians move cells.",
+    "Memory overhead for 1M-10M Gaussians with realistic clustered occupancy.",
+    "PR #28 exact semantic equivalence including ownership and unowned conservative selection.",
+    "Apple M2 Pro wall-time and cache behavior.",
+    "Compare dense grid, sorted Morton ranges, flat hash, unordered_map, and GPU-friendly compact index."
+  ]
+}

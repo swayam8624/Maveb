@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "arkitscenes-47333462",
+  "title": "ARKitScenes 47333462",
+  "kind": "arkit-scenes",
+  "root": "$MAVEB_DATA/ARKitScenes/raw/Training/47333462",
+  "requiredAssets": {
+    "trajectory": "lowres_wide.traj",
+    "depth": "lowres_depth/*.png",
+    "confidence": "confidence/*.png",
+    "intrinsics": "lowres_wide_intrinsics/*.pincam",
+    "rgb": "lowres_wide/*.png"
+  },
+  "referenceGeometryRel": "47333462_3dod_mesh.ply",
+  "note": "Raw Apple RGB-D/LiDAR sequence converted into MavebCapture schema-v2, fused by the bounded CPU oracle, and evaluated in the shared metric ARKit coordinate frame."
+}

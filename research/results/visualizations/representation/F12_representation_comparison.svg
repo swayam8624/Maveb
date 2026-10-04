@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1500 760">
+  <!-- Generator: Adobe Illustrator 30.9.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 84)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #10131a;
+      }
+
+      .st0, .st1, .st2 {
+        font-family: ArialMT, Arial;
+        font-size: 12px;
+      }
+
+      .st0, .st1, .st2, .st3 {
+        isolation: isolate;
+      }
+
+      .st1, .st4 {
+        fill: #fff;
+      }
+
+      .st5 {
+        fill: #18c6d9;
+      }
+
+      .st6 {
+        fill: #f7f8fa;
+      }
+
+      .st2 {
+        fill: #7c5cfc;
+      }
+
+      .st4 {
+        stroke: #d8dee9;
+        stroke-width: 2px;
+      }
+
+      .st3 {
+        fill: #475467;
+        font-family: Helvetica, Helvetica;
+        font-size: 20px;
+      }
+    </style>
+  </defs>
+  <rect class="st6" width="1500" height="760" rx="28" ry="28"/>
+  <text class="st0" transform="translate(70 70)"><tspan x="0" y="0">F12 — CBRC across Gaussian representations</tspan></text>
+  <text class="st3" transform="translate(70 112)"><tspan x="0" y="0">Coverage validation only — sources are not matched scenes, so no cross-representation performance ranking is implied.</tspan></text>
+  <rect class="st4" x="80" y="170" width="630" height="500" rx="24" ry="24"/>
+  <text class="st0" transform="translate(120 225)"><tspan x="0" y="0">RGB/SfM-seeded Gaussians</tspan></text>
+  <text class="st2" transform="translate(120 280)"><tspan x="0" y="0">60 cases · 4 scenes</tspan></text>
+  <text class="st3" transform="translate(120 335)"><tspan x="0" y="0">certified local cases: 44</tspan></text>
+  <text class="st3" transform="translate(120 375)"><tspan x="0" y="0">FULL fallbacks: 16</tspan></text>
+  <text class="st3" transform="translate(120 415)"><tspan x="0" y="0">certificate violations: 0</tspan></text>
+  <text class="st3" transform="translate(120 455)"><tspan x="0" y="0">median work/FULL: 0.385</tspan></text>
+  <text class="st3" transform="translate(120 495)"><tspan x="0" y="0">work unit: ms</tspan></text>
+  <text class="st3" transform="translate(120 560)"><tspan x="0" y="0">isotropic Gaussian field seeded from real COLMAP SfM points</tspan></text>
+  <rect class="st4" x="790" y="170" width="630" height="500" rx="24" ry="24"/>
+  <text class="st0" transform="translate(830 225)"><tspan x="0" y="0">Public trained 3DGS</tspan></text>
+  <text class="st2" transform="translate(830 280)"><tspan x="0" y="0">5 cases · 1 scenes</tspan></text>
+  <text class="st3" transform="translate(830 335)"><tspan x="0" y="0">certified local cases: 4</tspan></text>
+  <text class="st3" transform="translate(830 375)"><tspan x="0" y="0">FULL fallbacks: 1</tspan></text>
+  <text class="st3" transform="translate(830 415)"><tspan x="0" y="0">certificate violations: 0</tspan></text>
+  <text class="st3" transform="translate(830 455)"><tspan x="0" y="0">median work/FULL: 0.48</tspan></text>
+  <text class="st3" transform="translate(830 495)"><tspan x="0" y="0">work unit: ms</tspan></text>
+  <text class="st3" transform="translate(830 560)"><tspan x="0" y="0">trained anisotropic Gaussians; SH, opacity, scale and </tspan><tspan x="0" y="24">rotation preserved</tspan></text>
+  <rect class="st5" x="395" y="684.77" width="660" height="60" rx="18" ry="18"/>
+  <text class="st1" transform="translate(590.01 723.77)"><tspan x="0" y="0">same certificate/oracle contract: actual ≤ bound ≤ ε</tspan></text>
+</svg>

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u3b-pose-clarification-v1",
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "status": "frozen-pre-reconstruction-clarification",
+  "timing": "after confirmatory asset acquisition and pose-support diagnostic, before any U3b reconstruction or Chamfer outcome",
+  "diagnosticSha256": "61d16eaecde6e6ab40cf51c87a81c8a75127923b4c3ec2dade3a18ec7fcadec7",
+  "acquisitionLedgerSha256": "3675d61e89599a36641e8d4ddb0dd28ce9722030af3b4672b70c401973695f73",
+  "splitSha256": "f7269b595bafe5e50d975b3026a958b1a4b0ef2bcc695f4494d161f8aa285e56",
+  "protocolSha256": "f42fb12bb855e660c3cf4d77e5dd4200b73136baa73981434b54c98b43e63a6d",
+  "frozenMeasurement": {
+    "validationPairsRequested": 16,
+    "pixelStride": 16,
+    "pairSelection": "unchanged deterministic adjacent-frame quantile pairs",
+    "geometry": "CA-1M FARO depth only",
+    "poseHypotheses": [
+      "released gt/RT interpreted as camera-to-world",
+      "inverse interpretation"
+    ]
+  },
+  "observedSupportBeforeClarification": [
+    {"videoId": "48458481", "cameraToWorldSupported": 16, "inverseSupported": 7, "comparable": 7, "cameraToWorldWins": 7},
+    {"videoId": "48018737", "cameraToWorldSupported": 16, "inverseSupported": 2, "comparable": 2, "cameraToWorldWins": 2},
+    {"videoId": "45261587", "cameraToWorldSupported": 16, "inverseSupported": 0, "comparable": 0, "cameraToWorldWins": 0},
+    {"videoId": "42897538", "cameraToWorldSupported": 16, "inverseSupported": 1, "comparable": 1, "cameraToWorldWins": 1},
+    {"videoId": "48018375", "cameraToWorldSupported": 16, "inverseSupported": 6, "comparable": 6, "cameraToWorldWins": 6}
+  ],
+  "problem": "The original preflight implementation requires finite scene medians for both pose interpretations and throws when the inverse interpretation produces zero valid cross-projection support. The frozen U3b prose did not specify this undefined-control case.",
+  "clarifiedPassRule": {
+    "normalCase": "If the inverse interpretation has at least one supported frozen pair, retain the original U3b rule unchanged: camera-to-world must win a majority of mutually comparable pairs and have a lower scene median cross-projection depth disagreement than the inverse interpretation.",
+    "zeroInverseSupportCase": "If the inverse interpretation has zero supported frozen pairs, classify it as geometrically dominated only if camera-to-world has finite support on every one of the 16 frozen pairs. In that case the scene passes the pose-convention gate without inventing an inverse median.",
+    "otherwise": "Fail the pose-convention gate."
+  },
+  "rationale": "Zero inverse support is not evidence that camera-to-world lacks geometric support when camera-to-world remains valid on all fixed pairs. Requiring 16/16 camera-to-world support distinguishes wrong-pose projection-out from a scene-level overlap failure while adding no new pairs, no smaller stride, no replacement scene and no reconstruction metric exposure.",
+  "nonChanges": [
+    "No new confirmatory scene is selected.",
+    "No validation pair is added or replaced.",
+    "Pixel stride remains 16.",
+    "Primary view count remains 8.",
+    "U1b coefficients remain frozen.",
+    "No TSDF reconstruction or FARO Chamfer result has been generated.",
+    "The U3b geometry gate and shuffled-confidence gate remain unchanged."
+  ],
+  "claimPolicy": "This clarification must be disclosed as a pre-reconstruction adapter/preflight clarification prompted by an undefined inverse-control case observed after asset acquisition. It does not convert U3b into a fully untouched-from-acquisition protocol, but it preserves confirmatory geometry evaluation because no treatment geometry outcome informed the clarification."
+}

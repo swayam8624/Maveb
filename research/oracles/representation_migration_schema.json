@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Measured offline oracle input for temporal region representation allocation.",
+  "requiredTopLevel": [
+    "objectiveWeights",
+    "regions"
+  ],
+  "objectiveWeights": {
+    "geometryError": "non-negative cost weight",
+    "renderError": "non-negative cost weight",
+    "memoryBytes": "non-negative cost weight",
+    "renderMilliseconds": "non-negative cost weight",
+    "updateMilliseconds": "non-negative cost weight",
+    "migrationCost": "non-negative migration cost weight"
+  },
+  "regionRecord": {
+    "revision": "integer temporal revision",
+    "regionId": "stable region identifier",
+    "candidates": [
+      {
+        "representation": "tsdf|mesh|gaussian|hybrid-residual|other explicit label",
+        "geometryError": "measured",
+        "renderError": "measured",
+        "memoryBytes": "measured",
+        "renderMilliseconds": "measured",
+        "updateMilliseconds": "measured",
+        "migrationCost": "measured cost from previous representation into this one; zero for initial state"
+      }
+    ]
+  },
+  "rule": "No candidate metric may be estimated silently. Missing measurements make the candidate infeasible."
+}

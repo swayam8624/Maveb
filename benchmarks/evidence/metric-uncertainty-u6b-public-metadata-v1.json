@@ -1,0 +1,55 @@
+{
+  "assetAcquisitionPerformed": false,
+  "claimBoundary": "Metadata-only provenance. No selected U6b CA-1M archive, ARKitScenes confidence sidecar, or lowres-depth sidecar was acquired or opened to produce this file.",
+  "localDatasetPolicy": "The local ARKitScenes asset root is not required to contain raw_train_val_splits.csv. U6b acquisition planning inspects only whether the five selected asset paths already exist locally and validates membership against this frozen public-metadata evidence.",
+  "publicSources": {
+    "arkitScenesRawSplit": {
+      "gitBlobSha": "2b347453aff47f4bb1dc79c71a8ed9e25e2bb5f3",
+      "path": "raw/raw_train_val_splits.csv",
+      "ref": "main",
+      "repository": "apple/ARKitScenes"
+    },
+    "ca1mValidationList": {
+      "gitBlobSha": "5b155412995a07a1413f1539b0f0eda95d20959c",
+      "path": "data/val.txt",
+      "ref": "main",
+      "repository": "apple/ml-cubifyanything"
+    }
+  },
+  "schemaVersion": 1,
+  "selectedValidationRows": [
+    {
+      "fold": "Validation",
+      "videoId": "42898811",
+      "visitId": "434650"
+    },
+    {
+      "fold": "Validation",
+      "videoId": "45261121",
+      "visitId": "466628"
+    },
+    {
+      "fold": "Validation",
+      "videoId": "47895341",
+      "visitId": "472297"
+    },
+    {
+      "fold": "Validation",
+      "videoId": "47332915",
+      "visitId": "469249"
+    },
+    {
+      "fold": "Validation",
+      "videoId": "47331971",
+      "visitId": "470821"
+    }
+  ],
+  "selectionBinding": {
+    "rule": "The selected rows are the already-frozen U6b split. This metadata evidence records the upstream public metadata identities used to validate video/visit/fold membership; it does not alter the split.",
+    "splitPath": "benchmarks/experiments/metric-uncertainty-u6b-confirmatory-split-v1.json",
+    "splitSha256": "d22366afd77d3407e53d5152d313522d559ee57e9ec995d96102c299dc55f5ff"
+  },
+  "stage": "U6b-public-selection-metadata",
+  "status": "frozen-before-confirmatory-asset-acquisition",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1"
+}

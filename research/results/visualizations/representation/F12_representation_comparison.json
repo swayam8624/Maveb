@@ -1,0 +1,300 @@
+{
+  "artifact": "maveb-cbrc-representation-validation-comparison",
+  "crossRepresentationPerformanceClaim": false,
+  "interpretation": "Both representations are evaluated under the same CBRC/oracle safety contract, but the scene sources are not matched; use this as representation-coverage evidence, not a speed/quality ranking.",
+  "schemaVersion": 1,
+  "sfmSeeded": {
+    "artifact": "maveb-cbrc-real-campaign-answer",
+    "baselineSummary": {
+      "ablations": {
+        "ABLATE_GAUSSIAN_ANALYTIC_BOUND": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "ABLATE_GLOBAL_NORM_TAIL": {
+          "cases": 60,
+          "fullRebuildRate": 1.0,
+          "medianWorkRatioFull": 1.0,
+          "passRate": 1.0
+        },
+        "ABLATE_HARD_SOFT_SEPARATION": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "ABLATE_NO_FALLBACK": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        },
+        "ABLATE_PREDECESSOR_CLOSURE": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "ABLATE_QOI_SPECIALIZATION": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "ABLATE_TEMPORAL_ANALYTIC_BOUND": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        }
+      },
+      "baselines": {
+        "CBRC": {
+          "cases": 60,
+          "fullRebuildRate": 0.26666666666666666,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "EMPIRICAL": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.047357313368055556,
+          "passRate": 1.0
+        },
+        "EXACT": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        },
+        "FRACTION": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.4
+        },
+        "FULL": {
+          "cases": 60,
+          "fullRebuildRate": 1.0,
+          "medianWorkRatioFull": 1.0,
+          "passRate": 1.0
+        },
+        "RADIUS_0": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        },
+        "RADIUS_1": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        },
+        "RADIUS_2": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        },
+        "RADIUS_3": {
+          "cases": 60,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.26666666666666666
+        }
+      }
+    },
+    "campaignPass": true,
+    "certificateViolations": 0,
+    "certifiedLocalCases": 44,
+    "definedSelectedEffectivityCount": 0,
+    "definedSourceEditEffectivityCount": 59,
+    "fullFallbackCases": 16,
+    "gates": {
+      "hasAutomaticFullFallback": true,
+      "hasCertifiedLocalCase": true,
+      "hasHighCouplingCase": true,
+      "minimumRevisions": true,
+      "minimumScenes": true,
+      "nativePythonPlannerParity": true,
+      "noCertificateViolations": true
+    },
+    "heterogeneousMsCalibrationUsed": true,
+    "interpretationBoundary": "heterogeneous millisecond-calibrated work",
+    "maximumMeasuredSelectedError": 0.0,
+    "maximumSelectedCertifiedBound": 2e-06,
+    "medianNativeDomainRatios": {
+      "gaussiansInspected": 0.9999680061428206,
+      "gaussiansUpdated": 0.026550985649483147,
+      "gpuPublicationBytes": 0.026550985649483147,
+      "temporalPixelsInvalidated": 0.047357313368055556
+    },
+    "medianSelectedEffectivity": null,
+    "medianSelectedWorkRatioFull": 0.3850266129058089,
+    "medianSourceEditEffectivity": 1.928299907744356,
+    "medianWorkReductionFactor": 2.597223065836842,
+    "rows": 60,
+    "scenes": 4,
+    "schemaVersion": 2,
+    "sourceEffectivityDefinition": "sourceEditRgbBound / sourceEditActualRgbError; undefined when sourceEditActualRgbError is numerically zero",
+    "sourceEffectivityMismatchCount": 0,
+    "workCostModelVersions": [
+      "public-v2-arm64-f5bf9a764104"
+    ],
+    "workCostUnits": [
+      "ms"
+    ],
+    "zeroMeasuredSelectedErrorCount": 60,
+    "zeroMeasuredSourceEditErrorCount": 1
+  },
+  "trained3dgs": {
+    "artifact": "maveb-cbrc-real-campaign-answer",
+    "baselineSummary": {
+      "ablations": {
+        "ABLATE_GAUSSIAN_ANALYTIC_BOUND": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "ABLATE_GLOBAL_NORM_TAIL": {
+          "cases": 5,
+          "fullRebuildRate": 1.0,
+          "medianWorkRatioFull": 1.0,
+          "passRate": 1.0
+        },
+        "ABLATE_HARD_SOFT_SEPARATION": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "ABLATE_NO_FALLBACK": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "ABLATE_PREDECESSOR_CLOSURE": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "ABLATE_QOI_SPECIALIZATION": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "ABLATE_TEMPORAL_ANALYTIC_BOUND": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        }
+      },
+      "baselines": {
+        "CBRC": {
+          "cases": 5,
+          "fullRebuildRate": 0.2,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "EMPIRICAL": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.03494791666666667,
+          "passRate": 1.0
+        },
+        "EXACT": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "FRACTION": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "FULL": {
+          "cases": 5,
+          "fullRebuildRate": 1.0,
+          "medianWorkRatioFull": 1.0,
+          "passRate": 1.0
+        },
+        "RADIUS_0": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "RADIUS_1": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "RADIUS_2": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        },
+        "RADIUS_3": {
+          "cases": 5,
+          "fullRebuildRate": 0.0,
+          "medianWorkRatioFull": 0.0,
+          "passRate": 0.2
+        }
+      }
+    },
+    "campaignPass": true,
+    "certificateViolations": 0,
+    "certifiedLocalCases": 4,
+    "definedSelectedEffectivityCount": 0,
+    "definedSourceEditEffectivityCount": 5,
+    "fullFallbackCases": 1,
+    "gates": {
+      "hasAutomaticFullFallback": true,
+      "hasCertifiedLocalCase": true,
+      "hasHighCouplingCase": true,
+      "minimumRevisions": true,
+      "minimumScenes": true,
+      "nativePythonPlannerParity": true,
+      "noCertificateViolations": true
+    },
+    "heterogeneousMsCalibrationUsed": true,
+    "interpretationBoundary": "heterogeneous millisecond-calibrated work",
+    "maximumMeasuredSelectedError": 0.0,
+    "maximumSelectedCertifiedBound": 2e-06,
+    "medianNativeDomainRatios": {
+      "gaussiansInspected": 0.9999972000873573,
+      "gaussiansUpdated": 0.018153700271218206,
+      "gpuPublicationBytes": 0.018153700271218206,
+      "temporalPixelsInvalidated": 0.03494791666666667
+    },
+    "medianSelectedEffectivity": null,
+    "medianSelectedWorkRatioFull": 0.4804099666697991,
+    "medianSourceEditEffectivity": 5.6098907810603915,
+    "medianWorkReductionFactor": 2.0815554825641898,
+    "rows": 5,
+    "scenes": 1,
+    "schemaVersion": 2,
+    "sourceEffectivityDefinition": "sourceEditRgbBound / sourceEditActualRgbError; undefined when sourceEditActualRgbError is numerically zero",
+    "sourceEffectivityMismatchCount": 0,
+    "workCostModelVersions": [
+      "public-v2-arm64-f5bf9a764104"
+    ],
+    "workCostUnits": [
+      "ms"
+    ],
+    "zeroMeasuredSelectedErrorCount": 5,
+    "zeroMeasuredSourceEditErrorCount": 0
+  }
+}

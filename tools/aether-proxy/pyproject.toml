@@ -1,0 +1,19 @@
+[project]
+name = "aether-proxy"
+version = "0.1.0"
+description = "Deterministic COLMAP-to-proxy geometry pipeline for AETHER"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "numpy==2.1.3",
+  "open3d==0.19.0",
+]
+
+[project.scripts]
+aether-proxy = "aether_proxy.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aether_proxy"]

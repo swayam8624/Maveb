@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "obs:42",
+      "kind": "observation",
+      "revision": 7,
+      "bytes": 4096
+    },
+    {
+      "id": "tsdf:4,5,6",
+      "kind": "tsdf_block",
+      "revision": 7,
+      "bytes": 8192
+    },
+    {
+      "id": "mesh:4,5,6",
+      "kind": "mesh_patch",
+      "revision": 7,
+      "bytes": 4096
+    },
+    {
+      "id": "gs:region:4,5,6",
+      "kind": "gaussian_region",
+      "revision": 7,
+      "bytes": 65536
+    },
+    {
+      "id": "gpu:gs:page:12",
+      "kind": "gpu_gaussian_page",
+      "revision": 7,
+      "bytes": 65536
+    },
+    {
+      "id": "taa:tile:18,11",
+      "kind": "temporal_history_tile",
+      "revision": 7,
+      "bytes": 2048
+    }
+  ],
+  "edges": [
+    {
+      "source": "obs:42",
+      "target": "tsdf:4,5,6",
+      "relation": "supports",
+      "exact": false,
+      "evidence": "candidate-ray support"
+    },
+    {
+      "source": "tsdf:4,5,6",
+      "target": "mesh:4,5,6",
+      "relation": "reads",
+      "exact": true,
+      "evidence": "tsdf-mesh-exact-closure-v0"
+    },
+    {
+      "source": "mesh:4,5,6",
+      "target": "gs:region:4,5,6",
+      "relation": "supports",
+      "exact": false,
+      "evidence": "future measured hybrid dependency"
+    },
+    {
+      "source": "gs:region:4,5,6",
+      "target": "gpu:gs:page:12",
+      "relation": "materializes",
+      "exact": false,
+      "evidence": "future GPU page mapping"
+    },
+    {
+      "source": "gs:region:4,5,6",
+      "target": "taa:tile:18,11",
+      "relation": "projects_to",
+      "exact": false,
+      "evidence": "regional temporal invalidation"
+    }
+  ],
+  "change": {
+    "changedSources": [
+      "obs:42"
+    ]
+  }
+}

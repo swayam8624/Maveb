@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "name": "MAVEB SIGGRAPH visual language",
+  "palette": {
+    "ink": "#10131A",
+    "paper": "#F7F8FA",
+    "muted": "#667085",
+    "grid": "#D8DEE9",
+    "edit": "#FF8A34",
+    "certificate": "#18C6D9",
+    "local": "#28C76F",
+    "fallback": "#F04438",
+    "residual": "#E5484D",
+    "accent": "#7C5CFC",
+    "full": "#475467"
+  },
+  "semantic": {
+    "edit": "warm orange",
+    "certifiedSupport": "electric cyan",
+    "localRepair": "green",
+    "fullFallback": "red",
+    "fullReference": "slate",
+    "residual": "red/yellow heat"
+  },
+  "typography": {
+    "title": "clean grotesk/sans, semibold",
+    "body": "sans",
+    "numbers": "monospace/tabular"
+  },
+  "motion": {
+    "fps": 12,
+    "teaserSeconds": 18,
+    "rule": "deliberate scientific easing; no decorative motion without explanatory value"
+  }
+}

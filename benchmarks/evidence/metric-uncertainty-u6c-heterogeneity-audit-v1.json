@@ -1,0 +1,431 @@
+{
+  "heterogeneity": {
+    "candidateMinusBaselineMaximum": 0.12588988359339923,
+    "candidateMinusBaselineMedian": 0.00010829570588415105,
+    "candidateMinusBaselineMinimum": -0.00044083144195511403,
+    "candidateMinusBaselineRange": 0.12633071503535434,
+    "candidateMinusBaselineSceneValues": [
+      0.015593043368372972,
+      0.0,
+      -0.00044083144195511403,
+      0.00010829570588415105,
+      0.12588988359339923
+    ],
+    "candidateMinusShuffledMaximum": 0.12365645950567808,
+    "candidateMinusShuffledMedian": 0.0,
+    "candidateMinusShuffledMinimum": -0.000501377737245394,
+    "candidateMinusShuffledRange": 0.12415783724292348,
+    "candidateMinusShuffledSceneValues": [
+      0.00918259778061048,
+      0.0,
+      -0.000501377737245394,
+      -0.00039177564187500846,
+      0.12365645950567808
+    ],
+    "rankingByCandidateMinusBaseline": [
+      {
+        "candidateMinusBaseline": 0.12588988359339923,
+        "scene": "ca1m-47331971"
+      },
+      {
+        "candidateMinusBaseline": 0.015593043368372972,
+        "scene": "ca1m-42898811"
+      },
+      {
+        "candidateMinusBaseline": 0.00010829570588415105,
+        "scene": "ca1m-47332915"
+      },
+      {
+        "candidateMinusBaseline": 0.0,
+        "scene": "ca1m-45261121"
+      },
+      {
+        "candidateMinusBaseline": -0.00044083144195511403,
+        "scene": "ca1m-47895341"
+      }
+    ],
+    "rankingByCandidateMinusShuffled": [
+      {
+        "candidateMinusShuffled": 0.12365645950567808,
+        "scene": "ca1m-47331971"
+      },
+      {
+        "candidateMinusShuffled": 0.00918259778061048,
+        "scene": "ca1m-42898811"
+      },
+      {
+        "candidateMinusShuffled": 0.0,
+        "scene": "ca1m-45261121"
+      },
+      {
+        "candidateMinusShuffled": -0.00039177564187500846,
+        "scene": "ca1m-47332915"
+      },
+      {
+        "candidateMinusShuffled": -0.000501377737245394,
+        "scene": "ca1m-47895341"
+      }
+    ]
+  },
+  "integrity": {
+    "bootstrapRecomputed": false,
+    "canonicalOutputSceneOrder": [
+      "ca1m-42898811",
+      "ca1m-45261121",
+      "ca1m-47895341",
+      "ca1m-47332915",
+      "ca1m-47331971"
+    ],
+    "confirmatoryGateRecomputed": false,
+    "faroMetricsRecomputedFromDepth": false,
+    "renderFilesRead": false,
+    "rerendered": false,
+    "roomsDroppedReplacedOrReweighted": false,
+    "sceneObjectKeyOrderTreatedAsSemanticallyMeaningful": false,
+    "sourceWasFrozenU6bResultOnly": true,
+    "transferRuleFitOrTuned": false
+  },
+  "interpretationBoundary": "This audit is descriptive and post-hoc. It may characterize scene-level heterogeneity in the already sealed U6b negative/null result, but it cannot rescue the failed gate, justify retuning on these five rooms, or support a new confirmatory efficacy claim.",
+  "methodOrder": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "parentAllGateClausesPassed": false,
+  "parentResultSha256": "c361fda74d005c3d76c2d33b83626e5ef4039ee9fbce177d0b42e42fc9a0a823",
+  "parentResultStatus": "completed-confirmatory-gate-not-passed",
+  "parentStudy": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "protocolSha256": "09ccacb0730714cc63866052602ef82f997e16bb1c60da24feff6de8e192ab44",
+  "sceneCount": 5,
+  "scenes": [
+    {
+      "coverage": {
+        "baseline": 0.973823510011191,
+        "candidate": 0.9705798174933132,
+        "candidateMinusBaseline": -0.0032436925178778164,
+        "candidateMinusShuffled": -0.003011288536088119,
+        "candidateToBaselineRatio": 0.9966691166473887,
+        "shuffled": 0.9735911060294014
+      },
+      "meanAbsoluteDepthErrorMetres": {
+        "baseline": 0.5131957077035258,
+        "candidate": 0.4924703015833531,
+        "candidateMinusBaseline": -0.020725406120172762,
+        "candidateMinusShuffled": -0.015222658199849526,
+        "shuffled": 0.5076929597832026
+      },
+      "p95DepthErrorMetres": {
+        "baseline": 1.2530901432037354,
+        "candidate": 1.1219407469034195,
+        "candidateMinusBaseline": -0.13114939630031586,
+        "candidateMinusShuffled": -0.12407435476779938,
+        "shuffled": 1.2460151016712189
+      },
+      "primaryWithin5cm": {
+        "baseline": 0.46369953469337616,
+        "candidate": 0.47929257806174913,
+        "candidateMinusBaseline": 0.015593043368372972,
+        "candidateMinusShuffled": 0.00918259778061048,
+        "shuffled": 0.47010998028113865
+      },
+      "scene": "ca1m-42898811",
+      "targetLevelPrimary": {
+        "candidateBetterThanBaselineTargetCount": 7,
+        "candidateBetterThanShuffledTargetCount": 7,
+        "candidateMinusBaseline": [
+          0.020596962820736642,
+          0.011755574278378922,
+          0.01504621453761007,
+          0.02294822453813905,
+          0.018492202413988634,
+          0.031416159662085996,
+          0.0,
+          0.004489008696044489
+        ],
+        "candidateMinusShuffled": [
+          0.015724093791819493,
+          0.008750339996152268,
+          0.0052273233604842595,
+          0.01213657663651646,
+          0.00758107110837325,
+          0.025990304431687483,
+          0.00010383569040348095,
+          -0.002052762770553003
+        ],
+        "medianCandidateMinusBaseline": 0.016769208475799352,
+        "medianCandidateMinusShuffled": 0.008165705552262759
+      },
+      "within10cmFraction": {
+        "baseline": 0.579085838033753,
+        "candidate": 0.6008608002594247,
+        "candidateMinusBaseline": 0.021774962225671657,
+        "candidateMinusShuffled": 0.017036238282025495,
+        "shuffled": 0.5838245619773992
+      }
+    },
+    {
+      "coverage": {
+        "baseline": 0.9976938221203451,
+        "candidate": 0.996651580303512,
+        "candidateMinusBaseline": -0.0010422418168331005,
+        "candidateMinusShuffled": -0.0010422418168331005,
+        "candidateToBaselineRatio": 0.9989553490322131,
+        "shuffled": 0.9976938221203451
+      },
+      "meanAbsoluteDepthErrorMetres": {
+        "baseline": 1.7917184233071646,
+        "candidate": 1.7927619730093909,
+        "candidateMinusBaseline": 0.0010435497022263096,
+        "candidateMinusShuffled": 0.0011350425051239732,
+        "shuffled": 1.791626930504267
+      },
+      "p95DepthErrorMetres": {
+        "baseline": 2.9958557933568954,
+        "candidate": 2.9959574192762375,
+        "candidateMinusBaseline": 0.00010162591934204102,
+        "candidateMinusShuffled": 0.00020819902420043945,
+        "shuffled": 2.995749220252037
+      },
+      "primaryWithin5cm": {
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "candidateMinusBaseline": 0.0,
+        "candidateMinusShuffled": 0.0,
+        "shuffled": 0.0
+      },
+      "scene": "ca1m-45261121",
+      "targetLevelPrimary": {
+        "candidateBetterThanBaselineTargetCount": 0,
+        "candidateBetterThanShuffledTargetCount": 0,
+        "candidateMinusBaseline": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidateMinusShuffled": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "medianCandidateMinusBaseline": 0.0,
+        "medianCandidateMinusShuffled": 0.0
+      },
+      "within10cmFraction": {
+        "baseline": 0.0,
+        "candidate": 0.0,
+        "candidateMinusBaseline": 0.0,
+        "candidateMinusShuffled": 0.0,
+        "shuffled": 0.0
+      }
+    },
+    {
+      "coverage": {
+        "baseline": 0.7829939743035981,
+        "candidate": 0.7741122993561931,
+        "candidateMinusBaseline": -0.008881674947404994,
+        "candidateMinusShuffled": -0.008264989621796226,
+        "candidateToBaselineRatio": 0.9886567773969085,
+        "shuffled": 0.7823772889779893
+      },
+      "meanAbsoluteDepthErrorMetres": {
+        "baseline": 1.4927019094408864,
+        "candidate": 1.502594242779516,
+        "candidateMinusBaseline": 0.0098923333386296,
+        "candidateMinusShuffled": 0.009602521374207251,
+        "shuffled": 1.4929917214053088
+      },
+      "p95DepthErrorMetres": {
+        "baseline": 2.428315032273531,
+        "candidate": 2.428378900513053,
+        "candidateMinusBaseline": 6.386823952198029e-05,
+        "candidateMinusShuffled": -0.0001675933599472046,
+        "shuffled": 2.428546493873
+      },
+      "primaryWithin5cm": {
+        "baseline": 0.05726793246189242,
+        "candidate": 0.05682710101993731,
+        "candidateMinusBaseline": -0.00044083144195511403,
+        "candidateMinusShuffled": -0.000501377737245394,
+        "shuffled": 0.0573284787571827
+      },
+      "scene": "ca1m-47895341",
+      "targetLevelPrimary": {
+        "candidateBetterThanBaselineTargetCount": 1,
+        "candidateBetterThanShuffledTargetCount": 1,
+        "candidateMinusBaseline": [
+          -0.003980062687308727,
+          0.0008002621331081317,
+          -0.0003255495718195462,
+          0.0,
+          -2.1301409620783085e-05,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidateMinusShuffled": [
+          -0.0033775033960030225,
+          0.0005104034077303976,
+          -0.00027588946764368384,
+          0.0,
+          -0.0008680324420468621,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "medianCandidateMinusBaseline": 0.0,
+        "medianCandidateMinusShuffled": 0.0
+      },
+      "within10cmFraction": {
+        "baseline": 0.0680264609127571,
+        "candidate": 0.06637215740335099,
+        "candidateMinusBaseline": -0.0016543035094061104,
+        "candidateMinusShuffled": -0.0016493854241385192,
+        "shuffled": 0.06802154282748951
+      }
+    },
+    {
+      "coverage": {
+        "baseline": 0.9822864407920481,
+        "candidate": 0.9820794048837401,
+        "candidateMinusBaseline": -0.00020703590830795093,
+        "candidateMinusShuffled": -8.982173252736203e-05,
+        "candidateToBaselineRatio": 0.9997892306157244,
+        "shuffled": 0.9821692266162675
+      },
+      "meanAbsoluteDepthErrorMetres": {
+        "baseline": 1.1741170053836085,
+        "candidate": 1.1740512606726972,
+        "candidateMinusBaseline": -6.574471091136402e-05,
+        "candidateMinusShuffled": -9.375447622406163e-05,
+        "shuffled": 1.1741450151489212
+      },
+      "p95DepthErrorMetres": {
+        "baseline": 2.0966257005929947,
+        "candidate": 2.096630737185478,
+        "candidateMinusBaseline": 5.036592483520508e-06,
+        "candidateMinusShuffled": 0.0,
+        "shuffled": 2.096630737185478
+      },
+      "primaryWithin5cm": {
+        "baseline": 0.06734081805302158,
+        "candidate": 0.06744911375890573,
+        "candidateMinusBaseline": 0.00010829570588415105,
+        "candidateMinusShuffled": -0.00039177564187500846,
+        "shuffled": 0.06784088940078074
+      },
+      "scene": "ca1m-47332915",
+      "targetLevelPrimary": {
+        "candidateBetterThanBaselineTargetCount": 1,
+        "candidateBetterThanShuffledTargetCount": 0,
+        "candidateMinusBaseline": [
+          0.0,
+          0.0,
+          0.0,
+          0.0008663656470732084,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "candidateMinusShuffled": [
+          0.0,
+          0.0,
+          0.0,
+          -0.0031342051350000677,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "medianCandidateMinusBaseline": 0.0,
+        "medianCandidateMinusShuffled": 0.0
+      },
+      "within10cmFraction": {
+        "baseline": 0.07549675877322624,
+        "candidate": 0.07549866987391832,
+        "candidateMinusBaseline": 1.911100692073009e-06,
+        "candidateMinusShuffled": 2.9940577509143806e-05,
+        "shuffled": 0.07546872929640917
+      }
+    },
+    {
+      "coverage": {
+        "baseline": 0.8499791826886862,
+        "candidate": 0.784923275901361,
+        "candidateMinusBaseline": -0.0650559067873252,
+        "candidateMinusShuffled": -0.06318355951077215,
+        "candidateToBaselineRatio": 0.9234617645792949,
+        "shuffled": 0.8481068354121332
+      },
+      "meanAbsoluteDepthErrorMetres": {
+        "baseline": 1.3935521885023252,
+        "candidate": 1.0720668016461443,
+        "candidateMinusBaseline": -0.3214853868561809,
+        "candidateMinusShuffled": -0.3189574292272048,
+        "shuffled": 1.3910242308733491
+      },
+      "p95DepthErrorMetres": {
+        "baseline": 2.785256691277027,
+        "candidate": 2.445280112326145,
+        "candidateMinusBaseline": -0.33997657895088196,
+        "candidateMinusShuffled": -0.3413071483373642,
+        "shuffled": 2.7865872606635094
+      },
+      "primaryWithin5cm": {
+        "baseline": 0.03821364413477258,
+        "candidate": 0.1641035277281718,
+        "candidateMinusBaseline": 0.12588988359339923,
+        "candidateMinusShuffled": 0.12365645950567808,
+        "shuffled": 0.040447068222493714
+      },
+      "scene": "ca1m-47331971",
+      "targetLevelPrimary": {
+        "candidateBetterThanBaselineTargetCount": 6,
+        "candidateBetterThanShuffledTargetCount": 6,
+        "candidateMinusBaseline": [
+          0.039452942391528856,
+          0.05878104611166196,
+          0.6874037953116738,
+          0.08039881324348212,
+          0.11899643604684053,
+          0.0,
+          0.022086035642006428,
+          0.0
+        ],
+        "candidateMinusShuffled": [
+          0.031663459552308565,
+          0.04986351339772074,
+          0.6874155455026144,
+          0.0806690424316123,
+          0.11899643604684053,
+          -0.0006297229219143577,
+          0.021273402036242423,
+          0.0
+        ],
+        "medianCandidateMinusBaseline": 0.04911699425159541,
+        "medianCandidateMinusShuffled": 0.040763486475014654
+      },
+      "within10cmFraction": {
+        "baseline": 0.052734770126732264,
+        "candidate": 0.18984711563301332,
+        "candidateMinusBaseline": 0.13711234550628104,
+        "candidateMinusShuffled": 0.13413310497273062,
+        "shuffled": 0.05571401066028271
+      }
+    }
+  ],
+  "schemaVersion": 1,
+  "stage": "U6c-post-hoc-read-only-heterogeneity-audit",
+  "status": "completed-post-hoc-descriptive-audit",
+  "study": "metric-uncertainty-u6c-heterogeneity-audit-v1"
+}

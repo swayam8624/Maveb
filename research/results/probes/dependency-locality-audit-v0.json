@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "experiment": "dependency-locality-audit-v0",
+  "date": "2026-09-20",
+  "status": "source-audit-not-performance-benchmark",
+  "baselines": {
+    "main": "1d95c8f480fb2868d821fa107215311f1deab17c",
+    "persistent_world_pr28": "f157b2a40e2766bcb02d24ca055073e866140476"
+  },
+  "findings": [
+    {
+      "layer": "TSDF_to_mesh",
+      "source": "main",
+      "status": "exact-local-foundation",
+      "evidence": {
+        "dirtyBlocks": 106,
+        "patchUpdates": 120,
+        "residentPatches": 30,
+        "incrementalTriangles": 1680,
+        "fullExtractionTriangles": 1680,
+        "exactTriangleCoverage": true,
+        "bitExactSharedPositionsAndNormals": true
+      },
+      "mechanism": "Dirty sparse TSDF blocks invalidate their own cell-owner patch plus seven negative owner neighbours; positive topology and symmetric gradient halos preserve exact shared boundaries.",
+      "interpretation": "This layer already has a strong deterministic local-repair contract. Re-implementing 'incremental meshing' is not itself a new research contribution."
+    },
+    {
+      "layer": "world_diff_to_dirty_regions",
+      "source": "PR28",
+      "status": "experimental-unmerged",
+      "mechanism": "Reality Diff converts changed entity bounds into deterministic halo-expanded metric RegionKeys.",
+      "interpretation": "Useful substrate, but spatial dirty cells alone are not a minimal-work proof."
+    },
+    {
+      "layer": "dirty_regions_to_gaussian_selection",
+      "source": "PR28",
+      "status": "experimental-unmerged",
+      "mechanism": "Dirty RegionKeys plus optional persistent ownership select splats for bounded local re-optimization while rejecting stable owned neighbours.",
+      "computational_issue": "selectGaussiansForLocalUpdate iterates over every Gaussian in the asset, computes a RegionKey, and probes the dirty-region hash table.",
+      "complexity": "O(N_gaussians) scan even when only a tiny fraction of the scene is dirty.",
+      "interpretation": "Semantic locality is present, but computational locality is not yet end-to-end."
+    },
+    {
+      "layer": "metal_sparse_snapshot_to_cpu_meshing",
+      "source": "main",
+      "status": "implemented-but-bounded",
+      "computational_issue": "Current Metal sparse snapshot copies all resident blocks to the CPU before patch extraction.",
+      "interpretation": "A small world change may still cause global resident-state transfer even though meshing itself is local."
+    }
+  ],
+  "novelty_collisions": [
+    "CL-Splats already performs local continual Gaussian optimization.",
+    "GaussianUpdate and GaME already perform continual/evolving-scene Gaussian updates.",
+    "EliGSiR already schedules continual RGB-D Gaussian mapping under bounded compute.",
+    "Recent Gaussian-triangulation work performs direct incremental scene reconstruction/mesh updates from geometric Gaussians.",
+    "Selective Gaussian editing/update is broadly occupied."
+  ],
+  "decision": "KILL generic 'local update' as a headline claim. Continue only with dependency-certified heterogeneous minimal-work repair, where every layer exposes exact affected state and global-scan/global-copy leakage is measured explicitly.",
+  "next_probe": {
+    "name": "gaussian-region-index-v0",
+    "goal": "Measure whether a persistent RegionKey→Gaussian index eliminates O(N) selection scans while preserving exact selection semantics.",
+    "sizes": [
+      10000,
+      50000,
+      100000,
+      250000,
+      500000,
+      1000000
+    ],
+    "changedFractions": [
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.25,
+      0.5
+    ],
+    "requiredMetrics": [
+      "selected set equivalence",
+      "primitive inspections",
+      "index build/update work",
+      "index memory overhead",
+      "dirty region count",
+      "selection wall time when run on Apple silicon later"
+    ],
+    "killCondition": "If indexing overhead or maintenance work removes the asymptotic/empirical advantage, or if exact selection semantics cannot be maintained, do not expand this mechanism."
+  }
+}

@@ -1,0 +1,883 @@
+{
+  "allGateClausesPassed": false,
+  "authorizationSha256": "55b94f2676c8ee597f435f095845772a3d8e5e7099396f609d356b550b92dc42",
+  "claimBoundary": "This artifact freezes and verifies the already-produced single U6b confirmatory result. It does not recompute FARO metrics, bootstrap statistics, or the confirmatory gate, and it does not permit tuning after outcome exposure.",
+  "claimPolicyApplied": "Report U6b as negative/null. Do not tune opacity exponent, base opacity, floor, clipping, alpha cutoff, covariance, source/target frame selection, or gate thresholds on these five exposed confirmatory rooms. Any further redesign requires another prospectively frozen untouched set.",
+  "methodOrder": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "preparationSha256": "4df50fdda6a207a15254092b92bcabf5226cb19d7171e49a9ecc3a112b2cd768",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "recordedGateChecks": {
+    "candidateVsBaselineMedianEffectFloor": false,
+    "candidateVsBaselinePaired95LowerAboveZero": false,
+    "candidateVsBaselineWins": false,
+    "candidateVsShuffledMedianEffectFloor": false,
+    "candidateVsShuffledPaired95LowerAboveZero": false,
+    "candidateVsShuffledWins": false,
+    "coverageMedianRatio": true,
+    "coveragePerSceneMinimumRatio": true,
+    "overlapMeanAbsoluteErrorGuard": false
+  },
+  "renderCount": 120,
+  "renderHashManifest": [
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/00.f32",
+      "renderSha256": "ed13294572101314669a4f9115fc5652c35e5149428dfb2ada47030cefb1a00f",
+      "scene": "ca1m-42898811",
+      "targetIndex": 0
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/01.f32",
+      "renderSha256": "10390f93d52cdc85da261ba08e7c82870dbc9af870ac39acb68c2b9754278e44",
+      "scene": "ca1m-42898811",
+      "targetIndex": 1
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/02.f32",
+      "renderSha256": "05b22a3a69543348f194c6e691c68ef13831e28a16292624c594d552aecf2390",
+      "scene": "ca1m-42898811",
+      "targetIndex": 2
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/03.f32",
+      "renderSha256": "40f862e0434a9da9e29475dc9ce04e0836c83419c3374d6e9398266772e41e6c",
+      "scene": "ca1m-42898811",
+      "targetIndex": 3
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/04.f32",
+      "renderSha256": "29a89b91060295ae614ec65250fce445e90c1e429c867a68c64c5bf021444258",
+      "scene": "ca1m-42898811",
+      "targetIndex": 4
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/05.f32",
+      "renderSha256": "4f42749774c9617f19a4cd5d2408547dae57640b98233be2f7a1e372a573fcd1",
+      "scene": "ca1m-42898811",
+      "targetIndex": 5
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/06.f32",
+      "renderSha256": "40a0733a402ef2ebd7cba7dab76da1f742a002bafa8c1bd83a352f5db3b3d1e6",
+      "scene": "ca1m-42898811",
+      "targetIndex": 6
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-42898811/renders/depth-only-fixed-opacity/07.f32",
+      "renderSha256": "90d79e7c72272f092c86911d8599a2bbcdc78fc4a93d57bd67b583d94f5926db",
+      "scene": "ca1m-42898811",
+      "targetIndex": 7
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/00.f32",
+      "renderSha256": "855f791965390cba726d6fb9196a96a42bb5f06954e19a94a7c1b15d20f4f6fd",
+      "scene": "ca1m-42898811",
+      "targetIndex": 0
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/01.f32",
+      "renderSha256": "2800782fdbe668c4456295ad401c51342f374c13124d9b30c6fe2a8d8d9a8187",
+      "scene": "ca1m-42898811",
+      "targetIndex": 1
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/02.f32",
+      "renderSha256": "ff0fe15eb726fbee374dd58268fc02b9c0d7a8743924c912b64016cff8396dfa",
+      "scene": "ca1m-42898811",
+      "targetIndex": 2
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/03.f32",
+      "renderSha256": "decbefbe8df9941b24645c45e0033771e6307ca33aaccd87e90ed485c8fdcfb3",
+      "scene": "ca1m-42898811",
+      "targetIndex": 3
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/04.f32",
+      "renderSha256": "d9c5415983f014835487c031fa8da46afe303838f643d116187fd272a70ee83e",
+      "scene": "ca1m-42898811",
+      "targetIndex": 4
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/05.f32",
+      "renderSha256": "493b6d156a14fbcde3616cb8ead00467bf15deef5dbd5bfab4999957d059f4f3",
+      "scene": "ca1m-42898811",
+      "targetIndex": 5
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/06.f32",
+      "renderSha256": "50d35967485298d215542165fa64d7f02e8dabbd69aecf022fa9e50a421f840f",
+      "scene": "ca1m-42898811",
+      "targetIndex": 6
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/07.f32",
+      "renderSha256": "ea082a7ce248bf8eb87b6673a4964e037bb8519e097280493a98030ab5ef4596",
+      "scene": "ca1m-42898811",
+      "targetIndex": 7
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/00.f32",
+      "renderSha256": "89c7fe9bdb87bb1d600986fc0f9586d31a93649b22572c057b315801ccbe2968",
+      "scene": "ca1m-42898811",
+      "targetIndex": 0
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/01.f32",
+      "renderSha256": "719989b90fc2be13e62da662fe2dbf4764abc7a0b6ec25347fbf0380982a3170",
+      "scene": "ca1m-42898811",
+      "targetIndex": 1
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/02.f32",
+      "renderSha256": "5571b04044416ee382054610234aed9d7294986024e32c61e71cddc559b536af",
+      "scene": "ca1m-42898811",
+      "targetIndex": 2
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/03.f32",
+      "renderSha256": "19c1534788c234afbe6f21f1c8c64d99d61d6d03867de104fc289d890646c8ba",
+      "scene": "ca1m-42898811",
+      "targetIndex": 3
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/04.f32",
+      "renderSha256": "85bd53d9afbce6423c22d1b20b71c4c66d89922ccababe5f0ee07e4223f400de",
+      "scene": "ca1m-42898811",
+      "targetIndex": 4
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/05.f32",
+      "renderSha256": "b56bc4dbbd84e975ca14f0b7616cb51e3ae0adedee02e39113781e0dfcaf9566",
+      "scene": "ca1m-42898811",
+      "targetIndex": 5
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/06.f32",
+      "renderSha256": "68e166bdd8254ba1187dc690c4780a01c116c21dbf3eff0ae86abb8457635a0f",
+      "scene": "ca1m-42898811",
+      "targetIndex": 6
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/07.f32",
+      "renderSha256": "1ab42c8ad954593276f644306a5c6b76caab50405f99370019748514f9d6cb42",
+      "scene": "ca1m-42898811",
+      "targetIndex": 7
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/00.f32",
+      "renderSha256": "2d46f8e64b89096fd237c8dc47c762f5599ee39aa48dbb0244b5db7de6e6bafe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 0
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/01.f32",
+      "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+      "scene": "ca1m-45261121",
+      "targetIndex": 1
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/02.f32",
+      "renderSha256": "c0ce31907642cd2093906b9337d7bb36ab8e07213fd1fae0f74ab210c190b0fe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 2
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/03.f32",
+      "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+      "scene": "ca1m-45261121",
+      "targetIndex": 3
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/04.f32",
+      "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+      "scene": "ca1m-45261121",
+      "targetIndex": 4
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/05.f32",
+      "renderSha256": "a47c0bea94382b3f74ec0c4878a1756120e8e10ba1b71d6048ff752aaf1209fe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 5
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/06.f32",
+      "renderSha256": "41fb84bec1d879c06977d44cd26aef5b6bb6918eccc8c9992fb75922971be30f",
+      "scene": "ca1m-45261121",
+      "targetIndex": 6
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-45261121/renders/depth-only-fixed-opacity/07.f32",
+      "renderSha256": "7119c026c5bab977a15dfb0c926a5270ae87ae6d8d2937a9d887a3e04726b8e7",
+      "scene": "ca1m-45261121",
+      "targetIndex": 7
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/00.f32",
+      "renderSha256": "11ca92a4c3d532d34b206e825845aa31f8ce370205ca0e7c79a0d2f1db5ec959",
+      "scene": "ca1m-45261121",
+      "targetIndex": 0
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/01.f32",
+      "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+      "scene": "ca1m-45261121",
+      "targetIndex": 1
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/02.f32",
+      "renderSha256": "7a725ca28e7d86dfcc33f80ee5a1f7f4e82ee4033607ebbd43dd54af6af07c34",
+      "scene": "ca1m-45261121",
+      "targetIndex": 2
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/03.f32",
+      "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+      "scene": "ca1m-45261121",
+      "targetIndex": 3
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/04.f32",
+      "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+      "scene": "ca1m-45261121",
+      "targetIndex": 4
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/05.f32",
+      "renderSha256": "329095c062b838be70bba55b5cd25e17e0ac625915430688c472d1c90e4666f7",
+      "scene": "ca1m-45261121",
+      "targetIndex": 5
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/06.f32",
+      "renderSha256": "41fb84bec1d879c06977d44cd26aef5b6bb6918eccc8c9992fb75922971be30f",
+      "scene": "ca1m-45261121",
+      "targetIndex": 6
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/07.f32",
+      "renderSha256": "73d72ef9ae57c1af16e8b3f48b2874dca88f1b02547cbbc978824915e3f14aeb",
+      "scene": "ca1m-45261121",
+      "targetIndex": 7
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/00.f32",
+      "renderSha256": "2d46f8e64b89096fd237c8dc47c762f5599ee39aa48dbb0244b5db7de6e6bafe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 0
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/01.f32",
+      "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+      "scene": "ca1m-45261121",
+      "targetIndex": 1
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/02.f32",
+      "renderSha256": "c0ce31907642cd2093906b9337d7bb36ab8e07213fd1fae0f74ab210c190b0fe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 2
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/03.f32",
+      "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+      "scene": "ca1m-45261121",
+      "targetIndex": 3
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/04.f32",
+      "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+      "scene": "ca1m-45261121",
+      "targetIndex": 4
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/05.f32",
+      "renderSha256": "a47c0bea94382b3f74ec0c4878a1756120e8e10ba1b71d6048ff752aaf1209fe",
+      "scene": "ca1m-45261121",
+      "targetIndex": 5
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/06.f32",
+      "renderSha256": "057b378a63f1b402500dd7d4b10edbaa045d3d048da9c2ceee1e28394aabd600",
+      "scene": "ca1m-45261121",
+      "targetIndex": 6
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/07.f32",
+      "renderSha256": "7119c026c5bab977a15dfb0c926a5270ae87ae6d8d2937a9d887a3e04726b8e7",
+      "scene": "ca1m-45261121",
+      "targetIndex": 7
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/00.f32",
+      "renderSha256": "0318c3b6d664a4e5fa7fa83080b85b9097e8838b516ee3e0e79f9129407b663b",
+      "scene": "ca1m-47895341",
+      "targetIndex": 0
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/01.f32",
+      "renderSha256": "6aae380d8b903c7eaaa5d95a79913ec346309a14d2fcb380d404ab13b9e18091",
+      "scene": "ca1m-47895341",
+      "targetIndex": 1
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/02.f32",
+      "renderSha256": "bdf34191142f6e337b342402716d25e32db506e388bc28dbc796e65bea565d0e",
+      "scene": "ca1m-47895341",
+      "targetIndex": 2
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/03.f32",
+      "renderSha256": "7f60823b84afad13f502460239147f81ce10ba29fc5fbeca8273c43e64d23056",
+      "scene": "ca1m-47895341",
+      "targetIndex": 3
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/04.f32",
+      "renderSha256": "1c8f7cb00698111b91e503cb2a43af23177500c1b13646b7c9e90346abc0d749",
+      "scene": "ca1m-47895341",
+      "targetIndex": 4
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/05.f32",
+      "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+      "scene": "ca1m-47895341",
+      "targetIndex": 5
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/06.f32",
+      "renderSha256": "6b66c60b6e8cb8d0b0e803bb070a15e3d896e0babd675195f92aecac61a8aed5",
+      "scene": "ca1m-47895341",
+      "targetIndex": 6
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47895341/renders/depth-only-fixed-opacity/07.f32",
+      "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+      "scene": "ca1m-47895341",
+      "targetIndex": 7
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/00.f32",
+      "renderSha256": "2f2f575a0aedc43c9a932efa13761b24d17319d75ae3f4d668c3d9c5510a0b6a",
+      "scene": "ca1m-47895341",
+      "targetIndex": 0
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/01.f32",
+      "renderSha256": "5dbf7932e958f5168f83400e53eec10350a81e5a880a804161cdc9a494620cb4",
+      "scene": "ca1m-47895341",
+      "targetIndex": 1
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/02.f32",
+      "renderSha256": "311b45a048e9077b06e768ff36c51bf19515ff66694f091dd07f58cf817711c3",
+      "scene": "ca1m-47895341",
+      "targetIndex": 2
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/03.f32",
+      "renderSha256": "0cc37c1687af745dbbfa2b8bb081a8ebe684c62c97e1a3a71bc98ec26544e8a6",
+      "scene": "ca1m-47895341",
+      "targetIndex": 3
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/04.f32",
+      "renderSha256": "3841847678e2e056de8209c6dc4cfc2f545fce3160ac3e3480939a83aa0b61d0",
+      "scene": "ca1m-47895341",
+      "targetIndex": 4
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/05.f32",
+      "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+      "scene": "ca1m-47895341",
+      "targetIndex": 5
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/06.f32",
+      "renderSha256": "b1147f3e096ee7e63709793187c1a52deae0ed75a7a3adf8158003ff21b0f8ff",
+      "scene": "ca1m-47895341",
+      "targetIndex": 6
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/07.f32",
+      "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+      "scene": "ca1m-47895341",
+      "targetIndex": 7
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/00.f32",
+      "renderSha256": "a35b1b79912f05968b1f9d407c7379ca555677f836cf7ec514d2993f1a7b7a81",
+      "scene": "ca1m-47895341",
+      "targetIndex": 0
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/01.f32",
+      "renderSha256": "a28f57febb6380a74703be0c87513abdbafa01b3ba3e123094d478b661bd6975",
+      "scene": "ca1m-47895341",
+      "targetIndex": 1
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/02.f32",
+      "renderSha256": "43875c1e107830f05002ee73cd4b23b48f7a9d403c40840334d13772d603848e",
+      "scene": "ca1m-47895341",
+      "targetIndex": 2
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/03.f32",
+      "renderSha256": "7f60823b84afad13f502460239147f81ce10ba29fc5fbeca8273c43e64d23056",
+      "scene": "ca1m-47895341",
+      "targetIndex": 3
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/04.f32",
+      "renderSha256": "790a3ea8c547a5433f90857fad515a751cf3acd9c097e2eb81949e00c91a7316",
+      "scene": "ca1m-47895341",
+      "targetIndex": 4
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/05.f32",
+      "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+      "scene": "ca1m-47895341",
+      "targetIndex": 5
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/06.f32",
+      "renderSha256": "6b66c60b6e8cb8d0b0e803bb070a15e3d896e0babd675195f92aecac61a8aed5",
+      "scene": "ca1m-47895341",
+      "targetIndex": 6
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/07.f32",
+      "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+      "scene": "ca1m-47895341",
+      "targetIndex": 7
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/00.f32",
+      "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+      "scene": "ca1m-47332915",
+      "targetIndex": 0
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/01.f32",
+      "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+      "scene": "ca1m-47332915",
+      "targetIndex": 1
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/02.f32",
+      "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+      "scene": "ca1m-47332915",
+      "targetIndex": 2
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/03.f32",
+      "renderSha256": "3224ed47c39f1555e4992fcb94f7bec1fce422bc19dc73d7a708b64ed1b2ab4f",
+      "scene": "ca1m-47332915",
+      "targetIndex": 3
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/04.f32",
+      "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+      "scene": "ca1m-47332915",
+      "targetIndex": 4
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/05.f32",
+      "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+      "scene": "ca1m-47332915",
+      "targetIndex": 5
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/06.f32",
+      "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+      "scene": "ca1m-47332915",
+      "targetIndex": 6
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47332915/renders/depth-only-fixed-opacity/07.f32",
+      "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+      "scene": "ca1m-47332915",
+      "targetIndex": 7
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/00.f32",
+      "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+      "scene": "ca1m-47332915",
+      "targetIndex": 0
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/01.f32",
+      "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+      "scene": "ca1m-47332915",
+      "targetIndex": 1
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/02.f32",
+      "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+      "scene": "ca1m-47332915",
+      "targetIndex": 2
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/03.f32",
+      "renderSha256": "66ffc7f752023cd8106faa8790ec123c5747ab8cb7e2c4d46c10baaf3b51015e",
+      "scene": "ca1m-47332915",
+      "targetIndex": 3
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/04.f32",
+      "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+      "scene": "ca1m-47332915",
+      "targetIndex": 4
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/05.f32",
+      "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+      "scene": "ca1m-47332915",
+      "targetIndex": 5
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/06.f32",
+      "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+      "scene": "ca1m-47332915",
+      "targetIndex": 6
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/07.f32",
+      "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+      "scene": "ca1m-47332915",
+      "targetIndex": 7
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/00.f32",
+      "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+      "scene": "ca1m-47332915",
+      "targetIndex": 0
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/01.f32",
+      "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+      "scene": "ca1m-47332915",
+      "targetIndex": 1
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/02.f32",
+      "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+      "scene": "ca1m-47332915",
+      "targetIndex": 2
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/03.f32",
+      "renderSha256": "1b9f9777fe10622ae3d367303e43e995e601c928d598c7a90611f2f2a7ded121",
+      "scene": "ca1m-47332915",
+      "targetIndex": 3
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/04.f32",
+      "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+      "scene": "ca1m-47332915",
+      "targetIndex": 4
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/05.f32",
+      "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+      "scene": "ca1m-47332915",
+      "targetIndex": 5
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/06.f32",
+      "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+      "scene": "ca1m-47332915",
+      "targetIndex": 6
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/07.f32",
+      "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+      "scene": "ca1m-47332915",
+      "targetIndex": 7
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/00.f32",
+      "renderSha256": "880c9869160afcc6050696eb13ebf3d2eef26b370806adcc5c5058f2d239c8da",
+      "scene": "ca1m-47331971",
+      "targetIndex": 0
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/01.f32",
+      "renderSha256": "caafc864a158470b11206fd041ab5de29466175ee1bed55e883ad9a8fca3726c",
+      "scene": "ca1m-47331971",
+      "targetIndex": 1
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/02.f32",
+      "renderSha256": "99e3788eeea486d447912cf9f34d45c945df64e14b90d2bab16c2978da7a3dab",
+      "scene": "ca1m-47331971",
+      "targetIndex": 2
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/03.f32",
+      "renderSha256": "7e7ac8d1f90ba06126f075c17f65cb69bbb5bb7022fd6dad2343e73f49dc359e",
+      "scene": "ca1m-47331971",
+      "targetIndex": 3
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/04.f32",
+      "renderSha256": "9b7afaecf82f3533208368a4caba27183c7d36e37a35dd3fff077a5c653631b0",
+      "scene": "ca1m-47331971",
+      "targetIndex": 4
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/05.f32",
+      "renderSha256": "4b7149088d8b90cef9cb4f3c8987171c10c58dad12443b0c0b0076111a755750",
+      "scene": "ca1m-47331971",
+      "targetIndex": 5
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/06.f32",
+      "renderSha256": "4f0cf207e120e8d13fe27699f1f12650e0c9b801f096ddb2a2fc11d71bfa3332",
+      "scene": "ca1m-47331971",
+      "targetIndex": 6
+    },
+    {
+      "method": "depth-only-fixed-opacity",
+      "path": "scenes/ca1m-47331971/renders/depth-only-fixed-opacity/07.f32",
+      "renderSha256": "001a0b2e80809e346e13cc0c9bf0b554288b72735f17d7b3c4839dbcebfd241c",
+      "scene": "ca1m-47331971",
+      "targetIndex": 7
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/00.f32",
+      "renderSha256": "d123d4c2bea3e649f527681435033d7c78fa8c33583852aecd02023f51af847b",
+      "scene": "ca1m-47331971",
+      "targetIndex": 0
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/01.f32",
+      "renderSha256": "f4253d38322e0aa98722220b4ccc42b389b801704d943da413904569924e4371",
+      "scene": "ca1m-47331971",
+      "targetIndex": 1
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/02.f32",
+      "renderSha256": "7a6cd4390e97c8aa70fcc439a1a221705e73462e94005fd5f1604c92ed461730",
+      "scene": "ca1m-47331971",
+      "targetIndex": 2
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/03.f32",
+      "renderSha256": "c15d5eaaf5392b0fe4805e35558fdd3a89dcaacb1fe3f6e182cf86bd0cc1b8b8",
+      "scene": "ca1m-47331971",
+      "targetIndex": 3
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/04.f32",
+      "renderSha256": "b5da444c5940f8d8e9061272c047351a9d4e8752a1bb998193b047a6faa44f76",
+      "scene": "ca1m-47331971",
+      "targetIndex": 4
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/05.f32",
+      "renderSha256": "4b7149088d8b90cef9cb4f3c8987171c10c58dad12443b0c0b0076111a755750",
+      "scene": "ca1m-47331971",
+      "targetIndex": 5
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/06.f32",
+      "renderSha256": "85a91f14aa6e746e82e0920ba9ebb0405b159a0148d9648d3f75df47429005d3",
+      "scene": "ca1m-47331971",
+      "targetIndex": 6
+    },
+    {
+      "method": "calibrated-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/07.f32",
+      "renderSha256": "f3df19758e26bcdc7ff994a217c7ea52b2d3e95f5abffba2eba805708b31186a",
+      "scene": "ca1m-47331971",
+      "targetIndex": 7
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/00.f32",
+      "renderSha256": "7cafc579d07487a15a831df983fa70447bea033617fe13ecb07701417130f1cf",
+      "scene": "ca1m-47331971",
+      "targetIndex": 0
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/01.f32",
+      "renderSha256": "2a1066f26eb50cd973faf90ef0bedfd31b031b5613d9218fb806a57ed103db4a",
+      "scene": "ca1m-47331971",
+      "targetIndex": 1
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/02.f32",
+      "renderSha256": "53e404e8b87769f0f457e9244f7e93e20ffa5290e56308a484363f58d512aeb1",
+      "scene": "ca1m-47331971",
+      "targetIndex": 2
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/03.f32",
+      "renderSha256": "aa444f143cddb0926cf6c964cc13b9895974013707068462ac486f1815ce5c11",
+      "scene": "ca1m-47331971",
+      "targetIndex": 3
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/04.f32",
+      "renderSha256": "e131d8b46583fd208a63017208e55ece3ce3bfaa2fb49c546b3acd117f85d4ee",
+      "scene": "ca1m-47331971",
+      "targetIndex": 4
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/05.f32",
+      "renderSha256": "86291f86d48bb492ae1ab9808b46ccec3e16cc5b268270c7eff5f84c59ea6cf4",
+      "scene": "ca1m-47331971",
+      "targetIndex": 5
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/06.f32",
+      "renderSha256": "35488677b621a5f1e9c7c3789182b04cd71c6813e028eada789967ebd8bece38",
+      "scene": "ca1m-47331971",
+      "targetIndex": 6
+    },
+    {
+      "method": "shuffled-relative-precision-opacity",
+      "path": "scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/07.f32",
+      "renderSha256": "001a0b2e80809e346e13cc0c9bf0b554288b72735f17d7b3c4839dbcebfd241c",
+      "scene": "ca1m-47331971",
+      "targetIndex": 7
+    }
+  ],
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "resultSha256": "c361fda74d005c3d76c2d33b83626e5ef4039ee9fbce177d0b42e42fc9a0a823",
+  "resultStatus": "completed-confirmatory-gate-not-passed",
+  "sceneCount": 5,
+  "schemaVersion": 1,
+  "stage": "U6b-confirmatory-result-freeze",
+  "status": "frozen-confirmatory-result-gate-not-passed",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "targetViewsPerScene": 8,
+  "verification": {
+    "allRecordedRenderHashesVerified": true,
+    "bootstrapRecomputed": false,
+    "gateOrMetricsRecomputed": false,
+    "renderFileSetExactlyMatchedResult": true,
+    "resultBindingsMatchedProtocolPreparationAuthorization": true
+  }
+}

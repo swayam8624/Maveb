@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "experiment": "observability-gated-deletion-v0",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-correctness-probe",
+  "configuration": {
+    "entityCount": 100,
+    "frames": 40,
+    "coverageWindowEntities": 20,
+    "physicalRemovals": 0
+  },
+  "baselineImmediateSnapshot": {
+    "falseRemovals": 392,
+    "idChurnEvents": 312
+  },
+  "coverageGated": {
+    "falseRemovals": 0,
+    "idChurnEvents": 0
+  },
+  "decision": "HARD CORRECTNESS GATE: persistent-world ingestion must distinguish unobserved/unknown from observed-absent before removal/reappearance results are trusted.",
+  "next": [
+    "Add explicit observation-coverage input to world ingestion rather than inferring absence from missing observations.",
+    "Carry previous entities through unknown/unobserved regions.",
+    "Represent contradiction/removal evidence separately from association confidence.",
+    "Test real occlusion, true removal, reappearance, and authored deletion as different cases."
+  ]
+}

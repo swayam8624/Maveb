@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "experiment": "phase-representation-nuisance-v1",
+  "executedAt": "2026-09-20",
+  "executionNote": "Executed in the analysis sandbox with the same deterministic numerical logic committed in research/probes/phase_representation_nuisance_v1.py. Container network cannot clone GitHub, so this result is not claimed as a clean-checkout reproduction yet.",
+  "environment": {
+    "python": "3.13.5",
+    "platform": "Linux x86_64",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "configuration": {
+    "seeds": 12,
+    "points": 48,
+    "grid": 18,
+    "covariance_opacity_noise_levels": [
+      0.1,
+      0.25,
+      0.5
+    ],
+    "center_edit_magnitudes": [
+      0.015,
+      0.03,
+      0.06,
+      0.12
+    ]
+  },
+  "record_count": 84,
+  "summary": {
+    "full_phase": {
+      "nuisance_median": 0.2178015714089347,
+      "nuisance_p95": 0.44838709500285623,
+      "edit_median": 0.16553189530329465,
+      "edit_vs_nuisance_auc": 0.453125
+    },
+    "center_phase": {
+      "nuisance_median": 0,
+      "nuisance_p95": 0,
+      "edit_median": 0.16973927198189218,
+      "edit_vs_nuisance_auc": 1
+    },
+    "full_amplitude": {
+      "nuisance_median": 0.003666280941744875,
+      "nuisance_p95": 0.007159058211489067,
+      "edit_median": 0.0023417259269481747,
+      "edit_vs_nuisance_auc": 0.3576388888888889
+    },
+    "center_amplitude": {
+      "nuisance_median": 0,
+      "nuisance_p95": 0,
+      "edit_median": 0.0023957414404342466,
+      "edit_vs_nuisance_auc": 1
+    }
+  },
+  "decision": "REJECT raw anisotropic opacity-weighted field phase as a geometry-only invariant; retain geometry-normalized center phase only for harder testing.",
+  "interpretation": [
+    "Raw field phase reacts strongly to covariance/opacity changes even when centers are identical.",
+    "Raw field phase edit-vs-nuisance AUC is 0.453, below random ordering in this probe.",
+    "Equal-kernel center-only phase is invariant to this nuisance by construction and remains sensitive to center edits.",
+    "Center phase is not validated; split/merge, local-neighborhood, anisotropic-geometry, moment-preserving deformation and real 3DGS resampling attacks remain."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "status": "frozen-before-any-u3b-reconstruction-outcome",
+  "purpose": "Map the preregistered U3b relative-confidence transfer onto the already-tested U3 UncertaintyTsdfVolume primitive without changing TSDF projection, accumulation, or meshing math.",
+  "parentProtocolSha256": "f42fb12bb855e660c3cf4d77e5dd4200b73136baa73981434b54c98b43e63a6d",
+  "posePreflightSha256": "692479544ceff75e02fd3645138eab5a5e38d83e397ff3ec5de9ce1a3d468f6d",
+  "frozenPredictiveModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "enginePrimitive": "UncertaintyTsdfVolume calibratedInverseVariance",
+  "relativeManifestUncertaintyConfig": {
+    "minimumSigmaMetres": 1.0,
+    "maximumSigmaMetres": 7.0,
+    "depthNoiseFloorMetres": 1.0,
+    "depthNoiseQuadraticMetresPerMetreSquared": 0.0,
+    "sensorConfidencePenalty": 5.990146384791633,
+    "poseTranslationFloorMetres": 0.0,
+    "poseTranslationScaleMetres": 0.0,
+    "referenceSigmaMetres": 1.0,
+    "minimumPrecisionWeight": 1e-12,
+    "maximumPrecisionWeight": 1.0
+  },
+  "equivalence": {
+    "engineFormula": "weight = clamp((referenceSigma / predictedSigma)^2, minimumPrecisionWeight, maximumPrecisionWeight)",
+    "predictedSigmaUnderAdapter": "1 + k*(1-c)",
+    "result": "weight = 1 / (1 + k*(1-c))^2",
+    "minimumPrecisionWeightSentinel": "1e-12 is required only because the engine validator requires a positive lower bound. It is more than ten orders of magnitude below the attainable U3b minimum weight and therefore cannot activate for c in [0,1]. It is not an experimental precision floor.",
+    "sigmaClamp": "predicted sigma lies in [1, 1+k] = [1, 6.990146384791633], strictly inside configured [1,7], so the sigma clamp does not alter the transfer.",
+    "expectedWeights": {
+      "confidenceU8_0": 0.020465740292285855,
+      "confidenceU8_128": 0.06302428158557383,
+      "confidenceU8_255": 1.0
+    }
+  },
+  "methodMapping": {
+    "uniform": {"engineMode": "uniform", "manifest": "relative-or-legacy-equivalent"},
+    "naive-confidence": {"engineMode": "naive-confidence", "manifest": "relative-or-legacy-equivalent"},
+    "u3v1-absolute-inverse-variance": {"engineMode": "calibrated-inverse-variance", "manifest": "legacy-u3v1-uncertainty"},
+    "relative-confidence-precision": {"engineMode": "calibrated-inverse-variance", "manifest": "relative-confidence-equivalence"},
+    "relative-confidence-shuffled": {"engineMode": "calibrated-shuffled-confidence", "manifest": "relative-confidence-equivalence"}
+  },
+  "compatibility": {
+    "existingFuseTool": "maveb-u3-fuse",
+    "manifestStudyCompatibilityField": "metric-uncertainty-u3-dense-tsdf-v1",
+    "note": "The existing executable currently hard-codes the U3 scene-manifest study identifier. U3b preparation therefore emits engine-compatibility manifests with that parser field while separately recording the true U3b study id, protocol hash, adapter hash, pose hash, and method role in the preparation ledger. No U3 v1 outcome or scene is reused."
+  },
+  "claimBoundary": "This is an implementation adapter freeze, not a result. No confirmatory geometry metric was available when this file was committed."
+}

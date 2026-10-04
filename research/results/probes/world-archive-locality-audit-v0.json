@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "experiment": "world-archive-locality-audit-v0",
+  "date": "2026-09-20",
+  "source": "PR #28 persistent-world core",
+  "findings": [
+    {
+      "component": "WorldTimeline",
+      "behavior": "Stores std::vector<WorldSnapshot>; each snapshot owns a full std::vector<EntityState>.",
+      "implication": "In-memory history scales approximately with revisions × entities even when only a small entity subset changes."
+    },
+    {
+      "component": "saveWorldArchive",
+      "behavior": "Validates the complete timeline, opens a temporary file, and serializes every entity of every snapshot before replacing the destination.",
+      "implication": "Persisting one new revision rewrites the complete historical archive rather than appending only the new revision/delta."
+    },
+    {
+      "component": "loadWorldArchive",
+      "behavior": "Parses every snapshot and every entity into full WorldSnapshot objects.",
+      "implication": "Random time/region access and startup cost are coupled to complete archive size."
+    },
+    {
+      "component": "Reality Diff",
+      "behavior": "The system already has deterministic entity-level diffs between revisions.",
+      "implication": "A natural delta representation already exists semantically; persistence simply does not exploit it yet."
+    }
+  ],
+  "decision": "PROMOTE APPEND-ONLY DELTA + PERIODIC CHECKPOINT STORAGE AS REQUIRED INFRASTRUCTURE FOR MINIMAL-WORK HISTORY. Do not claim generic delta journaling as standalone novelty.",
+  "exactnessRequirement": "Reconstructing any revision from checkpoint+deltas must produce an entity-sorted snapshot byte/field-equivalent to the immutable full snapshot semantics.",
+  "next": [
+    "Measure full snapshot bytes vs checkpoint+delta bytes for realistic changed fractions and revision counts.",
+    "Define crash-safe append transaction/checksum format before replacing full archive writes.",
+    "Add random revision reconstruction and corruption tests.",
+    "Later add spatial chunking only if region/time random access becomes material."
+  ]
+}

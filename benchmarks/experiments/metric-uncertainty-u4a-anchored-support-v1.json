@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u4a-anchored-support-v1",
+  "stage": "U4a-exploratory-support-topology-intervention",
+  "status": "frozen-before-u4a-geometry-outcomes",
+  "frozen": true,
+  "claimType": "exploratory mechanism/representation study on already-exposed U3b scenes; not confirmatory efficacy evidence",
+  "motivation": "U3c showed that scalar TSDF reweighting has little mechanical leverage: median naive-vs-relative fusion leverage is zero in all five rooms, conflict+mixed-confidence voxels are uncommon, and only a small minority of surface-active voxels move by >=0.25 voxel. U4a therefore moves uncertainty from averaging weights into the decision of whether an observation is allowed to establish or extend surface support.",
+  "parentEvidence": {
+    "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+    "u3cSummarySha256": "652b2df1ae3811f23252af4469089ab4a2bd56ca12cdbea8e864b3d149505110",
+    "u3cProtocolSha256": "21b873de6a2b91148a6806818ec244dd74df1da2e51849a01f40716429f4eb78",
+    "u1bModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "u3bPreparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3"
+  },
+  "scenes": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "dataReuse": {
+    "viewsPerScene": 8,
+    "preparedManifestFilename": "scene-manifest-relative.json",
+    "volumeBounds": "reuse exact U3b prepared bounds/voxel size/truncation/maximum accumulated weight",
+    "poses": "reuse exact U3b camera-to-world FARO-registered poses",
+    "reference": "reuse exact U3b FARO reference point cloud",
+    "confidence": "reuse exact U3b uint8 confidence 0/128/255 normalized by /255",
+    "shuffledConfidence": "reuse exact U3b deterministic within-scene shuffled confidence sidecars"
+  },
+  "frozenPredictiveModel": {
+    "depthNoiseFloorMetres": 0.010634156727771725,
+    "depthNoiseQuadraticMetresPerMetreSquared": 0.004398048551220112,
+    "sensorConfidencePenalty": 5.990146384791633,
+    "sigmaDepthOnly": "a + b*d^2",
+    "sigmaCalibrated": "(a + b*d^2) * (1 + k*(1-c))"
+  },
+  "intervention": {
+    "name": "uncertainty-anchored-support-fusion",
+    "principle": "Uncertainty changes whether an observation may establish topology, not the scalar weight used after admission.",
+    "anchorCriterion": "an observation is a high-certainty anchor iff predictive sigma <= 0.5 * scene voxelSizeMetres",
+    "anchorThresholdRationale": "sub-half-voxel predictive standard deviation is a scale-adaptive criterion for observations precise enough to establish surface support without a scene-specific tuned threshold",
+    "anchorPass": {
+      "fusionWeight": 1.0,
+      "geometry": "same TSDF signed-distance/truncation/projection rules as the existing dense CPU oracle",
+      "gridSamples": "oracle sample locations are exactly originMetres + [x,y,z] * voxelSizeMetres, matching UncertaintyTsdfVolume",
+      "purpose": "construct a support field only; anchor-pass geometry is diagnostic and is not the U4a candidate output"
+    },
+    "supportQuery": {
+      "surfacePoint": "world-space point obtained by back-projecting the observed depth pixel and applying the frozen camera-to-world pose",
+      "lookup": "nearest dense oracle grid sample to the predicted surface point",
+      "lookupIndex": "round((surfacePoint-originMetres)/voxelSizeMetres) independently per axis with C++ llround half-away-from-zero semantics; reject indices outside the frozen volume",
+      "anchorRequired": "anchor grid sample accumulated weight > 0",
+      "anchorSurfaceBand": "abs(anchor normalized TSDF) <= 0.25",
+      "surfaceBandRationale": "same quarter-truncation normalized surface neighborhood frozen in U3c; no FARO outcome is used to choose it"
+    },
+    "finalAdmission": "anchors are admitted; a non-anchor observation is admitted only when its predicted surface point satisfies the frozen anchor support query",
+    "finalFusionWeight": "original naive confidence c=confidenceU8/255 for every admitted observation",
+    "importantIsolation": "calibrated sigma is never converted into a scalar final TSDF precision weight in U4a"
+  },
+  "methods": [
+    {
+      "id": "naive-confidence",
+      "role": "existing U3b baseline",
+      "definition": "original U3b naive-confidence reconstruction; no rerun required for the baseline metric"
+    },
+    {
+      "id": "depth-only-anchored-support",
+      "role": "control",
+      "supportSigma": "sigmaDepthOnly",
+      "finalConfidence": "original intact confidence"
+    },
+    {
+      "id": "calibrated-anchored-support",
+      "role": "exploratory candidate",
+      "supportSigma": "sigmaCalibrated with intact confidence",
+      "finalConfidence": "original intact confidence"
+    },
+    {
+      "id": "shuffled-calibrated-anchored-support",
+      "role": "causal control",
+      "supportSigma": "sigmaCalibrated using the frozen shuffled confidence assignment",
+      "finalConfidence": "original intact confidence; shuffle affects support decisions only"
+    }
+  ],
+  "executionOrder": [
+    "depth-only-anchored-support",
+    "calibrated-anchored-support",
+    "shuffled-calibrated-anchored-support"
+  ],
+  "evaluation": {
+    "geometry": "same FARO evaluation script/settings as U3b; no alignment; Chamfer mean primary descriptive geometry metric; F@5cm precision/recall secondary",
+    "topologyDiagnostics": [
+      "vertices",
+      "triangles",
+      "connectedComponentCount",
+      "largestConnectedComponentTriangleFraction"
+    ],
+    "supportDiagnostics": [
+      "anchorObservationCount",
+      "anchorObservationFraction",
+      "admittedNonAnchorObservationCount",
+      "suppressedNonAnchorObservationCount",
+      "finalAdmittedObservationFraction",
+      "anchorVoxelCount",
+      "supportedSurfaceLookupFraction"
+    ]
+  },
+  "descriptiveComparisons": {
+    "candidateVsNaive": "(naiveChamfer - candidateChamfer) / naiveChamfer",
+    "candidateVsDepthOnly": "(depthOnlyChamfer - candidateChamfer) / depthOnlyChamfer",
+    "shuffledDegradation": "(shuffledChamfer - candidateChamfer) / candidateChamfer",
+    "sceneEvidenceUnit": "scene",
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "warning": "All five scenes are already exposed. Intervals and correlations are descriptive/hypothesis-generating only and cannot be promoted to confirmatory evidence."
+  },
+  "mechanismInterpretation": {
+    "promising": "If calibrated anchored support improves precision/Chamfer on multiple scenes without severe recall collapse and shuffled support is directionally worse, then uncertainty affecting topology/support is a plausible mechanism worth a new untouched U4b confirmatory study.",
+    "overPruning": "If precision improves but recall/completeness collapses, the support rule is too conservative; record this as an exploratory failure rather than tuning the threshold on these scenes.",
+    "noEffect": "If calibrated anchored support remains nearly identical to naive/depth-only, externally calibrated uncertainty still has insufficient leverage at this representation level; move U4b toward explicit multimodal/hybrid surface hypotheses or Gaussian support rather than further TSDF gating.",
+    "shuffledNotWorse": "If shuffled confidence performs similarly or better, do not attribute any geometry change to calibrated confidence association."
+  },
+  "confirmatoryBoundary": {
+    "u4aCanEstablishEfficacy": false,
+    "futureU4bRequirement": "Any positive efficacy claim requires a separately frozen untouched scene set and thresholds fixed before asset/geometry exposure.",
+    "u3AndU3bRemainNegative": true
+  },
+  "literaturePositioning": {
+    "note": "U4a deliberately moves toward uncertainty as part of spatial support/representation, consistent with probabilistic SDF/hybrid-representation work, while remaining distinct from recent sparse-view Gaussian methods that use learned uncertainty or depth/normal regularization inside image-driven optimization."
+  }
+}

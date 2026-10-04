@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "dependencies": {
+    "colmap": {
+      "version": "3.13.0",
+      "repository": "https://github.com/colmap/colmap.git",
+      "commit": "0b31f98133b470eae62811b557dc2bcff1e4f9a5",
+      "license": "BSD-3-Clause"
+    },
+    "brush": {
+      "version": "0.3.0",
+      "repository": "https://github.com/ArthurBrussee/brush.git",
+      "commit": "3edecbb2fe79d3e2c87eeab85b15e0b1dd10d486",
+      "license": "Apache-2.0",
+      "cargoPackage": "brush-app",
+      "cargoBinary": "brush_app"
+    },
+    "open3d": {
+      "version": "0.19.0",
+      "repository": "https://github.com/isl-org/Open3D.git",
+      "license": "MIT",
+      "integration": "Python wheel locked by tools/aether-proxy/uv.lock"
+    }
+  }
+}

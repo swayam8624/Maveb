@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-tail-locality-certificate-v0",
+  "executedAt": "2026-09-20",
+  "executionNote": "Exploratory Monte Carlo sanity check executed in analysis sandbox; theorem validity is analytic, not inferred from sampling. Regenerate from committed probe before citation.",
+  "configuration": {
+    "gaussians": 40,
+    "outsideSamplesPerTrial": 40000,
+    "seeds": 5,
+    "margins": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.25
+    ]
+  },
+  "summary": {
+    "0.05": {
+      "boundMedian": 1.7349807616990098,
+      "sampledMaxMedian": 0.1038705188365836,
+      "boundToSampledMaxMedian": 17.14539088108485,
+      "sampledViolations": 0
+    },
+    "0.10": {
+      "boundMedian": 0.45259130563198896,
+      "sampledMaxMedian": 0.04223913343372716,
+      "boundToSampledMaxMedian": 8.823743239561676,
+      "sampledViolations": 0
+    },
+    "0.15": {
+      "boundMedian": 0.09071297523946835,
+      "sampledMaxMedian": 0.009428042059209817,
+      "boundToSampledMaxMedian": 7.7802512841158,
+      "sampledViolations": 0
+    },
+    "0.20": {
+      "boundMedian": 0.012651101944981888,
+      "sampledMaxMedian": 0.0031969368469348678,
+      "boundToSampledMaxMedian": 4.515704716629111,
+      "sampledViolations": 0
+    },
+    "0.25": {
+      "boundMedian": 0.0011647892086047644,
+      "sampledMaxMedian": 0.0004256299225819803,
+      "boundToSampledMaxMedian": 3.9437822909957134,
+      "sampledViolations": 0
+    }
+  },
+  "decision": "PROMOTE H010 TO PRIORITY SURVIVOR: analytic outside-volume density disturbance certificate appears valid and computationally cheap; novelty and rendering-space relevance remain unverified."
+}

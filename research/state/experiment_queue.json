@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 2,
+  "frozenAt": "2026-09-20",
+  "updatedAt": "2026-09-20T21:58+05:30",
+  "lockedBranch": "research/maveb-s1-locked",
+  "rules": [
+    "all current-paper experiments run from the locked integration branch",
+    "novelty collision reopens the problem lock immediately",
+    "primary metrics and tolerances are frozen before medium/full runs",
+    "all negative results are retained",
+    "no numeric result is evidence until the committed probe or benchmark actually executes",
+    "native work units remain separate; no synthetic aggregate work score",
+    "full-reference equivalence is mandatory wherever equivalence is claimed"
+  ],
+  "queue": [
+    {
+      "priority": 1,
+      "id": "L0",
+      "name": "locked-line validation",
+      "branch": "research/maveb-s1-locked",
+      "next": "obtain green CPU tests, sanitizer, static analysis, AetherStudio compile and relevant Metal tests on the consolidated head",
+      "kill": "compile/test failures reveal incompatible merged mechanisms or correctness regressions"
+    },
+    {
+      "priority": 2,
+      "id": "L1",
+      "name": "complete cross-layer CDSRC instrumentation",
+      "branch": "research/maveb-s1-locked",
+      "next": "bind observations, TSDF read/write, mesh cells, Gaussian inspect/update, texture writes, GPU publication and temporal invalidation to one revision certificate with explicit full baselines",
+      "kill": "a required layer cannot expose a meaningful equivalent full baseline or hides global work"
+    },
+    {
+      "priority": 3,
+      "id": "L2",
+      "name": "Apple-silicon sparse-change benchmark",
+      "branch": "research/maveb-s1-locked",
+      "next": "run 0.1/0.25/0.5/1/2/5/10/25/50/100 percent changes on the M2 Pro path and record wall time, bytes, memory and per-layer ULR",
+      "kill": "1-5 percent changes do not produce a clear end-to-end advantage or one global layer dominates"
+    },
+    {
+      "priority": 4,
+      "id": "L3",
+      "name": "VG-Scene evolving-world evaluation",
+      "branch": "research/maveb-s1-locked",
+      "next": "run the local VG-Scene adapter and full/reference repair experiments on available real and synthetic sequences after dataset-license review",
+      "kill": "benefit disappears on public evolving scenes or quality/equivalence regresses"
+    },
+    {
+      "priority": 5,
+      "id": "L4",
+      "name": "750-cell controlled matrix",
+      "branch": "research/maveb-s1-locked",
+      "next": "execute the frozen change-fraction x change-type x scale x seed matrix and archive raw certificates",
+      "kill": "sparse-regime behavior is unstable across seeds/change classes or crossover is trivial"
+    },
+    {
+      "priority": 6,
+      "id": "L5",
+      "name": "closest-baseline comparison",
+      "branch": "research/maveb-s1-locked",
+      "next": "compare full rebuild and strongest task-compatible continual/changing-scene Gaussian baselines using fair inputs and published code/data when available",
+      "kill": "locked method wins only against weak or mismatched baselines"
+    },
+    {
+      "priority": 7,
+      "id": "L6",
+      "name": "mechanism ablations",
+      "branch": "research/maveb-s1-locked",
+      "next": "remove indexed Gaussian selection, coherent texture pages, observability semantics, versioned GPU publication and regional temporal invalidation one at a time",
+      "kill": "headline result persists unchanged without the proposed dependency mechanisms, indicating the claimed mechanism is not explanatory"
+    },
+    {
+      "priority": 8,
+      "id": "L7",
+      "name": "crossover and failure-regime characterization",
+      "branch": "research/maveb-s1-locked",
+      "next": "measure where incremental repair should deliberately fall back to full rebuild and quantify unchanged-world damage and repeated-edit drift",
+      "kill": "no meaningful sparse/local regime or unacceptable accumulated damage"
+    }
+  ],
+  "deferred": [
+    "temporal representation migration",
+    "geometry-certificate paper",
+    "resampling-lineage paper beyond retained ablation",
+    "bounded scheduling paper",
+    "general uncertainty paper"
+  ],
+  "paperReady": false
+}

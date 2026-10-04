@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-index-overlay-numpy-v3",
+  "status": "synthetic-numpy-reference-probe",
+  "warning": "Not production C++, not Metal, and not an Apple-silicon benchmark. Use timings only as within-runtime structural evidence.",
+  "source": {
+    "commit": "462b27d229cf8d6633e0d51e53c9457644120d95",
+    "blobSha": "2d344b7d0a6406772d9bf6959648a45ecf4adad7",
+    "path": "research/probes/gaussian_index_overlay_numpy_v3.py"
+  },
+  "configuration": {
+    "cellCoordinateExtent": 512,
+    "dirtyOccupiedCellFraction": 0.001,
+    "gaussians": 1000000,
+    "queryRepeats": 3,
+    "seed": 42
+  },
+  "runtime": {
+    "machine": "x86_64",
+    "numpy": "2.3.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "baseBuildMs": 101.05735199999799,
+  "baseStorageBytes": 12000000,
+  "levels": [
+    {
+      "changed_fraction": 0.01,
+      "changed_gaussians": 10000,
+      "delta_rebuild_ms": 0.7395310001356847,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 105.16294099988954,
+      "oracle_query_median_ms": 3.054866999946171,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 7.003895000025295,
+      "overlay_storage_bytes": 13120000,
+      "selected_gaussians": 1000
+    },
+    {
+      "changed_fraction": 0.02,
+      "changed_gaussians": 20000,
+      "delta_rebuild_ms": 1.732457000116483,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 109.31364599991866,
+      "oracle_query_median_ms": 3.1563270001697674,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 7.978923000109717,
+      "overlay_storage_bytes": 13240000,
+      "selected_gaussians": 999
+    },
+    {
+      "changed_fraction": 0.05,
+      "changed_gaussians": 50000,
+      "delta_rebuild_ms": 3.788299999996525,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 108.18797499996435,
+      "oracle_query_median_ms": 2.9439239999646816,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 7.176649999792062,
+      "overlay_storage_bytes": 13600000,
+      "selected_gaussians": 1000
+    },
+    {
+      "changed_fraction": 0.1,
+      "changed_gaussians": 100000,
+      "delta_rebuild_ms": 8.637775999886799,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 102.74900900003558,
+      "oracle_query_median_ms": 2.7064529999734077,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 7.743917999960104,
+      "overlay_storage_bytes": 14200000,
+      "selected_gaussians": 1002
+    },
+    {
+      "changed_fraction": 0.2,
+      "changed_gaussians": 200000,
+      "delta_rebuild_ms": 18.355756000119072,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 109.46191500011082,
+      "oracle_query_median_ms": 2.6895280000189814,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 6.722609999997076,
+      "overlay_storage_bytes": 15400000,
+      "selected_gaussians": 1001
+    },
+    {
+      "changed_fraction": 0.4,
+      "changed_gaussians": 400000,
+      "delta_rebuild_ms": 37.51031100000546,
+      "dirty_regions": 997,
+      "exact_selection_agreement": true,
+      "full_rebuild_ms": 103.03839600010178,
+      "oracle_query_median_ms": 2.6848119998703623,
+      "oracle_storage_bytes": 12000000,
+      "overlay_query_median_ms": 6.225577000122939,
+      "overlay_storage_bytes": 17800000,
+      "selected_gaussians": 1001
+    }
+  ]
+}

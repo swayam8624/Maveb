@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "artifact": "maveb-cbrc-representation-validation-comparison",
+  "evidenceDate": "2026-09-21",
+  "sfmSeeded": {
+    "rows": 60,
+    "scenes": 4,
+    "certifiedLocalCases": 44,
+    "fullFallbackCases": 16,
+    "certificateViolations": 0,
+    "medianSelectedWorkRatioFull": 0.3695301075670818,
+    "workCostUnits": [
+      "ms"
+    ],
+    "representation": "real public RGB/COLMAP SfM points seeded as isotropic Gaussians; canonical scale normalization"
+  },
+  "trained3dgs": {
+    "rows": 5,
+    "scenes": 1,
+    "certifiedLocalCases": 4,
+    "fullFallbackCases": 1,
+    "certificateViolations": 0,
+    "medianSelectedWorkRatioFull": 0.03494791666666667,
+    "workCostUnits": [
+      "temporal-pixels"
+    ],
+    "representation": "public trained anisotropic 3DGS; SH/opacity/scale/rotation preserved"
+  },
+  "crossRepresentationPerformanceClaim": false,
+  "interpretation": "Both representations use the same CBRC/oracle safety contract, but the scene sources and work units are not matched. This is coverage evidence, not a speed/quality ranking."
+}

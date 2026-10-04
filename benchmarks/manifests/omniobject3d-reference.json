@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "omniobject3d-reference",
+  "title": "OmniObject3D reference subset",
+  "kind": "reference-only",
+  "root": "$MAVEB_DATA/OmniObject3D",
+  "requiredAssets": {
+    "pointClouds": "**/*.ply"
+  },
+  "note": "Reference-only point-cloud subset; not a first-line smoke reconstruction source."
+}

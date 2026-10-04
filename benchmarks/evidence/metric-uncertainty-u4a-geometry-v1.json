@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u4a-anchored-support-v1",
+  "stage": "U4a-exploratory-geometry",
+  "status": "completed-exploratory-negative",
+  "claimType": "exploratory mechanism/representation study on already-exposed U3b scenes; not confirmatory efficacy evidence",
+  "geometryResultSha256": "e9c12349c08ab6d90f57cc02f61c367ad8a33ed54a38879aba8258684ff0cd49",
+  "geometryLogSha256": "ab123bf5f24c1c86b66c85919713196454a14e4c0d28e15ee5053a3226c1b1f4",
+  "protocolSha256": "c2edc6bcf81b7e2e3b1fb2b7a5ba6a32f1025ab17c95c4efdaa18a7fa4cb793b",
+  "preparationSha256": "01a505be16f9f89b533f6ac45f300ba86cb0ab18417e2792d97569050d87fd90",
+  "u3cSummarySha256": "652b2df1ae3811f23252af4469089ab4a2bd56ca12cdbea8e864b3d149505110",
+  "u3bPrimaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+  "fuseToolSha256": "9bfd19ba1af9732cb75785cefbb4a1a6fcba6656354adfff19e53c9ae912ddf0",
+  "artifactChecks": {
+    "u4aMeshCount": 15,
+    "immutableResultGuardPassed": true,
+    "overwriteAttemptExitCode": 2,
+    "parentEvidenceHashesUnchanged": true
+  },
+  "descriptiveComparison": {
+    "candidateVsNaive": {
+      "sceneValues": [-1.0307992190443394, -0.45699037397646497, -0.25313084549737175, -0.02537779046905865, -0.4062014502530751],
+      "median": -0.4062014502530751,
+      "lower95": -1.0307992190443394,
+      "upper95": -0.02537779046905865,
+      "candidateBetterSceneCount": 0,
+      "sceneCount": 5
+    },
+    "candidateVsDepthOnly": {
+      "sceneValues": [-0.02168070369601939, -0.00010178498199698134, -0.007841016783264593, -0.024579547560243272, -0.02735837257980837],
+      "median": -0.02168070369601939,
+      "lower95": -0.02735837257980837,
+      "upper95": -0.00010178498199698134,
+      "candidateBetterSceneCount": 0,
+      "sceneCount": 5
+    },
+    "shuffledDegradationVsCandidate": {
+      "sceneValues": [0.007030363597776567, 0.0017539475431250307, -0.00124247026967405, 0.03614283509552558, -0.0009087089332339036],
+      "median": 0.0017539475431250307,
+      "lower95": -0.00124247026967405,
+      "upper95": 0.03614283509552558,
+      "shuffledWorseSceneCount": 3,
+      "sceneCount": 5
+    },
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "descriptiveOnly": true
+  },
+  "sceneSummary": {
+    "ca1m-42897538": {
+      "naiveChamferMetres": 0.2359560547198259,
+      "candidateChamferMetres": 0.24194409803641137,
+      "candidatePrecisionAt5cm": 0.798328414410747,
+      "candidateRecallAt5cm": 0.351775,
+      "candidateConnectedComponents": 42,
+      "candidateFinalAdmittedObservationFraction": 0.7755533854166666,
+      "shuffledConnectedComponents": 189
+    },
+    "ca1m-45261587": {
+      "naiveChamferMetres": 0.12775393584803915,
+      "candidateChamferMetres": 0.1600923976448703,
+      "candidatePrecisionAt5cm": 0.9052392040643522,
+      "candidateRecallAt5cm": 0.31715,
+      "candidateConnectedComponents": 19,
+      "candidateFinalAdmittedObservationFraction": 0.8830159505208334,
+      "shuffledConnectedComponents": 32
+    },
+    "ca1m-48018375": {
+      "naiveChamferMetres": 0.1983699065641028,
+      "candidateChamferMetres": 0.27894805029700837,
+      "candidatePrecisionAt5cm": 0.8676442807216398,
+      "candidateRecallAt5cm": 0.181455,
+      "candidateConnectedComponents": 25,
+      "candidateFinalAdmittedObservationFraction": 0.7151514689127604,
+      "shuffledConnectedComponents": 92
+    },
+    "ca1m-48018737": {
+      "naiveChamferMetres": 0.142429888219645,
+      "candidateChamferMetres": 0.20751897610256667,
+      "candidatePrecisionAt5cm": 0.9123918174665617,
+      "candidateRecallAt5cm": 0.28505,
+      "candidateConnectedComponents": 47,
+      "candidateFinalAdmittedObservationFraction": 0.43313852945963544,
+      "shuffledConnectedComponents": 59
+    },
+    "ca1m-48458481": {
+      "naiveChamferMetres": 0.056329301651560554,
+      "candidateChamferMetres": 0.11439350180330218,
+      "candidatePrecisionAt5cm": 0.9108762621940784,
+      "candidateRecallAt5cm": 0.6661233747395627,
+      "candidateConnectedComponents": 9,
+      "candidateFinalAdmittedObservationFraction": 0.8435897827148438,
+      "shuffledConnectedComponents": 24
+    }
+  },
+  "interpretation": {
+    "primary": "Hard uncertainty-anchored support gating is not a promising TSDF intervention on the exposed U3b rooms. It increases precision in several scenes but suppresses too much valid surface support, reducing completeness and worsening Chamfer in every scene relative to naive-confidence.",
+    "candidateVsNaive": "calibrated anchored support is worse in 5/5 scenes, with median relative Chamfer improvement -40.620145%",
+    "candidateVsDepthOnly": "calibrated anchored support is worse in 5/5 scenes, with median relative Chamfer improvement -2.168070%",
+    "shuffledControl": "shuffled support is worse in only 3/5 scenes and its descriptive interval crosses zero, so calibrated confidence association does not establish a robust beneficial topology mechanism here",
+    "topology": "support gating can strongly change fragmentation and connected components, but the direction is unstable; for example shuffled support creates 189 components on ca1m-42897538",
+    "nextBoundary": "Do not open an untouched U4b confirmatory set for this hard-gating rule. Move the next exploratory representation study to explicit multimodal/hybrid surface or Gaussian support where uncertainty can preserve competing hypotheses instead of deleting observations."
+  },
+  "claimBoundary": "Exploratory only. This result cannot establish efficacy. U3 and U3b remain negative, and U4a does not justify confirmatory replication of this hard support-gating rule."
+}

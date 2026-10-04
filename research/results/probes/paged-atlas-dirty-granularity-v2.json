@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "experiment": "paged-atlas-dirty-granularity-v2",
+  "status": "synthetic-dependency-granularity-probe",
+  "warning": "Not a texture-quality or GPU timing benchmark. Page rewrite fraction assumes whole-page upload/invalidation granularity; sub-page writes are reported as an ideal lower bound.",
+  "source": {
+    "commit": "a68f1c9fd0ba38a1f943fa7a4dfdb37b13f6bb00",
+    "blobSha": "13f9d62548ae89955d94abddf876afb04d5c4a39",
+    "path": "research/probes/paged_atlas_dirty_granularity_v2.py"
+  },
+  "configuration": {
+    "activeSlots": 250000,
+    "changeFractions": [0.001, 0.01, 0.05],
+    "seeds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "slotsPerPage": [64, 256, 1024, 4096]
+  },
+  "runtime": {
+    "machine": "x86_64",
+    "numpy": "2.3.5",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "rows": [
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":3907,"changeFraction":0.001,"changedSlots":250,"clusteredDirtyPageFraction":0.001279754287176862,"idealSubPageWriteFraction":0.001,"randomDirtyPageFractionMax":0.06270796007166624,"randomDirtyPageFractionMean":0.06204248784233426,"randomDirtyPageFractionMin":0.060660353212183264,"slotsPerPage":64},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":3907,"changeFraction":0.01,"changedSlots":2500,"clusteredDirtyPageFraction":0.010238034297414897,"idealSubPageWriteFraction":0.01,"randomDirtyPageFractionMax":0.4814435628359355,"randomDirtyPageFractionMean":0.4735090862554389,"randomDirtyPageFractionMin":0.4686460199641669,"slotsPerPage":64},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":3907,"changeFraction":0.05,"changedSlots":12500,"clusteredDirtyPageFraction":0.050166368057332995,"idealSubPageWriteFraction":0.05,"randomDirtyPageFractionMax":0.9674942411057077,"randomDirtyPageFractionMean":0.9621960583567954,"randomDirtyPageFractionMin":0.9546966982339391,"slotsPerPage":64},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":977,"changeFraction":0.001,"changedSlots":250,"clusteredDirtyPageFraction":0.0020470829068577278,"idealSubPageWriteFraction":0.001,"randomDirtyPageFractionMax":0.23132036847492324,"randomDirtyPageFractionMean":0.22671443193449337,"randomDirtyPageFractionMin":0.22210849539406347,"slotsPerPage":256},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":977,"changeFraction":0.01,"changedSlots":2500,"clusteredDirtyPageFraction":0.011258955987717503,"idealSubPageWriteFraction":0.01,"randomDirtyPageFractionMax":0.9293756397134084,"randomDirtyPageFractionMean":0.9212896622313205,"randomDirtyPageFractionMin":0.9160696008188332,"slotsPerPage":256},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":977,"changeFraction":0.05,"changedSlots":12500,"clusteredDirtyPageFraction":0.0511770726714432,"idealSubPageWriteFraction":0.05,"randomDirtyPageFractionMax":1.0,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionMin":1.0,"slotsPerPage":256},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":245,"changeFraction":0.001,"changedSlots":250,"clusteredDirtyPageFraction":0.004081632653061225,"idealSubPageWriteFraction":0.001,"randomDirtyPageFractionMax":0.6612244897959184,"randomDirtyPageFractionMean":0.6436734693877553,"randomDirtyPageFractionMin":0.6244897959183674,"slotsPerPage":1024},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":245,"changeFraction":0.01,"changedSlots":2500,"clusteredDirtyPageFraction":0.012244897959183673,"idealSubPageWriteFraction":0.01,"randomDirtyPageFractionMax":1.0,"randomDirtyPageFractionMean":0.9991836734693876,"randomDirtyPageFractionMin":0.9959183673469387,"slotsPerPage":1024},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":245,"changeFraction":0.05,"changedSlots":12500,"clusteredDirtyPageFraction":0.053061224489795916,"idealSubPageWriteFraction":0.05,"randomDirtyPageFractionMax":1.0,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionMin":1.0,"slotsPerPage":1024},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":62,"changeFraction":0.001,"changedSlots":250,"clusteredDirtyPageFraction":0.016129032258064516,"idealSubPageWriteFraction":0.001,"randomDirtyPageFractionMax":0.9838709677419355,"randomDirtyPageFractionMean":0.967741935483871,"randomDirtyPageFractionMin":0.9354838709677419,"slotsPerPage":4096},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":62,"changeFraction":0.01,"changedSlots":2500,"clusteredDirtyPageFraction":0.016129032258064516,"idealSubPageWriteFraction":0.01,"randomDirtyPageFractionMax":1.0,"randomDirtyPageFractionMean":0.9967741935483871,"randomDirtyPageFractionMin":0.9838709677419355,"slotsPerPage":4096},
+    {"addressSurvivalForUnchangedSlots":1.0,"allocatedPages":62,"changeFraction":0.05,"changedSlots":12500,"clusteredDirtyPageFraction":0.06451612903225806,"idealSubPageWriteFraction":0.05,"randomDirtyPageFractionMax":1.0,"randomDirtyPageFractionMean":1.0,"randomDirtyPageFractionMin":1.0,"slotsPerPage":4096}
+  ]
+}

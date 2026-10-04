@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-20",
+  "repository": "swayam8624/Maveb",
+  "auditedBaseline": {
+    "branch": "main",
+    "sha": "1d95c8f480fb2868d821fa107215311f1deab17c",
+    "protectionChecks": [
+      "CPU Build + Tests",
+      "MavebBench Tests",
+      "Sanitizer",
+      "Format/Lint",
+      "Changed-files Static Analysis"
+    ]
+  },
+  "discoveryBranch": "research/maveb-discovery",
+  "unmergedBranches": [
+    {
+      "pr": 27,
+      "branch": "perf/heavy-scene-interaction",
+      "sha": "39935e5c172d9745747b58c28ad69ab6e473f955",
+      "commitsAheadOfMain": 29,
+      "status": "experimental-unmerged",
+      "focus": "responsive Gaussian preview, adaptive budgets, spatial ordering, async renderer loading"
+    },
+    {
+      "pr": 28,
+      "branch": "feat/persistent-world-core-v1",
+      "sha": "f157b2a40e2766bcb02d24ca055073e866140476",
+      "commitsAheadOfMain": 138,
+      "status": "experimental-unmerged",
+      "focus": "persistent world identity/history, Reality Diff, selective updates, semantic graph, Gaussian ownership/local updates"
+    }
+  ],
+  "capabilities": [
+    {
+      "name": "C++23 core",
+      "status": "implemented",
+      "ref": "README.md"
+    },
+    {
+      "name": "SwiftUI AetherStudio",
+      "status": "implemented",
+      "ref": "README.md; apps/AetherStudio/**"
+    },
+    {
+      "name": "Metal 3 renderer",
+      "status": "implemented",
+      "ref": "README.md; docs/ROADMAP.md"
+    },
+    {
+      "name": "declarative render graph",
+      "status": "implemented",
+      "ref": "README.md"
+    },
+    {
+      "name": "glTF metallic-roughness PBR",
+      "status": "implemented",
+      "ref": "README.md; docs/GLTF_RENDERING.md"
+    },
+    {
+      "name": "directional/point/spot lighting",
+      "status": "implemented",
+      "ref": "docs/ROADMAP.md"
+    },
+    {
+      "name": "clustered lighting",
+      "status": "implemented",
+      "ref": "docs/CLUSTERED_LIGHTING.md"
+    },
+    {
+      "name": "IBL",
+      "status": "implemented",
+      "ref": "docs/IMAGE_BASED_LIGHTING.md"
+    },
+    {
+      "name": "shadows",
+      "status": "implemented",
+      "ref": "docs/SHADOWS.md"
+    },
+    {
+      "name": "TAA / motion vectors / HDR / bloom foundation",
+      "status": "implemented",
+      "ref": "docs/TEMPORAL_RENDERING.md; docs/HDR_RENDERING.md; docs/ROADMAP.md"
+    },
+    {
+      "name": "reverse-Z",
+      "status": "implemented",
+      "ref": "README.md; docs/ROADMAP.md"
+    },
+    {
+      "name": "animation / morph targets / skinning",
+      "status": "implemented",
+      "ref": "docs/ROADMAP.md"
+    },
+    {
+      "name": "deterministic Gaussian PLY parser",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/GAUSSIAN_PLY.md"
+    },
+    {
+      "name": "anisotropic CPU Gaussian rasterization oracle",
+      "status": "implemented",
+      "ref": "README.md; docs/adr/0004-gaussian-metal3-correctness-path.md"
+    },
+    {
+      "name": "Metal Gaussian renderer correctness path",
+      "status": "implemented",
+      "ref": "README.md; docs/adr/0004-gaussian-metal3-correctness-path.md"
+    },
+    {
+      "name": "named-scene Gaussian performance gates",
+      "status": "implemented-but-unvalidated",
+      "ref": "docs/ROADMAP.md",
+      "note": "M1/M2 named-scene performance exit gates remain open."
+    },
+    {
+      "name": "stable tile/depth ordering",
+      "status": "implemented",
+      "ref": "README.md"
+    },
+    {
+      "name": "Gaussian GPU IDs / picking",
+      "status": "implemented",
+      "ref": "README.md; docs/ROADMAP.md"
+    },
+    {
+      "name": "Gaussian depth/opacity/occupancy diagnostics",
+      "status": "implemented",
+      "ref": "README.md; docs/GAUSSIAN_DEBUG_VIEWS.md"
+    },
+    {
+      "name": "CPU/GPU Gaussian agreement tests",
+      "status": "implemented",
+      "ref": "README.md; docs/adr/0004-gaussian-metal3-correctness-path.md"
+    },
+    {
+      "name": "reverse-Z hybrid proxy + Gaussian composition",
+      "status": "implemented",
+      "ref": "README.md; docs/HYBRID_RENDERING.md"
+    },
+    {
+      "name": "proxy mesh normal/confidence/ID/motion G-buffer",
+      "status": "implemented",
+      "ref": "README.md; docs/HYBRID_RENDERING.md"
+    },
+    {
+      "name": "confidence-aware mesh/Gaussian occlusion",
+      "status": "implemented",
+      "ref": "README.md; docs/HYBRID_RENDERING.md"
+    },
+    {
+      "name": ".aether random-access container",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/AETHER_PACKAGE.md"
+    },
+    {
+      "name": "Canonical Asset v1",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/CANONICAL_ASSET.md"
+    },
+    {
+      "name": "calibrated camera rigs",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/CAMERA_GROUPS.md"
+    },
+    {
+      "name": "provenance hashing",
+      "status": "implemented",
+      "ref": "README.md; docs/EVIDENCE.md"
+    },
+    {
+      "name": "native GLB writer",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/NATIVE_GLB_EXPORT.md"
+    },
+    {
+      "name": "COLMAP adapter",
+      "status": "implemented",
+      "ref": "README.md; docs/RECONSTRUCTION.md"
+    },
+    {
+      "name": "Brush reconstruction adapter",
+      "status": "implemented",
+      "ref": "README.md; docs/RECONSTRUCTION.md"
+    },
+    {
+      "name": "Apple Photogrammetry baseline",
+      "status": "partial",
+      "ref": "repository tree / benchmark tooling",
+      "note": "Keep as baseline support, not a headline claim until explicit current evidence is refreshed."
+    },
+    {
+      "name": "iPad RGB + LiDAR capture recorder",
+      "status": "implemented",
+      "ref": "README.md; apps/MavebCapture/**"
+    },
+    {
+      "name": "Sony/COLMAP to iPad Sim(3) alignment",
+      "status": "implemented-but-unvalidated",
+      "ref": "README.md; docs/formats/SENSOR_ALIGNMENT.md",
+      "note": "Synthetic/artifact gates pass; paired physical E3 evidence remains open."
+    },
+    {
+      "name": "deterministic weighted dense TSDF CPU oracle",
+      "status": "implemented",
+      "ref": "README.md; docs/RECONSTRUCTION.md"
+    },
+    {
+      "name": "block-sparse CPU TSDF",
+      "status": "implemented",
+      "ref": "README.md; docs/formats/SPARSE_TSDF.md"
+    },
+    {
+      "name": "block-sparse Metal TSDF",
+      "status": "implemented-but-unvalidated",
+      "ref": "README.md; docs/RECONSTRUCTION.md",
+      "note": "Fixture-level CPU/Metal agreement exists; live scheduling/throughput/soak remain open."
+    },
+    {
+      "name": "CPU/Metal TSDF voxel agreement",
+      "status": "implemented",
+      "ref": "README.md"
+    },
+    {
+      "name": "dirty-region incremental CPU meshing",
+      "status": "implemented",
+      "ref": "README.md; docs/RECONSTRUCTION.md"
+    },
+    {
+      "name": "GPU-resident meshing",
+      "status": "missing",
+      "ref": "README.md; docs/RECONSTRUCTION.md"
+    },
+    {
+      "name": "immutable completed-generation TSDF snapshots",
+      "status": "implemented",
+      "ref": "README.md"
+    },
+    {
+      "name": "MavebBench",
+      "status": "implemented",
+      "ref": "README.md; benchmarks/README.md"
+    },
+    {
+      "name": "ETH3D evaluation path",
+      "status": "implemented",
+      "ref": "README.md; benchmarks/README.md"
+    },
+    {
+      "name": "ARKitScenes evaluation path",
+      "status": "implemented",
+      "ref": "README.md; benchmarks/README.md"
+    },
+    {
+      "name": "uCO3D evaluation path",
+      "status": "implemented",
+      "ref": "README.md; benchmarks/README.md"
+    },
+    {
+      "name": "Tanks & Temples / DTU support",
+      "status": "partial",
+      "ref": "README.md; benchmarks/README.md"
+    },
+    {
+      "name": "production Gaussian rendering claim",
+      "status": "missing",
+      "ref": "README.md",
+      "note": "Repository explicitly does not claim this yet."
+    },
+    {
+      "name": "production relighting claim",
+      "status": "missing",
+      "ref": "README.md",
+      "note": "Repository explicitly does not claim this yet."
+    },
+    {
+      "name": "metric uncertainty predictor",
+      "status": "implemented",
+      "ref": "docs/research/METRIC_UNCERTAINTY_RESULTS.md"
+    },
+    {
+      "name": "uncertainty-to-reconstruction efficacy",
+      "status": "obsolete",
+      "ref": "docs/research/METRIC_UNCERTAINTY_RESULTS.md",
+      "note": "Frozen negative/null downstream result; do not rescue by retuning exposed confirmatory rooms."
+    },
+    {
+      "name": "persistent world identity/history core",
+      "status": "experimental",
+      "ref": "PR #28 feat/persistent-world-core-v1",
+      "note": "138 commits ahead of main; unmerged."
+    },
+    {
+      "name": "Reality Diff",
+      "status": "experimental",
+      "ref": "PR #28",
+      "note": "Unmerged."
+    },
+    {
+      "name": "entity association",
+      "status": "experimental",
+      "ref": "PR #28 engine/world/src/EntityAssociation.cpp",
+      "note": "Unmerged."
+    },
+    {
+      "name": "selective world updates",
+      "status": "experimental",
+      "ref": "PR #28 engine/world/src/SelectiveUpdate.cpp",
+      "note": "Unmerged."
+    },
+    {
+      "name": "Gaussian ownership/local update",
+      "status": "experimental",
+      "ref": "PR #28 engine/world_gaussian/**",
+      "note": "Unmerged."
+    },
+    {
+      "name": "responsive Gaussian preview/adaptive budget",
+      "status": "experimental",
+      "ref": "PR #27",
+      "note": "29 commits ahead of main; unmerged."
+    }
+  ],
+  "researchTruth": {
+    "metricUncertainty": {
+      "status": "negative/null downstream efficacy",
+      "frozen": true,
+      "source": "docs/research/METRIC_UNCERTAINTY_RESULTS.md",
+      "interpretation": "Sensor confidence predicts metric error, but tested hand-designed transfer rules did not robustly improve held-out reconstruction or Gaussian geometry."
+    }
+  }
+}

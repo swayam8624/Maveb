@@ -1,0 +1,168 @@
+import AppKit
+import SwiftUI
+
+@main
+struct AetherStudioApp: App {
+  var body: some Scene {
+    DocumentGroup(newDocument: AetherProjectDocument()) { file in
+      ContentView(document: file.$document, projectURL: file.fileURL)
+        .frame(minWidth: 1180, minHeight: 720)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+    .commands { PersistentRealityCommands() }
+
+    WindowGroup("Persistent Reality", id: "persistent-reality") {
+      PersistentRealityWindow()
+        .frame(minWidth: 980, minHeight: 700)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Persistent Entity Editor", id: "persistent-entity-editor") {
+      WorldEntityEditorWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Reality Time Machine", id: "reality-time-machine") {
+      WorldTimeMachineWindow()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("World Intelligence", id: "world-intelligence") {
+      WorldIntelligenceWorkspace()
+        .frame(minWidth: 980, minHeight: 720)
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    WindowGroup("Live Persistent Reality", id: "live-persistent-reality") {
+      LivePersistentRealityEditor()
+    }
+    .windowStyle(.titleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
+
+    Settings {
+      AetherSettingsView()
+    }
+  }
+}
+
+private struct PersistentRealityWindow: View {
+  @State private var archivePath: String?
+
+  var body: some View {
+    WorldHistoryWorkspace(archivePath: $archivePath)
+  }
+}
+
+private struct PersistentRealityCommands: Commands {
+  @Environment(\.openWindow) private var openWindow
+
+  var body: some Commands {
+    CommandMenu("World") {
+      Button("Persistent Reality…") {
+        openWindow(id: "persistent-reality")
+      }
+      .keyboardShortcut("h", modifiers: [.command, .shift])
+
+      Button("Persistent Entity Editor…") {
+        openWindow(id: "persistent-entity-editor")
+      }
+      .keyboardShortcut("e", modifiers: [.command, .shift])
+
+      Button("Reality Time Machine…") {
+        openWindow(id: "reality-time-machine")
+      }
+      .keyboardShortcut("t", modifiers: [.command, .shift])
+
+      Button("World Intelligence…") {
+        openWindow(id: "world-intelligence")
+      }
+      .keyboardShortcut("i", modifiers: [.command, .shift])
+
+      Divider()
+
+      Button("Live Persistent Reality…") {
+        openWindow(id: "live-persistent-reality")
+      }
+      .keyboardShortcut("l", modifiers: [.command, .shift])
+    }
+  }
+}
+
+private struct AetherSettingsView: View {
+  @AppStorage("preferredFramesPerSecond") private var preferredFramesPerSecond = 60
+  @AppStorage("showRendererDiagnostics") private var showRendererDiagnostics = false
+  @State private var exportError: String?
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 9) {
+          Image(systemName: "hexagon.fill")
+            .foregroundStyle(Color.accentColor)
+          Text("AETHER Settings")
+            .font(.title3.weight(.semibold))
+        }
+        Text("Viewport performance and local diagnostics.")
+          .font(.callout)
+          .foregroundStyle(.secondary)
+      }
+
+      GroupBox("Viewport") {
+        Form {
+          Picker("Frame rate", selection: $preferredFramesPerSecond) {
+            Text("30 fps").tag(30)
+            Text("60 fps").tag(60)
+            Text("120 fps").tag(120)
+          }
+          Toggle("Show renderer diagnostics", isOn: $showRendererDiagnostics)
+        }
+        .formStyle(.grouped)
+      }
+
+      GroupBox("Diagnostics") {
+        VStack(alignment: .leading, spacing: 10) {
+          HStack {
+            LabeledContent("Version", value: "0.1.0")
+            Spacer()
+          }
+          Text("Exports the local renderer diagnostics bundle without uploading project data.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+          Button("Export Diagnostics…", systemImage: "square.and.arrow.up") {
+            exportDiagnostics()
+          }
+        }
+        .padding(6)
+      }
+    }
+    .padding(20)
+    .frame(width: 500)
+    .alert(
+      "Diagnostics Export Failed",
+      isPresented: Binding(
+        get: { exportError != nil },
+        set: { if !$0 { exportError = nil } }
+      )
+    ) {
+      Button("OK") { exportError = nil }
+    } message: {
+      Text(exportError ?? "Unknown error")
+    }
+  }
+
+  private func exportDiagnostics() {
+    let panel = NSSavePanel()
+    panel.nameFieldStringValue = "AetherDiagnostics.json"
+    panel.allowedContentTypes = [.json]
+    guard panel.runModal() == .OK, let url = panel.url else { return }
+    var error: NSError?
+    if !AetherWriteDiagnostics(url, &error) {
+      exportError = error?.localizedDescription ?? "AETHER could not write the report."
+    }
+  }
+}

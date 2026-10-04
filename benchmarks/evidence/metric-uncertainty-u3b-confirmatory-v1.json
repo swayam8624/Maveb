@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u3b-relative-confidence-transfer-v1",
+  "stage": "U3b-confirmatory-dense-cpu-primary-8view",
+  "status": "completed-confirmatory-gate-not-passed",
+  "primaryResultSha256": "1b5e1635eb7491658a63058ca9cdeb0e1b4260bec049601c7c168fdca9ac165f",
+  "preparationLedgerSha256": "acf41a5f094e30de1a8aa487db40b8a3e292ab18bc535aba8d2c6187800a88d3",
+  "studySha256": "f42fb12bb855e660c3cf4d77e5dd4200b73136baa73981434b54c98b43e63a6d",
+  "modelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "posePreflightSha256": "692479544ceff75e02fd3645138eab5a5e38d83e397ff3ec5de9ce1a3d468f6d",
+  "acquisitionLedgerSha256": "3675d61e89599a36641e8d4ddb0dd28ce9722030af3b4672b70c401973695f73",
+  "engineAdapterSha256": "9dfb0ec909e7f7671f196d62e762ce72207b658c073ec867130c806643a8c5b4",
+  "runtimeRecovery": {
+    "status": "pre-failure-replay-verified",
+    "verifiedPreFailureMethodCount": 16,
+    "preFixPartialRevealSnapshotSha256": "4b248a9ec6ef925da982b6eb62b28869066790fc8bd3d8b203352f56dd0ce99e",
+    "preFixFuseToolSha256": "1c5990bb4d9cecc3e38b9451a93d030ec924a8dd5f0ada4f84076a8940a827d4",
+    "postFixFuseToolSha256": "9bfd19ba1af9732cb75785cefbb4a1a6fcba6656354adfff19e53c9ae912ddf0",
+    "recoveryLogSha256": "0b71022a015b877bdf5ba0e0bf9d8cea1ec87c92b84a72a3b2ae0f16c3e40807",
+    "mechanicalFix": "The research fuse runner treats the exact per-frame no-voxel-update error as a valid no-op, while still failing a scene if every frame is a no-op. No weighting equation, bound, view selection, reference, metric, or gate changed.",
+    "observedNoOp": {
+      "scene": "ca1m-42897538",
+      "method": "naive-confidence",
+      "requestedFrames": 8,
+      "integratedFrames": 7,
+      "zeroUpdateFramesSkipped": 1
+    }
+  },
+  "primaryComparison": {
+    "relativeChamferImprovementCandidateVsNaive": {
+      "median": -0.00033,
+      "lower95": -0.18118,
+      "upper95": 0.20908,
+      "candidateBetterSceneCount": 2,
+      "sceneCount": 5
+    },
+    "relativeChamferDegradationShuffledVsCandidate": {
+      "median": 0.00061,
+      "lower95": -0.00186,
+      "upper95": 0.10481,
+      "shuffledWorseSceneCount": 4,
+      "sceneCount": 5
+    },
+    "relativeChamferImprovementLegacyU3v1VsNaive": {
+      "median": 0.00086,
+      "lower95": -0.18110,
+      "upper95": 0.20756
+    },
+    "gateChecks": {
+      "candidateBeatsNaiveSceneCountAtLeastThreshold": false,
+      "medianRelativeChamferImprovementAtLeastThreshold": false,
+      "relativeChamferImprovementLower95AboveZero": false,
+      "shuffledRelativeDegradationLower95AboveZero": false,
+      "shuffledWorseSceneCountAtLeastThreshold": true
+    },
+    "passed": false
+  },
+  "sceneRelativeChamfer": [
+    {
+      "scene": "ca1m-48458481",
+      "candidateVsNaive": -0.18118202472731315,
+      "shuffledVsCandidateDegradation": 0.10480529958456275,
+      "legacyVsNaive": -0.18110404879102693
+    },
+    {
+      "scene": "ca1m-48018737",
+      "candidateVsNaive": -0.0005759194893888629,
+      "shuffledVsCandidateDegradation": 0.0006115935358583329,
+      "legacyVsNaive": 0.0008598225776680334
+    },
+    {
+      "scene": "ca1m-45261587",
+      "candidateVsNaive": -0.0003320066665436959,
+      "shuffledVsCandidateDegradation": 0.0005920700485222542,
+      "legacyVsNaive": -0.0005253725479919798
+    },
+    {
+      "scene": "ca1m-42897538",
+      "candidateVsNaive": 0.20908232789514566,
+      "shuffledVsCandidateDegradation": 0.002709908086587915,
+      "legacyVsNaive": 0.2075600734703482
+    },
+    {
+      "scene": "ca1m-48018375",
+      "candidateVsNaive": 0.016528611507687516,
+      "shuffledVsCandidateDegradation": -0.0018631809451588287
+    }
+  ],
+  "claimBoundary": "Negative confirmatory result. U3b does not establish that the relative-confidence precision transfer improves 8-view dense CPU TSDF Chamfer over naive confidence on the five prospectively selected CA-1M validation rooms. The shuffled control is directionally worse in four of five rooms but its paired scene bootstrap interval crosses zero."
+}

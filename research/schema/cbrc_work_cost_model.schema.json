@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://maveb.local/schema/cbrc-work-cost-model-v1.json",
+  "title": "MAVEB CBRC frozen work cost model",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "version", "cost_unit", "domains"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "version": {"type": "string", "minLength": 1},
+    "cost_unit": {"type": "string", "minLength": 1},
+    "domains": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["unit", "cost_per_unit"],
+        "properties": {
+          "unit": {"type": "string", "minLength": 1},
+          "cost_per_unit": {"type": "number", "minimum": 0}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,128 @@
+name: Build research paper
+
+on:
+  push:
+    branches:
+      - main
+      - 'manuscript/**'
+    paths:
+      - 'researchpaper/**'
+      - '.github/workflows/build-researchpaper.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'researchpaper/**'
+      - '.github/workflows/build-researchpaper.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install manuscript toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-base \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-publishers \
+            texlive-pictures \
+            texlive-bibtex-extra \
+            pandoc \
+            poppler-utils \
+            python3-docx \
+            zip
+
+      - name: Verify exact Figure 2 asset
+        run: |
+          test -f researchpaper/figures/figure2_exact.png
+          echo "e8cfa3b68930c9052c7fbe4190eb7841efb428ab1bfe587e03dbea9fac0d1f24  researchpaper/figures/figure2_exact.png" | sha256sum -c -
+
+      - name: Build manuscript, supplement, and Word export
+        run: |
+          set +e
+          python3 researchpaper/build_manuscript.py --build-dir "$RUNNER_TEMP/maveb-manuscript-build"
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "=== manuscript build diagnostics ==="
+            find "$RUNNER_TEMP/maveb-manuscript-build" -maxdepth 1 -type f -print || true
+            for log in "$RUNNER_TEMP"/maveb-manuscript-build/*.txt "$RUNNER_TEMP"/maveb-manuscript-build/*.log; do
+              [ -f "$log" ] || continue
+              echo "===== $log ====="
+              tail -n 200 "$log"
+            done
+            exit "$status"
+          fi
+
+      - name: Record final manuscript checksums
+        run: |
+          sha256sum \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            > researchpaper/FINAL_MANUSCRIPT_SHA256.txt
+
+      - name: Package manuscript
+        run: |
+          rm -f researchpaper/MAVEB_manuscript_package.zip
+          zip -r researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/main.tex \
+            researchpaper/references.bib \
+            researchpaper/README.md \
+            researchpaper/MANUSCRIPT_QA.md \
+            researchpaper/REVIEW_RESPONSE_2026-09-21.md \
+            researchpaper/FINAL_MANUSCRIPT_AUDIT_2026-09-25.md \
+            researchpaper/REVISION_AUDIT_2026-10-04.md \
+            researchpaper/CLAIM_METHOD_CITATION_AUDIT_2026-09-22.md \
+            researchpaper/FINAL_MANUSCRIPT_SHA256.txt \
+            researchpaper/build_manuscript.py \
+            researchpaper/supplement.tex \
+            researchpaper/supplement_gaussian_bound.tex \
+            researchpaper/figures \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf
+
+      - name: Publish synchronized artifacts on manuscript branches
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/manuscript/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            researchpaper/MAVEB_manuscript.pdf \
+            researchpaper/MAVEB_manuscript.docx \
+            researchpaper/MAVEB_supplement.pdf \
+            researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/FINAL_MANUSCRIPT_SHA256.txt
+          if git diff --cached --quiet; then
+            echo "Generated artifacts already match the current source."
+          else
+            git commit -m "paper: regenerate synchronized manuscript artifacts"
+            git push
+          fi
+
+      - name: Protected-branch publication note
+        run: |
+          echo "Generated submission artifacts are uploaded by CI."
+          echo "On manuscript/** branches, synchronized generated files are committed to the same reviewed branch."
+          echo "Protected main is updated only by merging the reviewed pull request."
+
+      - name: Upload manuscript artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maveb-manuscript
+          path: |
+            researchpaper/MAVEB_manuscript.pdf
+            researchpaper/MAVEB_manuscript.docx
+            researchpaper/MAVEB_supplement.pdf
+            researchpaper/MAVEB_manuscript_package.zip
+          if-no-files-found: error

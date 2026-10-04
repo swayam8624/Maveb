@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "experiment": "gaussian-region-index-maintenance-v1",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-linux-falsification-probe",
+  "environment": {
+    "compiler": "g++ -O3 -std=c++20",
+    "platform": "Linux x86_64 analysis sandbox",
+    "warning": "Not Apple-silicon or production MAVEB timing."
+  },
+  "oneMillionGaussianCase": [
+    {
+      "movedFraction": 0.001,
+      "moved": 1000,
+      "rebuildMs": 490.327,
+      "maintainMs": 0.741195,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.0025,
+      "moved": 2500,
+      "rebuildMs": 205.255,
+      "maintainMs": 1.45174,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.005,
+      "moved": 5000,
+      "rebuildMs": 215.382,
+      "maintainMs": 2.84279,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.01,
+      "moved": 10000,
+      "rebuildMs": 210.126,
+      "maintainMs": 5.35305,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.02,
+      "moved": 20000,
+      "rebuildMs": 272.005,
+      "maintainMs": 9.92826,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.05,
+      "moved": 50000,
+      "rebuildMs": 226.575,
+      "maintainMs": 23.5943,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.1,
+      "moved": 100000,
+      "rebuildMs": 219.882,
+      "maintainMs": 44.9386,
+      "equal": true
+    },
+    {
+      "movedFraction": 0.25,
+      "moved": 250000,
+      "rebuildMs": 266.475,
+      "maintainMs": 104.595,
+      "equal": true
+    }
+  ],
+  "decision": "PROMOTE TO INTEGRATION PROBE: incremental maintenance preserves exact bucket membership and is strongly sub-rebuild for small changed fractions in the synthetic benchmark.",
+  "caveats": [
+    "unordered_map<vector> is not yet an optimal memory layout",
+    "eraseOne is linear in bucket size",
+    "motion distribution is synthetic",
+    "ownership semantics and unowned Gaussians are not yet included",
+    "full MAVEB integration must measure bytes, cache behavior, update frequency, and M2 Pro timing"
+  ],
+  "next": "Create a PR28-derived research branch, implement a production-shaped GaussianSpatialIndex, preserve selectGaussiansForLocalUpdate semantics, and benchmark scan vs index under identical tests."
+}

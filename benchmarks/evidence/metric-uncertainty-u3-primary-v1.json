@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-v1",
+  "stage": "U3-dense-cpu-primary-8view",
+  "status": "completed-primary-gate-not-passed",
+  "interpretationPolicy": "Preserve the negative primary result. Do not retune U1b, replace scenes, change the eight-view selection, alter the preregistered 10% gate, or overwrite the primary result after exposure.",
+  "codeHeadSha": "3967b2a8907f8944415446f5edc321343b2dc853",
+  "ciRun": {
+    "id": 32334586003,
+    "conclusion": "success"
+  },
+  "studySha256": "782a4dcc02a6aa21e0e8a23a09186b4e9fcbb84cad6c8d9a1da468b7cc2dd7cd",
+  "modelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+  "preflightSha256": "867d449d65801c18115e10ec5e80f033bfff1bfb46e24c9835005c6ae3fafcbd",
+  "poseGateSha256": "0d3de2f9caf36799068944c909286eb367cc6d3eec3da1df5ca1c7b06072d54a",
+  "fuseToolSha256": "1c5990bb4d9cecc3e38b9451a93d030ec924a8dd5f0ada4f84076a8940a827d4",
+  "primaryResultSha256": "87487781e2950a57c6ee23459a27e6975e7e3f0aa48b09e6c32eaa9d3db36c0f",
+  "scenes": {
+    "ca1m-45662921": {
+      "uniformChamferMetres": 0.27701956487040036,
+      "naiveConfidenceChamferMetres": 0.268060560844191,
+      "calibratedDepthOnlyChamferMetres": 0.27675689896509426,
+      "calibratedInverseVarianceChamferMetres": 0.2764029355233963,
+      "calibratedShuffledConfidenceChamferMetres": 0.2766326720484523
+    },
+    "ca1m-45261179": {
+      "uniformChamferMetres": 0.09271335480965018,
+      "naiveConfidenceChamferMetres": 0.09344151018016722,
+      "calibratedDepthOnlyChamferMetres": 0.09060592185924396,
+      "calibratedInverseVarianceChamferMetres": 0.09058992084679249,
+      "calibratedShuffledConfidenceChamferMetres": 0.09059185888926337
+    },
+    "ca1m-47115543": {
+      "uniformChamferMetres": 0.16540472293195313,
+      "naiveConfidenceChamferMetres": 0.148503558802493,
+      "calibratedDepthOnlyChamferMetres": 0.1661832986803332,
+      "calibratedInverseVarianceChamferMetres": 0.16527743279994225,
+      "calibratedShuffledConfidenceChamferMetres": 0.16707389508900145
+    },
+    "ca1m-45261143": {
+      "uniformChamferMetres": 0.22472243613357554,
+      "naiveConfidenceChamferMetres": 0.23642249904527585,
+      "calibratedDepthOnlyChamferMetres": 0.22443239558163197,
+      "calibratedInverseVarianceChamferMetres": 0.2243758707992231,
+      "calibratedShuffledConfidenceChamferMetres": 0.224328928176316
+    },
+    "ca1m-45261615": {
+      "uniformChamferMetres": 0.1082523907245156,
+      "naiveConfidenceChamferMetres": 0.10528548152971116,
+      "calibratedDepthOnlyChamferMetres": 0.10688704054020016,
+      "calibratedInverseVarianceChamferMetres": 0.10687802917736604,
+      "calibratedShuffledConfidenceChamferMetres": 0.10679278497395606
+    }
+  },
+  "primaryComparison": {
+    "relativeChamferImprovementIntactVsNaive": {
+      "sceneValues": [
+        -0.031121231161096677,
+        0.030517372074536274,
+        -0.1129526735433876,
+        0.05095381486406571,
+        -0.01512599481444612
+      ],
+      "median": -0.01512599481444612,
+      "lower95": -0.1129526735433876,
+      "upper95": 0.05095381486406571,
+      "replicates": 2000,
+      "seed": 42
+    },
+    "relativeChamferDegradationShuffledVsIntact": {
+      "sceneValues": [
+        0.0008311652863635683,
+        0.000021393577262955946,
+        0.01086937435211554,
+        -0.00020921422049483397,
+        -0.0007975839755476516
+      ],
+      "median": 0.000021393577262955946,
+      "lower95": -0.0007975839755476516,
+      "upper95": 0.01086937435211554,
+      "shuffledWorseSceneCount": 3,
+      "replicates": 2000,
+      "seed": 42
+    },
+    "relativeChamferImprovementDepthOnlyVsNaive": {
+      "sceneValues": [
+        -0.03244169188304417,
+        0.03034613113011425,
+        -0.11905263429648812,
+        0.05071473109396294,
+        -0.01521158460995448
+      ],
+      "median": -0.01521158460995448,
+      "lower95": -0.11905263429648812,
+      "upper95": 0.05071473109396294,
+      "replicates": 2000,
+      "seed": 42
+    },
+    "gateChecks": {
+      "medianRelativeChamferImprovementAtLeastThreshold": false,
+      "relativeChamferImprovementLower95AboveZero": false,
+      "shuffledRelativeDegradationLower95AboveZero": false,
+      "shuffledWorseSceneCountAtLeastThreshold": false
+    },
+    "passed": false
+  },
+  "postHocObservation": "Calibrated-depth-only and calibrated-inverse-variance geometry are nearly identical, while shuffled confidence changes Chamfer only minimally. This motivates a diagnostic audit of the frozen uncertainty-to-precision transfer function; it is not evidence that the U1b predictive uncertainty model failed, because U2 remains the held-out predictive test."
+}

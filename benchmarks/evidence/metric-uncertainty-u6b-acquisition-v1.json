@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1",
+  "stage": "U6b-confirmatory-asset-acquisition-freeze",
+  "status": "acquired-after-frozen-clean-plan",
+  "planSha256": "dbb0e4ccc9214c103cd3ba115f9bbbcbd088922b8293a260100759b3a390c5ed",
+  "acquisitionLedgerSha256": "b0ce48a6c3cbf0ab8a037b5df7db80753aac0063ffba733d63ac5bf0b76ee5a9",
+  "acquisitionLogSha256": "ff7316ad3b38433c17f9f2dcbab66d4975307e7e205868b51957d60db309116d",
+  "splitSha256": "d22366afd77d3407e53d5152d313522d559ee57e9ec995d96102c299dc55f5ff",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "publicMetadataEvidenceSha256": "bc855db7fa6666dcab7997434949fd8d89027d3b9c3fdbda8a30896e80d0742b",
+  "selectedAssetsAbsentAtFrozenPlan": true,
+  "startedAtUtc": "2026-08-20T13:56:35.194433+00:00",
+  "completedAtUtc": "2026-08-20T14:02:37.251946+00:00",
+  "partialFilesRemaining": 0,
+  "u6bRenderedDepthCountAfterAcquisition": 0,
+  "entries": [
+    {
+      "videoId": "42898811",
+      "visitId": "434650",
+      "ca1mArchiveSha256": "af5e5ce4dc642638826c792e2e7b66b0603bb89275c6b0a3ad6b4562cfa1b77b",
+      "ca1mArchiveBytes": 120678400,
+      "ca1mArchiveMemberCount": 1835,
+      "confidenceZipSha256": "c3603d467099014cc684e2b3573c99b62d8eb90eb04fe77b989fff08da151ab6",
+      "confidencePngCount": 5694,
+      "lowresDepthZipSha256": "d43a398146f6515f8285a8fcdc7dc4379d7c6068a60ccbe02f49c4de07aa96dc",
+      "lowresDepthPngCount": 5694
+    },
+    {
+      "videoId": "45261121",
+      "visitId": "466628",
+      "ca1mArchiveSha256": "1dbf4f4c5dbb333b74ab0dc78db892556aa76f16fdd1c7550e6c03ed9a5d4817",
+      "ca1mArchiveBytes": 464189440,
+      "ca1mArchiveMemberCount": 8695,
+      "confidenceZipSha256": "75053bd8d8e26415b4f39eced1d6556f97fd95d6e0f1864f6f594d119cb261c9",
+      "confidencePngCount": 3804,
+      "lowresDepthZipSha256": "396cc6e1fe1daa593d602ca8343abb8caa8a152b20df8bb9ef242b33f1d87610",
+      "lowresDepthPngCount": 3804
+    },
+    {
+      "videoId": "47895341",
+      "visitId": "472297",
+      "ca1mArchiveSha256": "32b37b09a14262f025d9b254039c2fc935f8b692ee21f2ce286ebf4374ac77b9",
+      "ca1mArchiveBytes": 588922880,
+      "ca1mArchiveMemberCount": 9185,
+      "confidenceZipSha256": "b95fe7a23ce1e61504708e75b776652167284c733a76d87ad99be4cdaff68848",
+      "confidencePngCount": 4356,
+      "lowresDepthZipSha256": "d089181855275ea60821c7b46267abe6565b0d5b1cbe410f14817af46326e195",
+      "lowresDepthPngCount": 4356
+    },
+    {
+      "videoId": "47332915",
+      "visitId": "469249",
+      "ca1mArchiveSha256": "5f6438a444ee411700e7b0dc8b75a6675f746c322f9b4b2dec59f032eced3e1e",
+      "ca1mArchiveBytes": 783206400,
+      "ca1mArchiveMemberCount": 12951,
+      "confidenceZipSha256": "f8b18aad9625bb9abbda35d9700195bff14e486535e51688cc64203335a91dde",
+      "confidencePngCount": 6270,
+      "lowresDepthZipSha256": "70b3e77c6c352bb0ef6d091e2946ea81feeb96f2e3ecd124a3ccad9eae0b8aaf",
+      "lowresDepthPngCount": 6270
+    },
+    {
+      "videoId": "47331971",
+      "visitId": "470821",
+      "ca1mArchiveSha256": "e68b2ccd1f8653f741d1ea9372658416648679dee7ff9335eb2502e3bf83f7df",
+      "ca1mArchiveBytes": 526899200,
+      "ca1mArchiveMemberCount": 8387,
+      "confidenceZipSha256": "5bdae74ec4b432a5622baabd11a75b610f4f2d5a96158453bc357a2044b17c34",
+      "confidencePngCount": 17375,
+      "lowresDepthZipSha256": "78ff286aa8e63937ed16e34d3865ef1d9d1ee8f94fca58b4127b7f81c0aad8db",
+      "lowresDepthPngCount": 17375
+    }
+  ],
+  "claimBoundary": "This artifact freezes acquisition provenance only. It contains no U6b source-view preparation, Gaussian asset, render, FARO metric, bootstrap statistic, gate decision, or confirmatory outcome. The exact five-scene split remains immutable."
+}

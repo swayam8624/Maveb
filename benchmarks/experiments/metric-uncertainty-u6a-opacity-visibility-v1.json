@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "metric-uncertainty-u6a-opacity-visibility-v1",
+  "stage": "U6a-exploratory-uncertainty-modulated-gaussian-visibility",
+  "status": "frozen-before-u6a-assets-or-outcomes",
+  "frozen": true,
+  "claimType": "exploratory representation study on already-exposed U5a rooms and target views; not confirmatory efficacy evidence",
+  "motivation": "U5a enlarged Gaussian covariance with calibrated predictive sigma and lost to depth-only covariance in all five exposed rooms. U5c showed the dominant mechanism: larger covariance added substantial target-view coverage, but most newly covered pixels were foreground-wrong and many depth-only-correct pixels became candidate-wrong. U6a therefore keeps the exact depth-only covariance and every primitive, and moves the frozen calibrated uncertainty signal into Gaussian opacity so uncertainty can reduce frontmost visibility without enlarging spatial support.",
+  "parentEvidence": {
+    "u1bModelSha256": "744cdfce9763f5d2ecd9c9a4e53385f66d8bba7cbc047e11729189053a85e17a",
+    "u5aPreparationSha256": "abb33671d7162b62689779fa87f4bb099cbe59bfdfeb7f3d8c910b4163d768b5",
+    "u5aResultSha256": "5f0d70442ec1973eb28f1b61e7fe8cb174afdabfcae3aa64ab478c479ab32362",
+    "u5aRendererSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+    "u5cAuditSha256": "4d1c03db59cbe816324bc96155c07d7ee18cbe11f5912db58f61a17c6b531409",
+    "u5cEvidenceCommit": "a1db8ca91f444519669e5394875d0fa9bbc89583"
+  },
+  "scenes": [
+    "ca1m-48458481",
+    "ca1m-48018737",
+    "ca1m-45261587",
+    "ca1m-42897538",
+    "ca1m-48018375"
+  ],
+  "inputs": {
+    "sourceViews": "reuse the exact eight U5a/U3b source observations per scene",
+    "targetViews": "reuse the exact eight U5a held-out FARO target views per scene",
+    "targetManifests": "reuse exact U5a targets.json files without modification",
+    "baselineRenders": "reuse exact frozen U5a depth-only-covariance renders and their SHA256 values; do not rerender baseline",
+    "renderer": "reuse the exact authorized maveb-gaussian-depth binary SHA256 from U5a",
+    "newRoomsAllowed": false,
+    "newTargetViewsAllowed": false,
+    "rendererChangesAllowed": false
+  },
+  "representation": {
+    "name": "uncertainty-modulated Gaussian visibility with bounded covariance",
+    "centers": "identical to U5a depth-only-covariance Gaussian centers",
+    "covariance": "identical to U5a depth-only-covariance log-scales and rotations for every primitive; calibrated sigma must not change covariance",
+    "primitiveCount": "identical to U5a depth-only-covariance and preserved exactly for every method",
+    "baseOpacity": 0.99,
+    "opacityMapping": {
+      "depthOnlyBaseline": "opacity=0.99, reused from U5a depth-only-covariance",
+      "relativePrecision": "w_rel=(sigma0/sigma)^2=1/[1+k*(1-c)]^2",
+      "candidateOpacity": "opacity=0.99*w_rel using intact confidence",
+      "shuffledOpacity": "opacity=0.99*w_rel using the exact frozen shuffled confidence",
+      "confidenceNormalization": "c=confidenceU8/255",
+      "k": 5.990146384791633,
+      "noNewFittedConstant": true,
+      "u8LevelReference": {
+        "0": 0.020261082889362996,
+        "128": 0.06239403876971809,
+        "255": 0.99
+      }
+    },
+    "rendererMechanism": {
+      "existingAlpha": "alpha=min(0.99, opacity*exp(-0.5*projectedMahalanobisDistanceSquared))",
+      "existingContributionCutoff": "alpha >= 1/255",
+      "depthDefinition": "first front-to-back Gaussian whose local alpha survives the cutoff",
+      "intendedEffect": "lower uncertainty-derived opacity shrinks effective visibility support through the existing alpha cutoff while preserving geometric covariance and primitive centers"
+    },
+    "allPrimitiveRowsPreserved": true,
+    "noCovarianceEnlargement": true,
+    "noHardPrimitiveDeletion": true,
+    "noOptimization": true,
+    "noTSDFConversion": true
+  },
+  "frozenPredictiveModel": {
+    "a": 0.010634156727771725,
+    "b": 0.004398048551220112,
+    "k": 5.990146384791633,
+    "sigma0": "a+b*z^2",
+    "sigma": "sigma0*(1+k*(1-c))",
+    "note": "The opacity ratio sigma0^2/sigma^2 cancels depth under the frozen multiplicative U1b model; no new depth-dependent mapping is introduced."
+  },
+  "methods": [
+    {
+      "id": "depth-only-fixed-opacity",
+      "role": "reference control",
+      "asset": "reuse U5a depth-only-covariance PLY",
+      "renders": "reuse U5a depth-only-covariance held-out renders"
+    },
+    {
+      "id": "calibrated-relative-precision-opacity",
+      "role": "exploratory candidate",
+      "covariance": "exact depth-only covariance",
+      "opacity": "0.99/[1+k*(1-c_intact)]^2"
+    },
+    {
+      "id": "shuffled-relative-precision-opacity",
+      "role": "association control",
+      "covariance": "exact depth-only covariance",
+      "opacity": "0.99/[1+k*(1-c_shuffled)]^2"
+    }
+  ],
+  "assetIntegrity": {
+    "candidateAndShuffledNonOpacityColumns": "must match the U5a depth-only-covariance PLY row-for-row and value-for-value after parsing numeric ASCII fields",
+    "onlyAllowedChangedProperty": "opacity",
+    "candidateAndShuffledPrimitiveCount": 24576,
+    "perSceneExpectedPrimitiveCount": 24576,
+    "preparationMustProduceNoRendersOrMetrics": true
+  },
+  "renderPlan": {
+    "newRenderCount": 80,
+    "calculation": "5 scenes * 2 new opacity methods * 8 frozen target views",
+    "baselineRenderCountReused": 40,
+    "totalComparedRenderCount": 120,
+    "methodOrder": [
+      "depth-only-fixed-opacity",
+      "calibrated-relative-precision-opacity",
+      "shuffled-relative-precision-opacity"
+    ],
+    "sceneOrder": [
+      "ca1m-48458481",
+      "ca1m-48018737",
+      "ca1m-45261587",
+      "ca1m-42897538",
+      "ca1m-48018375"
+    ],
+    "targetOrder": "0 through 7 from each immutable U5a targets.json",
+    "resultNonOverwrite": true
+  },
+  "evaluation": {
+    "primary": "same U5a scene metric: arithmetic mean across eight targets of fraction of all FARO-valid pixels rendered within 0.05m",
+    "secondary": [
+      "within10cm fraction of FARO-valid pixels",
+      "coverage fraction",
+      "overlap absolute depth error mean/median/p95",
+      "candidate-minus-baseline primary score",
+      "candidate-minus-shuffled primary score"
+    ],
+    "sceneIsEvidenceUnit": true,
+    "bootstrapReplicates": 2000,
+    "bootstrapSeed": 42,
+    "intervalConvention": "nearest-index p2.5/p97.5 with half ties lower, descriptive only"
+  },
+  "mechanismReadout": {
+    "promising": "candidate improves held-out within-5cm correctness relative to fixed-opacity depth-only in multiple rooms and is directionally better than shuffled, without catastrophic coverage loss",
+    "opacityOverPruning": "candidate substantially lowers coverage and does not recover within-5cm correctness; do not make opacity more aggressive on these rooms",
+    "associationNotCausal": "candidate and shuffled move together; do not attribute change to calibrated confidence placement",
+    "visibilityMechanismUseful": "candidate reduces the U5c foreground-occlusion failure while preserving enough coverage to improve the primary metric; only then consider a separately frozen untouched U6b confirmation"
+  },
+  "confirmatoryBoundary": {
+    "u6aCanEstablishEfficacy": false,
+    "u6bAllowedOnlyIfMechanisticallyPromising": true,
+    "noPostHocOpacityExponentOrFloorTuningOnTheseRooms": true,
+    "u5bRemainsUnopened": true
+  },
+  "claimBoundary": "U6a is exploratory because all room identities and target views were exposed by U5a/U5c. A positive U6a mechanism cannot establish efficacy. No opacity exponent, floor, clipping, or alternative mapping may be tuned on these five rooms after outcomes are seen."
+}

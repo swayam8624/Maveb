@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "experiment": "local-canonical-phase-v3",
+  "executedAt": "2026-09-20",
+  "status": "synthetic-analysis-sandbox-probe",
+  "record_count": 600,
+  "summary": {
+    "phase": {
+      "nuisance_median": 0.04099032197397232,
+      "edit_median": 0.22842495211121774,
+      "all_edits_vs_nuisance_auc": 0.7844444444444445,
+      "edit_rotate_auc": 0.9142222222222223,
+      "edit_rotate_median": 0.796449501297122,
+      "edit_shear_auc": 0.7238492063492064,
+      "edit_shear_median": 0.1584593520780555,
+      "edit_bend_auc": 0.6828174603174603,
+      "edit_bend_median": 0.11949269487731454
+    },
+    "density": {
+      "nuisance_median": 0.03445235420704054,
+      "edit_median": 0.1451791848401618,
+      "all_edits_vs_nuisance_auc": 0.776019536019536,
+      "edit_rotate_auc": 0.9124444444444444,
+      "edit_rotate_median": 0.47014145707157956,
+      "edit_shear_auc": 0.7125396825396826,
+      "edit_shear_median": 0.10718370260266162,
+      "edit_bend_auc": 0.668968253968254,
+      "edit_bend_median": 0.08505448602170136
+    },
+    "cov": {
+      "nuisance_median": 0.0007147738821965614,
+      "edit_median": 0.004657615674698063,
+      "all_edits_vs_nuisance_auc": 0.7256654456654457,
+      "edit_rotate_auc": 0.8463492063492063,
+      "edit_rotate_median": 0.012235476797021569,
+      "edit_shear_auc": 0.7863095238095238,
+      "edit_shear_median": 0.006552812859133498,
+      "edit_bend_auc": 0.5141666666666667,
+      "edit_bend_median": 0.0009327451148765026
+    },
+    "pair": {
+      "nuisance_median": 0.01025533097979862,
+      "edit_median": 0.006111769165791082,
+      "all_edits_vs_nuisance_auc": 0.27654456654456655,
+      "edit_rotate_auc": 0,
+      "edit_rotate_median": 0,
+      "edit_shear_auc": 0.596468253968254,
+      "edit_shear_median": 0.012173582179007601,
+      "edit_bend_auc": 0.3023015873015873,
+      "edit_bend_median": 0.00791755734388298
+    }
+  },
+  "decision": "CONTINUE BUT DO NOT PROMOTE: canonical phase beats the simple controls overall, but its margin over plain canonical density L2 is too small to justify a phase-specific claim.",
+  "interpretation": [
+    "Centering removes the easy global-translation signal.",
+    "Canonical phase remains sensitive to centroid-preserving rotation, shear and bending.",
+    "Pair-distance histograms are blind to rigid rotation and perform poorly overall.",
+    "Full covariance is competitive for shear/rotation but weak on the tested bending deformation.",
+    "Canonical phase only marginally beats canonical density L2 overall (0.784 vs 0.776 AUC), so mathematical interpretability/bounds—not raw discrimination—must justify keeping it."
+  ]
+}

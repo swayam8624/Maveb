@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1800 900">
+  <!-- Generator: Adobe Illustrator 30.9.0, SVG Export Plug-In . SVG Version: 2.1.4 Build 84)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+      }
+
+      .st1 {
+        fill: #10131a;
+      }
+
+      .st1, .st2 {
+        font-family: ArialMT, Arial;
+        font-size: 12px;
+      }
+
+      .st1, .st2, .st3, .st4 {
+        isolation: isolate;
+      }
+
+      .st5 {
+        stroke: #d8dee9;
+        stroke-width: 3px;
+      }
+
+      .st5, .st2 {
+        fill: #fff;
+      }
+
+      .st6 {
+        fill: #18c6d9;
+      }
+
+      .st3, .st4 {
+        fill: #475467;
+        font-size: 18px;
+      }
+
+      .st7 {
+        fill: #667085;
+      }
+
+      .st8 {
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+      }
+
+      .st9, .st4 {
+        font-family: Helvetica, Helvetica;
+      }
+
+      .st10 {
+        fill: #f7f8fa;
+      }
+
+      .st11 {
+        fill: #28c76f;
+      }
+
+      .st12 {
+        fill: #f04438;
+      }
+    </style>
+  </defs>
+  <rect class="st10" width="1800" height="900" rx="30" ry="30"/>
+  <text class="st1" transform="translate(70 75)"><tspan x="0" y="0">MAVEB / CBRC — certified revision pipeline</tspan></text>
+  <rect class="st5" x="70" y="160" width="260" height="150" rx="22" ry="22"/>
+  <text class="st1" transform="translate(100 205)"><tspan x="0" y="0">Persistent world</tspan></text>
+  <text class="st4" transform="translate(100 245)"><tspan x="0" y="0">real RGB / trained 3DGS</tspan></text>
+  <text class="st4" transform="translate(100 275)"><tspan x="0" y="0">stable entity ownership</tspan></text>
+  <path class="st0" d=""/>
+  <path class="st7" d="M377.65,215l40,20-40,20v-40Z"/>
+  <path class="st7" d="M430,235"/>
+  <rect class="st5" x="430" y="160" width="250" height="150" rx="22" ry="22"/>
+  <text class="st1" transform="translate(460 205)"><tspan x="0" y="0">Revision</tspan></text>
+  <text class="st4" transform="translate(460 245)"><tspan x="0" y="0">local authored edit</tspan></text>
+  <text class="st4" transform="translate(460 275)"><tspan x="0" y="0">dirty support</tspan></text>
+  <path class="st0" d=""/>
+  <path class="st7" d="M722.6,215.59l40,20-40,20v-40Z"/>
+  <path class="st7" d="M780,235"/>
+  <rect class="st5" x="780" y="140" width="330" height="190" rx="22" ry="22"/>
+  <text class="st1" transform="translate(815 190)"><tspan x="0" y="0">CBRC certificate</tspan></text>
+  <text class="st4" transform="translate(815 230)"><tspan x="0" y="0">exact HARD closure</tspan></text>
+  <text class="st4" transform="translate(815 260)"><tspan x="0" y="0">analytic finite-change bounds</tspan></text>
+  <text class="st4" transform="translate(815 290)"><tspan x="0" y="0">QoI-specific proof</tspan></text>
+  <path class="st0" d=""/>
+  <path class="st7" d="M1147.07,210.34l40,20-40,20v-40Z"/>
+  <path class="st7" d="M1210,235"/>
+  <rect class="st5" x="1210" y="100" width="500" height="270" rx="22" ry="22"/>
+  <text class="st1" transform="translate(1245 150)"><tspan x="0" y="0">Decision</tspan></text>
+  <rect class="st11" x="1260" y="200" width="185" height="70" rx="18" ry="18"/>
+  <text class="st2" transform="translate(1308.9863 243)"><tspan x="0" y="0">LOCAL REPAIR</tspan></text>
+  <rect class="st12" x="1480" y="200" width="185" height="70" rx="18" ry="18"/>
+  <text class="st2" transform="translate(1525.5352 243)"><tspan x="0" y="0">FULL FALLBACK</tspan></text>
+  <text class="st3" transform="translate(1260 315)"><tspan class="st9" x="0" y="0">safe </tspan><tspan class="st8" x="39.02" y="0">→</tspan><tspan class="st9" x="48.02" y="0" xml:space="preserve"> touch only certified support</tspan></text>
+  <text class="st3" transform="translate(1442 345)"><tspan class="st9" x="0" y="0">unsafe/unstable </tspan><tspan class="st8" x="132.1" y="0">→</tspan><tspan class="st9" x="141.1" y="0" xml:space="preserve"> refuse locality</tspan></text>
+  <path class="st0" d=""/>
+  <path class="st7" d="M1480,386.21l-20,40-20-40h40Z"/>
+  <path class="st7" d="M945,475"/>
+  <rect class="st5" x="1067.54" y="455.31" width="690" height="270" rx="28" ry="28"/>
+  <text class="st1" transform="translate(1112.5382 510.3134)"><tspan x="0" y="0">Independent evidence</tspan></text>
+  <text class="st4" transform="translate(1112.5382 555.3134)"><tspan x="0" y="0">FULL-after reference replay · actual residual · certified bound · ε</tspan></text>
+  <text class="st4" transform="translate(1112.5382 595.3134)"><tspan x="0" y="0">work ledger · hardware calibration · baseline/ablation suite · parity</tspan></text>
+  <rect class="st6" x="1112.54" y="640.31" width="600" height="46" rx="16" ry="16"/>
+  <text class="st2" transform="translate(828.35 691)"><tspan x="0" y="0">actual ≤ bound ≤ ε — or the case is rejected</tspan></text>
+</svg>

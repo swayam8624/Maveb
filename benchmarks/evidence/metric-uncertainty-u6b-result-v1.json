@@ -1,0 +1,2998 @@
+{
+  "authorizationSha256": "55b94f2676c8ee597f435f095845772a3d8e5e7099396f609d356b550b92dc42",
+  "claimBoundary": "This is the single prospectively frozen U6b confirmatory result on the untouched five-room set. U6a remains exploratory; prior U3/U3b/U4a/U5a negatives remain unchanged regardless of this decision.",
+  "claimPolicyApplied": "Report U6b as negative/null. Do not tune opacity exponent, base opacity, floor, clipping, alpha cutoff, covariance, source/target frame selection, or gate thresholds on these five exposed confirmatory rooms. Any further redesign requires another prospectively frozen untouched set.",
+  "claimType": "prospective confirmatory test on untouched validation rooms",
+  "confirmatoryGate": {
+    "allGateClausesPassed": false,
+    "candidateBetterThanBaselineSceneCount": 3,
+    "candidateBetterThanShuffledSceneCount": 2,
+    "candidateMeanAbsoluteDepthErrorNotWorseSceneCount": 3,
+    "candidateMinusBaseline": {
+      "lower95": -0.00044083144195511403,
+      "median": 0.00010829570588415105,
+      "replicates": 2000,
+      "sceneValues": [
+        0.015593043368372972,
+        0.0,
+        -0.00044083144195511403,
+        0.00010829570588415105,
+        0.12588988359339923
+      ],
+      "seed": 42,
+      "upper95": 0.12588988359339923
+    },
+    "candidateMinusShuffled": {
+      "lower95": -0.000501377737245394,
+      "median": 0.0,
+      "replicates": 2000,
+      "sceneValues": [
+        0.00918259778061048,
+        0.0,
+        -0.000501377737245394,
+        -0.00039177564187500846,
+        0.12365645950567808
+      ],
+      "seed": 42,
+      "upper95": 0.12365645950567808
+    },
+    "candidateToBaselineCoverageRatios": [
+      0.9966691166473887,
+      0.9989553490322131,
+      0.9886567773969085,
+      0.9997892306157244,
+      0.9234617645792949
+    ],
+    "checks": {
+      "candidateVsBaselineMedianEffectFloor": false,
+      "candidateVsBaselinePaired95LowerAboveZero": false,
+      "candidateVsBaselineWins": false,
+      "candidateVsShuffledMedianEffectFloor": false,
+      "candidateVsShuffledPaired95LowerAboveZero": false,
+      "candidateVsShuffledWins": false,
+      "coverageMedianRatio": true,
+      "coveragePerSceneMinimumRatio": true,
+      "overlapMeanAbsoluteErrorGuard": false
+    },
+    "medianCandidateToBaselineCoverageRatio": 0.9966691166473887,
+    "minimumCandidateToBaselineCoverageRatio": 0.9234617645792949,
+    "perScene": {
+      "ca1m-42898811": {
+        "candidateMeanAbsoluteDepthErrorNotWorseThanBaseline": true,
+        "candidateMinusBaseline": 0.015593043368372972,
+        "candidateMinusShuffled": 0.00918259778061048,
+        "candidateToBaselineCoverageRatio": 0.9966691166473887
+      },
+      "ca1m-45261121": {
+        "candidateMeanAbsoluteDepthErrorNotWorseThanBaseline": false,
+        "candidateMinusBaseline": 0.0,
+        "candidateMinusShuffled": 0.0,
+        "candidateToBaselineCoverageRatio": 0.9989553490322131
+      },
+      "ca1m-47331971": {
+        "candidateMeanAbsoluteDepthErrorNotWorseThanBaseline": true,
+        "candidateMinusBaseline": 0.12588988359339923,
+        "candidateMinusShuffled": 0.12365645950567808,
+        "candidateToBaselineCoverageRatio": 0.9234617645792949
+      },
+      "ca1m-47332915": {
+        "candidateMeanAbsoluteDepthErrorNotWorseThanBaseline": true,
+        "candidateMinusBaseline": 0.00010829570588415105,
+        "candidateMinusShuffled": -0.00039177564187500846,
+        "candidateToBaselineCoverageRatio": 0.9997892306157244
+      },
+      "ca1m-47895341": {
+        "candidateMeanAbsoluteDepthErrorNotWorseThanBaseline": false,
+        "candidateMinusBaseline": -0.00044083144195511403,
+        "candidateMinusShuffled": -0.000501377737245394,
+        "candidateToBaselineCoverageRatio": 0.9886567773969085
+      }
+    }
+  },
+  "decisionRule": "All confirmatory gate clauses must pass. Failure of any clause is a negative/null U6b confirmatory result.",
+  "methodOrder": [
+    "depth-only-fixed-opacity",
+    "calibrated-relative-precision-opacity",
+    "shuffled-relative-precision-opacity"
+  ],
+  "preparationSha256": "4df50fdda6a207a15254092b92bcabf5226cb19d7171e49a9ecc3a112b2cd768",
+  "protocolSha256": "0c58590d7c71c24797d583bd2681c1fc8994028d9b188b1fbe5fb5a4c4e1b3e3",
+  "renderCount": 120,
+  "renderToolSha256": "6b1f511633c259890b0f531ac414773a6a2bcbfcf5ee932585db036cfd4a997d",
+  "scenes": {
+    "ca1m-42898811": {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "60d8d412ad3129068b2dcf54eea50abdc842ab0b7a25e6eb6d8107caf93e3d6a",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.4924703015833531,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.45661669969558716,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 1.1219407469034195,
+            "coverageFractionMean": 0.9705798174933132,
+            "primaryWithin5cmFractionOfFaroValid": 0.47929257806174913,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.6008608002594247
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.16663382296913923,
+              "absoluteDepthErrorMedianMetres": 0.02908170223236084,
+              "absoluteDepthErrorP95Metres": 1.1375770568847656,
+              "coverageFraction": 0.9994036190143714,
+              "faroValidPixelCount": 137496,
+              "render": {
+                "finiteDepthPixels": 193276,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "855f791965390cba726d6fb9196a96a42bb5f06954e19a94a7c1b15d20f4f6fd",
+              "renderedFiniteOnFaroValidPixelCount": 137414,
+              "targetIndex": 0,
+              "timestampNanoseconds": 167472669463875,
+              "within10cmFractionOfFaroValid": 0.7407924594170012,
+              "within5cmFractionOfFaroValid": 0.6545063129109211
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.15251965755800248,
+              "absoluteDepthErrorMedianMetres": 0.038111090660095215,
+              "absoluteDepthErrorP95Metres": 0.539151668548584,
+              "coverageFraction": 0.8492340964726643,
+              "faroValidPixelCount": 150737,
+              "render": {
+                "finiteDepthPixels": 162397,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "2800782fdbe668c4456295ad401c51342f374c13124d9b30c6fe2a8d8d9a8187",
+              "renderedFiniteOnFaroValidPixelCount": 128011,
+              "targetIndex": 1,
+              "timestampNanoseconds": 167474385419958,
+              "within10cmFractionOfFaroValid": 0.5416387482834341,
+              "within5cmFractionOfFaroValid": 0.4631377830260653
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.13648534827110245,
+              "absoluteDepthErrorMedianMetres": 0.050987958908081055,
+              "absoluteDepthErrorP95Metres": 0.4443025588989258,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 184033,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "ff0fe15eb726fbee374dd58268fc02b9c0d7a8743924c912b64016cff8396dfa",
+              "renderedFiniteOnFaroValidPixelCount": 184033,
+              "targetIndex": 2,
+              "timestampNanoseconds": 167475984757416,
+              "within10cmFractionOfFaroValid": 0.7449805197980797,
+              "within5cmFractionOfFaroValid": 0.49342780914292544
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.12016410487419692,
+              "absoluteDepthErrorMedianMetres": 0.042139649391174316,
+              "absoluteDepthErrorP95Metres": 0.5198781490325928,
+              "coverageFraction": 0.9999942643777711,
+              "faroValidPixelCount": 174349,
+              "render": {
+                "finiteDepthPixels": 196602,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "decbefbe8df9941b24645c45e0033771e6307ca33aaccd87e90ed485c8fdcfb3",
+              "renderedFiniteOnFaroValidPixelCount": 174348,
+              "targetIndex": 3,
+              "timestampNanoseconds": 167477584094916,
+              "within10cmFractionOfFaroValid": 0.7515213737962363,
+              "within5cmFractionOfFaroValid": 0.5740325439205273
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.09246987381942545,
+              "absoluteDepthErrorMedianMetres": 0.035209059715270996,
+              "absoluteDepthErrorP95Metres": 0.40279436111450195,
+              "coverageFraction": 0.9862162343484121,
+              "faroValidPixelCount": 163961,
+              "render": {
+                "finiteDepthPixels": 191422,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "d9c5415983f014835487c031fa8da46afe303838f643d116187fd272a70ee83e",
+              "renderedFiniteOnFaroValidPixelCount": 161701,
+              "targetIndex": 4,
+              "timestampNanoseconds": 167479183432416,
+              "within10cmFractionOfFaroValid": 0.7936765450320503,
+              "within5cmFractionOfFaroValid": 0.6502095010398814
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.0658859193288538,
+              "absoluteDepthErrorMedianMetres": 0.020871877670288086,
+              "absoluteDepthErrorP95Metres": 0.37747132778167725,
+              "coverageFraction": 0.9999427652401857,
+              "faroValidPixelCount": 174719,
+              "render": {
+                "finiteDepthPixels": 196581,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "493b6d156a14fbcde3616cb8ead00467bf15deef5dbd5bfab4999957d059f4f3",
+              "renderedFiniteOnFaroValidPixelCount": 174709,
+              "targetIndex": 5,
+              "timestampNanoseconds": 167480782770041,
+              "within10cmFractionOfFaroValid": 0.8826172310967897,
+              "within5cmFractionOfFaroValid": 0.7977094649122305
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.2300787196986958,
+              "absoluteDepthErrorMedianMetres": 1.3579140901565552,
+              "absoluteDepthErrorP95Metres": 1.9089140892028809,
+              "coverageFraction": 0.9474539488713061,
+              "faroValidPixelCount": 192612,
+              "render": {
+                "finiteDepthPixels": 186487,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "50d35967485298d215542165fa64d7f02e8dabbd69aecf022fa9e50a421f840f",
+              "renderedFiniteOnFaroValidPixelCount": 182491,
+              "targetIndex": 6,
+              "timestampNanoseconds": 167483081817166,
+              "within10cmFractionOfFaroValid": 0.1470261458268436,
+              "within5cmFractionOfFaroValid": 0.1470261458268436
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.9755249661474086,
+              "absoluteDepthErrorMedianMetres": 2.0786181688308716,
+              "absoluteDepthErrorP95Metres": 3.6454367637634277,
+              "coverageFraction": 0.9823936116217954,
+              "faroValidPixelCount": 177322,
+              "render": {
+                "finiteDepthPixels": 193466,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/calibrated-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "ea082a7ce248bf8eb87b6673a4964e037bb8519e097280493a98030ab5ef4596",
+              "renderedFiniteOnFaroValidPixelCount": 174200,
+              "targetIndex": 7,
+              "timestampNanoseconds": 167484781113208,
+              "within10cmFractionOfFaroValid": 0.2046333788249625,
+              "within5cmFractionOfFaroValid": 0.054291063714598305
+            }
+          ]
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "79b0a96bb1e44416d328362b370ccca811df04850c7d5321f16d5c41e43abd8b",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.5131957077035258,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.45665351301431656,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 1.2530901432037354,
+            "coverageFractionMean": 0.973823510011191,
+            "primaryWithin5cmFractionOfFaroValid": 0.46369953469337616,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.579085838033753
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.19696286299921645,
+              "absoluteDepthErrorMedianMetres": 0.03040027618408203,
+              "absoluteDepthErrorP95Metres": 1.2054150104522705,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 137496,
+              "render": {
+                "finiteDepthPixels": 193358,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "ed13294572101314669a4f9115fc5652c35e5149428dfb2ada47030cefb1a00f",
+              "renderedFiniteOnFaroValidPixelCount": 137496,
+              "targetIndex": 0,
+              "timestampNanoseconds": 167472669463875,
+              "within10cmFractionOfFaroValid": 0.7166026648047943,
+              "within5cmFractionOfFaroValid": 0.6339093500901845
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.1792974166043413,
+              "absoluteDepthErrorMedianMetres": 0.041149914264678955,
+              "absoluteDepthErrorP95Metres": 0.8568686246871948,
+              "coverageFraction": 0.8516223621274139,
+              "faroValidPixelCount": 150737,
+              "render": {
+                "finiteDepthPixels": 162861,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "10390f93d52cdc85da261ba08e7c82870dbc9af870ac39acb68c2b9754278e44",
+              "renderedFiniteOnFaroValidPixelCount": 128371,
+              "targetIndex": 1,
+              "timestampNanoseconds": 167474385419958,
+              "within10cmFractionOfFaroValid": 0.5265993087297743,
+              "within5cmFractionOfFaroValid": 0.45138220874768636
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.1628546272002855,
+              "absoluteDepthErrorMedianMetres": 0.05312454700469971,
+              "absoluteDepthErrorP95Metres": 0.651343822479248,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 184033,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "05b22a3a69543348f194c6e691c68ef13831e28a16292624c594d552aecf2390",
+              "renderedFiniteOnFaroValidPixelCount": 184033,
+              "targetIndex": 2,
+              "timestampNanoseconds": 167475984757416,
+              "within10cmFractionOfFaroValid": 0.7225551939054409,
+              "within5cmFractionOfFaroValid": 0.4783815946053154
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.1445472653624911,
+              "absoluteDepthErrorMedianMetres": 0.04415786266326904,
+              "absoluteDepthErrorP95Metres": 0.714357852935791,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 174349,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "40f862e0434a9da9e29475dc9ce04e0836c83419c3374d6e9398266772e41e6c",
+              "renderedFiniteOnFaroValidPixelCount": 174349,
+              "targetIndex": 3,
+              "timestampNanoseconds": 167477584094916,
+              "within10cmFractionOfFaroValid": 0.7174976627339417,
+              "within5cmFractionOfFaroValid": 0.5510843193823882
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.10785778212423013,
+              "absoluteDepthErrorMedianMetres": 0.03631949424743652,
+              "absoluteDepthErrorP95Metres": 0.4689218997955322,
+              "coverageFraction": 0.9862650264392142,
+              "faroValidPixelCount": 163961,
+              "render": {
+                "finiteDepthPixels": 191555,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "29a89b91060295ae614ec65250fce445e90c1e429c867a68c64c5bf021444258",
+              "renderedFiniteOnFaroValidPixelCount": 161709,
+              "targetIndex": 4,
+              "timestampNanoseconds": 167479183432416,
+              "within10cmFractionOfFaroValid": 0.7697440244936296,
+              "within5cmFractionOfFaroValid": 0.6317172986258928
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.08917444010048407,
+              "absoluteDepthErrorMedianMetres": 0.021725177764892578,
+              "absoluteDepthErrorP95Metres": 0.578100323677063,
+              "coverageFraction": 0.99995993566813,
+              "faroValidPixelCount": 174719,
+              "render": {
+                "finiteDepthPixels": 196601,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "4f42749774c9617f19a4cd5d2408547dae57640b98233be2f7a1e372a573fcd1",
+              "renderedFiniteOnFaroValidPixelCount": 174712,
+              "targetIndex": 5,
+              "timestampNanoseconds": 167480782770041,
+              "within10cmFractionOfFaroValid": 0.8465765028417058,
+              "within5cmFractionOfFaroValid": 0.7662933052501445
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.2301588896033797,
+              "absoluteDepthErrorMedianMetres": 1.3489141464233398,
+              "absoluteDepthErrorP95Metres": 1.904914140701294,
+              "coverageFraction": 0.9692023342263203,
+              "faroValidPixelCount": 192612,
+              "render": {
+                "finiteDepthPixels": 190676,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "40a0733a402ef2ebd7cba7dab76da1f742a002bafa8c1bd83a352f5db3b3d1e6",
+              "renderedFiniteOnFaroValidPixelCount": 186680,
+              "targetIndex": 6,
+              "timestampNanoseconds": 167483081817166,
+              "within10cmFractionOfFaroValid": 0.1470261458268436,
+              "within5cmFractionOfFaroValid": 0.1470261458268436
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.994712377633779,
+              "absoluteDepthErrorMedianMetres": 2.077436685562134,
+              "absoluteDepthErrorP95Metres": 3.6447994709014893,
+              "coverageFraction": 0.98353842162845,
+              "faroValidPixelCount": 177322,
+              "render": {
+                "finiteDepthPixels": 193685,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/depth-only-fixed-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "90d79e7c72272f092c86911d8599a2bbcdc78fc4a93d57bd67b583d94f5926db",
+              "renderedFiniteOnFaroValidPixelCount": 174403,
+              "targetIndex": 7,
+              "timestampNanoseconds": 167484781113208,
+              "within10cmFractionOfFaroValid": 0.18608520093389427,
+              "within5cmFractionOfFaroValid": 0.049802055018553816
+            }
+          ]
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "0ba1e7b6d16e32ddb97b97b53dd93a27dd7a02214079b84491c098ba1a1356d0",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 0.5076929597832026,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.45604584366083145,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 1.2460151016712189,
+            "coverageFractionMean": 0.9735911060294014,
+            "primaryWithin5cmFractionOfFaroValid": 0.47010998028113865,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.5838245619773992
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.1940099078715372,
+              "absoluteDepthErrorMedianMetres": 0.02958136796951294,
+              "absoluteDepthErrorP95Metres": 1.2021377086639404,
+              "coverageFraction": 0.9998690871007156,
+              "faroValidPixelCount": 137496,
+              "render": {
+                "finiteDepthPixels": 193287,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "89c7fe9bdb87bb1d600986fc0f9586d31a93649b22572c057b315801ccbe2968",
+              "renderedFiniteOnFaroValidPixelCount": 137478,
+              "targetIndex": 0,
+              "timestampNanoseconds": 167472669463875,
+              "within10cmFractionOfFaroValid": 0.7196354803048816,
+              "within5cmFractionOfFaroValid": 0.6387822191191016
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.17620294664802177,
+              "absoluteDepthErrorMedianMetres": 0.040190935134887695,
+              "absoluteDepthErrorP95Metres": 0.8447023630142212,
+              "coverageFraction": 0.8509456868585682,
+              "faroValidPixelCount": 150737,
+              "render": {
+                "finiteDepthPixels": 162709,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "719989b90fc2be13e62da662fe2dbf4764abc7a0b6ec25347fbf0380982a3170",
+              "renderedFiniteOnFaroValidPixelCount": 128269,
+              "targetIndex": 1,
+              "timestampNanoseconds": 167474385419958,
+              "within10cmFractionOfFaroValid": 0.5319264679541188,
+              "within5cmFractionOfFaroValid": 0.454387443029913
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.15994004569497727,
+              "absoluteDepthErrorMedianMetres": 0.05169045925140381,
+              "absoluteDepthErrorP95Metres": 0.6376175880432129,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 184033,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "5571b04044416ee382054610234aed9d7294986024e32c61e71cddc559b536af",
+              "renderedFiniteOnFaroValidPixelCount": 184033,
+              "targetIndex": 2,
+              "timestampNanoseconds": 167475984757416,
+              "within10cmFractionOfFaroValid": 0.7282335233354887,
+              "within5cmFractionOfFaroValid": 0.4882004857824412
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.14036255838023862,
+              "absoluteDepthErrorMedianMetres": 0.04285848140716553,
+              "absoluteDepthErrorP95Metres": 0.7052900791168213,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 174349,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "19c1534788c234afbe6f21f1c8c64d99d61d6d03867de104fc289d890646c8ba",
+              "renderedFiniteOnFaroValidPixelCount": 174349,
+              "targetIndex": 3,
+              "timestampNanoseconds": 167477584094916,
+              "within10cmFractionOfFaroValid": 0.7245180643422101,
+              "within5cmFractionOfFaroValid": 0.5618959672840108
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.103845108357532,
+              "absoluteDepthErrorMedianMetres": 0.0351715087890625,
+              "absoluteDepthErrorP95Metres": 0.4569218158721924,
+              "coverageFraction": 0.985886887735498,
+              "faroValidPixelCount": 163961,
+              "render": {
+                "finiteDepthPixels": 191403,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "85bd53d9afbce6423c22d1b20b71c4c66d89922ccababe5f0ee07e4223f400de",
+              "renderedFiniteOnFaroValidPixelCount": 161647,
+              "targetIndex": 4,
+              "timestampNanoseconds": 167479183432416,
+              "within10cmFractionOfFaroValid": 0.776038204207098,
+              "within5cmFractionOfFaroValid": 0.6426284299315081
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.08749709443727348,
+              "absoluteDepthErrorMedianMetres": 0.021167874336242676,
+              "absoluteDepthErrorP95Metres": 0.5711003541946411,
+              "coverageFraction": 0.9999542121921485,
+              "faroValidPixelCount": 174719,
+              "render": {
+                "finiteDepthPixels": 196599,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "b56bc4dbbd84e975ca14f0b7616cb51e3ae0adedee02e39113781e0dfcaf9566",
+              "renderedFiniteOnFaroValidPixelCount": 174711,
+              "targetIndex": 5,
+              "timestampNanoseconds": 167480782770041,
+              "within10cmFractionOfFaroValid": 0.8505657656007647,
+              "within5cmFractionOfFaroValid": 0.771719160480543
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.2301654383133018,
+              "absoluteDepthErrorMedianMetres": 1.3497222661972046,
+              "absoluteDepthErrorP95Metres": 1.904914140701294,
+              "coverageFraction": 0.9690984985359168,
+              "faroValidPixelCount": 192612,
+              "render": {
+                "finiteDepthPixels": 190656,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "68e166bdd8254ba1187dc690c4780a01c116c21dbf3eff0ae86abb8457635a0f",
+              "renderedFiniteOnFaroValidPixelCount": 186660,
+              "targetIndex": 6,
+              "timestampNanoseconds": 167483081817166,
+              "within10cmFractionOfFaroValid": 0.1469223101364401,
+              "within5cmFractionOfFaroValid": 0.1469223101364401
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.9695205785627383,
+              "absoluteDepthErrorMedianMetres": 2.077983856201172,
+              "absoluteDepthErrorP95Metres": 3.6454367637634277,
+              "coverageFraction": 0.982974475812364,
+              "faroValidPixelCount": 177322,
+              "render": {
+                "finiteDepthPixels": 193571,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-42898811/renders/shuffled-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "1ab42c8ad954593276f644306a5c6b76caab50405f99370019748514f9d6cb42",
+              "renderedFiniteOnFaroValidPixelCount": 174303,
+              "targetIndex": 7,
+              "timestampNanoseconds": 167484781113208,
+              "within10cmFractionOfFaroValid": 0.19275667993819154,
+              "within5cmFractionOfFaroValid": 0.05634382648515131
+            }
+          ]
+        }
+      },
+      "targetManifestSha256": "588aacae72a1d0f9d0f4652ecf3856c33335160b48f8defa2ed8fc6c257f84c8"
+    },
+    "ca1m-45261121": {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "60928c7d5fde1aec1756be0409aefff01ae1c6ba2360192e74b06645464d2a8f",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.7927619730093909,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.6646407768130302,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.9959574192762375,
+            "coverageFractionMean": 0.996651580303512,
+            "primaryWithin5cmFractionOfFaroValid": 0.0,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.0
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.570569331255646,
+              "absoluteDepthErrorMedianMetres": 1.5642613172531128,
+              "absoluteDepthErrorP95Metres": 1.978074312210083,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195844,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "11ca92a4c3d532d34b206e825845aa31f8ce370205ca0e7c79a0d2f1db5ec959",
+              "renderedFiniteOnFaroValidPixelCount": 195844,
+              "targetIndex": 0,
+              "timestampNanoseconds": 3419041284875,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2578178838323337,
+              "absoluteDepthErrorMedianMetres": 2.056688070297241,
+              "absoluteDepthErrorP95Metres": 3.45468807220459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 181519,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+              "renderedFiniteOnFaroValidPixelCount": 181519,
+              "targetIndex": 1,
+              "timestampNanoseconds": 3426738100375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8391992611367731,
+              "absoluteDepthErrorMedianMetres": 1.927813470363617,
+              "absoluteDepthErrorP95Metres": 2.6074838638305664,
+              "coverageFraction": 0.9732126424280958,
+              "faroValidPixelCount": 179301,
+              "render": {
+                "finiteDepthPixels": 191805,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "7a725ca28e7d86dfcc33f80ee5a1f7f4e82ee4033607ebbd43dd54af6af07c34",
+              "renderedFiniteOnFaroValidPixelCount": 174498,
+              "targetIndex": 2,
+              "timestampNanoseconds": 3434551533833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4119199920082497,
+              "absoluteDepthErrorMedianMetres": 1.231726050376892,
+              "absoluteDepthErrorP95Metres": 2.445726156234741,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 161204,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+              "renderedFiniteOnFaroValidPixelCount": 161204,
+              "targetIndex": 3,
+              "timestampNanoseconds": 3442348307333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8412996921341414,
+              "absoluteDepthErrorMedianMetres": 1.8591614961624146,
+              "absoluteDepthErrorP95Metres": 2.3940629959106445,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193296,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+              "renderedFiniteOnFaroValidPixelCount": 193296,
+              "targetIndex": 4,
+              "timestampNanoseconds": 3449945163083,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.054362133673558,
+              "absoluteDepthErrorMedianMetres": 1.6175776720046997,
+              "absoluteDepthErrorP95Metres": 4.036725997924805,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 192504,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "329095c062b838be70bba55b5cd25e17e0ac625915430688c472d1c90e4666f7",
+              "renderedFiniteOnFaroValidPixelCount": 192504,
+              "targetIndex": 5,
+              "timestampNanoseconds": 3457741934958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4139157496519397,
+              "absoluteDepthErrorMedianMetres": 1.454995036125183,
+              "absoluteDepthErrorP95Metres": 1.7509950399398804,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195866,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "41fb84bec1d879c06977d44cd26aef5b6bb6918eccc8c9992fb75922971be30f",
+              "renderedFiniteOnFaroValidPixelCount": 195866,
+              "targetIndex": 6,
+              "timestampNanoseconds": 3465538705916,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.9530117403824863,
+              "absoluteDepthErrorMedianMetres": 1.6049031019210815,
+              "absoluteDepthErrorP95Metres": 5.29990291595459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 178895,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/calibrated-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "73d72ef9ae57c1af16e8b3f48b2874dca88f1b02547cbbc978824915e3f14aeb",
+              "renderedFiniteOnFaroValidPixelCount": 178895,
+              "targetIndex": 7,
+              "timestampNanoseconds": 3473252178583,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "60c67ca32578be7cd0f86d9dfe89853cb634049677994d6094015990ebf4096c",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.7917184233071646,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.6629931330680847,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.9958557933568954,
+            "coverageFractionMean": 0.9976938221203451,
+            "primaryWithin5cmFractionOfFaroValid": 0.0,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.0
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.5706763318933568,
+              "absoluteDepthErrorMedianMetres": 1.5642613172531128,
+              "absoluteDepthErrorP95Metres": 1.9782612323760986,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195844,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "2d46f8e64b89096fd237c8dc47c762f5599ee39aa48dbb0244b5db7de6e6bafe",
+              "renderedFiniteOnFaroValidPixelCount": 195844,
+              "targetIndex": 0,
+              "timestampNanoseconds": 3419041284875,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2578178838323337,
+              "absoluteDepthErrorMedianMetres": 2.056688070297241,
+              "absoluteDepthErrorP95Metres": 3.45468807220459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 181519,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+              "renderedFiniteOnFaroValidPixelCount": 181519,
+              "targetIndex": 1,
+              "timestampNanoseconds": 3426738100375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8306799926594055,
+              "absoluteDepthErrorMedianMetres": 1.914483904838562,
+              "absoluteDepthErrorP95Metres": 2.6064839363098145,
+              "coverageFraction": 0.9815505769627609,
+              "faroValidPixelCount": 179301,
+              "render": {
+                "finiteDepthPixels": 193300,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "c0ce31907642cd2093906b9337d7bb36ab8e07213fd1fae0f74ab210c190b0fe",
+              "renderedFiniteOnFaroValidPixelCount": 175993,
+              "targetIndex": 2,
+              "timestampNanoseconds": 3434551533833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4119199920082497,
+              "absoluteDepthErrorMedianMetres": 1.231726050376892,
+              "absoluteDepthErrorP95Metres": 2.445726156234741,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 161204,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+              "renderedFiniteOnFaroValidPixelCount": 161204,
+              "targetIndex": 3,
+              "timestampNanoseconds": 3442348307333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8412996921341414,
+              "absoluteDepthErrorMedianMetres": 1.8591614961624146,
+              "absoluteDepthErrorP95Metres": 2.3940629959106445,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193296,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+              "renderedFiniteOnFaroValidPixelCount": 193296,
+              "targetIndex": 4,
+              "timestampNanoseconds": 3449945163083,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.0544259782910115,
+              "absoluteDepthErrorMedianMetres": 1.6177260875701904,
+              "absoluteDepthErrorP95Metres": 4.036725997924805,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 192504,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "a47c0bea94382b3f74ec0c4878a1756120e8e10ba1b71d6048ff752aaf1209fe",
+              "renderedFiniteOnFaroValidPixelCount": 192504,
+              "targetIndex": 5,
+              "timestampNanoseconds": 3457741934958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4139157496519397,
+              "absoluteDepthErrorMedianMetres": 1.454995036125183,
+              "absoluteDepthErrorP95Metres": 1.7509950399398804,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195866,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "41fb84bec1d879c06977d44cd26aef5b6bb6918eccc8c9992fb75922971be30f",
+              "renderedFiniteOnFaroValidPixelCount": 195866,
+              "targetIndex": 6,
+              "timestampNanoseconds": 3465538705916,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.9530117659868784,
+              "absoluteDepthErrorMedianMetres": 1.6049031019210815,
+              "absoluteDepthErrorP95Metres": 5.29990291595459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 178895,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/depth-only-fixed-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "7119c026c5bab977a15dfb0c926a5270ae87ae6d8d2937a9d887a3e04726b8e7",
+              "renderedFiniteOnFaroValidPixelCount": 178895,
+              "targetIndex": 7,
+              "timestampNanoseconds": 3473252178583,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "74875597a3d8404d0d16b866b1cfe68f046396c4b3e52e9d80dd38155b037a9a",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.791626930504267,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.66298046708107,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.995749220252037,
+            "coverageFractionMean": 0.9976938221203451,
+            "primaryWithin5cmFractionOfFaroValid": 0.0,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.0
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.5706763318933568,
+              "absoluteDepthErrorMedianMetres": 1.5642613172531128,
+              "absoluteDepthErrorP95Metres": 1.9782612323760986,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195844,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "2d46f8e64b89096fd237c8dc47c762f5599ee39aa48dbb0244b5db7de6e6bafe",
+              "renderedFiniteOnFaroValidPixelCount": 195844,
+              "targetIndex": 0,
+              "timestampNanoseconds": 3419041284875,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2578178838323337,
+              "absoluteDepthErrorMedianMetres": 2.056688070297241,
+              "absoluteDepthErrorP95Metres": 3.45468807220459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 181519,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "e6b95d0fa28f8586e7bea7bcdc35717a0f07b7b35180d2dd9d3fc801ed9c1ace",
+              "renderedFiniteOnFaroValidPixelCount": 181519,
+              "targetIndex": 1,
+              "timestampNanoseconds": 3426738100375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8306799926594055,
+              "absoluteDepthErrorMedianMetres": 1.914483904838562,
+              "absoluteDepthErrorP95Metres": 2.6064839363098145,
+              "coverageFraction": 0.9815505769627609,
+              "faroValidPixelCount": 179301,
+              "render": {
+                "finiteDepthPixels": 193300,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "c0ce31907642cd2093906b9337d7bb36ab8e07213fd1fae0f74ab210c190b0fe",
+              "renderedFiniteOnFaroValidPixelCount": 175993,
+              "targetIndex": 2,
+              "timestampNanoseconds": 3434551533833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4119199920082497,
+              "absoluteDepthErrorMedianMetres": 1.231726050376892,
+              "absoluteDepthErrorP95Metres": 2.445726156234741,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 161204,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "a519c7944f2955189b532729f92e3a31b2a1dfc3746bda967f3fcd74f0252c49",
+              "renderedFiniteOnFaroValidPixelCount": 161204,
+              "targetIndex": 3,
+              "timestampNanoseconds": 3442348307333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8412996921341414,
+              "absoluteDepthErrorMedianMetres": 1.8591614961624146,
+              "absoluteDepthErrorP95Metres": 2.3940629959106445,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193296,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "7709b293bd0250af4655654367093201b4c1a3094908b94200e19457aaa473e3",
+              "renderedFiniteOnFaroValidPixelCount": 193296,
+              "targetIndex": 4,
+              "timestampNanoseconds": 3449945163083,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.0544259782910115,
+              "absoluteDepthErrorMedianMetres": 1.6177260875701904,
+              "absoluteDepthErrorP95Metres": 4.036725997924805,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 192504,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "a47c0bea94382b3f74ec0c4878a1756120e8e10ba1b71d6048ff752aaf1209fe",
+              "renderedFiniteOnFaroValidPixelCount": 192504,
+              "targetIndex": 5,
+              "timestampNanoseconds": 3457741934958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4131838072287586,
+              "absoluteDepthErrorMedianMetres": 1.454893708229065,
+              "absoluteDepthErrorP95Metres": 1.7501424551010132,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195866,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "057b378a63f1b402500dd7d4b10edbaa045d3d048da9c2ceee1e28394aabd600",
+              "renderedFiniteOnFaroValidPixelCount": 195866,
+              "targetIndex": 6,
+              "timestampNanoseconds": 3465538705916,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.9530117659868784,
+              "absoluteDepthErrorMedianMetres": 1.6049031019210815,
+              "absoluteDepthErrorP95Metres": 5.29990291595459,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 178895,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-45261121/renders/shuffled-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "7119c026c5bab977a15dfb0c926a5270ae87ae6d8d2937a9d887a3e04726b8e7",
+              "renderedFiniteOnFaroValidPixelCount": 178895,
+              "targetIndex": 7,
+              "timestampNanoseconds": 3473252178583,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        }
+      },
+      "targetManifestSha256": "05f9d4c8b5a2c3310986a1a3c88bd05a4500e24eec536540d5ebd4c7d3fa9ffa"
+    },
+    "ca1m-47331971": {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "6826787e198d7bcc2fdaefda24a6fa094a305ed563a14b2c286024d5614520ad",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.0720668016461443,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 0.8728334829211235,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.445280112326145,
+            "coverageFractionMean": 0.784923275901361,
+            "primaryWithin5cmFractionOfFaroValid": 0.1641035277281718,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.18984711563301332
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.3258812617753265,
+              "absoluteDepthErrorMedianMetres": 0.03194427490234375,
+              "absoluteDepthErrorP95Metres": 1.645951509475708,
+              "coverageFraction": 0.3080351804137721,
+              "faroValidPixelCount": 183966,
+              "render": {
+                "finiteDepthPixels": 61664,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "d123d4c2bea3e649f527681435033d7c78fa8c33583852aecd02023f51af847b",
+              "renderedFiniteOnFaroValidPixelCount": 56668,
+              "targetIndex": 0,
+              "timestampNanoseconds": 168976559347458,
+              "within10cmFractionOfFaroValid": 0.20358653229401086,
+              "within5cmFractionOfFaroValid": 0.18108237391691942
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.12314730814268492,
+              "absoluteDepthErrorMedianMetres": 0.05531555414199829,
+              "absoluteDepthErrorP95Metres": 0.3877184987068176,
+              "coverageFraction": 0.3729389298960743,
+              "faroValidPixelCount": 163386,
+              "render": {
+                "finiteDepthPixels": 94136,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "f4253d38322e0aa98722220b4ccc42b389b801704d943da413904569924e4371",
+              "renderedFiniteOnFaroValidPixelCount": 60933,
+              "targetIndex": 1,
+              "timestampNanoseconds": 168984056307333,
+              "within10cmFractionOfFaroValid": 0.22687378355550658,
+              "within5cmFractionOfFaroValid": 0.17811807621216016
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.03189329409161211,
+              "absoluteDepthErrorMedianMetres": 0.018806099891662598,
+              "absoluteDepthErrorP95Metres": 0.11094188690185547,
+              "coverageFraction": 0.8306679983549733,
+              "faroValidPixelCount": 170210,
+              "render": {
+                "finiteDepthPixels": 165406,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "7a6cd4390e97c8aa70fcc439a1a221705e73462e94005fd5f1604c92ed461730",
+              "renderedFiniteOnFaroValidPixelCount": 141388,
+              "targetIndex": 2,
+              "timestampNanoseconds": 168991553267041,
+              "within10cmFractionOfFaroValid": 0.7834616062511016,
+              "within5cmFractionOfFaroValid": 0.720233828799718
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.7523801028382258,
+              "absoluteDepthErrorMedianMetres": 1.263826608657837,
+              "absoluteDepthErrorP95Metres": 4.048320770263672,
+              "coverageFraction": 0.9788827149025767,
+              "faroValidPixelCount": 177627,
+              "render": {
+                "finiteDepthPixels": 191995,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "c15d5eaaf5392b0fe4805e35558fdd3a89dcaacb1fe3f6e182cf86bd0cc1b8b8",
+              "renderedFiniteOnFaroValidPixelCount": 173876,
+              "targetIndex": 3,
+              "timestampNanoseconds": 168999050226666,
+              "within10cmFractionOfFaroValid": 0.10241123252658661,
+              "within5cmFractionOfFaroValid": 0.0923001570707156
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.5773261338654156,
+              "absoluteDepthErrorMedianMetres": 1.49978768825531,
+              "absoluteDepthErrorP95Metres": 3.4263203144073486,
+              "coverageFraction": 0.8903094416473384,
+              "faroValidPixelCount": 176770,
+              "render": {
+                "finiteDepthPixels": 173708,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "b5da444c5940f8d8e9061272c047351a9d4e8752a1bb998193b047a6faa44f76",
+              "renderedFiniteOnFaroValidPixelCount": 157380,
+              "targetIndex": 4,
+              "timestampNanoseconds": 169006447225250,
+              "within10cmFractionOfFaroValid": 0.16720031679583638,
+              "within5cmFractionOfFaroValid": 0.11900775018385473
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.3184796863257926,
+              "absoluteDepthErrorMedianMetres": 1.6447803974151611,
+              "absoluteDepthErrorP95Metres": 6.165780544281006,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 174680,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "4b7149088d8b90cef9cb4f3c8987171c10c58dad12443b0c0b0076111a755750",
+              "renderedFiniteOnFaroValidPixelCount": 174680,
+              "targetIndex": 5,
+              "timestampNanoseconds": 169013960843333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.2928160570165768,
+              "absoluteDepthErrorMedianMetres": 1.3752546310424805,
+              "absoluteDepthErrorP95Metres": 1.9982547760009766,
+              "coverageFraction": 0.9173805247439168,
+              "faroValidPixelCount": 193199,
+              "render": {
+                "finiteDepthPixels": 180646,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "85a91f14aa6e746e82e0920ba9ebb0405b159a0148d9648d3f75df47429005d3",
+              "renderedFiniteOnFaroValidPixelCount": 177237,
+              "targetIndex": 6,
+              "timestampNanoseconds": 169021457800791,
+              "within10cmFractionOfFaroValid": 0.0352434536410644,
+              "within5cmFractionOfFaroValid": 0.022086035642006428
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.1546105691135202,
+              "absoluteDepthErrorMedianMetres": 1.0929526090621948,
+              "absoluteDepthErrorP95Metres": 1.7789525985717773,
+              "coverageFraction": 0.9811714172522363,
+              "faroValidPixelCount": 191836,
+              "render": {
+                "finiteDepthPixels": 192996,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/calibrated-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "f3df19758e26bcdc7ff994a217c7ea52b2d3e95f5abffba2eba805708b31186a",
+              "renderedFiniteOnFaroValidPixelCount": 188224,
+              "targetIndex": 7,
+              "timestampNanoseconds": 169028954757833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "dc70e0e6183a9f888a1f37bf236f138297676192b4d44c275f0668861d353bd8",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3935521885023252,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1479078978300095,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.785256691277027,
+            "coverageFractionMean": 0.8499791826886862,
+            "primaryWithin5cmFractionOfFaroValid": 0.03821364413477258,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.052734770126732264
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.4438814246336401,
+              "absoluteDepthErrorMedianMetres": 0.1277751922607422,
+              "absoluteDepthErrorP95Metres": 1.6782774925231934,
+              "coverageFraction": 0.3487383538262505,
+              "faroValidPixelCount": 183966,
+              "render": {
+                "finiteDepthPixels": 70051,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "880c9869160afcc6050696eb13ebf3d2eef26b370806adcc5c5058f2d239c8da",
+              "renderedFiniteOnFaroValidPixelCount": 64156,
+              "targetIndex": 0,
+              "timestampNanoseconds": 168976559347458,
+              "within10cmFractionOfFaroValid": 0.1679168976876162,
+              "within5cmFractionOfFaroValid": 0.14162943152539056
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.1763790105093073,
+              "absoluteDepthErrorMedianMetres": 0.12625104188919067,
+              "absoluteDepthErrorP95Metres": 0.4127185344696045,
+              "coverageFraction": 0.4824158740650974,
+              "faroValidPixelCount": 163386,
+              "render": {
+                "finiteDepthPixels": 112038,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "caafc864a158470b11206fd041ab5de29466175ee1bed55e883ad9a8fca3726c",
+              "renderedFiniteOnFaroValidPixelCount": 78820,
+              "targetIndex": 1,
+              "timestampNanoseconds": 168984056307333,
+              "within10cmFractionOfFaroValid": 0.20869597150306635,
+              "within5cmFractionOfFaroValid": 0.1193370301004982
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.3315303100887277,
+              "absoluteDepthErrorMedianMetres": 1.3153147101402283,
+              "absoluteDepthErrorP95Metres": 1.4973146319389343,
+              "coverageFraction": 0.9789789084072616,
+              "faroValidPixelCount": 170210,
+              "render": {
+                "finiteDepthPixels": 193030,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "99e3788eeea486d447912cf9f34d45c945df64e14b90d2bab16c2978da7a3dab",
+              "renderedFiniteOnFaroValidPixelCount": 166632,
+              "targetIndex": 2,
+              "timestampNanoseconds": 168991553267041,
+              "within10cmFractionOfFaroValid": 0.032941660301979904,
+              "within5cmFractionOfFaroValid": 0.03283003348804418
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.0854770782847156,
+              "absoluteDepthErrorMedianMetres": 1.7823207378387451,
+              "absoluteDepthErrorP95Metres": 4.056320667266846,
+              "coverageFraction": 0.9937847286730058,
+              "faroValidPixelCount": 177627,
+              "render": {
+                "finiteDepthPixels": 194812,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "7e7ac8d1f90ba06126f075c17f65cb69bbb5bb7022fd6dad2343e73f49dc359e",
+              "renderedFiniteOnFaroValidPixelCount": 176523,
+              "targetIndex": 3,
+              "timestampNanoseconds": 168999050226666,
+              "within10cmFractionOfFaroValid": 0.012312317384181459,
+              "within5cmFractionOfFaroValid": 0.011901343827233473
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.1894882831566416,
+              "absoluteDepthErrorMedianMetres": 1.7005864381790161,
+              "absoluteDepthErrorP95Metres": 4.706320285797119,
+              "coverageFraction": 0.9959155965378741,
+              "faroValidPixelCount": 176770,
+              "render": {
+                "finiteDepthPixels": 193522,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "9b7afaecf82f3533208368a4caba27183c7d36e37a35dd3fff077a5c653631b0",
+              "renderedFiniteOnFaroValidPixelCount": 176048,
+              "targetIndex": 4,
+              "timestampNanoseconds": 169006447225250,
+              "within10cmFractionOfFaroValid": 1.1314137014199242e-05,
+              "within5cmFractionOfFaroValid": 1.1314137014199242e-05
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.3184796863257926,
+              "absoluteDepthErrorMedianMetres": 1.6447803974151611,
+              "absoluteDepthErrorP95Metres": 6.165780544281006,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 174680,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "4b7149088d8b90cef9cb4f3c8987171c10c58dad12443b0c0b0076111a755750",
+              "renderedFiniteOnFaroValidPixelCount": 174680,
+              "targetIndex": 5,
+              "timestampNanoseconds": 169013960843333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4520994710183288,
+              "absoluteDepthErrorMedianMetres": 1.3992546796798706,
+              "absoluteDepthErrorP95Metres": 1.9853413105010986,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193199,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "4f0cf207e120e8d13fe27699f1f12650e0c9b801f096ddb2a2fc11d71bfa3332",
+              "renderedFiniteOnFaroValidPixelCount": 193199,
+              "targetIndex": 6,
+              "timestampNanoseconds": 169021457800791,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.1510822440014488,
+              "absoluteDepthErrorMedianMetres": 1.0869799852371216,
+              "absoluteDepthErrorP95Metres": 1.7799800634384155,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 191836,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/depth-only-fixed-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "001a0b2e80809e346e13cc0c9bf0b554288b72735f17d7b3c4839dbcebfd241c",
+              "renderedFiniteOnFaroValidPixelCount": 191836,
+              "targetIndex": 7,
+              "timestampNanoseconds": 169028954757833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "e04f4a3e9286dedd2828e8a65257c5488c346f28e67c5fa2b47e659ddeded67a",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.3910242308733491,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.1412799805402756,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.7865872606635094,
+            "coverageFractionMean": 0.8481068354121332,
+            "primaryWithin5cmFractionOfFaroValid": 0.040447068222493714,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.05571401066028271
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.43716343285651565,
+              "absoluteDepthErrorMedianMetres": 0.08849120140075684,
+              "absoluteDepthErrorP95Metres": 1.6879221200942993,
+              "coverageFraction": 0.33951382320646206,
+              "faroValidPixelCount": 183966,
+              "render": {
+                "finiteDepthPixels": 68263,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 384
+              },
+              "renderSha256": "7cafc579d07487a15a831df983fa70447bea033617fe13ecb07701417130f1cf",
+              "renderedFiniteOnFaroValidPixelCount": 62459,
+              "targetIndex": 0,
+              "timestampNanoseconds": 168976559347458,
+              "within10cmFractionOfFaroValid": 0.17277649130817652,
+              "within5cmFractionOfFaroValid": 0.14941891436461086
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.1717748380615006,
+              "absoluteDepthErrorMedianMetres": 0.11613863706588745,
+              "absoluteDepthErrorP95Metres": 0.4127185344696045,
+              "coverageFraction": 0.4814978027493176,
+              "faroValidPixelCount": 163386,
+              "render": {
+                "finiteDepthPixels": 111888,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 384
+              },
+              "renderSha256": "2a1066f26eb50cd973faf90ef0bedfd31b031b5613d9218fb806a57ed103db4a",
+              "renderedFiniteOnFaroValidPixelCount": 78670,
+              "targetIndex": 1,
+              "timestampNanoseconds": 168984056307333,
+              "within10cmFractionOfFaroValid": 0.225808820829202,
+              "within5cmFractionOfFaroValid": 0.12825456281443942
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.3315430953211558,
+              "absoluteDepthErrorMedianMetres": 1.3153147101402283,
+              "absoluteDepthErrorP95Metres": 1.4973146319389343,
+              "coverageFraction": 0.9789319076434992,
+              "faroValidPixelCount": 170210,
+              "render": {
+                "finiteDepthPixels": 193022,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 384
+              },
+              "renderSha256": "53e404e8b87769f0f457e9244f7e93e20ffa5290e56308a484363f58d512aeb1",
+              "renderedFiniteOnFaroValidPixelCount": 166624,
+              "targetIndex": 2,
+              "timestampNanoseconds": 168991553267041,
+              "within10cmFractionOfFaroValid": 0.0328946595382175,
+              "within5cmFractionOfFaroValid": 0.032818283297103575
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.085943496445769,
+              "absoluteDepthErrorMedianMetres": 1.783320665359497,
+              "absoluteDepthErrorP95Metres": 4.056320667266846,
+              "coverageFraction": 0.9933005680442726,
+              "faroValidPixelCount": 177627,
+              "render": {
+                "finiteDepthPixels": 194677,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 384
+              },
+              "renderSha256": "aa444f143cddb0926cf6c964cc13b9895974013707068462ac486f1815ce5c11",
+              "renderedFiniteOnFaroValidPixelCount": 176437,
+              "targetIndex": 3,
+              "timestampNanoseconds": 168999050226666,
+              "within10cmFractionOfFaroValid": 0.012058977520309412,
+              "within5cmFractionOfFaroValid": 0.011631114639103289
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.188143568069263,
+              "absoluteDepthErrorMedianMetres": 1.7003202438354492,
+              "absoluteDepthErrorP95Metres": 4.706320285797119,
+              "coverageFraction": 0.9959155965378741,
+              "faroValidPixelCount": 176770,
+              "render": {
+                "finiteDepthPixels": 193522,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 384
+              },
+              "renderSha256": "e131d8b46583fd208a63017208e55ece3ce3bfaa2fb49c546b3acd117f85d4ee",
+              "renderedFiniteOnFaroValidPixelCount": 176048,
+              "targetIndex": 4,
+              "timestampNanoseconds": 169006447225250,
+              "within10cmFractionOfFaroValid": 1.1314137014199242e-05,
+              "within5cmFractionOfFaroValid": 1.1314137014199242e-05
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.3187172056405503,
+              "absoluteDepthErrorMedianMetres": 1.6449145078659058,
+              "absoluteDepthErrorP95Metres": 6.166780471801758,
+              "coverageFraction": 0.99569498511564,
+              "faroValidPixelCount": 174680,
+              "render": {
+                "finiteDepthPixels": 193870,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 384
+              },
+              "renderSha256": "86291f86d48bb492ae1ab9808b46ccec3e16cc5b268270c7eff5f84c59ea6cf4",
+              "renderedFiniteOnFaroValidPixelCount": 173928,
+              "targetIndex": 5,
+              "timestampNanoseconds": 169013960843333,
+              "within10cmFractionOfFaroValid": 0.0006297229219143577,
+              "within5cmFractionOfFaroValid": 0.0006297229219143577
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.44382596659059,
+              "absoluteDepthErrorMedianMetres": 1.3947598934173584,
+              "absoluteDepthErrorP95Metres": 1.9853413105010986,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193199,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 384
+              },
+              "renderSha256": "35488677b621a5f1e9c7c3789182b04cd71c6813e028eada789967ebd8bece38",
+              "renderedFiniteOnFaroValidPixelCount": 193199,
+              "targetIndex": 6,
+              "timestampNanoseconds": 169021457800791,
+              "within10cmFractionOfFaroValid": 0.0015320990274276783,
+              "within5cmFractionOfFaroValid": 0.000812633605764005
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.1510822440014488,
+              "absoluteDepthErrorMedianMetres": 1.0869799852371216,
+              "absoluteDepthErrorP95Metres": 1.7799800634384155,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 191836,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 512,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47331971/renders/shuffled-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 384
+              },
+              "renderSha256": "001a0b2e80809e346e13cc0c9bf0b554288b72735f17d7b3c4839dbcebfd241c",
+              "renderedFiniteOnFaroValidPixelCount": 191836,
+              "targetIndex": 7,
+              "timestampNanoseconds": 169028954757833,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        }
+      },
+      "targetManifestSha256": "1ffdc9eb2768fef11b873798effed0d75d31288f7e133ed6261312138f78cd2a"
+    },
+    "ca1m-47332915": {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "278b599b57dbed35aa94cd43ff313f80aef9933d98e9682bcb5562a80e6ddf85",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.1740512606726972,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.075476672500372,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.096630737185478,
+            "coverageFractionMean": 0.9820794048837401,
+            "primaryWithin5cmFractionOfFaroValid": 0.06744911375890573,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.07549866987391832
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.7619298894604005,
+              "absoluteDepthErrorMedianMetres": 1.8246784210205078,
+              "absoluteDepthErrorP95Metres": 3.0357089042663574,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188320,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+              "renderedFiniteOnFaroValidPixelCount": 188320,
+              "targetIndex": 0,
+              "timestampNanoseconds": 13478351916416,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8133021436813038,
+              "absoluteDepthErrorMedianMetres": 0.7949756979942322,
+              "absoluteDepthErrorP95Metres": 1.0179756879806519,
+              "coverageFraction": 0.8661142985026041,
+              "faroValidPixelCount": 196608,
+              "render": {
+                "finiteDepthPixels": 170285,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+              "renderedFiniteOnFaroValidPixelCount": 170285,
+              "targetIndex": 1,
+              "timestampNanoseconds": 13489847224791,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9764313588198257,
+              "absoluteDepthErrorMedianMetres": 0.9387604594230652,
+              "absoluteDepthErrorP95Metres": 1.3557990789413452,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195132,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+              "renderedFiniteOnFaroValidPixelCount": 195132,
+              "targetIndex": 2,
+              "timestampNanoseconds": 13502358784666,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.6976369484426299,
+              "absoluteDepthErrorMedianMetres": 0.04362645745277405,
+              "absoluteDepthErrorP95Metres": 2.1817898750305176,
+              "coverageFraction": 0.9905209405673167,
+              "faroValidPixelCount": 196222,
+              "render": {
+                "finiteDepthPixels": 194748,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "66ffc7f752023cd8106faa8790ec123c5747ab8cb7e2c4d46c10baaf3b51015e",
+              "renderedFiniteOnFaroValidPixelCount": 194362,
+              "targetIndex": 3,
+              "timestampNanoseconds": 13513954050041,
+              "within10cmFractionOfFaroValid": 0.6039893589913465,
+              "within5cmFractionOfFaroValid": 0.5395929100712459
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2665841002246587,
+              "absoluteDepthErrorMedianMetres": 2.1069111824035645,
+              "absoluteDepthErrorP95Metres": 5.02091121673584,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188274,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+              "renderedFiniteOnFaroValidPixelCount": 188274,
+              "targetIndex": 4,
+              "timestampNanoseconds": 13525349395333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9868505824841267,
+              "absoluteDepthErrorMedianMetres": 1.0966242551803589,
+              "absoluteDepthErrorP95Metres": 1.3326241970062256,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 191677,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+              "renderedFiniteOnFaroValidPixelCount": 191677,
+              "targetIndex": 5,
+              "timestampNanoseconds": 13536961316333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.0324704794336526,
+              "absoluteDepthErrorMedianMetres": 1.0137969255447388,
+              "absoluteDepthErrorP95Metres": 1.4477969408035278,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 157468,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+              "renderedFiniteOnFaroValidPixelCount": 157468,
+              "targetIndex": 6,
+              "timestampNanoseconds": 13548556578166,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8572045828349799,
+              "absoluteDepthErrorMedianMetres": 0.7844399809837341,
+              "absoluteDepthErrorP95Metres": 1.3804399967193604,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 187792,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/calibrated-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+              "renderedFiniteOnFaroValidPixelCount": 187792,
+              "targetIndex": 7,
+              "timestampNanoseconds": 13560051879958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "349e256530dcf207555ecc2e39018b192297a722f8db67296083cb5270dbf048",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.1741170053836085,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.0755098015069962,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.0966257005929947,
+            "coverageFractionMean": 0.9822864407920481,
+            "primaryWithin5cmFractionOfFaroValid": 0.06734081805302158,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.07549675877322624
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.7619298894604005,
+              "absoluteDepthErrorMedianMetres": 1.8246784210205078,
+              "absoluteDepthErrorP95Metres": 3.0357089042663574,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188320,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+              "renderedFiniteOnFaroValidPixelCount": 188320,
+              "targetIndex": 0,
+              "timestampNanoseconds": 13478351916416,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8133021436813038,
+              "absoluteDepthErrorMedianMetres": 0.7949756979942322,
+              "absoluteDepthErrorP95Metres": 1.0179756879806519,
+              "coverageFraction": 0.8661142985026041,
+              "faroValidPixelCount": 196608,
+              "render": {
+                "finiteDepthPixels": 170285,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+              "renderedFiniteOnFaroValidPixelCount": 170285,
+              "targetIndex": 1,
+              "timestampNanoseconds": 13489847224791,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9764313588198257,
+              "absoluteDepthErrorMedianMetres": 0.9387604594230652,
+              "absoluteDepthErrorP95Metres": 1.3557990789413452,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195132,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+              "renderedFiniteOnFaroValidPixelCount": 195132,
+              "targetIndex": 2,
+              "timestampNanoseconds": 13502358784666,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.6981629061299196,
+              "absoluteDepthErrorMedianMetres": 0.04389148950576782,
+              "absoluteDepthErrorP95Metres": 2.1817495822906494,
+              "coverageFraction": 0.9921772278337802,
+              "faroValidPixelCount": 196222,
+              "render": {
+                "finiteDepthPixels": 195073,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "3224ed47c39f1555e4992fcb94f7bec1fce422bc19dc73d7a708b64ed1b2ab4f",
+              "renderedFiniteOnFaroValidPixelCount": 194687,
+              "targetIndex": 3,
+              "timestampNanoseconds": 13513954050041,
+              "within10cmFractionOfFaroValid": 0.60397407018581,
+              "within5cmFractionOfFaroValid": 0.5387265444241727
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2665841002246587,
+              "absoluteDepthErrorMedianMetres": 2.1069111824035645,
+              "absoluteDepthErrorP95Metres": 5.02091121673584,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188274,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+              "renderedFiniteOnFaroValidPixelCount": 188274,
+              "targetIndex": 4,
+              "timestampNanoseconds": 13525349395333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9868505824841267,
+              "absoluteDepthErrorMedianMetres": 1.0966242551803589,
+              "absoluteDepthErrorP95Metres": 1.3326241970062256,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 191677,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+              "renderedFiniteOnFaroValidPixelCount": 191677,
+              "targetIndex": 5,
+              "timestampNanoseconds": 13536961316333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.0324704794336526,
+              "absoluteDepthErrorMedianMetres": 1.0137969255447388,
+              "absoluteDepthErrorP95Metres": 1.4477969408035278,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 157468,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+              "renderedFiniteOnFaroValidPixelCount": 157468,
+              "targetIndex": 6,
+              "timestampNanoseconds": 13548556578166,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8572045828349799,
+              "absoluteDepthErrorMedianMetres": 0.7844399809837341,
+              "absoluteDepthErrorP95Metres": 1.3804399967193604,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 187792,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/depth-only-fixed-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+              "renderedFiniteOnFaroValidPixelCount": 187792,
+              "targetIndex": 7,
+              "timestampNanoseconds": 13560051879958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "1e9ca6d989e171e66391e4b79776daeeb07195d2bc2d80d0b213cf2f1f5d2ae1",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.1741450151489212,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.075398437678814,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.096630737185478,
+            "coverageFractionMean": 0.9821692266162675,
+            "primaryWithin5cmFractionOfFaroValid": 0.06784088940078074,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.07546872929640917
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 1.7619298894604005,
+              "absoluteDepthErrorMedianMetres": 1.8246784210205078,
+              "absoluteDepthErrorP95Metres": 3.0357089042663574,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188320,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "166b5c787e18922e62ebbecd12a128ca26da4a6c241bc9a7963c82caf79054fc",
+              "renderedFiniteOnFaroValidPixelCount": 188320,
+              "targetIndex": 0,
+              "timestampNanoseconds": 13478351916416,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8133021436813038,
+              "absoluteDepthErrorMedianMetres": 0.7949756979942322,
+              "absoluteDepthErrorP95Metres": 1.0179756879806519,
+              "coverageFraction": 0.8661142985026041,
+              "faroValidPixelCount": 196608,
+              "render": {
+                "finiteDepthPixels": 170285,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "361bac69ee73ed8116113d65e3a7b5e76d0ef84209d9bf37d815a0909d338f53",
+              "renderedFiniteOnFaroValidPixelCount": 170285,
+              "targetIndex": 1,
+              "timestampNanoseconds": 13489847224791,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9764313588198257,
+              "absoluteDepthErrorMedianMetres": 0.9387604594230652,
+              "absoluteDepthErrorP95Metres": 1.3557990789413452,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 195132,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "6520f246389c4c5ef6b987cb4d97081d0ebd954a4f414d5db86b236f8c57c0b2",
+              "renderedFiniteOnFaroValidPixelCount": 195132,
+              "targetIndex": 2,
+              "timestampNanoseconds": 13502358784666,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.6983869842524212,
+              "absoluteDepthErrorMedianMetres": 0.04300057888031006,
+              "absoluteDepthErrorP95Metres": 2.1817898750305176,
+              "coverageFraction": 0.9912395144275361,
+              "faroValidPixelCount": 196222,
+              "render": {
+                "finiteDepthPixels": 194889,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "1b9f9777fe10622ae3d367303e43e995e601c928d598c7a90611f2f2a7ded121",
+              "renderedFiniteOnFaroValidPixelCount": 194503,
+              "targetIndex": 3,
+              "timestampNanoseconds": 13513954050041,
+              "within10cmFractionOfFaroValid": 0.6037498343712734,
+              "within5cmFractionOfFaroValid": 0.542727115206246
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.2665841002246587,
+              "absoluteDepthErrorMedianMetres": 2.1069111824035645,
+              "absoluteDepthErrorP95Metres": 5.02091121673584,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 188274,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "a96e29c701d8d99ade7685c69e6d126cecc29db5596d7daa06c265e9c4124854",
+              "renderedFiniteOnFaroValidPixelCount": 188274,
+              "targetIndex": 4,
+              "timestampNanoseconds": 13525349395333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.9868505824841267,
+              "absoluteDepthErrorMedianMetres": 1.0966242551803589,
+              "absoluteDepthErrorP95Metres": 1.3326241970062256,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 191677,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "11a3902214bae43a3ac1f59487b379cc39632f0189071d69a394065c2252ab60",
+              "renderedFiniteOnFaroValidPixelCount": 191677,
+              "targetIndex": 5,
+              "timestampNanoseconds": 13536961316333,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.0324704794336526,
+              "absoluteDepthErrorMedianMetres": 1.0137969255447388,
+              "absoluteDepthErrorP95Metres": 1.4477969408035278,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 157468,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "0b637b1cccaa6bf086500334df2e512dc8c8f075b65176b52e749e1b852a27ca",
+              "renderedFiniteOnFaroValidPixelCount": 157468,
+              "targetIndex": 6,
+              "timestampNanoseconds": 13548556578166,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.8572045828349799,
+              "absoluteDepthErrorMedianMetres": 0.7844399809837341,
+              "absoluteDepthErrorP95Metres": 1.3804399967193604,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 187792,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47332915/renders/shuffled-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "c1b38046f501c89c407588237c52cc04446cd4eee441246a325445c214356db0",
+              "renderedFiniteOnFaroValidPixelCount": 187792,
+              "targetIndex": 7,
+              "timestampNanoseconds": 13560051879958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        }
+      },
+      "targetManifestSha256": "f7975be6d49300cf6d3404cfe20dba668a627adb7ec7ed5629f6775922b2c5f3"
+    },
+    "ca1m-47895341": {
+      "methods": {
+        "calibrated-relative-precision-opacity": {
+          "gaussianSha256": "f649397448f5a7cd4ad79ba5eadac1f5cb1d58b7c05ecd2b0097e65145d078ea",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.502594242779516,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.4341206476092339,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.428378900513053,
+            "coverageFractionMean": 0.7741122993561931,
+            "primaryWithin5cmFractionOfFaroValid": 0.05682710101993731,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.06637215740335099
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.6851309630840583,
+              "absoluteDepthErrorMedianMetres": 0.6356342434883118,
+              "absoluteDepthErrorP95Metres": 1.1066276282072067,
+              "coverageFraction": 0.2246436178928396,
+              "faroValidPixelCount": 189193,
+              "render": {
+                "finiteDepthPixels": 43214,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "2f2f575a0aedc43c9a932efa13761b24d17319d75ae3f4d668c3d9c5510a0b6a",
+              "renderedFiniteOnFaroValidPixelCount": 42501,
+              "targetIndex": 0,
+              "timestampNanoseconds": 96395410937666,
+              "within10cmFractionOfFaroValid": 0.01349415676055668,
+              "within5cmFractionOfFaroValid": 0.00496847134936282
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.21467039838648638,
+              "absoluteDepthErrorMedianMetres": 0.01586747169494629,
+              "absoluteDepthErrorP95Metres": 0.8591821193695068,
+              "coverageFraction": 0.4542842379866161,
+              "faroValidPixelCount": 158698,
+              "render": {
+                "finiteDepthPixels": 108918,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "5dbf7932e958f5168f83400e53eec10350a81e5a880a804161cdc9a494620cb4",
+              "renderedFiniteOnFaroValidPixelCount": 72094,
+              "targetIndex": 1,
+              "timestampNanoseconds": 96403707596291,
+              "within10cmFractionOfFaroValid": 0.31654463194243154,
+              "within5cmFractionOfFaroValid": 0.29179321730582614
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8840036438514614,
+              "absoluteDepthErrorMedianMetres": 1.8499702215194702,
+              "absoluteDepthErrorP95Metres": 2.6669702529907227,
+              "coverageFraction": 0.9053423236514523,
+              "faroValidPixelCount": 181232,
+              "render": {
+                "finiteDepthPixels": 178684,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "311b45a048e9077b06e768ff36c51bf19515ff66694f091dd07f58cf817711c3",
+              "renderedFiniteOnFaroValidPixelCount": 164077,
+              "targetIndex": 2,
+              "timestampNanoseconds": 96411904295125,
+              "within10cmFractionOfFaroValid": 0.012128100997616315,
+              "within5cmFractionOfFaroValid": 0.008122185927430034
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.8454093496113444,
+              "absoluteDepthErrorMedianMetres": 2.848388671875,
+              "absoluteDepthErrorP95Metres": 3.848388671875,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193008,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "0cc37c1687af745dbbfa2b8bb081a8ebe684c62c97e1a3a71bc98ec26544e8a6",
+              "renderedFiniteOnFaroValidPixelCount": 193008,
+              "targetIndex": 3,
+              "timestampNanoseconds": 96420100992250,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.3995329662487084,
+              "absoluteDepthErrorMedianMetres": 1.4248358011245728,
+              "absoluteDepthErrorP95Metres": 2.5095934867858887,
+              "coverageFraction": 0.8132132643877709,
+              "faroValidPixelCount": 187781,
+              "render": {
+                "finiteDepthPixels": 160004,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "3841847678e2e056de8209c6dc4cfc2f545fce3160ac3e3480939a83aa0b61d0",
+              "renderedFiniteOnFaroValidPixelCount": 152706,
+              "targetIndex": 4,
+              "timestampNanoseconds": 96428197728458,
+              "within10cmFractionOfFaroValid": 0.1888103695262034,
+              "within5cmFractionOfFaroValid": 0.14973293357687945
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6872227876564936,
+              "absoluteDepthErrorMedianMetres": 1.6204760074615479,
+              "absoluteDepthErrorP95Metres": 2.685476064682007,
+              "coverageFraction": 0.9369793497699586,
+              "faroValidPixelCount": 196269,
+              "render": {
+                "finiteDepthPixels": 184239,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+              "renderedFiniteOnFaroValidPixelCount": 183900,
+              "targetIndex": 5,
+              "timestampNanoseconds": 96436411083208,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6137196147537394,
+              "absoluteDepthErrorMedianMetres": 1.4667381048202515,
+              "absoluteDepthErrorP95Metres": 2.9907381534576416,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 189055,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "b1147f3e096ee7e63709793187c1a52deae0ed75a7a3adf8158003ff21b0f8ff",
+              "renderedFiniteOnFaroValidPixelCount": 189055,
+              "targetIndex": 6,
+              "timestampNanoseconds": 96444607776958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6910642186438363,
+              "absoluteDepthErrorMedianMetres": 1.6110546588897705,
+              "absoluteDepthErrorP95Metres": 2.76005482673645,
+              "coverageFraction": 0.8584356011609074,
+              "faroValidPixelCount": 183994,
+              "render": {
+                "finiteDepthPixels": 170084,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/calibrated-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+              "renderedFiniteOnFaroValidPixelCount": 157947,
+              "targetIndex": 7,
+              "timestampNanoseconds": 96452804469375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "depth-only-fixed-opacity": {
+          "gaussianSha256": "e178c78af05ec614c24fa14ff456c52885077af896cd390ad4245ac049f81de8",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4927019094408864,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.4299217145889997,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.428315032273531,
+            "coverageFractionMean": 0.7829939743035981,
+            "primaryWithin5cmFractionOfFaroValid": 0.05726793246189242,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.0680264609127571
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.6020267713377552,
+              "absoluteDepthErrorMedianMetres": 0.5999929755926132,
+              "absoluteDepthErrorP95Metres": 1.1011584103107452,
+              "coverageFraction": 0.28858890128070275,
+              "faroValidPixelCount": 189193,
+              "render": {
+                "finiteDepthPixels": 55872,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "0318c3b6d664a4e5fa7fa83080b85b9097e8838b516ee3e0e79f9129407b663b",
+              "renderedFiniteOnFaroValidPixelCount": 54599,
+              "targetIndex": 0,
+              "timestampNanoseconds": 96395410937666,
+              "within10cmFractionOfFaroValid": 0.02829914426009419,
+              "within5cmFractionOfFaroValid": 0.008948534036671547
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.21689476067767977,
+              "absoluteDepthErrorMedianMetres": 0.01673257350921631,
+              "absoluteDepthErrorP95Metres": 0.8601402044296265,
+              "coverageFraction": 0.45823513843904773,
+              "faroValidPixelCount": 158698,
+              "render": {
+                "finiteDepthPixels": 109702,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "6aae380d8b903c7eaaa5d95a79913ec346309a14d2fcb380d404ab13b9e18091",
+              "renderedFiniteOnFaroValidPixelCount": 72721,
+              "targetIndex": 1,
+              "timestampNanoseconds": 96403707596291,
+              "within10cmFractionOfFaroValid": 0.3139611085205863,
+              "within5cmFractionOfFaroValid": 0.290992955172718
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.8811033606964438,
+              "absoluteDepthErrorMedianMetres": 1.8485010862350464,
+              "absoluteDepthErrorP95Metres": 2.6669702529907227,
+              "coverageFraction": 0.9068486801447868,
+              "faroValidPixelCount": 181232,
+              "render": {
+                "finiteDepthPixels": 178959,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "bdf34191142f6e337b342402716d25e32db506e388bc28dbc796e65bea565d0e",
+              "renderedFiniteOnFaroValidPixelCount": 164350,
+              "targetIndex": 2,
+              "timestampNanoseconds": 96411904295125,
+              "within10cmFractionOfFaroValid": 0.013077160766310585,
+              "within5cmFractionOfFaroValid": 0.00844773549924958
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.8463071324799,
+              "absoluteDepthErrorMedianMetres": 2.849928379058838,
+              "absoluteDepthErrorP95Metres": 3.850388765335083,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193008,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "7f60823b84afad13f502460239147f81ce10ba29fc5fbeca8273c43e64d23056",
+              "renderedFiniteOnFaroValidPixelCount": 193008,
+              "targetIndex": 3,
+              "timestampNanoseconds": 96420100992250,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.402991532381158,
+              "absoluteDepthErrorMedianMetres": 1.4255934953689575,
+              "absoluteDepthErrorP95Metres": 2.5115935802459717,
+              "coverageFraction": 0.8148641236333815,
+              "faroValidPixelCount": 187781,
+              "render": {
+                "finiteDepthPixels": 160638,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "1c8f7cb00698111b91e503cb2a43af23177500c1b13646b7c9e90346abc0d749",
+              "renderedFiniteOnFaroValidPixelCount": 153016,
+              "targetIndex": 4,
+              "timestampNanoseconds": 96428197728458,
+              "within10cmFractionOfFaroValid": 0.18887427375506574,
+              "within5cmFractionOfFaroValid": 0.14975423498650023
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6872227876564936,
+              "absoluteDepthErrorMedianMetres": 1.6204760074615479,
+              "absoluteDepthErrorP95Metres": 2.685476064682007,
+              "coverageFraction": 0.9369793497699586,
+              "faroValidPixelCount": 196269,
+              "render": {
+                "finiteDepthPixels": 184239,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+              "renderedFiniteOnFaroValidPixelCount": 183900,
+              "targetIndex": 5,
+              "timestampNanoseconds": 96436411083208,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6140047116538254,
+              "absoluteDepthErrorMedianMetres": 1.4670945405960083,
+              "absoluteDepthErrorP95Metres": 2.9907381534576416,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 189055,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "6b66c60b6e8cb8d0b0e803bb070a15e3d896e0babd675195f92aecac61a8aed5",
+              "renderedFiniteOnFaroValidPixelCount": 189055,
+              "targetIndex": 6,
+              "timestampNanoseconds": 96444607776958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6910642186438363,
+              "absoluteDepthErrorMedianMetres": 1.6110546588897705,
+              "absoluteDepthErrorP95Metres": 2.76005482673645,
+              "coverageFraction": 0.8584356011609074,
+              "faroValidPixelCount": 183994,
+              "render": {
+                "finiteDepthPixels": 170084,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/depth-only-fixed-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+              "renderedFiniteOnFaroValidPixelCount": 157947,
+              "targetIndex": 7,
+              "timestampNanoseconds": 96452804469375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        },
+        "shuffled-relative-precision-opacity": {
+          "gaussianSha256": "0fd463453a4396cd80d897e191d7aaf5833da6a62b3a2001e3d215cd59514747",
+          "primitiveCount": 24576,
+          "sceneSummary": {
+            "absoluteDepthErrorMeanMetresAcrossTargetMeans": 1.4929917214053088,
+            "absoluteDepthErrorMedianMetresAcrossTargetMedians": 1.4308783430606127,
+            "absoluteDepthErrorP95MetresAcrossTargetP95": 2.428546493873,
+            "coverageFractionMean": 0.7823772889779893,
+            "primaryWithin5cmFractionOfFaroValid": 0.0573284787571827,
+            "targetViewCount": 8,
+            "within10cmFractionOfFaroValidMean": 0.06802154282748951
+          },
+          "targets": [
+            {
+              "absoluteDepthErrorMeanMetres": 0.6044621744103991,
+              "absoluteDepthErrorMedianMetres": 0.6073460727930069,
+              "absoluteDepthErrorP95Metres": 1.1030101031064987,
+              "coverageFraction": 0.28510040012051185,
+              "faroValidPixelCount": 189193,
+              "render": {
+                "finiteDepthPixels": 55212,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/00.f32",
+                "targetIndex": 0,
+                "width": 512
+              },
+              "renderSha256": "a35b1b79912f05968b1f9d407c7379ca555677f836cf7ec514d2993f1a7b7a81",
+              "renderedFiniteOnFaroValidPixelCount": 53939,
+              "targetIndex": 0,
+              "timestampNanoseconds": 96395410937666,
+              "within10cmFractionOfFaroValid": 0.028182860888087826,
+              "within5cmFractionOfFaroValid": 0.008345974745365843
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 0.21629778173292044,
+              "absoluteDepthErrorMedianMetres": 0.0165632963180542,
+              "absoluteDepthErrorP95Metres": 0.8601402044296265,
+              "coverageFraction": 0.4572395367301415,
+              "faroValidPixelCount": 158698,
+              "render": {
+                "finiteDepthPixels": 109524,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/01.f32",
+                "targetIndex": 1,
+                "width": 512
+              },
+              "renderSha256": "a28f57febb6380a74703be0c87513abdbafa01b3ba3e123094d478b661bd6975",
+              "renderedFiniteOnFaroValidPixelCount": 72563,
+              "targetIndex": 1,
+              "timestampNanoseconds": 96403707596291,
+              "within10cmFractionOfFaroValid": 0.31402412128697277,
+              "within5cmFractionOfFaroValid": 0.29128281389809574
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.881825448075906,
+              "absoluteDepthErrorMedianMetres": 1.8489702939987183,
+              "absoluteDepthErrorP95Metres": 2.6669702529907227,
+              "coverageFraction": 0.9064845060474971,
+              "faroValidPixelCount": 181232,
+              "render": {
+                "finiteDepthPixels": 178893,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/02.f32",
+                "targetIndex": 2,
+                "width": 512
+              },
+              "renderSha256": "43875c1e107830f05002ee73cd4b23b48f7a9d403c40840334d13772d603848e",
+              "renderedFiniteOnFaroValidPixelCount": 164284,
+              "targetIndex": 2,
+              "timestampNanoseconds": 96411904295125,
+              "within10cmFractionOfFaroValid": 0.012712986669020923,
+              "within5cmFractionOfFaroValid": 0.008398075395073718
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 2.8463071324799,
+              "absoluteDepthErrorMedianMetres": 2.849928379058838,
+              "absoluteDepthErrorP95Metres": 3.850388765335083,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 193008,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/03.f32",
+                "targetIndex": 3,
+                "width": 512
+              },
+              "renderSha256": "7f60823b84afad13f502460239147f81ce10ba29fc5fbeca8273c43e64d23056",
+              "renderedFiniteOnFaroValidPixelCount": 193008,
+              "targetIndex": 3,
+              "timestampNanoseconds": 96420100992250,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.4027495165891897,
+              "absoluteDepthErrorMedianMetres": 1.4255934953689575,
+              "absoluteDepthErrorP95Metres": 2.5115935802459717,
+              "coverageFraction": 0.8147789179948983,
+              "faroValidPixelCount": 187781,
+              "render": {
+                "finiteDepthPixels": 160595,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/04.f32",
+                "targetIndex": 4,
+                "width": 512
+              },
+              "renderSha256": "790a3ea8c547a5433f90857fad515a751cf3acd9c097e2eb81949e00c91a7316",
+              "renderedFiniteOnFaroValidPixelCount": 153000,
+              "targetIndex": 4,
+              "timestampNanoseconds": 96428197728458,
+              "within10cmFractionOfFaroValid": 0.18925237377583462,
+              "within5cmFractionOfFaroValid": 0.1506009660189263
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6872227876564936,
+              "absoluteDepthErrorMedianMetres": 1.6204760074615479,
+              "absoluteDepthErrorP95Metres": 2.685476064682007,
+              "coverageFraction": 0.9369793497699586,
+              "faroValidPixelCount": 196269,
+              "render": {
+                "finiteDepthPixels": 184239,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/05.f32",
+                "targetIndex": 5,
+                "width": 512
+              },
+              "renderSha256": "1fd8ac1d6f8036bedaf30c9fa983b35649aa16e87e5d3de4414660ab85c9d099",
+              "renderedFiniteOnFaroValidPixelCount": 183900,
+              "targetIndex": 5,
+              "timestampNanoseconds": 96436411083208,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6140047116538254,
+              "absoluteDepthErrorMedianMetres": 1.4670945405960083,
+              "absoluteDepthErrorP95Metres": 2.9907381534576416,
+              "coverageFraction": 1.0,
+              "faroValidPixelCount": 189055,
+              "render": {
+                "finiteDepthPixels": 196608,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/06.f32",
+                "targetIndex": 6,
+                "width": 512
+              },
+              "renderSha256": "6b66c60b6e8cb8d0b0e803bb070a15e3d896e0babd675195f92aecac61a8aed5",
+              "renderedFiniteOnFaroValidPixelCount": 189055,
+              "targetIndex": 6,
+              "timestampNanoseconds": 96444607776958,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            },
+            {
+              "absoluteDepthErrorMeanMetres": 1.6910642186438363,
+              "absoluteDepthErrorMedianMetres": 1.6110546588897705,
+              "absoluteDepthErrorP95Metres": 2.76005482673645,
+              "coverageFraction": 0.8584356011609074,
+              "faroValidPixelCount": 183994,
+              "render": {
+                "finiteDepthPixels": 170084,
+                "gaussians": 24576,
+                "height": 384,
+                "ok": true,
+                "output": "/Users/swayamsingal/Desktop/Programming/MavebData/metric-uncertainty-v1/u6b-opacity-visibility-confirmatory-v1/scenes/ca1m-47895341/renders/shuffled-relative-precision-opacity/07.f32",
+                "targetIndex": 7,
+                "width": 512
+              },
+              "renderSha256": "f17be989ad54872cb6d16d408043c0228736199bf4c7f9bf1adda5281b0cef27",
+              "renderedFiniteOnFaroValidPixelCount": 157947,
+              "targetIndex": 7,
+              "timestampNanoseconds": 96452804469375,
+              "within10cmFractionOfFaroValid": 0.0,
+              "within5cmFractionOfFaroValid": 0.0
+            }
+          ]
+        }
+      },
+      "targetManifestSha256": "1ac30f0eb89c7acc12ae3c11ff66ec221517c0fd678e75c617490d08b6608ec0"
+    }
+  },
+  "schemaVersion": 1,
+  "stage": "U6b-confirmatory-heldout-faro-depth",
+  "status": "completed-confirmatory-gate-not-passed",
+  "study": "metric-uncertainty-u6b-opacity-visibility-confirmatory-v1"
+}
