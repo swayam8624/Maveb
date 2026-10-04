@@ -81,6 +81,7 @@ jobs:
             researchpaper/MANUSCRIPT_QA.md \
             researchpaper/REVIEW_RESPONSE_2026-09-21.md \
             researchpaper/FINAL_MANUSCRIPT_AUDIT_2026-09-25.md \
+            researchpaper/REVISION_AUDIT_2026-10-04.md \
             researchpaper/CLAIM_METHOD_CITATION_AUDIT_2026-09-22.md \
             researchpaper/FINAL_MANUSCRIPT_SHA256.txt \
             researchpaper/build_manuscript.py \
@@ -90,6 +91,17 @@ jobs:
             researchpaper/MAVEB_manuscript.pdf \
             researchpaper/MAVEB_manuscript.docx \
             researchpaper/MAVEB_supplement.pdf
+
+      - name: Package CGF main LaTeX submission
+        run: |
+          cd researchpaper
+          rm -f MAVEB_CGF_Main_LaTeX.zip
+          zip -r MAVEB_CGF_Main_LaTeX.zip \
+            main.tex \
+            references.bib \
+            figures/system_flow.tex \
+            figures/figure2_exact.png \
+            figures/trained_3dgs_qualitative.png
 
       - name: Publish synchronized artifacts on manuscript branches
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/manuscript/')
@@ -101,6 +113,7 @@ jobs:
             researchpaper/MAVEB_manuscript.docx \
             researchpaper/MAVEB_supplement.pdf \
             researchpaper/MAVEB_manuscript_package.zip \
+            researchpaper/MAVEB_CGF_Main_LaTeX.zip \
             researchpaper/FINAL_MANUSCRIPT_SHA256.txt
           if git diff --cached --quiet; then
             echo "Generated artifacts already match the current source."
@@ -124,4 +137,5 @@ jobs:
             researchpaper/MAVEB_manuscript.docx
             researchpaper/MAVEB_supplement.pdf
             researchpaper/MAVEB_manuscript_package.zip
+            researchpaper/MAVEB_CGF_Main_LaTeX.zip
           if-no-files-found: error

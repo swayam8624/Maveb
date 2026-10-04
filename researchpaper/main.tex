@@ -49,9 +49,11 @@
 \emergencystretch=1em
 
 \begin{abstract}
-Persistent captured worlds---AR maps, digital twins, and long-lived reconstructions---continue changing after capture. Their geometry, appearance, GPU state, and temporal history become interdependent, so a small physical edit can trigger broad recomputation. We present \emph{Criticality-Bounded Revision Cones} (\method), a fail-closed revision rule that combines exact structural closure, conservative finite-change bounds, output tolerances, work-aware selection, automatic \FULL{} fallback, and independent full-after verification. We evaluate \method{} in \system{}, a research prototype built on \platform{}, a C++23 persistent-world stack for reconstruction, Gaussian rendering, revision tracking, GPU publication, temporal state, and evidence capture. A local repair is accepted only when the unrecomputed exterior stays within tolerance and the repair remains cheaper than rebuilding.
+Persistent captured worlds such as AR maps and digital twins are often edited long after capture, yet a small physical change can trigger broad recomputation because geometry, Gaussian state, GPU records, and temporal history depend on one another. We present \emph{Criticality-Bounded Revision Cones} (\method), a fail-closed rule for deciding when a revision may remain local. \method{} closes exact structural dependencies, bounds the output effect of state left untouched, and selects \FULL{} whenever the bound, its assumptions, or the work comparison fail.
 
-The base evaluation spans 1,275 revisions over 85 scenes across 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and trained GraphDECO 3DGS. It exercises local repair and automatic full fallback with no observed certificate violation; median calibrated selected work is 0.474 of a rebuild. Because this campaign is exact at the audited raster, we test bounded non-zero residuals separately. A diagnostic exposes the original image certificate as too conservative. An opacity-delta Lipschitz refinement restores certified non-zero locality in a four-scene mechanism study, then an outcome-blind confirmation repeats the mechanism on 20 independently selected scenes across all four dataset families. Non-zero opacity locality and tolerance crossover appear in every confirmatory scene while translation remains at zero; the paired scene-level difference is 0.477 with a dataset-stratified bootstrap 95\% interval of [0.432, 0.517]. Certificate tightness remains open. Together, the experiments show selective maintenance under an explicit output-error contract with reproducible fallback.
+We evaluate \method{} in \system{}, a research prototype on a C++23 persistent-world stack. Across 1,275 revisions over 85 scenes from 3RScan, ARKitScenes, Bonn RGB-D Dynamic, and trained GraphDECO 3DGS, the system selects 935 certified \LOCAL{} repairs and 340 automatic \FULL{} fallbacks with no observed certificate violation. Median calibrated selected work is 0.474 of \FULL{} (52.6\% lower on the frozen work scale); this is a heterogeneous work metric, not a wall-clock speedup claim. Every selected output matches an independently generated \FULL{}-after raster at the audited 8-bit precision.
+
+A separate residual-sensitive sequence tests non-zero error. The original display bound rejects every non-zero residual; an opacity-only delta-sensitive refinement restores certified non-zero locality, and an unchanged confirmation over 20 independently selected scenes reproduces tolerance crossover in every tested scene while a translation control remains at zero. The result is deliberately bounded: selective maintenance reduces measured work when the untouched exterior can be certified, and unsupported cases expand to full recomputation.
 \end{abstract}
 
 \begin{CCSXML}
@@ -86,13 +88,15 @@ The base evaluation spans 1,275 revisions over 85 scenes across 3RScan, ARKitSce
 \raggedbottom
 
 \section{Introduction}
-Many 3D systems now live well beyond the capture session that created them. A reconstructed room may be revisited after furniture has moved; an AR map continues to exist while objects appear and disappear; a digital twin is updated after a small physical intervention. The stored state in these systems contains heterogeneous representations. Observations feed geometry, geometry determines surface or Gaussian support, materials and textures follow ownership and visibility, GPU records mirror persistent entities, and temporal filters reuse earlier screen-space state. For that reason, an edit that looks local in Euclidean space can become nonlocal once it propagates through the system.
+Captured 3D worlds rarely stay frozen. Furniture moves after a room scan, an AR map is revisited after objects appear or disappear, and a digital twin is updated after a local intervention. The stored world is also more than geometry: observations feed reconstruction, reconstructed state determines Gaussian support and appearance, GPU records mirror persistent entities, and temporal filters reuse earlier screen-space history. A small physical edit can therefore spread through several kinds of derived state.
 
-The safest response is still a global rebuild. Classical volumetric fusion and dense reconstruction give a natural full-reference notion of recomputation \citep{curless1996volumetric,newcombe2011kinectfusion,dai2017bundlefusion}. That choice is straightforward to reason about, but it becomes wasteful when only a small dependency closure is actually affected. Explicit scene representations make this mismatch particularly visible: large parts of a Gaussian map, or of a neural/hybrid reconstruction, may have no reason to change after a local revision \citep{kerbl2023gaussians,keetha2024splatam,matsuki2024monogs}. Continual Gaussian systems already exploit this fact by focusing optimization on changed regions or by managing stale observations over time \citep{ackermann2025clsplats,zeng2025gaussianupdate,yugay2026game}. Our concern is slightly different. Those systems mainly decide \emph{where to update}; here we ask how much error may safely remain outside the region that was chosen, across several kinds of derived state at once.
+A full rebuild is the simplest safe response because it recomputes every dependent quantity from the revised input. Classical reconstruction systems make that reference behavior easy to define \citep{curless1996volumetric,newcombe2011kinectfusion,dai2017bundlefusion}. It is also unnecessarily expensive when most of the world is unaffected. Explicit Gaussian and hybrid representations make this mismatch visible because the changed primitives and their downstream state can often be identified directly \citep{kerbl2023gaussians,keetha2024splatam,matsuki2024monogs}. Continual Gaussian systems already exploit locality to focus optimization or manage stale observations \citep{ackermann2025clsplats,zeng2025gaussianupdate,yugay2026game}. The remaining systems question is whether the state left untouched can be justified rather than merely assumed safe.
 
-The question is deliberately narrow: \emph{when is it defensible to repair less than the whole captured world while keeping an explicit output-error contract?} Reachability alone is insufficient. Ownership, record identity, publication, and unstable temporal invalidation are structural relations that require exact treatment. Other relations, such as edited Gaussian support or stable temporal blending, have finite influence that can be bounded. The revision policy must distinguish the two and fall back to a full rebuild when the remainder outside a proposed repair region cannot be bounded tightly enough.
+This paper asks one concrete question: \emph{when may a persistent captured world repair less than the whole scene while keeping an explicit output-error contract?} Structural dependencies such as ownership, persistent identity, publication, or unstable temporal invalidation require exact recomputation. Other effects have finite influence that can be bounded. A useful revision rule therefore needs both exact closure and conservative error accounting, followed by a full fallback whenever either argument breaks.
 
-Our answer is \emph{Criticality-Bounded Revision Cones} (\method). A revision is represented on a typed dependency graph with three edge meanings. \hard{} edges carry exact structural requirements; \analytic{} edges carry conservative finite-change bounds; and \empirical{} edges may help decide what to try first, but they never become part of the safety certificate. For a proposed cone $C$, we certify the unrepaired exterior $O$ against the declared quantities of interest. The worst normalized certificate-to-tolerance ratio is the \emph{revision criticality}, with one as the decision boundary. We accept a local result only when exact predecessors are closed, every protected output is at or below that boundary, and the calibrated regional work is below the independently measured full baseline. If the coupling is unsupported, the residual is supercritical, the analytic assumptions are unstable, or locality simply costs too much, the planner returns \FULL{}.
+\emph{Criticality-Bounded Revision Cones} (\method) implement that rule on a typed dependency graph. \hard{} edges are exact requirements. \analytic{} edges carry conservative finite-change bounds. \empirical{} information may prioritize which candidate cone to try first, but it never certifies safety. For a proposed repair cone $C$, the system bounds the residual effect of the unrepaired exterior on declared output quantities and compares that bound with an explicit tolerance. It also compares the calibrated work of the local repair with a separately measured \FULL{} baseline. A local result is published only when both tests pass.
+
+The individual mathematical tools are established: graph closure, non-negative influence propagation, norm bounds, Neumann-series reasoning, greedy search, and goal-oriented error control all have prior foundations. The contribution here is the captured-world revision contract that makes those tools participate in one executable decision. Exact structural closure, bounded exterior influence, output tolerances, work crossover, automatic \FULL{} fallback, immutable evidence, and independent full-after falsification are evaluated together rather than as separate mechanisms.
 
 \system{} is the research system used to evaluate \method{}; \platform{} is the underlying C++23 persistent-world engine stack. \platform{} owns reconstruction and Gaussian state, revision transactions, GPU publication, temporal state, and provenance/evidence capture, while a dense Python reference certifier and an independent full-after Gaussian oracle provide separate validation paths. Figure~\ref{fig:overview} summarizes the decision path, while Figure~\ref{fig:poster} shows the support-selection idea visually. The implementation records immutable before/after revision sidecars, deterministic certificate JSON, per-domain work, and oracle replay. Planner output alone is insufficient evidence of safety. Instead, the unrepaired exterior implied by the chosen support is compared with an independently rendered \FULL{}-after reference and checked under the contract
 \begin{equation}
@@ -111,10 +115,10 @@ Our contribution is the systems rule that joins existing dependency and error-es
 
 The contributions are:
 \begin{itemize}
-    \item a fail-closed formulation for revising heterogeneous persistent captured worlds, combining exact dependency closure with conservative finite-change propagation;
-    \item output-specific certification for selective repair, including implementation-backed Gaussian display-space and stable temporal bounds, while unsupported dependencies stay exact;
-    \item a native work-aware planner with automatic \FULL{} fallback, deterministic record generation, a dense reference implementation, and an independent full-after falsification path; and
-    \item a staged evaluation that separates broad system behavior from residual-sensitive mechanism evidence: an immutable negative diagnostic, a controlled certificate change with an unchanged translation comparator, and a 20-scene confirmatory replication with scene-clustered statistics.
+    \item a fail-closed captured-world revision contract that closes exact structural dependencies and bounds the output effect of state left outside a candidate repair;
+    \item output-specific certification for selective Gaussian repair, including a magnitude-sensitive opacity path, with unsupported or unstable cases routed to \FULL{};
+    \item a work-aware planner, deterministic evidence records, a dense reference certifier, and an independent full-after oracle that can falsify the selected result; and
+    \item a staged evaluation over 1,275 revisions and 85 scenes, followed by a separate residual-sensitive diagnostic, mechanism study, and 20-scene confirmation.
 \end{itemize}
 
 \begin{figure*}[t]
@@ -187,14 +191,16 @@ Type & Meaning & Certificate role \\
 We keep this separation conservative on purpose. Dependencies from observations to TSDF state, TSDF to mesh ownership, meshes to texture-page identity, and Gaussian records to GPU publication remain exact in v1. Unstable temporal validation is treated the same way. Gaussian-to-image influence and stable temporal blending have implemented \analytic{} bounds. An \empirical{}-only dependency without a conservative analytic bound is promoted to exact predecessor closure for certification; its measured gain may still guide scheduling, but never serves as a soft safety bound. Relations lacking a conservative argument stay exact even when a softer treatment would shrink the cone.
 
 \subsection{Output and work contracts}
-For each quantity of interest $q$, let $\varepsilon_q\ge0$ denote its declared tolerance. A local repair is admissible only when $B_q(C)\le\varepsilon_q$ for every protected output. That is the planner-side requirement. The experiment then asks the harder question by checking the independent full-reference contract in Eq.~\ref{eq:contract}.
+For each quantity of interest $q$, let $\varepsilon_q\ge0$ denote its declared tolerance. A local repair is admissible only when $B_q(C)\le\varepsilon_q$ for every protected output. The planner checks this condition before execution, and the experiment later checks the stronger independent full-reference contract in Eq.~\ref{eq:contract}.
 
-Locality also has to be worth doing. The planner therefore requires regional work to remain below \FULL{}. Because the native counters describe different kinds of work, adding them directly would be meaningless. If $n_d(C)$ is native work in domain $d$ and $\kappa_d$ is the frozen calibrated cost of one native unit, the public campaign uses
+A safe local repair is still a poor choice if it costs as much as rebuilding. The planner therefore uses a common calibrated-work scale. If $n_d(C)$ is the native work counter in domain $d$ and $\kappa_d$ is the frozen conversion factor for one native unit in that domain, then
 \begin{equation}
 W(C)=\sum_d \kappa_d n_d(C),
 \label{eq:work}
 \end{equation}
-with $W_{\mathrm{full}}$ measured independently. The calibration is frozen before the final campaign. Equation~\ref{eq:work} models heterogeneous work. End-to-end timing is a separate measurement outside this metric.
+with $W_{\mathrm{full}}$ measured independently. In the frozen campaign, the native counters are Gaussian inspections, Gaussian updates, GPU-publication bytes, and temporal-invalidated pixels. The factor $\kappa_d$ converts each counter to the same pre-calibrated work scale; it does not assert that an inspection, a byte transfer, and a pixel invalidation are physically identical operations. Calibration is frozen before the paper-grade campaign so outcome inspection cannot change the relative weights.
+
+The planner accepts locality only when $W(C)<W_{\mathrm{full}}$. A candidate can therefore be output-safe and still return \FULL{} because the repair has crossed the work break-even point. Equation~\ref{eq:work} is an accounting model for heterogeneous system work. End-to-end wall-clock timing, allocator effects, synchronization, cache behavior, command submission, and pipeline overlap remain outside this metric.
 
 \section{Criticality-Bounded Revision Cones}
 \subsection{Exact predecessor closure}
@@ -349,7 +355,7 @@ The median calibrated selected work ratio is
 \begin{equation}
 \mathrm{median}\; W(C)/W_{\mathrm{full}} = 0.4744733,
 \end{equation}
-with bootstrap 95\% CI [0.46657, 0.47885]. At the median, this is 52.55\% lower calibrated work than \FULL{}. The minimum observed ratio is 0.07030; fallback cases have ratio 1 by construction.
+with bootstrap 95\% CI [0.46657, 0.47885]. At the median, this is 52.55\% lower calibrated work than \FULL{}. The minimum observed ratio is 0.07030; fallback cases have ratio 1 by construction. Expressed as work avoided on the same frozen scale, the overall median is 52.55\% below \FULL{}. The dataset medians in Table~\ref{tab:datasets} correspond to 65.94\% lower calibrated work on 3RScan, 51.68\% on ARKitScenes, 52.45\% on Bonn RGB-D Dynamic, and 48.09\% on trained GraphDECO 3DGS. These percentages quantify work-accounting savings, not wall-clock acceleration.
 
 \begin{table*}[t]
 \caption{Paper-grade results by dataset/representation. Work is calibrated selected work divided by the frozen \FULL{} baseline. Confidence intervals are Wilson intervals for local rate and bootstrap intervals for median work.}
@@ -373,8 +379,19 @@ Overall & 1275 & 935 & 340 & 0.733 [0.708, 0.757] & 0.474 [0.467, 0.479] \\
 
 The identical 73.33\% local rate across datasets is a consequence of applying the same frozen 15-case coupling template to every scene; it should not be interpreted as evidence that the datasets behave identically. Dataset-dependent work differs substantially: the median ratio is 0.341 on 3RScan and 0.519 on trained 3DGS.
 
+Figure~\ref{fig:trained3dgsqual} makes the decision behavior concrete on a pinned trained GraphDECO 3DGS scene. The certified local case uses 48.011\% of the frozen \FULL{} work baseline, whereas the high-coupling case reaches the break-even boundary and selects \FULL{}. In both rows the selected result is compared with an independently rendered \FULL{}-after image.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/trained_3dgs_qualitative.png}
+  \Description{Two-row qualitative result on a pinned trained 3D Gaussian Splatting scene. The top row shows a certified local revision with before image, intended edit, certified support, selected repair, full-after image, and zero post-repair residual. The bottom row shows a high-coupling revision that automatically falls back to full recomputation.}
+  \caption{Representative trained-3DGS outcomes from the frozen public revision matrix. Top: a certified \LOCAL{} repair leaves the audited output identical to \FULL{}-after while using 48.011\% of the calibrated full-rebuild work. Bottom: a high-coupling/unstable revision selects \FULL{} and therefore records work/\FULL{}=1. The visualization demonstrates revision fidelity and fallback behavior within the evaluated representation; it is not a claim about reconstruction accuracy against source photographs.}
+  \label{fig:trained3dgsqual}
+\end{figure*}
+
+
 \subsection{Coupling controls fallback behavior}
-The fail-closed envelope becomes visible when the campaign is grouped by coupling regime. All low and medium cases remain local. High coupling produces 170 local repairs and 85 fallbacks, while adversarial coupling produces 85 local repairs and 255 fallbacks. The frozen matrix therefore shows a monotonic shift toward fallback as coupling strengthens.
+Table~\ref{tab:coupling} shows the fail-closed envelope by coupling regime. All low and medium cases remain local. High coupling produces 170 local repairs and 85 fallbacks, while adversarial coupling produces 85 local repairs and 255 fallbacks. The frozen matrix therefore shows a monotonic shift toward fallback as coupling strengthens.
 
 \begin{table}[t]
 \caption{Decision envelope by coupling regime.}
@@ -395,7 +412,7 @@ Adversarial & 340 & 85 & 255 & 1.000 \\
 \end{table}
 
 \subsection{Generalization across edit families}
-The same revision contract is exercised across four edit families. Opacity remains local in all 255 cases. Translation and rotation each remain local in 255 of 340 cases. Uniform scale is the hardest family in the frozen matrix, with 170 local repairs and 170 fallbacks. No edit family contains an observed certificate violation.
+Table~\ref{tab:edits} applies the same revision contract across four edit families. Opacity remains local in all 255 cases. Translation and rotation each remain local in 255 of 340 cases. Uniform scale is the hardest family in the frozen matrix, with 170 local repairs and 170 fallbacks. No edit family contains an observed certificate violation.
 
 \begin{table}[t]
 \caption{Paper-grade outcomes by edit family.}
@@ -425,7 +442,7 @@ This result is strong evidence for the selection/fallback implementation, but it
 The separately frozen residual-sensitive sequence below targets exactly this regime without changing the broad campaign.
 
 \subsection{From diagnostic failure to confirmatory non-zero locality}
-The first residual-sensitive freeze, v4, is a negative result. Across 512 cases, the 256 exact-residual cases remain local, while every one of the 256 non-zero-residual cases falls back to \FULL{}. There are no certified non-zero local cases and no tolerance crossovers. Postmortem analysis attributes all 256 non-zero fallbacks to the post-repair certified bound exceeding epsilon. The outcome is insensitive to the locality profile and to the tested epsilon ladder. This rules out a convenient interpretation in which the test scenes were simply too globally coupled: the bottleneck is the certificate used for the residual.
+Table~\ref{tab:residual-sequence} summarizes the frozen residual-sensitive sequence. The first residual-sensitive freeze, v4, is a negative result. Across 512 cases, the 256 exact-residual cases remain local, while every one of the 256 non-zero-residual cases falls back to \FULL{}. There are no certified non-zero local cases and no tolerance crossovers. Postmortem analysis attributes all 256 non-zero fallbacks to the post-repair certified bound exceeding epsilon. The outcome is insensitive to the locality profile and to the tested epsilon ladder. This rules out a convenient interpretation in which the test scenes were simply too globally coupled: the bottleneck is the certificate used for the residual.
 
 V5 changes one mechanism. For opacity-only residuals, geometry, covariance, rotation, depth, and spherical-harmonic color remain fixed, while the certificate accumulates the actual change in admitted per-pixel alpha with a conservative transmittance allowance. Translation continues to use the old opacity-envelope certificate. All certificate-routing, monotonicity, selected-output, and repair-certificate validity gates pass. Of 384 opacity cases, 251 select \LOCAL{} and 133 select \FULL{}; 142 are certified non-zero local cases and 29 stress keys cross from full to local as epsilon changes. The 384 translation controls contain 96 exact local cases and 288 full fallbacks, with zero non-zero local cases and zero crossovers. With translation held as the control, this separation attributes the restored locality to certificate sensitivity.
 
@@ -516,6 +533,22 @@ Public datasets remain upstream assets, and the repository excludes their redist
 Criticality-Bounded Revision Cones give persistent 3D systems a way to avoid unnecessary global rebuilds while treating spatial locality as a hypothesis that must earn certification. A repair proceeds only when structural dependencies are closed, the effect left outside the selected region stays within the declared output tolerance, and the work remains worthwhile; otherwise \system{} rebuilds. In the broad campaign, median calibrated selected work is 0.474 of \FULL{}, with both selective maintenance and fail-closed fallback exercised under independent replay. Stronger coupling progressively reduces the opportunity for reuse.
 
 The residual-sensitive sequence addresses the broad campaign's exact-output limitation. V4 exposes the original certificate bottleneck, the opacity-delta refinement restores non-zero locality in v5, and the unchanged mechanism survives the 20-scene v6 confirmation. The paired opacity-minus-translation scene-level difference is 0.477 with 95\% interval [0.432, 0.517]. Accepted residuals remain far from the tolerance boundary, making certificate tightness the main unresolved technical issue. The practical result is bounded and testable: recomputation shrinks when the dependency and error model can justify it and expands when that justification disappears.
+
+\section*{Declarations}
+\paragraph{Ethics Statement.}
+N/A. This work reports software, rendering, and reconstruction experiments and does not recruit human participants or collect personal data from participants. Public research datasets and pretrained research assets are used under their upstream terms and are cited in the manuscript.
+
+\paragraph{Data Availability Statement.}
+The public datasets and pretrained assets are available from their cited original providers. Implementation code, experiment scripts, frozen evaluation records, and derived evidence supporting the reported results are available in the project repository; third-party assets are not redistributed.
+
+\paragraph{Funding Statement.}
+This research received no specific grant from any funding agency in the public, commercial, or not-for-profit sectors.
+
+\paragraph{Conflict of Interest.}
+The author declares no conflict of interest.
+
+\paragraph{Permissions Statement.}
+All figures and tables were created by the author from project-generated diagrams, experimental outputs, or reported measurements; no third-party copyrighted figure or table is reproduced.
 
 \section*{Acknowledgments}
 \paragraph{Dataset acknowledgments.}
