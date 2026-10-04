@@ -81,6 +81,7 @@ jobs:
             researchpaper/MANUSCRIPT_QA.md \
             researchpaper/REVIEW_RESPONSE_2026-09-21.md \
             researchpaper/FINAL_MANUSCRIPT_AUDIT_2026-09-25.md \
+            researchpaper/REVISION_AUDIT_2026-10-04.md \
             researchpaper/CLAIM_METHOD_CITATION_AUDIT_2026-09-22.md \
             researchpaper/FINAL_MANUSCRIPT_SHA256.txt \
             researchpaper/build_manuscript.py \
