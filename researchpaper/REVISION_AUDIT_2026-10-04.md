@@ -37,3 +37,5 @@ The revision does not add a wall-clock speedup claim. The headline benefit remai
 - researchpaper/figures/trained_3dgs_qualitative.png
 - researchpaper/figures/trained_3dgs_case_mosaic.png
 - researchpaper/figures/trained_3dgs_evidence_dashboard.png
+
+The three trained-3DGS review figures are committed under `researchpaper/figures/` and are included by the manuscript/supplement build.
