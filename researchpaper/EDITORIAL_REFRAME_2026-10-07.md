@@ -33,3 +33,7 @@ The numerical results, dataset counts, broad-campaign outcomes, residual-sensiti
 ## Build synchronization
 
 The synchronized PDF, DOCX, supplement, package, and checksum artifacts were regenerated successfully from this revised source by the manuscript workflow before merge.
+
+## Final QA
+
+The tightened 229-word abstract preserves the frozen headline evidence and the repository's manuscript QA terminology. The source and synchronized PDF/DOCX/supplement/package were rebuilt successfully after this final wording pass.
