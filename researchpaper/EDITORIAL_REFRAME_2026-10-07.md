@@ -29,3 +29,7 @@ This revision does not change the reported experiments or invent a new result. I
 ## Claims intentionally unchanged
 
 The numerical results, dataset counts, broad-campaign outcomes, residual-sensitive v4/v5/v6 evidence, work-ratio interpretation, certificate limitations, and runtime limitations are unchanged. The revision is a clarity and positioning pass, not a post-hoc alteration of evidence.
+
+## Build synchronization
+
+The synchronized PDF, DOCX, supplement, package, and checksum artifacts were regenerated successfully from this revised source by the manuscript workflow before merge.
