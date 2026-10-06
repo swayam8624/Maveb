@@ -79,7 +79,7 @@ We implement the method in \system{}, using the C++23 \platform{} stack for reco
 \ccsdesc[500]{Computing methodologies~Rendering}
 \ccsdesc[300]{Computing methodologies~Reconstruction}
 
-\keywords{persistent captured worlds, incremental reconstruction, 3D Gaussian Splatting, certified recomputation, change-aware rendering, dependency analysis}
+\keywords{persistent 3D reconstruction, incremental recomputation, 3D Gaussian Splatting, change-aware rendering, dependency analysis, certified local updates}
 
 \begin{document}
 \maketitle
@@ -88,7 +88,7 @@ We implement the method in \system{}, using the C++23 \platform{} stack for reco
 \raggedbottom
 
 \section{Introduction}
-A captured 3D scene is often treated as a finished reconstruction, yet many deployed systems keep that scene alive. Consider a reconstructed room in which one chair is moved. Recomputing the entire representation, every GPU record, and every temporal buffer is safe but wasteful. Recomputing only the chair's nearby geometry is cheaper, but it can be wrong if the edit also changes ownership, visibility, publication ranges, or retained history. The practical graphics problem is therefore not merely ''where did the edit occur?'' but ''which derived state must change before the updated output can be trusted?''
+A captured 3D scene is often treated as a finished reconstruction, yet many deployed systems keep that scene alive. Consider a reconstructed room in which one chair is moved. Recomputing the entire representation, every GPU record, and every temporal buffer is safe but wasteful. Recomputing only the chair's nearby geometry is cheaper, but it can be wrong if the edit also changes ownership, visibility, publication ranges, or retained history. The practical graphics problem is therefore not merely ``where did the edit occur?'' but ``which derived state must change before the updated output can be trusted?''
 
 This paper separates two notions that are easy to conflate. \emph{Computational locality} means that only a subset of the persistent state is recomputed. \emph{Output locality} means that leaving the remaining state untouched changes a protected output---for example an RGB render---by no more than a declared tolerance. A method can have computational locality without output locality: it may update a small region quickly while leaving stale state that visibly changes the result. Our goal is to admit a local update only when both notions hold under the stated model.
 
@@ -116,7 +116,7 @@ where $E_q^{\mathrm{full-ref}}$ is measured independently during evaluation. The
 
 We evaluate two questions separately. First, does the complete system choose useful local updates and fall back as coupling grows? The broad campaign contains 1,275 revisions over 85 scenes and selects 935 \LOCAL{} repairs and 340 \FULL{} fallbacks, with no observed certificate violation under independent replay and a median calibrated selected-work ratio of 0.474. Second, can the method certify deliberately non-zero residuals rather than only exact selected-to-full equality? A separate residual-sensitive sequence exposes a conservative certificate failure, changes only the opacity residual bound, and confirms the revised mechanism on 20 independently selected scenes while keeping translation as an unchanged control.
 
-The scope of the claim is intentionally narrower than universal ''safe editing.'' \method{} certifies a local recomputation only under the dependencies, renderer assumptions, quantities of interest, tolerances, and work calibration that are explicitly represented. If those assumptions are unsupported or too conservative, the method returns \FULL{}. The paper therefore evaluates a graphics-systems algorithm for reducing recomputation, not a new reconstruction model, an edit detector, or a general proof of scene correctness.
+The scope of the claim is intentionally narrower than universal ``safe editing.'' \method{} certifies a local recomputation only under the dependencies, renderer assumptions, quantities of interest, tolerances, and work calibration that are explicitly represented. If those assumptions are unsupported or too conservative, the method returns \FULL{}. The paper therefore evaluates a graphics-systems algorithm for reducing recomputation, not a new reconstruction model, an edit detector, or a general proof of scene correctness.
 
 The technical contributions are:
 \begin{itemize}
@@ -129,8 +129,8 @@ The technical contributions are:
 \begin{figure*}[t]
   \centering
   \input{figures/system_flow.tex}
-  \Description{Color boxed system architecture diagram for the CBRC decision and falsification path. A physical revision enters a typed graph, proceeds to cone proposal and certification, branches to certified local repair or automatic full fallback, and both branches go to an independent full-after oracle. Orthogonal arrows route around the boxes.}
-  \caption{\method{} decision and falsification path. A physical revision enters a typed dependency graph. Exact \hard{} predecessors are closed, conservative \analytic{} influence is propagated to the unrepaired exterior, and quantity-of-interest bounds are checked against tolerance. A local repair is executed only when it is certified and cheaper than the full baseline; otherwise the system falls back to \FULL{}. The residual outside the selected repair support is then falsified against an independently rendered full-after reference.}
+  \Description{Color boxed system architecture diagram for the CBRC local-recompute decision and verification path. A physical edit enters a typed graph, proceeds to cone proposal and certification, branches to certified local repair or automatic full fallback, and both branches go to an independent full-after oracle. Orthogonal arrows route around the boxes.}
+  \caption{\method{} local-recompute decision and independent verification path. A physical edit enters a typed dependency graph. Exact \hard{} predecessors are closed, conservative \analytic{} influence is propagated through the state left unrecomputed, and output bounds are checked against tolerance. A local repair is executed only when it is certified and cheaper than the full baseline; otherwise the system falls back to \FULL{}. The selected output is then checked against an independently rendered full-after reference.}
   \label{fig:overview}
 \end{figure*}
 
@@ -138,7 +138,7 @@ The technical contributions are:
   \centering
   \includegraphics[width=\textwidth]{figures/figure2_exact.png}
   \Description{Author-supplied visual explanation of how a local Gaussian revision propagates through MAVEB/CBRC. The figure shows an initial Gaussian scene, an intended edited Gaussian, conservative certified support formation, a five-stage state-transition pipeline, and the two fail-closed outcomes: certified local repair or automatic full rebuild. Blue denotes intended edit state, yellow denotes selected repair support, green denotes a certified local outcome, and red denotes full fallback.}
-  \caption{How a physical edit becomes a certified revision. An intended Gaussian edit induces a candidate influence region from which \method{} selects the support that must be repaired. Exact structural dependencies remain closed and the unrepaired exterior is accepted only when its quantity-of-interest bound satisfies the declared tolerance and regional work remains below the frozen \FULL{} baseline. The system therefore either revises only the certified support (A) or fails closed to a \FULL{} rebuild (B). Blue marks the intended edit, yellow the selected repair support. The supplied image is reproduced unchanged. Its embedded 28.40\% work ratio, 3.5$\times$ work reduction, and other micro-metrics are illustrative values from the graphic and are separate from the aggregate campaign estimates reported in Section~\ref{sec:results}. Correctness labels in the image apply under the declared bound assumptions and revision domain; the figure makes no wall-clock or universal-safety claim.}
+  \caption{From a physical edit to a selected recomputation region. The intended Gaussian change defines the initial affected state. \method{} expands that state until exact dependencies are closed and the influence left outside the region is within the declared output tolerance. The local result is used only when its estimated regional work is also below the full baseline; otherwise the algorithm selects a full rebuild. Blue marks the intended edit and yellow the state selected for recomputation. The supplied image is reproduced unchanged. Its embedded 28.40\% work ratio, 3.5$\times$ work reduction, and other micro-metrics are illustrative values from the graphic and are separate from the aggregate campaign estimates reported in Section~\ref{sec:results}.}
   \label{fig:poster}
 \end{figure*}
 
@@ -155,10 +155,10 @@ CL-Splats separates changed and static scene components so that Gaussian optimiz
 \paragraph{Editing, change detection, and identity.}
 GaussianEditor and SC-GS demonstrate precise, controllable local editing of Gaussian representations \citep{chen2024gaussianeditor,huang2024scgs}. Primitive-space change detection further suggests that Gaussian attributes themselves can reveal structural and appearance changes \citep{galappaththige2026pixels}, while Consistent Instance Field studies persistent probabilistic identity in dynamic Gaussian scenes \citep{wu2026cif}. These works set a clear boundary for our contribution. Local editing, primitive-level change detection, and persistent identity are upstream capabilities; \method{} begins after a revision has been specified or detected and asks which derived state may safely remain unrepaired for a protected output.
 
-\paragraph{Incremental rendering, change propagation, and goal-oriented error control.}
-Dependency-aware recomputation has a long history in graphics. Bala et al.\ connect edited world regions to bounded-error radiance interpolants with ray segment trees \citep{bala1999raysegment}, and W\"orister et al.\ derive a dependency graph from scene-graph changes to rendering caches so those caches can be updated incrementally \citep{woerister2013lazy}. Beyond graphics, self-adjusting computation formalizes correct change propagation under mutation and reuse \citep{acar2013selfadjusting}; goal-oriented error estimation directs numerical work toward selected quantities of interest instead of a global state norm \citep{oden2001goal}. Several ingredients of \method{} come from these traditions. Our novelty claim concerns how they are assembled and enforced for persistent captured-world revision.
+\paragraph{Incremental rendering, change propagation, and output-directed error control.}
+Dependency-aware recomputation has a long history in graphics. Bala et al.\ connect edited world regions to bounded-error radiance interpolants with ray segment trees \citep{bala1999raysegment}, and W\"orister et al.\ derive a dependency graph from scene-graph changes to rendering caches so those caches can be updated incrementally \citep{woerister2013lazy}. Beyond graphics, self-adjusting computation formalizes correct change propagation under mutation and reuse \citep{acar2013selfadjusting}; goal-oriented error estimation directs numerical work toward selected outputs instead of a global state norm \citep{oden2001goal}. These lines establish the ingredients that make local recomputation possible.
 
-The mathematical components used by \method{} are classical: graph closure, non-negative influence propagation, Neumann-series resolvents, norm bounds, and greedy search. The claimed contribution is a systems contract for captured worlds that brings these components together around one revision decision: exact dependencies across derived state, conservative finite-change bounds, rendered-output quantities of interest, a heterogeneous work crossover, fail-closed \FULL{} fallback, and independent full-reference falsification. These tools make the contract executable; the novelty claim concerns their captured-world integration and evidence path.
+The gap addressed here is the decision boundary inside a modern persistent 3D pipeline. Reconstruction state, explicit Gaussian primitives, GPU publication, and temporal history do not share one update unit or one error metric. \method{} turns those heterogeneous states into a single executable local-recompute decision: exact relations are closed, bounded relations contribute to an output-error certificate, heterogeneous work is compared with a full baseline, and unsupported or uneconomical cases return \FULL{}. The underlying graph and norm tools are standard; the technical contribution is their realization as a cross-derived-state graphics algorithm with an independent full-after check.
 
 \section{Problem Formulation}
 \subsection{Persistent 3D state and revision cones}
@@ -371,7 +371,7 @@ The median calibrated selected work ratio is
 with bootstrap 95\% CI [0.46657, 0.47885]. At the median, this is 52.55\% lower calibrated work than \FULL{}. The minimum observed ratio is 0.07030; fallback cases have ratio 1 by construction.
 
 \begin{table*}[t]
-\caption{results by dataset/representation. Work is calibrated selected work divided by the frozen \FULL{} baseline. Confidence intervals are Wilson intervals for local rate and bootstrap intervals for median work.}
+\caption{Results by dataset/representation. Work is calibrated selected work divided by the frozen \FULL{} baseline. Confidence intervals are Wilson intervals for local rate and bootstrap intervals for median work.}
 \label{tab:datasets}
 \centering
 \footnotesize
@@ -417,7 +417,7 @@ Adversarial & 340 & 85 & 255 & 1.000 \\
 The same revision contract is exercised across four edit families. Opacity remains local in all 255 cases. Translation and rotation each remain local in 255 of 340 cases. Uniform scale is the hardest family in the frozen matrix, with 170 local repairs and 170 fallbacks. No edit family contains an observed certificate violation.
 
 \begin{table}[t]
-\caption{outcomes by edit family.}
+\caption{Outcomes by edit family.}
 \label{tab:edits}
 \centering
 \footnotesize
@@ -511,7 +511,7 @@ The broad campaign is exact at the audited 8-bit raster, while v5 and v6 demonst
 The headline work result is a frozen four-domain accounting ratio. It captures heterogeneous work under a versioned calibration while omitting allocator behavior, synchronization, cache locality, command submission, and pipeline overlap. Paired end-to-end timing therefore remains a separate matched-runtime study.
 
 \paragraph{Representation coverage remains output-side.}
-The broad campaign is materially wider than the earlier four-scene experiment: it contains 72 dataset-native geometry worlds and 13 trained 3DGS scenes. Even so, the measured revision path concentrates on Gaussian inspection/update, GPU publication, and temporal output invalidation. The wider observation/TSDF/mesh/texture/material ledger is implemented and regression-tested; an equally broad paper-grade performance campaign for that ledger remains future work.
+The broad campaign is materially wider than the earlier four-scene experiment: it contains 72 dataset-native geometry worlds and 13 trained 3DGS scenes. Even so, the measured revision path concentrates on Gaussian inspection/update, GPU publication, and temporal output invalidation. The wider observation/TSDF/mesh/texture/material ledger is implemented and regression-tested; an equally broad performance campaign for that wider ledger remains future work.
 
 \paragraph{Dataset-normalized worlds measure revision fidelity.}
 For 3RScan, ARKitScenes, and Bonn, the benchmark evaluates deterministic seeded Gaussian representations derived from public captured-world assets. The trained GraphDECO subset evaluates pinned trained 3DGS. Selected-to-\FULL{} equality therefore measures revision fidelity within each evaluated representation. Photorealistic reconstruction quality against held-out photographs lies outside this benchmark's scope.
