@@ -37,3 +37,7 @@ The synchronized PDF, DOCX, supplement, package, and checksum artifacts were reg
 ## Final QA
 
 The tightened 229-word abstract preserves the frozen headline evidence and the repository's manuscript QA terminology. The source and synchronized PDF/DOCX/supplement/package were rebuilt successfully after this final wording pass.
+
+## Final terminology check
+
+The final abstract uses the repository's expected graphics terminology (including AR maps and digital twins), remains below the 260-word QA ceiling, and was rebuilt into synchronized submission artifacts successfully.
