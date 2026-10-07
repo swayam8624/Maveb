@@ -49,7 +49,7 @@
 \emergencystretch=1em
 
 \begin{abstract}
-Persistent 3D reconstructions often outlive their capture session: objects move, an AR map is revisited, or a digital twin is edited. Rebuilding every derived representation after each change is safe but can waste work; updating only nearby geometry is cheaper but can leave stale ownership, GPU-publication, visibility, or temporal state that changes the rendered output.
+Persistent 3D reconstructions often outlive their capture session: objects move, AR maps are revisited, or digital twins are edited. Rebuilding every derived representation after each change is safe but can waste work; updating only nearby geometry is cheaper but can leave stale ownership, GPU-publication, visibility, or temporal state that changes the rendered output.
 
 We present \emph{Criticality-Bounded Revision Cones} (\method), an incremental recomputation algorithm for selective maintenance of persistent 3D state. A revision cone is the state recomputed after an edit. \method{} closes exact structural dependencies, bounds supported influence left outside the cone at protected outputs, and accepts a local update only when every output bound is within tolerance and its calibrated work is below a measured full-rebuild baseline. Unsupported, supercritical, or uneconomical cases automatically return \FULL{}.
 
