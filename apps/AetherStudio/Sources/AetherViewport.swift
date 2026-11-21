@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// SwiftUI viewport-facing layer. Connect UI lifecycle and displayed frames to
+// Bridge/AetherViewportBridge.mm, then to engine/metal/Renderer.cpp; keep UI state separate from
+// device-owned GPU resources.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 import AppKit
 import SwiftUI
 
