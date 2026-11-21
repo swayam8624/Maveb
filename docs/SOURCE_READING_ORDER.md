@@ -52,3 +52,24 @@ This is a **learning sequence**, not the dependency/build order. The repository 
 5. Pick an experiment and identify its exact dataset, split, seed, metric and reproducibility command.
 
 This is a curated **first-pass spine**, not an exhaustive annotated index of all 1,000+ tracked files. Source comments are being added incrementally and should be validated against implemented call paths.
+
+
+## Expanded study trail — local reconstruction and durable world edits
+
+The following links add an implementation-oriented second pass to the architecture overview above. Each sequence starts from a user-visible or imported input, crosses an algorithmic owner, then reaches an independent check or consumer.
+
+**Capture to geometry:** [ReconstructionWorkspace](../apps/AetherStudio/Sources/ReconstructionWorkspace.swift) → [ReconstructionInput](../engine/reconstruction/src/ReconstructionInput.cpp) (bounded camera manifest) → [SensorAlignment](../engine/reconstruction/src/SensorAlignment.cpp) → [UncertaintyTsdfVolume](../engine/reconstruction/src/UncertaintyTsdfVolume.cpp) / [SparseTsdfVolume](../engine/reconstruction/src/SparseTsdfVolume.cpp) → [IncrementalSparseTsdfMesher](../engine/reconstruction/src/IncrementalSparseTsdfMesher.cpp) → [ReferenceMarchingCubes](../engine/reconstruction/src/ReferenceMarchingCubes.cpp). Compare patch outputs against full extraction and verify that uncertainty/pose handling does not hide geometric errors.
+
+**Geometry to appearance:** [TextureBaker](../engine/reconstruction/src/TextureBaker.cpp) projects aligned camera views onto reconstructed surfaces. [GaussianPipeline](../engine/metal/src/GaussianPipeline.cpp) provides a distinct splat-based GPU visualization path. [RendererGaussianScene](../engine/metal/src/RendererGaussianScene.cpp) must quiesce in-flight frames before replacing render resources; [FrameContext](../engine/metal/src/FrameContext.cpp) owns per-frame Metal allocations and [SparseMetalTsdfVolume](../engine/metal/src/SparseMetalTsdfVolume.cpp) owns sparse GPU TSDF resources. CPU TSDF meshing, Gaussian compositing and camera-based texture baking are not interchangeable reconstruction algorithms.
+
+**Durable world edits:** [PersistentWorld](../engine/world/src/PersistentWorld.cpp) produces stable revisions → [SelectiveUpdate](../engine/world/src/SelectiveUpdate.cpp) selects dirty regions → [LocalityLedger](../engine/world/src/LocalityLedger.cpp) measures actual incremental/full work → [WorldArchive](../engine/world/src/WorldArchive.cpp) serializes revisions → [WorldHistoryWorkspace](../apps/AetherStudio/Sources/WorldHistoryWorkspace.swift) presents diffs. An update classified local is not automatically cheaper; compare ledger counters against a full-rebuild baseline.
+
+**Third-party boundary:** [ReferenceMarchingCubes](../engine/reconstruction/src/ReferenceMarchingCubes.cpp) retains PoissonRecon-derived marching-cubes topology attribution under BSD-3-Clause, as documented in [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md). The repository license does not erase this notice.
+
+### Practical audit questions
+
+1. Which invalid JSON/path/pose inputs are rejected before reconstruction begins?
+2. When do Metal frame slots become safe to reuse for newly uploaded splat or TSDF data?
+3. How can an incremental surface patch be compared with full reference marching cubes on identical voxels?
+4. Which source cameras and depth tests determine a texture-bake pixel?
+5. What evidence proves that only a bounded part of the world changed, and what happens if the full-work denominator is zero?
