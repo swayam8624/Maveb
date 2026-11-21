@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Regenerates affected mesh patches from sparse TSDF blocks under bounded voxel budgets. World
+// selective updates and LocalityLedger can measure avoided full remeshing; compare
+// ReferenceMarchingCubes for topology correctness.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/reconstruction/IncrementalSparseTsdfMesher.hpp>
 
 #include <algorithm>
