@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE:
+// Edit semantics for persistent worlds. Read WorldEdit.hpp and PersistentWorld, LocalityLedger and CBRC
+// revision graph together; local updates must preserve validity outside the affected region.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/world/WorldEdit.hpp>
 
 #include <algorithm>
