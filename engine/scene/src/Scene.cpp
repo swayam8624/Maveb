@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE:
+// Scene-level data/operations feeding rendering. Compare Scene.hpp with Camera, Transform, Lighting and
+// engine/metal/Renderer.cpp to trace the path from world description to GPU draw inputs.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/scene/Scene.hpp>
 
 #include <utility>
