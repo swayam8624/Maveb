@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Transforms capture sensor poses into a consistent reconstruction frame. Downstream TSDF integration
+// assumes compatible coordinates, time alignment and finite quaternions; bad alignment can look like
+// surface-reconstruction error.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/reconstruction/SensorAlignment.hpp>
 
 #include <algorithm>
