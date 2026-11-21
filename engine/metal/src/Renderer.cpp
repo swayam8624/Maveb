@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Host-side Metal rendering orchestration. This file connects scene state, frame resources, and GPU
+// pipelines, while .metal shaders perform device work. SwiftUI reaches this layer through the
+// AetherViewport bridge.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/metal/Renderer.hpp>
 
 #include <aether/core/Log.hpp>
