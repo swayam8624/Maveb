@@ -1,5 +1,7 @@
 # Maveb: source study map
 
+> **Deep implementation tutorial:** [TSDF fusion, sparse meshing and selective world revisions](TSDF_AND_LOCAL_WORLD_EDIT_TUTORIAL.md) explains the active function call path, numerical assumptions, failure conditions and evidence checks. It complements the [linked source reading order](SOURCE_READING_ORDER.md) rather than claiming research completeness.
+
 This is a **learning sequence**, not the dependency/build order. The repository contains separate application, engine, research, test, benchmark, and paper workflows. Follow the actual CMake targets and existing architectural decisions before assuming any research pipeline is the default editor path.
 
 ## Start with the product, then the contracts
