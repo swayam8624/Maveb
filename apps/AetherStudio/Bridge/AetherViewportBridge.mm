@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE:
+// Objective-C++ interop boundary between SwiftUI and C++ engine. Coordinate viewport events, ownership
+// and renderer calls; check corresponding .h and engine/metal/Renderer.cpp for interface contracts.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #import "AetherViewportBridge.h"
 
 #import <Metal/Metal.h>
