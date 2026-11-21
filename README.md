@@ -1,3 +1,7 @@
+> **Learning the implementation?** Start with [READING_ORDER.md](READING_ORDER.md) for the recommended cross-file study path, then use the [complete source catalog](docs/SOURCE_CATALOG.md) to find each header, implementation, test, Swift/Metal adapter, and evidence script. Source-level educational annotations are being added incrementally.
+>
+> **Open source and research reuse:** the existing [Apache-2.0 software license](LICENSE), [research licensing](LICENSES.md) and [third-party notices](THIRD_PARTY_NOTICES.md) are retained. The licenses permit studying and extending the applicable material subject to their terms; they do not grant rights to redistribute third-party datasets.
+
 <h1 align="center">MAVEB</h1>
 
 <h3 align="center">Criticality-Bounded Revision Cones for Persistent Captured Worlds</h3>
