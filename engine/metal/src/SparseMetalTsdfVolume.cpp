@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Metal GPU implementation of block-sparse TSDF storage, capacity checks and voxel transfer. Compare
+// reconstruction SparseTsdfVolume and UncertaintyTsdfVolume CPU/reference paths before asserting GPU
+// parity.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/metal/SparseMetalTsdfVolume.hpp>
 
 #include <shared/AetherShaderTypes.h>
