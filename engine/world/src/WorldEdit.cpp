@@ -26,6 +26,12 @@ namespace {
 
 } // namespace
 
+// **Preparation, not commit**: start from a validated previous snapshot,
+// reject duplicate/stale/contradictory patches, build a next-revision
+// candidate, compute its semantic diff, then plan selective recomputation.
+// Rotation/scale changes require explicit replacement bounds; translation-
+// only changes can shift existing bounds. Caller decides whether to commit
+// the returned candidate after checking its selective-update plan.
 Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous, TimestampNs timestamp,
                                          const std::vector<EntityPatch>& patches,
                                          WorldEditPolicy policy) {
