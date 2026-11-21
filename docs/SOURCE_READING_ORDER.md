@@ -10,42 +10,42 @@ Read each phase in order. Every link goes to a source file or directory in this 
 
 ## 1. Problem and evidence
 
-1. [`README.md`](README.md)
-2. [`research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.md`](research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.md)
-3. [`research/results/CBRC_CLAIM_LEDGER_2026-09-24.md`](research/results/CBRC_CLAIM_LEDGER_2026-09-24.md)
-4. [`research/results/CBRC_EXPERIMENT_RUNBOOK.md`](research/results/CBRC_EXPERIMENT_RUNBOOK.md)
+1. [`README.md`](../README.md)
+2. [`research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.md`](../research/results/CBRC_PAPER_GRADE_EVIDENCE_2026-09-24.md)
+3. [`research/results/CBRC_CLAIM_LEDGER_2026-09-24.md`](../research/results/CBRC_CLAIM_LEDGER_2026-09-24.md)
+4. [`research/results/CBRC_EXPERIMENT_RUNBOOK.md`](../research/results/CBRC_EXPERIMENT_RUNBOOK.md)
 
 ## 2. Build and system entry
 
-1. [`CMakeLists.txt`](CMakeLists.txt)
-2. [`CMakePresets.json`](CMakePresets.json)
-3. [`bootstrap_and_run.sh`](bootstrap_and_run.sh)
-4. [`run_all.sh`](run_all.sh)
+1. [`CMakeLists.txt`](../CMakeLists.txt)
+2. [`CMakePresets.json`](../CMakePresets.json)
+3. [`bootstrap_and_run.sh`](../bootstrap_and_run.sh)
+4. [`run_all.sh`](../run_all.sh)
 
 ## 3. Implementation directories
 
-1. [`engine/core`](engine/core)
-2. [`engine/scene`](engine/scene)
-3. [`engine/world`](engine/world)
-4. [`engine/revision`](engine/revision)
-5. [`engine/cbrc`](engine/cbrc)
-6. [`engine/gaussian`](engine/gaussian)
-7. [`engine/world_gaussian`](engine/world_gaussian)
-8. [`engine/reconstruction`](engine/reconstruction)
-9. [`engine/mesh`](engine/mesh)
-10. [`engine/metal`](engine/metal)
-11. [`engine/rendergraph`](engine/rendergraph)
+1. [`engine/core`](../engine/core)
+2. [`engine/scene`](../engine/scene)
+3. [`engine/world`](../engine/world)
+4. [`engine/revision`](../engine/revision)
+5. [`engine/cbrc`](../engine/cbrc)
+6. [`engine/gaussian`](../engine/gaussian)
+7. [`engine/world_gaussian`](../engine/world_gaussian)
+8. [`engine/reconstruction`](../engine/reconstruction)
+9. [`engine/mesh`](../engine/mesh)
+10. [`engine/metal`](../engine/metal)
+11. [`engine/rendergraph`](../engine/rendergraph)
 
 ## 4. Verification and reproducibility
 
-1. [`tests/RevisionPlannerTests.cpp`](tests/RevisionPlannerTests.cpp)
-2. [`tests/GaussianLocalityCertificateTests.cpp`](tests/GaussianLocalityCertificateTests.cpp)
-3. [`tests/GaussianImageRevisionCertificateTests.cpp`](tests/GaussianImageRevisionCertificateTests.cpp)
-4. [`tests/OracleGeometryTests.cpp`](tests/OracleGeometryTests.cpp)
-5. [`tests/TemporalRevisionCertificateTests.cpp`](tests/TemporalRevisionCertificateTests.cpp)
-6. [`tests/SparseTsdfTests.cpp`](tests/SparseTsdfTests.cpp)
-7. [`run_reviewer_stress_campaign.sh`](run_reviewer_stress_campaign.sh)
-8. [`researchpaper`](researchpaper)
+1. [`tests/RevisionPlannerTests.cpp`](../tests/RevisionPlannerTests.cpp)
+2. [`tests/GaussianLocalityCertificateTests.cpp`](../tests/GaussianLocalityCertificateTests.cpp)
+3. [`tests/GaussianImageRevisionCertificateTests.cpp`](../tests/GaussianImageRevisionCertificateTests.cpp)
+4. [`tests/OracleGeometryTests.cpp`](../tests/OracleGeometryTests.cpp)
+5. [`tests/TemporalRevisionCertificateTests.cpp`](../tests/TemporalRevisionCertificateTests.cpp)
+6. [`tests/SparseTsdfTests.cpp`](../tests/SparseTsdfTests.cpp)
+7. [`run_reviewer_stress_campaign.sh`](../run_reviewer_stress_campaign.sh)
+8. [`researchpaper`](../researchpaper)
 
 ## End-to-end interaction map
 
