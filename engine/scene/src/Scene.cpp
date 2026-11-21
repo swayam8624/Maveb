@@ -9,6 +9,9 @@
 
 namespace aether::scene {
 
+// Reuse a freed slot or append a new node, but preserve its generation.
+// Consumers keep an Entity{index,generation}; a recycled index alone is
+// insufficient to identify an object from a previous lifetime.
 Entity Scene::createEntity(std::string name) {
     std::uint32_t index = 0;
     if (freeList_.empty()) {
@@ -29,6 +32,9 @@ Entity Scene::createEntity(std::string name) {
     return Entity{index, node.generation};
 }
 
+// Reject stale handles, detach children to roots, advance the generation
+// and recycle the index. Transform descendants may need recomputation when
+// hierarchy ownership changes; inspect dirty propagation when extending.
 Result<void> Scene::destroyEntity(Entity entity) {
     if (!valid(entity)) {
         return fail(ErrorCode::invalidArgument, "Cannot destroy an invalid scene entity");
@@ -49,11 +55,16 @@ Result<void> Scene::destroyEntity(Entity entity) {
     return {};
 }
 
+// Full liveness check: bounds, alive flag, and matching generation.
+// Every public mutator/accessor relies on this, not merely index range.
 bool Scene::valid(Entity entity) const noexcept {
     return entity.index < nodes_.size() && nodes_[entity.index].alive &&
            nodes_[entity.index].generation == entity.generation;
 }
 
+// Reject invalid endpoints and cycles before changing parent links.
+// Dirty the changed subtree so subsequent worldMatrix() requests compose
+// transforms using the new hierarchy, not cached previous world matrices.
 Result<void> Scene::setParent(Entity child, std::optional<Entity> parent) {
     if (!valid(child) || (parent && !valid(*parent))) {
         return fail(ErrorCode::invalidArgument, "Parenting requires valid scene entities");
@@ -67,6 +78,9 @@ Result<void> Scene::setParent(Entity child, std::optional<Entity> parent) {
     return {};
 }
 
+// Accept only finite transforms with nonzero scale, then dirty the
+// descendant world-matrix cache. Renderer and world-edit consumers must
+// distinguish local TRS from world-space transforms.
 Result<void> Scene::setLocalTransform(Entity entity, const Transform& transform) {
     if (!valid(entity) || !isFinite(transform) || !hasNonZeroScale(transform)) {
         return fail(ErrorCode::invalidArgument,
@@ -85,6 +99,9 @@ Result<Transform> Scene::localTransform(Entity entity) const {
     return nodes_[entity.index].local;
 }
 
+// Lazy world transform: create a recursion guard and call updateWorld()
+// only when necessary. Parent transforms are evaluated before children;
+// invalid entities return a typed Error instead of a default matrix.
 Result<simd_float4x4> Scene::worldMatrix(Entity entity) {
     if (!valid(entity)) {
         return fail(ErrorCode::invalidArgument, "Invalid entity world-matrix request");
@@ -100,6 +117,8 @@ Result<std::string> Scene::name(Entity entity) const {
     return nodes_[entity.index].name;
 }
 
+// Walk the proposed parent's ancestors. If the child is encountered,
+// adopting this parent would create a cycle and must be rejected.
 bool Scene::wouldCreateCycle(Entity child, Entity parent) const {
     std::optional<Entity> cursor = parent;
     while (cursor && valid(*cursor)) {
@@ -111,6 +130,8 @@ bool Scene::wouldCreateCycle(Entity child, Entity parent) const {
     return false;
 }
 
+// Invalidate world caches below a modified node; dirty flags ensure
+// Renderer consumers recompute world transforms after parent/local edits.
 void Scene::markDescendantsDirty(Entity parent) {
     for (std::size_t index = 0; index < nodes_.size(); ++index) {
         Node& node = nodes_[index];
@@ -121,6 +142,9 @@ void Scene::markDescendantsDirty(Entity parent) {
     }
 }
 
+// Recursively compute parentWorld * localMatrix and cache the result.
+// The visiting guard detects unexpected cycles even if previous public
+// validation was bypassed. This is read by engine/metal/Renderer.cpp.
 Result<simd_float4x4> Scene::updateWorld(Entity entity, std::vector<bool>& visiting) {
     Node& node = nodes_[entity.index];
     if (!node.dirty) {
