@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// CPU reference iso-surface extraction from sampled TSDF. The classic topology table is adapted from
+// PoissonRecon under BSD-3-Clause; retain its original attribution and THIRD_PARTY_NOTICES and treat
+// this as an oracle for incremental extraction.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/reconstruction/ReferenceMarchingCubes.hpp>
 
 #include <algorithm>
