@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Counts incremental versus full work by domain (TSDF blocks, bytes, remeshed patches etc.) so
+// SelectiveUpdate can be audited as actual savings, not just a dirty-region prediction. Ratios are
+// undefined if full baseline is zero.
+// See docs/SOURCE_READING_ORDER.md for cross-file learning paths.
+
 #include <aether/world/LocalityLedger.hpp>
 
 #include <limits>
