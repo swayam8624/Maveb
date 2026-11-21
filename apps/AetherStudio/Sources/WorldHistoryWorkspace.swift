@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// SwiftUI presentation of persistent revision history, entity deltas and change summaries. Consumes
+// WorldArchive/PersistentWorld evidence through serialized payloads, not raw C++ pointers or GPU
+// handles.
+// See docs/SOURCE_READING_ORDER.md for cross-file learning paths.
+
 import AppKit
 import Foundation
 import SwiftUI
