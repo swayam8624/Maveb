@@ -1,3 +1,9 @@
+// LEARNING MAP — captured-world CBRC adapter. Converts edit inputs, coupling,
+// quantity-of-interest tolerances and calibrated cost into a revision graph.
+// The independent cone/certificate logic lives in engine/revision, while
+// the world and Metal modules own actual scene data and GPU publication.
+// See READING_ORDER.md for the full flow.
+
 #include <aether/cbrc/CapturedWorldRevisionGraph.hpp>
 
 #include <algorithm>

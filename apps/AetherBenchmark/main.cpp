@@ -1,3 +1,9 @@
+// LEARNING MAP — native performance/scene benchmark executable.
+// Uses Gaussian/Metal scene resources; measurements must distinguish calibrated
+// per-operation work from matched end-to-end wall-clock time, as documented
+// in research/results/CBRC_CLAIM_LEDGER_2026-09-24.md.
+// See READING_ORDER.md for evidence provenance and independent oracles.
+
 #include <aether/gaussian/GaussianCodec.hpp>
 #include <aether/metal/GaussianPipeline.hpp>
 #include <aether/metal/MetalPtr.hpp>
@@ -201,6 +207,9 @@ std::uint32_t entryBudget(std::size_t gaussianCount) {
 }
 } // namespace
 
+// Benchmark executable boundary: parse scene/camera/options, construct the
+// host GPU context and record measurements. Read benchmark scripts to see how
+// each run is aggregated into frozen paper evidence.
 int main(int argc, char** argv) {
     int parseExitCode = 0;
     auto options = parseOptions(argc, argv, parseExitCode);

@@ -1,3 +1,10 @@
+// LEARNING MAP — revision planning/certification, independent of the renderer.
+// RevisionGraph::build validates graph structure; closeExactPredecessors
+// closes HARD dependencies; cone planning checks output error bounds and
+// can choose conservative FULL fallback. Called by engine/cbrc adapters.
+// The quantified calibrated cost is NOT a wall-clock GPU speedup claim.
+// See READING_ORDER.md for tests and mathematical prerequisites.
+
 #include <aether/revision/RevisionPlanner.hpp>
 
 #include <algorithm>
