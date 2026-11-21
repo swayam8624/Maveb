@@ -1,6 +1,13 @@
+// LEARNING MAP — SwiftUI app/window lifecycle; the document and ContentView
+// own editing interactions. The Bridge/*.mm Objective-C++ files adapt Swift
+// operations to AETHER C++ engine objects and Metal resource lifetimes.
+// See READING_ORDER.md for the UI -> bridge -> engine call path.
+
 import AppKit
 import SwiftUI
 
+// SwiftUI owns the process entrypoint and scene/window declarations;
+// heavy C++/Metal work must happen behind bridge/engine APIs, not view bodies.
 @main
 struct AetherStudioApp: App {
   var body: some Scene {
