@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Execution infrastructure. The declared interface lives in
+// engine/core/include/aether/core/JobSystem.hpp; higher-level scene/reconstruction work can schedule work
+// here. Inspect job lifetime and synchronization before parallelizing expensive work.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/core/JobSystem.hpp>
 
 #include <algorithm>
