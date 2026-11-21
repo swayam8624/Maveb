@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Sparse TSDF volume operations supporting reconstruction. Trace captured/calibrated input through
+// ReconstructionInput contracts, volume integration, and IncrementalSparseTsdfMesher; compare tests and
+// CPU/Metal variants for correctness.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/reconstruction/SparseTsdfVolume.hpp>
 
 #include <algorithm>
