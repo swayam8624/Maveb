@@ -267,6 +267,9 @@ Result<void> validateObservation(const capture::CapturePacket& packet, const Pos
 
 SparseTsdfVolume::SparseTsdfVolume(SparseTsdfConfig config) : config_(config) {}
 
+// Validate grid dimensions, power-of-two block resolution, truncation and
+// depth ranges, finite world extents and maximum resident voxel budgets
+// before allocating any sparse blocks. Other methods assume this config.
 Result<SparseTsdfVolume> SparseTsdfVolume::create(SparseTsdfConfig config) {
     if (config.volume.dimensions[0] < 2 || config.volume.dimensions[1] < 2 ||
         config.volume.dimensions[2] < 2 || config.blockResolution < 2 ||
@@ -312,6 +315,11 @@ std::size_t SparseTsdfVolume::localIndex(std::uint32_t x, std::uint32_t y,
            x;
 }
 
+// Fuse one calibrated depth observation: candidateBlocks() first finds
+// ray-touched blocks and validates the frame/budgets. For each projected
+// voxel, compute a truncated signed distance and confidence/pose-weighted
+// update of distance/color. Build changes off to the side before committing.
+// Downstream extractMesh() turns the zero-crossing into renderable geometry.
 Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
                                          const PoseEstimate& pose, const DepthObservation& depth) {
     auto selected = candidateBlocks(config_, packet, pose, depth);
@@ -451,6 +459,10 @@ Result<void> SparseTsdfVolume::integrate(const capture::CapturePacket& packet,
 }
 
 Result<std::vector<TsdfBlockCoordinate>>
+// Candidate allocation oracle: project valid depth pixels through camera
+// intrinsics/pose, traverse their rays through a sparse block grid, and
+// enlarge for footprint/truncation. This bounds the block set per frame
+// before integrate() tries to allocate or update resident voxels.
 SparseTsdfVolume::candidateBlocks(const SparseTsdfConfig& config,
                                   const capture::CapturePacket& packet, const PoseEstimate& pose,
                                   const DepthObservation& depth) {
@@ -507,6 +519,9 @@ SparseTsdfVolume::candidateBlocks(const SparseTsdfConfig& config,
     return std::vector<TsdfBlockCoordinate>(candidates.begin(), candidates.end());
 }
 
+// Convert sparse observed TSDF blocks to a temporary bounded dense region
+// for the existing surface extractor. No geometry can be emitted before
+// enough observations exist; extraction memory budget is checked separately.
 Result<mesh::MeshAsset> SparseTsdfVolume::extractMesh() const {
     if (blocks_.empty() || observedVoxels_ == 0)
         return fail(ErrorCode::notFound, "Sparse TSDF contains no observed voxels");
@@ -579,6 +594,9 @@ Result<mesh::MeshAsset> SparseTsdfVolume::extractMesh() const {
     return dense->extractMesh();
 }
 
+// Lightweight instrumentation for benchmarking memory residency, fused
+// frames, last-frame work and dirty-block counts. Counters alone do not
+// establish reconstruction accuracy or correctness of a generated mesh.
 SparseTsdfStatistics SparseTsdfVolume::statistics() const noexcept {
     const auto allocatedVoxels = blocks_.size() * blockVoxelCount();
     return {.allocatedBlocks = blocks_.size(),
@@ -592,6 +610,8 @@ SparseTsdfStatistics SparseTsdfVolume::statistics() const noexcept {
             .generation = generation_};
 }
 
+// Return a value snapshot of resident block payloads and current generation;
+// unlike voxel(), this copies data for independent inspection/persistence.
 Result<SparseTsdfSnapshot> SparseTsdfVolume::snapshot() const {
     if (blocks_.empty())
         return fail(ErrorCode::notFound, "Sparse TSDF contains no resident blocks");
@@ -602,6 +622,9 @@ Result<SparseTsdfSnapshot> SparseTsdfVolume::snapshot() const {
     return result;
 }
 
+// Sparse lookup by logical voxel coordinate. Return nullopt for out-of-
+// grid or never-allocated blocks; a resident voxel may still have zero
+// observation weight, which is a distinct condition.
 std::optional<TsdfVoxel> SparseTsdfVolume::voxel(std::uint32_t x, std::uint32_t y,
                                                  std::uint32_t z) const noexcept {
     if (x >= config_.volume.dimensions[0] || y >= config_.volume.dimensions[1] ||
