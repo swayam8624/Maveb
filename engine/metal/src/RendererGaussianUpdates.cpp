@@ -1,3 +1,9 @@
+// LEARNING MAP — GPU-facing Gaussian edit publication. This Renderer method
+// delegates to GaussianPipeline for validation and mutation, then tracks
+// temporal invalidation so a new frame does not reuse stale history.
+// It does not itself certify that a local revision meets an output tolerance.
+// See READING_ORDER.md for the planner -> renderer -> oracle boundary.
+
 #include <aether/metal/Renderer.hpp>
 
 #include <cmath>
@@ -11,6 +17,9 @@ Result<void> Renderer::validateGaussianTranslation(std::span<const std::uint32_t
     return gaussianPipeline_->validateTranslation(gaussianIndices, translationDelta);
 }
 
+// Called only after the app or revision system has chosen an edit. The
+// Gaussian pipeline owns GPU buffers; the renderer propagates invalidation
+// so downstream temporal rendering cannot silently reuse stale results.
 Result<void> Renderer::translateGaussians(std::span<const std::uint32_t> gaussianIndices,
                                           simd_float3 translationDelta) {
     if (!gaussianPipeline_)
