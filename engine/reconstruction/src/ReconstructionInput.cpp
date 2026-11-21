@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Bounded simdjson capture/dataset manifest parser. Converts external camera groups and relative
+// directories into validated reconstruction inputs for sensor alignment and TSDF integration; reject
+// unsafe paths/oversized inputs before allocating.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/reconstruction/ReconstructionInput.hpp>
 
 #include <simdjson.h>
