@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Projects camera images onto reconstructed geometry, evaluating visibility/depth and view quality to
+// choose texture contributions. SensorAlignment and ReconstructionInput supply camera poses and
+// images; output belongs to mesh/texture materialization.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/reconstruction/TextureBaker.hpp>
 
 #include <algorithm>
