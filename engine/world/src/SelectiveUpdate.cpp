@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Filters world changes into bounded spatial dirty regions using ChangeFlag and
+// SelectiveUpdatePolicy; downstream reconstruction/render stages can repair local regions rather than
+// rebuilding all content.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/world/SelectiveUpdate.hpp>
 
 #include <algorithm>

@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// GPU Gaussian projection, tile entry generation, scan/radix sorting, range construction and
+// compositing pipeline. RendererGaussianScene and shader ABI coordinate its buffers; any temporary
+// resource sizing must respect the scene's splat/tile budget.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/metal/GaussianPipeline.hpp>
 #include <aether/world_gaussian/GaussianRenderCertificate.hpp>
 

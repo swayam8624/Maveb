@@ -1,5 +1,10 @@
 <h1 align="center">MAVEB</h1>
 
+> **Deep implementation tutorial:** [TSDF fusion, sparse meshing and selective world revisions](docs/TSDF_AND_LOCAL_WORLD_EDIT_TUTORIAL.md) explains the active function call path, numerical assumptions, failure conditions and evidence checks. It complements the [linked source reading order](docs/SOURCE_READING_ORDER.md) rather than claiming research completeness.
+
+> **Reading the implementation:** The [source reading order](docs/SOURCE_READING_ORDER.md) follows the SwiftUI and Objective-C++ entry points into engine core, scene/Metal rendering, capture, reconstruction, world edits, CBRC, and evidence verification. It is a curated study path; not every research or benchmark file is part of the live editor.
+
+
 <h3 align="center">Criticality-Bounded Revision Cones for Persistent Captured Worlds</h3>
 
 <p align="center">

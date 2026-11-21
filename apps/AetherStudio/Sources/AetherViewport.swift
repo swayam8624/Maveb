@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// SwiftUI viewport-facing layer. Connect UI lifecycle and displayed frames to
+// Bridge/AetherViewportBridge.mm, then to engine/metal/Renderer.cpp; keep UI state separate from
+// device-owned GPU resources.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 import AppKit
 import SwiftUI
 
@@ -37,6 +43,9 @@ struct AetherViewport: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
+    // SwiftUI creates one AppKit/Metal-hosted viewport and installs callbacks
+    // for selection, camera, materials and transform edits. These callbacks
+    // feed @Binding state; C++ renderer ownership remains inside the bridge.
     func makeNSView(context: Context) -> AetherViewportView {
         let view = AetherViewportView(frame: .zero)
         view.preferredFramesPerSecond = preferredFramesPerSecond
@@ -83,6 +92,10 @@ struct AetherViewport: NSViewRepresentable {
         return view
     }
 
+    // Reconcile SwiftUI state with existing native viewport without
+    // reloading the scene for every UI update. Coordinator caches the last
+    // applied paths, overrides, lights, camera and playback state to avoid
+    // unnecessary bridging and GPU resource churn.
     func updateNSView(_ nsView: AetherViewportView, context: Context) {
         nsView.preferredFramesPerSecond = preferredFramesPerSecond
         nsView.onEntityPicked = { entityId, gaussian in

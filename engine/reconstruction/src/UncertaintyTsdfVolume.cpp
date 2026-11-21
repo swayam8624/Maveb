@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Uncertainty-aware TSDF volume representation and pose/voxel validity checks. Use the standard
+// SparseTsdfVolume oracle and captured observations to distinguish confidence weighting from the
+// underlying geometric signed-distance model.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/reconstruction/UncertaintyTsdfVolume.hpp>
 
 #include <algorithm>

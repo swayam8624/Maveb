@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Versioned persistent world history serialization via bounded JSON parsing and escaped output
+// strings. PersistentWorld/WorldEdit own revisions; Swift WorldHistoryWorkspace consumes serialized
+// revision and diff summaries.
+// See docs/SOURCE_READING_ORDER.md for cross-file learning paths.
+
 #include <aether/world/WorldArchive.hpp>
 
 #include <simdjson.h>

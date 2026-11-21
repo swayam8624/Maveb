@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Host-side Metal rendering orchestration. This file connects scene state, frame resources, and GPU
+// pipelines, while .metal shaders perform device work. SwiftUI reaches this layer through the
+// AetherViewport bridge.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/metal/Renderer.hpp>
 
 #include <aether/core/Log.hpp>
@@ -187,6 +193,9 @@ std::uint32_t tileEntryBudget(std::size_t gaussianCount) {
 }
 } // namespace
 
+// Metal renderer factory: validate device, acquire queue and per-flight
+// FrameContext storage, then load/compile viewport pipeline resources.
+// Called from the Objective-C++ AetherViewport bridge after MTKView setup.
 Result<std::unique_ptr<Renderer>> Renderer::create(MTL::Device* device,
                                                    const std::filesystem::path& shaderLibraryPath) {
     if (!device) {
@@ -225,6 +234,9 @@ Renderer::Renderer(MTL::Device* device, std::filesystem::path shaderLibraryPath)
     Log::instance().write(LogLevel::info, "Initialized Metal device: " + capabilities_.name);
 }
 
+// Wait for all three in-flight frame slots before releasing GPU-facing
+// renderer state; command buffers may still reference buffers/pipelines
+// when the SwiftUI viewport is dismantled.
 Renderer::~Renderer() {
     for (int index = 0; index < 3; ++index) {
         dispatch_semaphore_wait(frameSemaphore_, DISPATCH_TIME_FOREVER);
@@ -239,6 +251,10 @@ Renderer::~Renderer() {
 
 // MetalKit calls this noexcept frame boundary. Internal Result failures are handled in-band.
 // NOLINTNEXTLINE(bugprone-exception-escape)
+// MTKView delegate frame boundary: update camera/animation, stage mesh/
+// Gaussian and light resources, build render targets/passes, encode Metal
+// commands and present. Individual Result errors are diagnosed in-band;
+// do not allow an exception to escape this noexcept Objective-C callback.
 void Renderer::draw(MTK::View* view) noexcept {
     ProfileScope profile("Renderer::draw");
     if (!view || !commandQueue_) {
@@ -1391,6 +1407,9 @@ Result<void> Renderer::loadGltf(const std::filesystem::path& path) {
     return loadGltfAsset(path, false);
 }
 
+// Dynamic mesh overlay is only valid when an active Gaussian capture
+// exists. The preserveCapturedWorld path keeps the reconstructed background
+// while adding imported glTF geometry for rendering and editing.
 Result<void> Renderer::attachDynamicGltf(const std::filesystem::path& path) {
     if (!gaussianPipeline_)
         return fail(ErrorCode::invalidArgument,
@@ -1398,6 +1417,8 @@ Result<void> Renderer::attachDynamicGltf(const std::filesystem::path& path) {
     return loadGltfAsset(path, true);
 }
 
+// Remove imported mesh/skin/material state and invalidate temporal
+// history so stale motion vectors/TAA frames do not survive a detachment.
 void Renderer::detachDynamicGltf() noexcept {
     meshPrimitives_.clear();
     meshInstances_.clear();
@@ -1411,6 +1432,9 @@ void Renderer::detachDynamicGltf() noexcept {
     temporalHistoryValid_ = false;
 }
 
+// glTF import boundary: CPU decoding, skin upload-budget validation,
+// image decoding/texture upload, materials and draw instances. Called by
+// both regular loadGltf and dynamic overlay load, with different policy.
 Result<void> Renderer::loadGltfAsset(const std::filesystem::path& path,
                                      bool preserveCapturedWorld) {
     auto loaded = mesh::GltfLoader::load(path);
@@ -2250,6 +2274,9 @@ Result<void> Renderer::clearMaterialOverride(std::uint32_t materialId) {
     return {};
 }
 
+// Resize-safe allocation of HDR, depth, object-ID, motion, shadow/proxy
+// and temporal-history render targets. Reuse existing textures only when
+// all required resources and target dimensions are still compatible.
 Result<void> Renderer::ensureSceneTargets(std::uint32_t width, std::uint32_t height) {
     if (width == 0 || height == 0)
         return fail(ErrorCode::invalidArgument, "Scene render target dimensions are zero");
@@ -2425,6 +2452,8 @@ RendererStatistics Renderer::statistics() const noexcept {
                               lastGpuMilliseconds_.load(std::memory_order_relaxed)};
 }
 
+// Transfer ownership of the last completed frame capture to a caller
+// under mutex; returning notFound is expected before any capture finishes.
 Result<FrameCapture> Renderer::consumeFrameCapture() {
     std::lock_guard lock(frameCaptureMutex_);
     if (!completedFrameCapture_)
@@ -2434,6 +2463,9 @@ Result<FrameCapture> Renderer::consumeFrameCapture() {
     return result;
 }
 
+// Resolve the compiled .metallib from an explicit path or app bundle,
+// then build native shader/pipeline objects. This is why a correct C++
+// build alone is not proof that the application can draw on device.
 Result<void> Renderer::buildViewportPipeline() {
     std::string libraryPath;
     if (shaderLibraryPath_.empty()) {
@@ -2874,6 +2906,9 @@ Result<void> Renderer::buildViewportPipeline() {
     return {};
 }
 
+// GPU upload: allocate a private destination plus CPU-visible staging
+// buffer, blit via command queue, and keep staging alive through the
+// command buffer completion handler. GPU transfer is asynchronous.
 Result<MetalPtr<MTL::Buffer>> Renderer::uploadPrivateBuffer(const void* bytes, std::size_t size,
                                                             const char* labelText) {
     if (!bytes || size == 0) {

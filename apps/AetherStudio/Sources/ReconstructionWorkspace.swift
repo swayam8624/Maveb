@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// SwiftUI reconstruction entry point and observable state machine for capture validation, alignment,
+// TSDF builds, checkpoints and reports. Native C++ reconstruction owns algorithms; UI must separate
+// validation, cancellation and results from scene mutation.
+// See docs/SOURCE_READING_ORDER.md for cross-file learning paths.
+
 import AppKit
 import Foundation
 import SwiftUI

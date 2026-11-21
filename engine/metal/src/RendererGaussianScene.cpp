@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Renderer-facing Gaussian scene attachment/reconfiguration. The FrameQuiescence guard waits on
+// in-flight frame slots before replacing GPU scene state; GaussianPipeline owns draw/compute
+// resources.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/metal/Renderer.hpp>
 
 #include <algorithm>

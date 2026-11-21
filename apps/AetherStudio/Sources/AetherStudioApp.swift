@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// SwiftUI app composition root. Follow ContentView and AetherViewport for presentation, and Objective-C++
+// Bridge/AetherViewportBridge.mm for transition into C++ rendering; this file should not contain
+// low-level GPU execution.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 import AppKit
 import SwiftUI
 

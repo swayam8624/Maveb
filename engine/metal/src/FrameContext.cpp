@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Metal frame resource ownership: per-frame upload/readback buffers and a transient heap, allocated
+// through the device. Renderer uses FrameContext to avoid overwriting GPU-in-flight data; device
+// resource limits and alignment matter.
+// Follow docs/SOURCE_READING_ORDER.md for upstream and downstream APIs.
+
 #include <aether/metal/FrameContext.hpp>
 
 #include <Foundation/Foundation.hpp>

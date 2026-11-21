@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Execution infrastructure. The declared interface lives in
+// engine/core/include/aether/core/JobSystem.hpp; higher-level scene/reconstruction work can schedule work
+// here. Inspect job lifetime and synchronization before parallelizing expensive work.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/core/JobSystem.hpp>
 
 #include <algorithm>
@@ -27,10 +33,15 @@ bool terminal(JobStatus status) {
 }
 } // namespace
 
+// Cooperative cancellation check from a running task. JobHandle::cancel()
+// only sets this flag; expensive work must poll it and return a cancelled
+// Result so workerMain can publish a terminal state.
 bool JobContext::isCancellationRequested() const noexcept {
     return state_->cancellationRequested.load(std::memory_order_relaxed);
 }
 
+// Publish bounded [0,1] progress for UI/diagnostics; JobHandle::progress()
+// reads the atomic snapshot without taking the result mutex.
 void JobContext::setProgress(double progress) noexcept {
     state_->progress.store(std::clamp(progress, 0.0, 1.0), std::memory_order_relaxed);
 }
@@ -59,12 +70,17 @@ std::optional<Error> JobHandle::error() const {
     return state_->error;
 }
 
+// Request cancellation, not immediate preemption. A queued job is skipped;
+// an already-running callback must check its JobContext cooperatively.
 void JobHandle::cancel() const noexcept {
     if (state_) {
         state_->cancellationRequested.store(true, std::memory_order_release);
     }
 }
 
+// Wait on the terminal-state condition variable, not simply until a worker
+// dequeues the task. Call error() afterwards to distinguish failed work
+// from a successful or cancelled job.
 void JobHandle::wait() const {
     if (!state_) {
         return;
@@ -98,6 +114,9 @@ JobSystem::~JobSystem() {
     }
 }
 
+// Give each task a reference-counted JobState and a monotonically assigned
+// ID. The queue owns the callable; the returned handle observes state
+// without owning the JobSystem. Submissions during teardown are cancelled.
 JobHandle JobSystem::submit(std::string name, Task task) {
     auto state = std::make_shared<detail::JobState>();
     state->id = nextId_.fetch_add(1, std::memory_order_relaxed);
@@ -121,6 +140,10 @@ std::size_t JobSystem::defaultWorkerCount() noexcept {
     return hardware > 1 ? hardware - 1 : 1;
 }
 
+// Worker state machine: wait -> dequeue -> skip cancelled jobs -> run Task
+// with JobContext -> publish success/failure/cancellation -> notify waiter.
+// Tasks should report failure using Result<void>; uncaught exceptions are
+// not translated to Result in this worker implementation.
 void JobSystem::workerMain() {
     while (true) {
         QueuedJob job;

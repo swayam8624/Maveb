@@ -1,3 +1,8 @@
+// SOURCE STUDY NOTE:
+// Edit semantics for persistent worlds. Read WorldEdit.hpp and PersistentWorld, LocalityLedger and CBRC
+// revision graph together; local updates must preserve validity outside the affected region.
+// Follow docs/SOURCE_READING_ORDER.md for upstream/downstream files.
+
 #include <aether/world/WorldEdit.hpp>
 
 #include <algorithm>
@@ -21,6 +26,12 @@ namespace {
 
 } // namespace
 
+// **Preparation, not commit**: start from a validated previous snapshot,
+// reject duplicate/stale/contradictory patches, build a next-revision
+// candidate, compute its semantic diff, then plan selective recomputation.
+// Rotation/scale changes require explicit replacement bounds; translation-
+// only changes can shift existing bounds. Caller decides whether to commit
+// the returned candidate after checking its selective-update plan.
 Result<WorldEditResult> prepareWorldEdit(const WorldSnapshot& previous, TimestampNs timestamp,
                                          const std::vector<EntityPatch>& patches,
                                          WorldEditPolicy policy) {

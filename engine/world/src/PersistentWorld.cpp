@@ -1,3 +1,9 @@
+// SOURCE STUDY NOTE:
+// Stable world entity/revision model, validates transforms, bounds and diff policies. SelectiveUpdate
+// derives local dirty regions, WorldArchive persists revisions, and Swift WorldHistoryWorkspace
+// presents the history.
+// Study trace: docs/SOURCE_READING_ORDER.md.
+
 #include <aether/world/PersistentWorld.hpp>
 
 #include <algorithm>
