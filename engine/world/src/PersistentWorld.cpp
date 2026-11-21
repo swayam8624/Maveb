@@ -1,3 +1,9 @@
+// LEARNING MAP — scene snapshots and world revision diffs.
+// WorldTimeline::append records a validated snapshot, while diff calculates
+// changed entities under explicit thresholds. CBRC consumes these changed
+// world inputs; GPU rendering and revision certificates are separate layers.
+// See READING_ORDER.md for related headers and tests.
+
 #include <aether/world/PersistentWorld.hpp>
 
 #include <algorithm>
