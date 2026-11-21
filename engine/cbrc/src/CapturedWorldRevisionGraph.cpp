@@ -1,3 +1,4 @@
+// TEACHING MAP: CBRC REVISION EVIDENCE ADAPTER: Public contract is aether/cbrc/CapturedWorldRevisionGraph.hpp. Converts world::LocalityLedger counters and incremental mesher statistics into checked planner inputs. The CBRC/revision planner decides LOCAL versus FULL; Gaussian/TSDF update paths do the actual work; certificate/oracle tests independently check claims.
 #include <aether/cbrc/CapturedWorldRevisionGraph.hpp>
 
 #include <algorithm>
@@ -38,6 +39,8 @@ void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::Revis
 
 } // namespace
 
+// Validate evidence coverage and finite nonnegative costs before allowing locality accounting to
+// influence a revision decision.
 Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
     const world::LocalityLedger& ledger,
     const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
