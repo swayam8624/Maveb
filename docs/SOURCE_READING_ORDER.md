@@ -1,5 +1,9 @@
 # Teaching source map — Maveb
 
+**Recovered deep tutorial:** [TSDF fusion and persistent-world revision](TSDF_AND_LOCAL_WORLD_EDIT_TUTORIAL.md) — source-linked teaching, not a verified test result.
+
+**Full historical source inventory:** [655-path linked source catalog](SOURCE_CATALOG.md) (snapshot, not a test or completeness claim).
+
 > A guided source-reading itinerary. It is not a test result or claim that every file is documented yet.
 
 ## How to use this guide
