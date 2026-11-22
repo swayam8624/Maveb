@@ -1,3 +1,16 @@
+// TEACHING MODULE: Conservative locality bounds for changed 3D Gaussian
+// primitives. Convert position/rotation/log-scales into covariance, then
+// estimate opacity-weighted Gaussian tails at six faces of an edit volume.
+//
+// This certifies a *density-tail bound* under model assumptions, not an
+// image-space perceptual error or frame-rate improvement. Before/after
+// changed primitives both contribute; outsideDensityBound takes the
+// worst accumulated face bound. Independent raster/image certificate
+// tests are required for a rendered-pixel claim.
+//
+// Covariance must be finite positive; saturated opacity is transformed
+// from logit via bounded sigmoid. Conservative certification should
+// reject invalid bounds instead of implicitly normalizing corrupt data.
 #include <aether/world_gaussian/GaussianLocalityCertificate.hpp>
 
 #include <algorithm>
@@ -76,6 +89,9 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
     return result;
 }
 
+// Compute per-face upper contributions from each rotated Gaussian's
+// diagonal covariance and opacity, falling back to full opacity if the
+// mean lies at/outside the face. Six values cover min/max X/Y/Z.
 [[nodiscard]] Result<std::array<double, 6>> tailBounds(const gaussian::Gaussian& gaussian,
                                                        const world::Bounds& volume) {
     auto cov = covariance(gaussian);
@@ -125,6 +141,9 @@ Result<void> accumulate(std::array<double, 6>& faceBounds,
 
 } // namespace
 
+// Accumulate contributions of both removed/changed-before and
+// inserted/changed-after splats. Do not confuse the maximum face bound
+// with a rigorous final-frame RGB certificate.
 Result<GaussianTailLocalityCertificate>
 certifyGaussianDensityLocality(std::span<const gaussian::Gaussian> beforeChanged,
                                std::span<const gaussian::Gaussian> afterChanged,
