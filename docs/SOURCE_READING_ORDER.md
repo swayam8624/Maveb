@@ -4,6 +4,12 @@
 
 ## How to use this guide
 
+**Recommended worked example:** [From an edited captured world to a CBRC
+revision-cone certificate](CBRC_FROM_EDIT_TO_CERTIFICATE.md). It links the
+generic planner, evidence ledger, Gaussian/TSDF implementation and
+independent oracle, with explicit limits on performance and correctness
+claims.
+
 Study the scientific question first, then the certificate mathematics, then representation-specific implementations and finally frozen evidence. AETHER is the systems stack; MAVEB/CBRC is the research contribution.
 
 Read each phase in order. Every link goes to a source file or directory in this repository. For a directory, inspect its public interface and then its implementation files. After each phase, identify the caller, the state it owns, the inputs it validates, and its observable outputs.
