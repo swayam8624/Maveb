@@ -60,6 +60,10 @@ namespace {
 
 } // namespace
 
+// Construct validated planner state: finite nonnegative work/change bounds,
+// full work baseline, typed dependency edges and analytic bound provenance.
+// HARD and EMPIRICAL edges are exact prerequisites; ANALYTIC edges may bound
+// effects outside a local cone.
 Result<RevisionGraph> RevisionGraph::build(std::vector<RevisionNode> nodes,
                                            std::vector<RevisionEdge> edges,
                                            std::optional<double> fullWorkBaseline) {
@@ -132,6 +136,9 @@ Result<std::vector<RevisionNodeId>>
 // Starting from affected nodes, walk backwards through every exact
 // prerequisite. Closure is monotone: no valid local repair can skip
 // an exact predecessor merely to reduce the reported work budget.
+// Any valid repair cone includes every transitive HARD or EMPIRICAL
+// predecessor of changed seed nodes. DFS closure is monotone; removing an
+// exact prerequisite merely to reduce work breaks the dependency contract.
 RevisionGraph::closeExactPredecessors(std::span<const RevisionNodeId> seed) const {
     std::vector<bool> selected(nodes_.size(), false);
     std::vector<RevisionNodeId> stack;
@@ -169,6 +176,10 @@ RevisionGraph::closeExactPredecessors(std::span<const RevisionNodeId> seed) cons
 // predecessors, propagate exterior analytic change bounds, and compare
 // every QoI error bound with its epsilon. A passed certificate is only
 // as valid as the dependency graph and input bounds supplied by callers.
+// Given a candidate cone, require exact dependency closure, zero residuals
+// within recomputed nodes, finite analytic propagation over exterior DAG, and
+// a weighted upper bound under every declared QoI epsilon. Fail closed on
+// invalid inputs.
 Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
                                                     std::span<const double> sourceBounds,
                                                     std::span<const RevisionNodeId> cone,
@@ -230,6 +241,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
         return certificate;
     }
 
+// The exterior is a directed analytic influence graph. Start from source
+// residual bounds; propagate gain*residual along topological order. A cycle
+// means this v1 bound evaluator cannot certify the exterior, not that the
+// simulation necessarily diverges.
     // Sparse analytic DAG response on the unrepaired exterior.
     std::vector<std::size_t> indegree(n, 0);
     std::vector<double> residual(sourceBounds.begin(), sourceBounds.end());
@@ -286,6 +301,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
     certificate.stable = true;
     certificate.reason = "finite sparse analytic DAG response";
     certificate.passes = true;
+// Each quantity of interest sums its weighted exterior residuals. Every
+// required bound must be <= its tolerance. This compares *certified
+// analytical bounds* rather than directly timing a GPU render or proving all
+// image pixels identical.
     for (const RevisionQoI& qoi : qois) {
         double bound{};
         for (const RevisionQoITerm& term : qoi.terms)
@@ -303,6 +322,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
 // certified subset survives, require a full recomputation fallback.
 // This is a heuristic for selecting work, not a global optimality proof.
 Result<RevisionConeCertificate>
+// Expand from hard closure: try each added node plus its exact prerequisites,
+// re-certify, rank gain in violation score against extra work and return a
+// cheaper passing cone. Otherwise fall back to FULL; the greedy choice is not
+// globally optimal.
 greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> sourceBounds,
                             std::span<const RevisionNodeId> hardClosure,
                             std::span<const RevisionQoI> qois) {
@@ -389,6 +412,9 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> 
         }
     }
 
+// The final fallback closes over all graph nodes and marks fullRebuild if no
+// cheaper certified cone can be selected. workCost represents a calibrated
+// work estimate, not an observed wall-clock speedup.
     std::vector<RevisionNodeId> full(n);
     std::iota(full.begin(), full.end(), RevisionNodeId{0});
     auto complete = certifyRevisionCone(graph, sourceBounds, full, qois);
