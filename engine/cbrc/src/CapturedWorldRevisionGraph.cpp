@@ -1,3 +1,18 @@
+// TEACHING MAP: Bridge *measured representation counters* into the
+// generic revision certificate graph. LocalityLedger records observation,
+// TSDF, mesh, texture, Gaussian, GPU publication and temporal activity;
+// mesher statistics provide further work proxies. This adapter validates
+// finite, nonnegative coverage and maps counters through CapturedWorldCostModel
+// coefficients to planner workCost/sourceBounds/hardClosure/QoIs.
+//
+// Locality certificate decisions are distinct from implementing updates:
+// RevisionPlanner chooses LOCAL or FULL; SparseTsdfVolume, mesh and Gaussian
+// modules execute actual work; independent oracle and image tests assess
+// whether the chosen local path stayed within tolerance. Calibrated
+// work reduction must not be described as paired wall-clock speedup.
+//
+// Frozen CBRC result ledgers are research evidence, not automatically
+// improved by changing this source or its teaching annotations.
 #include <aether/cbrc/CapturedWorldRevisionGraph.hpp>
 
 #include <algorithm>
@@ -38,6 +53,11 @@ void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::Revis
 
 } // namespace
 
+// Validate evidence coverage and finite nonnegative costs before allowing locality accounting to
+// influence a revision decision.
+// Validate that all required ledger domains exist and all numeric cost
+// components are safe before composing candidate planner inputs. A
+// partial/unknown locality counter cannot silently certify less work.
 Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
     const world::LocalityLedger& ledger,
     const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
@@ -370,6 +390,8 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     return result;
 }
 
+// Hand the validated captured-world graph to the generic greedy CBRC
+// selector; this function only plans, it does not mutate world state.
 Result<revision::RevisionConeCertificate>
 planCapturedWorldRevision(const CapturedWorldRevisionInput& input,
                           const CapturedWorldCostModel& costs) {

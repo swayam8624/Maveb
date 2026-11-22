@@ -20,6 +20,8 @@ A research system for deciding how little of a captured 3D world can be recomput
 <img src="research/results/visualizations/public/MAVEB_teaser.gif" width="100%" alt="MAVEB animated teaser">
 </p>
 
+**Learn MAVEB from source:** [Complete linked source-reading order](docs/SOURCE_READING_ORDER.md) · [Deep CBRC guide: captured edit → dependency closure → certified local/full repair](docs/CBRC_FROM_EDIT_TO_CERTIFICATE.md). The guide separates calibrated work reduction from measured performance and leaves frozen evidence unchanged.
+
 MAVEB is the research project. AETHER is the reconstruction, persistent-world, rendering, revision, and evidence stack used to test it.
 
 The project asks one question:
@@ -1298,3 +1300,12 @@ The manuscript should preserve the distinctions enforced here:
 CBRC v1 implementation and canonical evidence construction are complete and frozen.
 
 The repository is now in post-reviewer experimental hardening plus manuscript-preparation state. The active additive protocol is run with `run_reviewer_stress_campaign.sh`; its results are not treated as established until the generated reviewer-evidence audit reports them.
+
+
+## Learn this repository from source
+
+The [Teaching source map](docs/SOURCE_READING_ORDER.md) gives a linked reading sequence, subsystem interactions, public API boundaries, and verification questions. Begin with the public contract and entry point, trace one real operation through its implementation, and use the linked tests to distinguish expected behavior from observed evidence.
+
+**Current scope and limitations.** Distinguish mathematical certificates and calibrated-work savings from wall-clock speedup and from real-photo reconstruction fidelity. Frozen scientific claims must trace to recorded evidence and remain unchanged by educational documentation edits.
+
+**Learning and reuse.** Project-authored code is intended for study, modification and further development under the repository's applicable license. See [LICENSE](LICENSE) where present. Third-party libraries, borrowed source, assets, test data, models and media remain under their own terms; do not treat a top-level license as permission to redistribute restricted content.

@@ -1,3 +1,16 @@
+// TEACHING MODULE: Selection and transactional translation of Gaussians
+// associated with a persistent entity. World ownership/region identities
+// restrict the candidate set; an indexed fast path avoids rescanning every
+// splat and records locality work for CBRC cost accounting.
+//
+// The edit is not certified by merely selecting fewer Gaussians: the
+// ownership mapping, dirty cells, before/after positions and full
+// fallback/image oracle must agree. Input position, cell-size and budget
+// limits are checked to avoid nonfinite indices and unbounded allocations.
+//
+// Renderer/Metal presentation, GaussianTailLocalityCertificate and
+// RevisionPlanner are separate consumers/validators. This file changes
+// CPU-owned persistent world data, not native GPU command buffers.
 #include <aether/world_gaussian/GaussianLocalUpdate.hpp>
 
 #include <algorithm>
@@ -373,6 +386,9 @@ Result<std::size_t> translateOwnedGaussians(gaussian::GaussianAsset& asset,
     return affected->size();
 }
 
+// Unindexed reference path. Prepare a candidate persistent world,
+// select entity-owned splats, apply translation and publish only after
+// successful validation; compare against indexed path in tests.
 Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
     world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
     const GaussianEntityOwnership& ownership, world::EntityId entity,
@@ -424,6 +440,8 @@ Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntity(
     };
 }
 
+// Indexed path uses spatial/ownership metadata to constrain selection,
+// while retaining the same observable edit semantics as the reference.
 Result<PersistentGaussianTranslationResult> translatePersistentGaussianEntityIndexed(
     world::PersistentWorldModel& worldModel, gaussian::GaussianAsset& asset,
     const GaussianEntityOwnership& ownership, GaussianOverlaySpatialIndex& spatialIndex,
