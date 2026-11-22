@@ -14,6 +14,8 @@ Study the scientific question first, then the certificate mathematics, then repr
 
 Read each phase in order. Every link goes to a source file or directory in this repository. For a directory, inspect its public interface and then its implementation files. After each phase, identify the caller, the state it owns, the inputs it validates, and its observable outputs.
 
+**Mathematical worked exercise:** [CBRC hard dependency closure, residual propagation, QoI tolerance and Gaussian density tails](CBRC_EXACT_CLOSURE_AND_GAUSSIAN_BOUND_LAB.md). It explicitly separates calibrated work, spatial tails, rendered image error and actual performance measurements.
+
 ## 1. Problem and evidence
 
 1. [`README.md`](../README.md)

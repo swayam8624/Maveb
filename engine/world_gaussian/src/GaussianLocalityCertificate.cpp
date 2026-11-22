@@ -31,10 +31,16 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
            bounds.minimum.z < bounds.maximum.z;
 }
 
+// Map the stored opacity *logit* to alpha in (0,1). Clamp extreme input to
+// avoid exp overflow and enforce a finite bounded contribution for
+// Gaussian-tail summation.
 [[nodiscard]] double sigmoid(double value) noexcept {
     return 1.0 / (1.0 + std::exp(-std::clamp(value, -30.0, 30.0)));
 }
 
+// Validate finite mean/log-scales/rotation and near-unit quaternion, then
+// compute world covariance R*diag(exp(2 logScale))*R^T. A nonfinite/tiny
+// variance is rejected, not silently used as a sharp zero-width splat.
 [[nodiscard]] Result<Matrix3> covariance(const gaussian::Gaussian& gaussian) {
     for (const float value : gaussian.position)
         if (!std::isfinite(value))
@@ -92,6 +98,10 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
 // Compute per-face upper contributions from each rotated Gaussian's
 // diagonal covariance and opacity, falling back to full opacity if the
 // mean lies at/outside the face. Six values cover min/max X/Y/Z.
+// For each min/max face of edit volume, evaluate opacity-weighted
+// exp(-distance^2/(2*diagonal variance)); if the mean is beyond the face use
+// full opacity. This bounds a density *tail proxy*, not screen-space RGB or
+// occlusion error.
 [[nodiscard]] Result<std::array<double, 6>> tailBounds(const gaussian::Gaussian& gaussian,
                                                        const world::Bounds& volume) {
     auto cov = covariance(gaussian);
@@ -122,6 +132,9 @@ using Matrix3 = std::array<std::array<double, 3>, 3>;
     return result;
 }
 
+// Sum nonnegative per-face tails over changed Gaussians, checking finite
+// totals after each addition. Before/after changes must both contribute so
+// removal as well as addition is reflected in the exterior bound.
 Result<void> accumulate(std::array<double, 6>& faceBounds,
                         std::span<const gaussian::Gaussian> gaussians,
                         const world::Bounds& volume) {
@@ -145,6 +158,10 @@ Result<void> accumulate(std::array<double, 6>& faceBounds,
 // inserted/changed-after splats. Do not confuse the maximum face bound
 // with a rigorous final-frame RGB certificate.
 Result<GaussianTailLocalityCertificate>
+// Reject invalid edit AABB; accumulate six face bounds from both old and new
+// changed splats, and report the maximal face density as outsideDensityBound.
+// This certificate is representation-level evidence, not proof of a visually
+// correct final frame.
 certifyGaussianDensityLocality(std::span<const gaussian::Gaussian> beforeChanged,
                                std::span<const gaussian::Gaussian> afterChanged,
                                const world::Bounds& editVolume) {

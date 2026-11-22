@@ -58,6 +58,10 @@ void appendUnique(std::vector<revision::RevisionNodeId>& values, revision::Revis
 // Validate that all required ledger domains exist and all numeric cost
 // components are safe before composing candidate planner inputs. A
 // partial/unknown locality counter cannot silently certify less work.
+// Bridge measured LocalityLedger domain counters and independent mesher
+// reference work into one planner input. Reject missing coverage and
+// inconsistent mesh/Gaussian counts rather than replacing absent
+// measurements with optimistic zeros.
 Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
     const world::LocalityLedger& ledger,
     const reconstruction::IncrementalSparseMesherWorkStatistics& mesher,
@@ -149,6 +153,9 @@ Result<CapturedWorldRevisionInput> capturedWorldRevisionInputFromEvidence(
 }
 
 Result<CapturedWorldGraphBuild>
+// Convert validated counters into calibrated cost-model nodes, physical
+// exact dependencies, analytic output propagation and an RGB L-infinity QoI.
+// A frozen cost-model version is required for reproducibility.
 buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
                                 const CapturedWorldCostModel& costs) {
     if (costs.version.empty())
@@ -297,6 +304,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     std::vector<revision::RevisionEdge> edges;
     edges.reserve(12);
 
+    // Observation->TSDF->mesh->texture->material and Gaussian->GPU publication
+    // are strict structural prerequisites. The domain-specific hardClosure seed
+    // also carries invalidated outputs; the generic planner closes
+    // *predecessors*.
     // Exact structural relations. The hardClosure below carries the forward
     // domain-specific invalidation; these edges retain predecessor consistency.
     edges.push_back({observation, tsdf, revision::RevisionEdgeClass::hard, 0.0,
@@ -310,6 +321,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     edges.push_back({gaussian, gpuPublication, revision::RevisionEdgeClass::hard, 0.0,
                      "gaussian-source-publication-v1"});
 
+    // The Gaussian-to-image and temporal blend edges are analytic upper-bound
+    // propagation, not exact recomputation requirements while their assumptions
+    // remain validated. Temporal discontinuity changes history dependence to a
+    // hard edge.
     // Certified soft output propagation.
     edges.push_back({gaussian, currentImage, revision::RevisionEdgeClass::analytic, 1.0,
                      "gaussian-image-transmittance-v1"});
@@ -393,6 +408,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
 // Hand the validated captured-world graph to the generic greedy CBRC
 // selector; this function only plans, it does not mutate world state.
 Result<revision::RevisionConeCertificate>
+// This is a planner-only adapter: build graph and pass source bounds, hard
+// closure and QoI epsilon to the greedy certificate. Actual
+// TSDF/mesh/Gaussian updates and independent full recomputation verification
+// occur in other modules.
 planCapturedWorldRevision(const CapturedWorldRevisionInput& input,
                           const CapturedWorldCostModel& costs) {
     auto built = buildCapturedWorldRevisionGraph(input, costs);
