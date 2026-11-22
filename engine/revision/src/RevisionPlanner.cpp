@@ -241,10 +241,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
         return certificate;
     }
 
-// The exterior is a directed analytic influence graph. Start from source
-// residual bounds; propagate gain*residual along topological order. A cycle
-// means this v1 bound evaluator cannot certify the exterior, not that the
-// simulation necessarily diverges.
+    // The exterior is a directed analytic influence graph. Start from source
+    // residual bounds; propagate gain*residual along topological order. A cycle
+    // means this v1 bound evaluator cannot certify the exterior, not that the
+    // simulation necessarily diverges.
     // Sparse analytic DAG response on the unrepaired exterior.
     std::vector<std::size_t> indegree(n, 0);
     std::vector<double> residual(sourceBounds.begin(), sourceBounds.end());
@@ -301,10 +301,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
     certificate.stable = true;
     certificate.reason = "finite sparse analytic DAG response";
     certificate.passes = true;
-// Each quantity of interest sums its weighted exterior residuals. Every
-// required bound must be <= its tolerance. This compares *certified
-// analytical bounds* rather than directly timing a GPU render or proving all
-// image pixels identical.
+    // Each quantity of interest sums its weighted exterior residuals. Every
+    // required bound must be <= its tolerance. This compares *certified
+    // analytical bounds* rather than directly timing a GPU render or proving all
+    // image pixels identical.
     for (const RevisionQoI& qoi : qois) {
         double bound{};
         for (const RevisionQoITerm& term : qoi.terms)
@@ -412,9 +412,9 @@ greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> 
         }
     }
 
-// The final fallback closes over all graph nodes and marks fullRebuild if no
-// cheaper certified cone can be selected. workCost represents a calibrated
-// work estimate, not an observed wall-clock speedup.
+    // The final fallback closes over all graph nodes and marks fullRebuild if no
+    // cheaper certified cone can be selected. workCost represents a calibrated
+    // work estimate, not an observed wall-clock speedup.
     std::vector<RevisionNodeId> full(n);
     std::iota(full.begin(), full.end(), RevisionNodeId{0});
     auto complete = certifyRevisionCone(graph, sourceBounds, full, qois);
