@@ -20,7 +20,7 @@ A research system for deciding how little of a captured 3D world can be recomput
 <img src="research/results/visualizations/public/MAVEB_teaser.gif" width="100%" alt="MAVEB animated teaser">
 </p>
 
-**Learn MAVEB from source:** [Complete linked source-reading order](docs/SOURCE_READING_ORDER.md) · [Deep CBRC guide: captured edit → dependency closure → certified local/full repair](docs/CBRC_FROM_EDIT_TO_CERTIFICATE.md). The guide separates calibrated work reduction from measured performance and leaves frozen evidence unchanged.
+**Learn MAVEB from source:** [Complete linked source-reading order](docs/SOURCE_READING_ORDER.md) · [Deep CBRC guide: captured edit → dependency closure → certified local/full repair](docs/CBRC_FROM_EDIT_TO_CERTIFICATE.md) · [Worked exact-closure, analytic DAG and Gaussian-tail mathematics](docs/CBRC_EXACT_CLOSURE_AND_GAUSSIAN_BOUND_LAB.md). The guide separates calibrated work reduction from measured performance and leaves frozen evidence unchanged.
 
 MAVEB is the research project. AETHER is the reconstruction, persistent-world, rendering, revision, and evidence stack used to test it.
 
