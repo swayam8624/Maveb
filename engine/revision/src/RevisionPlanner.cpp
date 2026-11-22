@@ -1,3 +1,18 @@
+// TEACHING MODULE: The revision graph is a *certificate-oriented planner*
+// over dependencies and finite-change bounds, not a GPU work scheduler.
+//
+// Exact-predecessor edges must be closed transitively: a local cone is
+// invalid if its prerequisites were left outside. Analytic exterior edges
+// propagate conservative residual bounds along a DAG, and each declared
+// quantity of interest (QoI) has a weighted error tolerance. Unstable,
+// cyclic or nonfinite inputs must fail closed rather than assert locality.
+//
+// greedyCertifiedRevisionCone compares candidate cone work costs and
+// certificate violation scores; if it cannot certify a cheaper LOCAL
+// subset, it returns a FULL fallback. workCost is calibrated analytical
+// work, NOT observed wall-clock speedup. CapturedWorldRevisionGraph.cpp
+// translates actual locality ledgers into this generic planner, while
+// CBRC tests compare plans with independent recomputation oracles.
 #include <aether/revision/RevisionPlanner.hpp>
 
 #include <algorithm>
@@ -114,6 +129,9 @@ Result<RevisionGraph> RevisionGraph::build(std::vector<RevisionNode> nodes,
 }
 
 Result<std::vector<RevisionNodeId>>
+// Starting from affected nodes, walk backwards through every exact
+// prerequisite. Closure is monotone: no valid local repair can skip
+// an exact predecessor merely to reduce the reported work budget.
 RevisionGraph::closeExactPredecessors(std::span<const RevisionNodeId> seed) const {
     std::vector<bool> selected(nodes_.size(), false);
     std::vector<RevisionNodeId> stack;
@@ -147,6 +165,10 @@ RevisionGraph::closeExactPredecessors(std::span<const RevisionNodeId> seed) cons
     return closure;
 }
 
+// Verify a proposed cone without executing the repair: close exact
+// predecessors, propagate exterior analytic change bounds, and compare
+// every QoI error bound with its epsilon. A passed certificate is only
+// as valid as the dependency graph and input bounds supplied by callers.
 Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
                                                     std::span<const double> sourceBounds,
                                                     std::span<const RevisionNodeId> cone,
@@ -276,6 +298,10 @@ Result<RevisionConeCertificate> certifyRevisionCone(const RevisionGraph& graph,
     return certificate;
 }
 
+// Select the most promising affordable expansion while preserving
+// exact closure and re-certifying after each choice. If no cheaper
+// certified subset survives, require a full recomputation fallback.
+// This is a heuristic for selecting work, not a global optimality proof.
 Result<RevisionConeCertificate>
 greedyCertifiedRevisionCone(const RevisionGraph& graph, std::span<const double> sourceBounds,
                             std::span<const RevisionNodeId> hardClosure,
