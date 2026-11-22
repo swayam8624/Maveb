@@ -304,10 +304,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     std::vector<revision::RevisionEdge> edges;
     edges.reserve(12);
 
-// Observation->TSDF->mesh->texture->material and Gaussian->GPU publication
-// are strict structural prerequisites. The domain-specific hardClosure seed
-// also carries invalidated outputs; the generic planner closes
-// *predecessors*.
+    // Observation->TSDF->mesh->texture->material and Gaussian->GPU publication
+    // are strict structural prerequisites. The domain-specific hardClosure seed
+    // also carries invalidated outputs; the generic planner closes
+    // *predecessors*.
     // Exact structural relations. The hardClosure below carries the forward
     // domain-specific invalidation; these edges retain predecessor consistency.
     edges.push_back({observation, tsdf, revision::RevisionEdgeClass::hard, 0.0,
@@ -321,10 +321,10 @@ buildCapturedWorldRevisionGraph(const CapturedWorldRevisionInput& input,
     edges.push_back({gaussian, gpuPublication, revision::RevisionEdgeClass::hard, 0.0,
                      "gaussian-source-publication-v1"});
 
-// The Gaussian-to-image and temporal blend edges are analytic upper-bound
-// propagation, not exact recomputation requirements while their assumptions
-// remain validated. Temporal discontinuity changes history dependence to a
-// hard edge.
+    // The Gaussian-to-image and temporal blend edges are analytic upper-bound
+    // propagation, not exact recomputation requirements while their assumptions
+    // remain validated. Temporal discontinuity changes history dependence to a
+    // hard edge.
     // Certified soft output propagation.
     edges.push_back({gaussian, currentImage, revision::RevisionEdgeClass::analytic, 1.0,
                      "gaussian-image-transmittance-v1"});
